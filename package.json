@@ -1,0 +1,37 @@
+{
+  "name": "flatgeobuf",
+  "version": "0.1.0",
+  "description": "A performant binary encoding for geographic data",
+  "scripts": {
+    "test": "mocha -r ts-node/register src/**/*.spec.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bjornharrtell/flatgeobuf.git"
+  },
+  "author": "",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/bjornharrtell/flatgeobuf/issues"
+  },
+  "homepage": "https://github.com/bjornharrtell/flatgeobuf#readme",
+  "dependencies": {
+    "@types/flatbuffers": "1.9.0",
+    "flatbuffers": "1.9.0",
+    "typescript": "3.0.3"
+  },
+  "devDependencies": {
+    "@types/chai": "4.1.4",
+    "@types/mocha": "5.2.5",
+    "chai": "4.1.2",
+    "eslint": "5.5.0",
+    "eslint-plugin-import": "2.14.0",
+    "eslint-plugin-mocha": "5.2.0",
+    "eslint-plugin-node": "7.0.1",
+    "eslint-plugin-promise": "4.0.0",
+    "esm": "3.0.81",
+    "mocha": "5.2.0",
+    "ts-node": "7.0.1",
+    "tslint": "^5.11.0"
+  }
+}

@@ -1,0 +1,17 @@
+include "geometry.fbs";
+
+namespace FlatGeobuf;
+
+table Feature {
+  
+  envelope: [double];
+  geometry: Geometry;
+  column_indexes: [uint];
+  values: [Value];
+}
+
+table Value {
+  data: [ubyte];
+}
+
+root_type Feature;

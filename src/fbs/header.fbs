@@ -1,0 +1,19 @@
+include "column.fbs";
+include "geometry.fbs";
+
+namespace FlatGeobuf;
+
+table Header {
+  dimensions: ubyte;
+  envelope: [double];
+  geometry_type: GeometryType;
+  columns: [Column];
+  index_offset: ulong;
+  index_node_size: uint;
+  index_node_count: uint;
+  features_offset: ulong;
+  features_size: ulong;
+  features_count: ulong;
+}
+
+root_type Header;

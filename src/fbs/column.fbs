@@ -1,0 +1,23 @@
+namespace FlatGeobuf;
+
+enum ColumnType:ubyte {
+  BYTE,
+  UBYTE,
+  BOOL,
+  SHORT,
+  USHOT,
+  INT,
+  UINT,
+  FLOAT,
+  LONG,
+  ULONG,
+  DOUBLE,
+  STRING
+}
+
+table Column {
+  name: string;
+  type: ColumnType;
+}
+
+root_type Column;

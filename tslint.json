@@ -1,0 +1,15 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "jsRules": {},
+    "rules": {
+        "semicolon": [true, "never"],
+        "quotemark": [true, "single"]
+    },
+    "rulesDirectory": [],
+    "linterOptions": {
+        "exclude": ["flatgeobuf.ts"]
+    }
+}

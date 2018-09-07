@@ -1,0 +1,20 @@
+namespace FlatGeobuf;
+
+enum GeometryType:ubyte {
+  POINT,
+  MULTIPOINT,
+  LINESTRING,
+  MULTILINESTRING,
+  POLYGON,
+  MULTIPOLYGON,
+  GEOMETRYCOLLECTION
+}
+
+table Geometry {
+  type: GeometryType;
+  geometries: [Geometry];
+  coord_lengths: [uint];
+  coords: [double];
+}
+
+root_type Geometry;
