@@ -3,7 +3,6 @@ include "geometry.fbs";
 namespace FlatGeobuf;
 
 table Feature {
-  
   envelope: [double];
   geometry: Geometry;
   column_indexes: [uint];

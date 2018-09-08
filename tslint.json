@@ -6,7 +6,8 @@
     "jsRules": {},
     "rules": {
         "semicolon": [true, "never"],
-        "quotemark": [true, "single"]
+        "quotemark": [true, "single"],
+        "object-literal-sort-keys": false
     },
     "rulesDirectory": [],
     "linterOptions": {

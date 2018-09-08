@@ -1,23 +1,12 @@
 import { flatbuffers } from 'flatbuffers'
 import { FlatGeobuf } from './flatgeobuf'
 
+import { buildGeometry } from './geojson/geometry'
+
 export function fromGeoJson(geojson: any) {
     const builder = new flatbuffers.Builder(0)
 
-    const Geometry = FlatGeobuf.Geometry
-    const GeometryType = FlatGeobuf.GeometryType
-
-    const typeMap: { [index: string]: FlatGeobuf.GeometryType } = {
-        LineString: GeometryType.LINESTRING,
-        Point: GeometryType.POINT,
-    }
-
-    const type = typeMap[geojson.type]
-
-    Geometry.startGeometry(builder)
-    Geometry.addType(builder, typeMap[geojson.type])
-    const point = Geometry.endGeometry(builder)
-    builder.finish(point)
+    buildGeometry(builder, geojson)
 
     return builder.dataBuffer()
 }
