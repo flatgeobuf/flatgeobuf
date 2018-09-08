@@ -3,24 +3,63 @@ import 'mocha'
 
 import * as api from './api'
 
+const point = {
+  coordinates: [1.1, -1.2],
+  type: 'Point',
+}
+
+const lineString = {
+  coordinates: [1.1, -1.2, 2.1, -2.1],
+  type: 'LineString',
+}
+
+function createFC(geometry: any) {
+  return {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry,
+    }],
+  }
+}
+
+function createFCMulti(geometries: any[]) {
+  return {
+    type: 'FeatureCollection',
+    features: geometries.map(geometry => ({
+      type: 'Feature',
+      geometry,
+    })),
+  }
+}
+
 describe('api', () => {
 
-  it('Point roundtrip', () => {
-    const data = api.fromGeoJson({
-      coordinates: [0, 0],
-      type: 'Point',
-    })
-    const geojson = api.toGeoJson(data)
-    expect(geojson).to.equal(0)
-  })
+  describe('roundtrips', () => {
 
-  it('LineString roundtrip', () => {
-    const data = api.fromGeoJson({
-      coordinates: [0, 0, 0, 0],
-      type: 'LineString',
+    it('Point roundtrip', () => {
+      const fc = createFC(point)
+      const data = api.fromGeoJson(fc)
+      const geojson = api.toGeoJson(data)
+      expect(geojson).to.deep.equal(fc)
     })
-    const geojson = api.toGeoJson(data)
-    expect(geojson).to.equal(2)
+
+    /*
+    it('Multiple points roundtrip', () => {
+      const fc = createFCMulti([point, point])
+      const data = api.fromGeoJson(fc)
+      const geojson = api.toGeoJson(data)
+      expect(geojson).to.deep.equal(fc)
+    })
+    */
+
+    it('LineString roundtrip', () => {
+      const fc = createFC(lineString)
+      const data = api.fromGeoJson(fc)
+      const geojson = api.toGeoJson(data)
+      expect(geojson).to.deep.equal(fc)
+    })
+
   })
 
 })

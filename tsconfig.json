@@ -5,7 +5,8 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "outFile": "./test.js",
-        "sourceMap": true
+        "sourceMap": true,
+        "target": "ES6"
     },
     "include": [
         "src/**/*"

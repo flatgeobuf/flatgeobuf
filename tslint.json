@@ -7,10 +7,11 @@
     "rules": {
         "semicolon": [true, "never"],
         "quotemark": [true, "single"],
-        "object-literal-sort-keys": false
+        "object-literal-sort-keys": false,
+        "arrow-parens": [true, "ban-single-arg-parens"]
     },
     "rulesDirectory": [],
     "linterOptions": {
-        "exclude": ["flatgeobuf.ts"]
+        "exclude": ["**/*_generated.ts"]
     }
 }

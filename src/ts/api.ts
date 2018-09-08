@@ -1,18 +1,20 @@
 import { flatbuffers } from 'flatbuffers'
-import { FlatGeobuf } from './flatgeobuf'
+import { FlatGeobuf } from './flatgeobuf_generated'
 
-import { buildGeometry } from './geojson/geometry'
+import { fromFlatGeobuf, toFlatGeobuf } from './geojson/featurecollection'
 
 export function fromGeoJson(geojson: any) {
-    const builder = new flatbuffers.Builder(0)
-
-    buildGeometry(builder, geojson)
-
-    return builder.dataBuffer()
+    const bytes = toFlatGeobuf(geojson)
+    return bytes
 }
 
-export function toGeoJson(buf: flatbuffers.ByteBuffer) {
-    const geometry = FlatGeobuf.Geometry.getRootAsGeometry(buf)
-    const type = geometry.type()
-    return type
+export function toGeoJson(bytes: Uint8Array) {
+    const geojson = fromFlatGeobuf(bytes)
+    return geojson
+    /*
+    const bb = new flatbuffers.ByteBuffer(bytes)
+    const header = FlatGeobuf.Header.getRootAsHeader(bb)
+    const count = header.featuresCount().toFloat64()
+    return count
+    */
 }

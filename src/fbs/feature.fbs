@@ -1,10 +1,11 @@
 include "geometry.fbs";
+include "column.fbs";
 
 namespace FlatGeobuf;
 
 table Feature {
-  envelope: [double];
   geometry: Geometry;
+  columns: [Column];
   column_indexes: [uint];
   values: [Value];
 }
