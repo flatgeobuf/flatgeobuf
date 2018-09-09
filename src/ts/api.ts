@@ -11,10 +11,4 @@ export function fromGeoJson(geojson: any) {
 export function toGeoJson(bytes: Uint8Array) {
     const geojson = fromFlatGeobuf(bytes)
     return geojson
-    /*
-    const bb = new flatbuffers.ByteBuffer(bytes)
-    const header = FlatGeobuf.Header.getRootAsHeader(bb)
-    const count = header.featuresCount().toFloat64()
-    return count
-    */
 }

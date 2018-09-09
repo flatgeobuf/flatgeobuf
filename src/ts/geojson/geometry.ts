@@ -1,21 +1,11 @@
 import { flatbuffers } from 'flatbuffers'
-import { FlatGeobuf } from '../flatgeobuf_generated'
+import { FlatGeobuf} from '../flatgeobuf_generated'
 
 const Geometry = FlatGeobuf.Geometry
 const GeometryType = FlatGeobuf.GeometryType
 
-const typeMap: { [index: string]: FlatGeobuf.GeometryType } = {
-    Point: GeometryType.Point,
-    MultiPoint: GeometryType.MultiPoint,
-    LineString: GeometryType.LineString,
-    MultiLineString: GeometryType.MultiLineString,
-    Polygon: GeometryType.Polygon,
-    MultiPolygon: GeometryType.MultiPolygon,
-    GeometryCollection: GeometryType.GeometryCollection,
-}
-
 export function buildGeometry(builder: flatbuffers.Builder, geometry: any) {
-    const type = typeMap[geometry.type]
+    const type: FlatGeobuf.GeometryType = (GeometryType as any)[geometry.type]
     const coordsOffset = Geometry.createCoordsVector(builder, geometry.coordinates)
     Geometry.startGeometry(builder)
     Geometry.addCoords(builder, coordsOffset)
