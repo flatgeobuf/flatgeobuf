@@ -35,10 +35,16 @@ namespace FlatGeobuf.GeoJson
             bb.Position = FlatBufferConstants.SizePrefixLength;
             var header = Header.GetRootAsHeader(bb);
 
-            bb.Position += headerLength + FlatBufferConstants.SizePrefixLength;
-            var feature = Feature.FromByteBuffer(bb);
-            
-            fc.Add(feature);
+            var count = header.FeaturesCount;
+            bb.Position += headerLength;
+
+            while (count-- > 0) {
+                var featureLength = ByteBufferUtil.GetSizePrefix(bb);
+                bb.Position += FlatBufferConstants.SizePrefixLength;
+                var feature = Feature.FromByteBuffer(bb);
+                fc.Add(feature);
+                bb.Position += featureLength;
+            }
 
             var writer = new GeoJsonWriter();
             var geojson = writer.Write(fc);

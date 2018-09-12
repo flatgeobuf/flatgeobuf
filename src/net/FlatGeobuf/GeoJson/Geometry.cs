@@ -90,6 +90,7 @@ namespace FlatGeobuf.GeoJson
             
             var type = flatbufGeometry.Type;
             var dimensions = flatbufGeometry.Dimensions;
+            var ordinates = ConvertDimensions(dimensions);
             var coords = flatbufGeometry.GetCoordsArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var coordinateSequence = sequenceFactory.Create(coords, dimensions);
@@ -98,16 +99,79 @@ namespace FlatGeobuf.GeoJson
 
             switch(type) {
                 case FlatGeobuf.GeometryType.Point:
-                    return factory.CreatePoint(coordinateSequence);
+                    return factory.CreatePoint(sequenceFactory.Create(coords, dimensions));
                 case FlatGeobuf.GeometryType.MultiPoint:
-                    return factory.CreateMultiPoint(coordinateSequence);
+                    return factory.CreateMultiPoint(sequenceFactory.Create(coords, dimensions));
                 case FlatGeobuf.GeometryType.LineString:
-                    return factory.CreateLineString(coordinateSequence);
-                //case FlatGeobuf.GeometryType.MultiLineString:
-                //    return factory.CreateMultiLineString(coordinateSequence);
+                    return factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
+                case FlatGeobuf.GeometryType.MultiLineString:
+                {
+                    var arraySegment = new ArraySegment<double>(coords);
+                    var lineStrings = new List<uint>() { 0 }
+                        .Concat(new List<uint>(flatbufGeometry.GetEndsArray()))
+                        .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
+                        .Select(cs => factory.CreateLineString(sequenceFactory.Create(cs.ToArray(), dimensions)))
+                        .ToArray();
+                    return factory.CreateMultiLineString(lineStrings);
+                }
+                case FlatGeobuf.GeometryType.Polygon:
+                {
+                    var arraySegment = new ArraySegment<double>(coords);
+                    var linearRings = new List<uint>() { 0 }
+                        .Concat(new List<uint>(flatbufGeometry.GetEndsArray()))
+                        .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
+                        .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
+                    var shell = linearRings.First();
+                    var holes = linearRings.Skip(1).ToArray();
+                    return factory.CreatePolygon(shell, holes);
+                }
+                case FlatGeobuf.GeometryType.MultiPolygon:
+                {
+                    var ends = new List<uint>() { 0 }
+                        .Concat(new List<uint>(flatbufGeometry.GetEndsArray())).ToArray();
+                    var endsArraySegment = new ArraySegment<uint>(ends);
+                    var arraySegment = new ArraySegment<double>(coords);
+                    var polygons = new List<uint>() { 0 }
+                        .Concat(new List<uint>(flatbufGeometry.GetEndssArray()))
+                        .Pairwise((s, e) => {
+                            var linearRings2 = endsArraySegment.Skip((int) s).Take((int) e)
+                                .Pairwise((s2, e2) => arraySegment.Skip((int) s2).Take((int) e2))
+                                .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
+                            var shell = linearRings2.First();
+                            var holes = linearRings2.Skip(1).ToArray();
+                            return factory.CreatePolygon(shell, holes);
+                        })
+                        .ToArray();
+                    return factory.CreateMultiPolygon(polygons);
+                }
                 default: throw new ApplicationException("FromFlatbuf: Unsupported geometry type");
             }
         }
+        public static IEnumerable<TResult> Pairwise<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TSource, TResult> resultSelector)
+        {
+            TSource previous = default(TSource);
+
+            using (var it = source.GetEnumerator())
+            {
+                if (it.MoveNext())
+                    previous = it.Current;
+
+                while (it.MoveNext())
+                    yield return resultSelector(previous, previous = it.Current);
+            }
+        }
+
+        private static Ordinates ConvertDimensions(byte dimensions)
+        {   
+            switch (dimensions) {
+                case 1: return Ordinates.X;
+                case 2: return Ordinates.XY;
+                case 3: return Ordinates.XYZ;
+                case 4: return Ordinates.XYZM;
+                default: return Ordinates.XY;
+            }
+        }
+
 
         private static FlatGeobuf.GeometryType ConvertType(IGeometry geometry)
         {
