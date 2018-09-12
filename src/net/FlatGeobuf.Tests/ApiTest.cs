@@ -24,13 +24,30 @@ namespace FlatGeobuf.Tests
         [TestMethod]
         public void RoundtripPoint()
         {
-            var expected = MakeFeatureCollection("POINT(1 1)");
-
+            var expected = MakeFeatureCollection("POINT(1.2 -2.1)");
             var bytes = Api.FromGeoJson(expected);
             var result = Api.ToGeoJson(bytes);
-
             var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
 
+        [TestMethod]
+        public void RoundtripMultiPoint()
+        {
+            var expected = MakeFeatureCollection("MULTIPOINT(1.2 -2.1, 2.4 -4.8)");
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
+
+        [TestMethod]
+        public void RoundtripLineString()
+        {
+            var expected = MakeFeatureCollection("LINESTRING(1.2 -2.1, 2.4 -4.8)");
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
             Assert.IsTrue(equals);
         }
     }
