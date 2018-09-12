@@ -39,6 +39,12 @@ namespace FlatGeobuf.GeoJson
         {
             switch(geometry) {
                 case IPoint _: return FlatGeobuf.GeometryType.Point;
+                case IMultiPoint _: return FlatGeobuf.GeometryType.MultiPoint;
+                case ILineString _: return FlatGeobuf.GeometryType.LineString;
+                case IMultiLineString _: return FlatGeobuf.GeometryType.MultiLineString;
+                case IPolygon _: return FlatGeobuf.GeometryType.Polygon;
+                case IMultiPolygon _: return FlatGeobuf.GeometryType.MultiPolygon;
+                case IGeometryCollection _: return FlatGeobuf.GeometryType.GeometryCollection;
                 default: throw new ApplicationException("Unknown or null geometry");
             }
         }
