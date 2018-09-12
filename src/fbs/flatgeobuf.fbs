@@ -7,12 +7,12 @@ namespace FlatGeobuf;
 table Header {
   envelope: [double];
   geometry_type: GeometryType;
-  dimensions: ubyte;
+  dimensions: ubyte = 2;
   columns: [Column];
-  index_node_size: uint;
-  index_node_count: uint;
+  index_node_size: uint = 640; // 16 items * 40 bytes per item
+  index_nodes_count: uint = 1; 
   features_size: ulong;
-  features_count: ulong;
+  features_count: ulong = 1;
 }
 
 root_type Header;

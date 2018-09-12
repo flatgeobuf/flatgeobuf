@@ -18,67 +18,81 @@ public struct Geometry : IFlatbufferObject
   public Geometry __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public GeometryType Type { get { int o = __p.__offset(4); return o != 0 ? (GeometryType)__p.bb.Get(o + __p.bb_pos) : GeometryType.Point; } }
-  public double Envelope(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int EnvelopeLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public Geometry? Geometries(int j) { int o = __p.__offset(6); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int GeometriesLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double Envelope(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int EnvelopeLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetEnvelopeBytes() { return __p.__vector_as_span(6); }
+  public Span<byte> GetEnvelopeBytes() { return __p.__vector_as_span(8); }
 #else
-  public ArraySegment<byte>? GetEnvelopeBytes() { return __p.__vector_as_arraysegment(6); }
+  public ArraySegment<byte>? GetEnvelopeBytes() { return __p.__vector_as_arraysegment(8); }
 #endif
-  public double[] GetEnvelopeArray() { return __p.__vector_as_array<double>(6); }
-  public byte Dimensions { get { int o = __p.__offset(8); return o != 0 ? __p.bb.Get(o + __p.bb_pos) : (byte)0; } }
-  public Geometry? Geometries(int j) { int o = __p.__offset(10); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
-  public int GeometriesLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public uint CoordLengths(int j) { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
-  public int CoordLengthsLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double[] GetEnvelopeArray() { return __p.__vector_as_array<double>(8); }
+  public byte Dimensions { get { int o = __p.__offset(10); return o != 0 ? __p.bb.Get(o + __p.bb_pos) : (byte)2; } }
+  public uint Endss(int j) { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
+  public int EndssLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetCoordLengthsBytes() { return __p.__vector_as_span(12); }
+  public Span<byte> GetEndssBytes() { return __p.__vector_as_span(12); }
 #else
-  public ArraySegment<byte>? GetCoordLengthsBytes() { return __p.__vector_as_arraysegment(12); }
+  public ArraySegment<byte>? GetEndssBytes() { return __p.__vector_as_arraysegment(12); }
 #endif
-  public uint[] GetCoordLengthsArray() { return __p.__vector_as_array<uint>(12); }
-  public double Coords(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int CoordsLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public uint[] GetEndssArray() { return __p.__vector_as_array<uint>(12); }
+  public uint Ends(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
+  public int EndsLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetCoordsBytes() { return __p.__vector_as_span(14); }
+  public Span<byte> GetEndsBytes() { return __p.__vector_as_span(14); }
 #else
-  public ArraySegment<byte>? GetCoordsBytes() { return __p.__vector_as_arraysegment(14); }
+  public ArraySegment<byte>? GetEndsBytes() { return __p.__vector_as_arraysegment(14); }
 #endif
-  public double[] GetCoordsArray() { return __p.__vector_as_array<double>(14); }
+  public uint[] GetEndsArray() { return __p.__vector_as_array<uint>(14); }
+  public double Coords(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int CoordsLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetCoordsBytes() { return __p.__vector_as_span(16); }
+#else
+  public ArraySegment<byte>? GetCoordsBytes() { return __p.__vector_as_arraysegment(16); }
+#endif
+  public double[] GetCoordsArray() { return __p.__vector_as_array<double>(16); }
 
   public static Offset<Geometry> CreateGeometry(FlatBufferBuilder builder,
       GeometryType type = GeometryType.Point,
-      VectorOffset envelopeOffset = default(VectorOffset),
-      byte dimensions = 0,
       VectorOffset geometriesOffset = default(VectorOffset),
-      VectorOffset coord_lengthsOffset = default(VectorOffset),
+      VectorOffset envelopeOffset = default(VectorOffset),
+      byte dimensions = 2,
+      VectorOffset endssOffset = default(VectorOffset),
+      VectorOffset endsOffset = default(VectorOffset),
       VectorOffset coordsOffset = default(VectorOffset)) {
-    builder.StartObject(6);
+    builder.StartObject(7);
     Geometry.AddCoords(builder, coordsOffset);
-    Geometry.AddCoordLengths(builder, coord_lengthsOffset);
-    Geometry.AddGeometries(builder, geometriesOffset);
+    Geometry.AddEnds(builder, endsOffset);
+    Geometry.AddEndss(builder, endssOffset);
     Geometry.AddEnvelope(builder, envelopeOffset);
+    Geometry.AddGeometries(builder, geometriesOffset);
     Geometry.AddDimensions(builder, dimensions);
     Geometry.AddType(builder, type);
     return Geometry.EndGeometry(builder);
   }
 
-  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartObject(6); }
+  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartObject(7); }
   public static void AddType(FlatBufferBuilder builder, GeometryType type) { builder.AddByte(0, (byte)type, 0); }
-  public static void AddEnvelope(FlatBufferBuilder builder, VectorOffset envelopeOffset) { builder.AddOffset(1, envelopeOffset.Value, 0); }
-  public static VectorOffset CreateEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
-  public static VectorOffset CreateEnvelopeVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
-  public static void StartEnvelopeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddDimensions(FlatBufferBuilder builder, byte dimensions) { builder.AddByte(2, dimensions, 0); }
-  public static void AddGeometries(FlatBufferBuilder builder, VectorOffset geometriesOffset) { builder.AddOffset(3, geometriesOffset.Value, 0); }
+  public static void AddGeometries(FlatBufferBuilder builder, VectorOffset geometriesOffset) { builder.AddOffset(1, geometriesOffset.Value, 0); }
   public static VectorOffset CreateGeometriesVector(FlatBufferBuilder builder, Offset<Geometry>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateGeometriesVectorBlock(FlatBufferBuilder builder, Offset<Geometry>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartGeometriesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddCoordLengths(FlatBufferBuilder builder, VectorOffset coordLengthsOffset) { builder.AddOffset(4, coordLengthsOffset.Value, 0); }
-  public static VectorOffset CreateCoordLengthsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
-  public static VectorOffset CreateCoordLengthsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
-  public static void StartCoordLengthsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddCoords(FlatBufferBuilder builder, VectorOffset coordsOffset) { builder.AddOffset(5, coordsOffset.Value, 0); }
+  public static void AddEnvelope(FlatBufferBuilder builder, VectorOffset envelopeOffset) { builder.AddOffset(2, envelopeOffset.Value, 0); }
+  public static VectorOffset CreateEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateEnvelopeVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
+  public static void StartEnvelopeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
+  public static void AddDimensions(FlatBufferBuilder builder, byte dimensions) { builder.AddByte(3, dimensions, 2); }
+  public static void AddEndss(FlatBufferBuilder builder, VectorOffset endssOffset) { builder.AddOffset(4, endssOffset.Value, 0); }
+  public static VectorOffset CreateEndssVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateEndssVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartEndssVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddEnds(FlatBufferBuilder builder, VectorOffset endsOffset) { builder.AddOffset(5, endsOffset.Value, 0); }
+  public static VectorOffset CreateEndsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateEndsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartEndsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddCoords(FlatBufferBuilder builder, VectorOffset coordsOffset) { builder.AddOffset(6, coordsOffset.Value, 0); }
   public static VectorOffset CreateCoordsVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateCoordsVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartCoordsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
