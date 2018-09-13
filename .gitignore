@@ -1,3 +1,5 @@
 node_modules
 yarn-error.log
 package-lock.json
+/.vs
+/src/net/.vs/FlatGeobuf
