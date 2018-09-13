@@ -81,6 +81,16 @@ namespace FlatGeobuf.Tests
         }
 
         [TestMethod]
+        public void RoundtripMultiLineStringSinglePart()
+        {
+            var expected = MakeFeatureCollection("MULTILINESTRING((1.2 -2.1, 2.4 -4.8))");
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
+
+        [TestMethod]
         public void RoundtripPolygon()
         {
             var expected = MakeFeatureCollection("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");

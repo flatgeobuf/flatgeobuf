@@ -37,7 +37,7 @@ describe('api', () => {
 
   describe('roundtrips', () => {
 
-    it('Point roundtrip', () => {
+    xit('Point roundtrip', () => {
       const fc = createFC(point)
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
@@ -51,7 +51,7 @@ describe('api', () => {
       expect(geojson).to.deep.equal(fc)
     })
 
-    it('LineString roundtrip', () => {
+    xit('LineString roundtrip', () => {
       const fc = createFC(lineString)
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
