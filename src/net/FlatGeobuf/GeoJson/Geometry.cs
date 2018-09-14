@@ -46,17 +46,36 @@ namespace FlatGeobuf.GeoJson
                 .ToArray();
             var coords = FlatGeobuf.Geometry.CreateCoordsVector(builder, coordinates);
 
+            VectorOffset ends = new VectorOffset();
             VectorOffset endss = new VectorOffset();
-            if (geometry is IMultiPolygon && geometry.NumGeometries > 1)
+            if (geometry is IMultiPolygon)
             {
-                var endssArray = CalcEndss(geometry, dimensions);
-                endss = FlatGeobuf.Geometry.CreateEndssVector(builder, endssArray);
-                hasEndss = true;
+                var multiPolygon = geometry as IMultiPolygon;
+                var endsArrays = multiPolygon.Geometries
+                    .Select(g => CalcEnds(g, dimensions))
+                    .ToArray();
+                if (endsArrays.Length == 1 && endsArrays[0].Length > 1) // special case single part MultiPolygon with holes
+                {
+                    ends = FlatGeobuf.Geometry.CreateEndsVector(builder, endsArrays[0]);
+                    hasEnds = true;
+                }
+                else if (endsArrays.Length > 1)
+                {
+                    /*
+                    var endssArray = endsArrays
+                        .Select(a => (uint) a.Length)
+                        .Where(l => l > 1)
+                        .ToArray();
+                    */
+                    endss = FlatGeobuf.Geometry.CreateEndssVector(builder, endsArrays[0]);
+                    hasEndss = true;
+                    //var endsArray = CalcEnds(geometry, dimensions);
+                    //ends = FlatGeobuf.Geometry.CreateEndsVector(builder, endsArray);
+                    //hasEnds = true;
+                }
             }
 
-            VectorOffset ends = new VectorOffset();
-            if (hasEndss == true ||
-                (geometry is IPolygon && (geometry as IPolygon).NumInteriorRings > 0) ||
+            if ((geometry is IPolygon && (geometry as IPolygon).NumInteriorRings > 0) ||
                 geometry is IMultiLineString && geometry.NumGeometries > 1)
             {
                 var endsArray = CalcEnds(geometry, dimensions);
@@ -111,10 +130,57 @@ namespace FlatGeobuf.GeoJson
             }
         }
 
+        private static IMultiLineString ParseFlatbufMultiLineStringSinglePart(double[] coords, byte dimensions) {
+            var sequenceFactory = new PackedCoordinateSequenceFactory();
+            var factory = new GeometryFactory(sequenceFactory);
+            var lineString = factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
+            return factory.CreateMultiLineString(new [] { lineString });
+        }
+
+        private static IMultiLineString ParseFlatbufMultiLineString(uint[] ends, double[] coords, byte dimensions)
+        {
+            if (ends == null)
+                return ParseFlatbufMultiLineStringSinglePart(coords, dimensions);
+            var sequenceFactory = new PackedCoordinateSequenceFactory();
+            var factory = new GeometryFactory(sequenceFactory);
+            var arraySegment = new ArraySegment<double>(coords);
+            var lineStrings = new List<uint>() { 0 }
+                .Concat(new List<uint>(ends))
+                .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
+                .Select(cs => factory.CreateLineString(sequenceFactory.Create(cs.ToArray(), dimensions)))
+                .ToArray();
+            return factory.CreateMultiLineString(lineStrings);
+        }
+
+        private static IPolygon ParseFlatbufPolygonSingleRing(double[] coords, byte dimensions) {
+            var sequenceFactory = new PackedCoordinateSequenceFactory();
+            var factory = new GeometryFactory(sequenceFactory);
+            var shell = factory.CreateLinearRing(sequenceFactory.Create(coords, dimensions));
+            return factory.CreatePolygon(shell);
+        }
+
+        private static IPolygon ParseFlatbufPolygon(uint[] ends, double[] coords, byte dimensions)
+        {
+            if (ends == null)
+                return ParseFlatbufPolygonSingleRing(coords, dimensions);
+            var sequenceFactory = new PackedCoordinateSequenceFactory();
+            var factory = new GeometryFactory(sequenceFactory);
+            var arraySegment = new ArraySegment<double>(coords);
+            var linearRings = new List<uint>() { 0 }
+                .Concat(new List<uint>(ends))
+                .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
+                .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
+            var shell = linearRings.First();
+            var holes = linearRings.Skip(1).ToArray();
+            return factory.CreatePolygon(shell, holes);
+        }
+
         public static IGeometry FromFlatbuf(FlatGeobuf.Geometry flatbufGeometry) {
             var type = flatbufGeometry.Type;
             var dimensions = flatbufGeometry.Dimensions;
             var coords = flatbufGeometry.GetCoordsArray();
+            var ends = flatbufGeometry.GetEndsArray();
+            var endss = flatbufGeometry.GetEndssArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
 
             var factory = new GeometryFactory();
@@ -127,62 +193,43 @@ namespace FlatGeobuf.GeoJson
                 case FlatGeobuf.GeometryType.LineString:
                     return factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
                 case FlatGeobuf.GeometryType.MultiLineString:
-                {
-                    var ends = flatbufGeometry.GetEndsArray();
-                    if (ends == null)
-                    {
-                        var lineString = factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
-                        return factory.CreateMultiLineString(new [] { lineString });
-                    }
-                    else
-                    {
-                        var arraySegment = new ArraySegment<double>(coords);
-                        var lineStrings = new List<uint>() { 0 }
-                            .Concat(new List<uint>(ends))
-                            .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
-                            .Select(cs => factory.CreateLineString(sequenceFactory.Create(cs.ToArray(), dimensions)))
-                            .ToArray();
-                        return factory.CreateMultiLineString(lineStrings);
-                    }
-                }
+                    return ParseFlatbufMultiLineString(ends, coords, dimensions);
                 case FlatGeobuf.GeometryType.Polygon:
-                {
-                    var ends = flatbufGeometry.GetEndsArray();
-                    if (ends == null)
-                    {
-                        var shell = factory.CreateLinearRing(sequenceFactory.Create(coords, dimensions));
-                        return factory.CreatePolygon(shell);
-                    }
-                    else
-                    {
-                        var arraySegment = new ArraySegment<double>(coords);
-                        var linearRings = new List<uint>() { 0 }
-                            .Concat(new List<uint>(flatbufGeometry.GetEndsArray()))
-                            .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
-                            .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
-                        var shell = linearRings.First();
-                        var holes = linearRings.Skip(1).ToArray();
-                        return factory.CreatePolygon(shell, holes);
-                    }
-                }
+                    return ParseFlatbufPolygon(ends, coords, dimensions);
                 case FlatGeobuf.GeometryType.MultiPolygon:
                 {
+                    var polygons = new List<uint>();
+                    if (endss == null) // special case single part MultiPolygon
+                    {
+                        var polygon = ParseFlatbufPolygon(ends, coords, dimensions);
+                        return factory.CreateMultiPolygon(new[] { polygon });
+                    }
+                    else
+                    {
+                        var arraySegment = new ArraySegment<double>(coords);
+                        var endsArraySegment = new ArraySegment<uint>(ends);
+                        var polygons2 = new List<uint>() { 0 }
+                            .Concat(new List<uint>(flatbufGeometry.GetEndssArray()))
+                            .Pairwise((s, e) => {
+                                var linearRings2 = endsArraySegment.Skip((int) s).Take((int) e)
+                                    .Pairwise((s2, e2) => arraySegment.Skip((int) s2).Take((int) e2))
+                                    .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
+                                var shell = linearRings2.First();
+                                var holes = linearRings2.Skip(1).ToArray();
+                                return factory.CreatePolygon(shell, holes);
+                            })
+                            .ToArray();
+                        return factory.CreateMultiPolygon(polygons2);
+                    }
+
+                    /*
+                    var ends = flatbufGeometry.GetEndsArray();
+
                     var ends = new List<uint>() { 0 }
                         .Concat(new List<uint>(flatbufGeometry.GetEndsArray())).ToArray();
                     var endsArraySegment = new ArraySegment<uint>(ends);
                     var arraySegment = new ArraySegment<double>(coords);
 
-                    // TODO: Polygon logic, works for single part MultiPolygon
-                    var linearRings = new List<uint>() { 0 }
-                        .Concat(new List<uint>(flatbufGeometry.GetEndsArray()))
-                        .Pairwise((s, e) => arraySegment.Skip((int) s).Take((int) e))
-                        .Select(cs => factory.CreateLinearRing(sequenceFactory.Create(cs.ToArray(), dimensions)));
-                    var shell = linearRings.First();
-                    var holes = linearRings.Skip(1).ToArray();
-                    var polygons = new List<IPolygon> { factory.CreatePolygon(shell, holes) }.ToArray();
-
-                    // TODO: Not working MultiPolygon logic
-                    /*
                     var polygons = new List<uint>() { 0 }
                         .Concat(new List<uint>(flatbufGeometry.GetEndssArray()))
                         .Pairwise((s, e) => {
@@ -194,8 +241,9 @@ namespace FlatGeobuf.GeoJson
                             return factory.CreatePolygon(shell, holes);
                         })
                         .ToArray();
-                    */
+
                     return factory.CreateMultiPolygon(polygons);
+                    */
                 }
                 default: throw new ApplicationException("FromFlatbuf: Unsupported geometry type");
             }
