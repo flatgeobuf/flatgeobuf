@@ -11,12 +11,12 @@ enum GeometryType:ubyte {
 }
 
 table Geometry {
-  geometries: [Geometry]; // GeometryCollection
   type: GeometryType;
+  types: [GeometryType];
   dimensions: ubyte = 2;
   envelope: [double];
-  endss: [uint]; // MultiPolygon part ends
-  ends: [uint]; // MultiLineString part ends or Polygon ring ends
+  ends: [uint];
+  ring_ends: [uint];
   coords: [double];
 }
 
