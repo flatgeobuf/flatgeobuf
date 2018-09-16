@@ -19,7 +19,7 @@ namespace FlatGeobuf.GeoJson
     public static class Geometry {
         public static Offset<FlatGeobuf.Geometry> BuildGeometry(FlatBufferBuilder builder, IGeometry geometry)
         {
-            // TODO: find from geometry?
+            // TODO: introspect?
             uint dimensions = 2;
 
             var coordinates = geometry.Coordinates
@@ -42,6 +42,18 @@ namespace FlatGeobuf.GeoJson
             if (ringLengths != null)
                 ringLengthsOffset = CreateRingLengthsVector(builder, ringLengths.ToArray());
             
+            VectorOffset? ringCountsOffset = null;
+            if (geometry is IGeometryCollection && geometry.NumGeometries > 1 &&
+                (geometry as IGeometryCollection).Geometries.Any(g => g is IPolygon))
+            {
+                var gc = geometry as IGeometryCollection;
+                var ringCounts = gc.Geometries
+                    .Where(g => g is IPolygon)
+                    .Select(g => g as IPolygon)
+                    .Select(p => (uint) p.InteriorRings.Length + 1);
+                ringCountsOffset = CreateRingCountsVector(builder, ringCounts.ToArray());
+            }
+
             StartGeometry(builder);
             AddType(builder, ConvertType(geometry));
             if (typesOffset.HasValue) 
@@ -50,6 +62,8 @@ namespace FlatGeobuf.GeoJson
                 AddLengths(builder, lengthsOffset.Value);
             if (ringLengthsOffset.HasValue)
                 AddRingLengths(builder, ringLengthsOffset.Value);
+            if (ringCountsOffset.HasValue)
+                AddRingCounts(builder, ringCountsOffset.Value);
             
             AddCoords(builder, coordsOffset);
             var offset = EndGeometry(builder);
@@ -57,16 +71,21 @@ namespace FlatGeobuf.GeoJson
             return offset;
         }
 
-        private static IEnumerable<uint> CreateRingLengths(IGeometry geometry, uint dimensions)
+        static IEnumerable<uint> CreateRingLengths(IGeometry geometry, uint dimensions)
         {
             if (geometry is IGeometryCollection && geometry.NumGeometries > 1)
             {
-                // TODO: fixme, should calc ring lengths only if inner ring exists
                 var gc = geometry as IGeometryCollection;
                 var lengths = gc.Geometries
-                    .Select(g => dimensions * (uint) g.Coordinates.Length)
-                    .Take(gc.NumGeometries);
-                return lengths;
+                    .Where(g => g is IPolygon)
+                    .Select(g => g as IPolygon)
+                    .Where(p => p.InteriorRings.Length > 0)
+                    .Select(p => new[] { p.ExteriorRing }.Concat(p.InteriorRings))
+                    .Select(rs => rs.Select(r => dimensions * (uint) r.Coordinates.Length))
+                    .SelectMany(rls => rls)
+                    .ToList();
+                if (lengths.Count > 0)
+                    return lengths;
             }
             else if (geometry is IPolygon || (geometry is IGeometryCollection && geometry.GetGeometryN(0) is IPolygon))
             {
@@ -86,7 +105,7 @@ namespace FlatGeobuf.GeoJson
             return null;
         }
 
-        private static IEnumerable<uint> CreateLengths(IGeometry geometry, uint dimensions)
+        static IEnumerable<uint> CreateLengths(IGeometry geometry, uint dimensions)
         {
             if (geometry is IGeometryCollection && geometry.NumGeometries > 1)
             {
@@ -98,7 +117,7 @@ namespace FlatGeobuf.GeoJson
             return null;
         }
 
-        private static IEnumerable<FlatGeobuf.GeometryType> CreateTypes(IGeometry geometry, uint dimensions)
+        static IEnumerable<FlatGeobuf.GeometryType> CreateTypes(IGeometry geometry, uint dimensions)
         {
             if (geometry.OgcGeometryType == OgcGeometryType.GeometryCollection)
             {
@@ -110,14 +129,14 @@ namespace FlatGeobuf.GeoJson
             return null;
         }
 
-        private static IMultiLineString ParseFlatbufMultiLineStringSinglePart(double[] coords, byte dimensions) {
+        static IMultiLineString ParseFlatbufMultiLineStringSinglePart(double[] coords, byte dimensions) {
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
             var lineString = factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
             return factory.CreateMultiLineString(new [] { lineString });
         }
 
-        private static IMultiLineString ParseFlatbufMultiLineString(uint[] lengths, double[] coords, byte dimensions)
+        static IMultiLineString ParseFlatbufMultiLineString(uint[] lengths, double[] coords, byte dimensions)
         {
             if (lengths == null)
                 return ParseFlatbufMultiLineStringSinglePart(coords, dimensions);
@@ -137,14 +156,14 @@ namespace FlatGeobuf.GeoJson
             return factory.CreateMultiLineString(lineStrings.ToArray());
         }
 
-        private static IPolygon ParseFlatbufPolygonSingleRing(double[] coords, byte dimensions) {
+        static IPolygon ParseFlatbufPolygonSingleRing(double[] coords, byte dimensions) {
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
             var shell = factory.CreateLinearRing(sequenceFactory.Create(coords, dimensions));
             return factory.CreatePolygon(shell);
         }
 
-        private static IPolygon ParseFlatbufPolygon(uint[] ringLengths, double[] coords, byte dimensions)
+        static IPolygon ParseFlatbufPolygon(uint[] ringLengths, double[] coords, byte dimensions)
         {
             if (ringLengths == null)
                 return ParseFlatbufPolygonSingleRing(coords, dimensions);
@@ -165,35 +184,41 @@ namespace FlatGeobuf.GeoJson
             return factory.CreatePolygon(shell, holes);
         }
 
-        private static IMultiPolygon ParseFlatbufMultiPolygon(uint[] lengths, uint[] ringLengths, double[] coords, byte dimensions)
+        static IMultiPolygon ParseFlatbufMultiPolygon(uint[] lengths, uint[] ringLengths, uint[] ringCounts, double[] coords, byte dimensions)
         {
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
-            IPolygon[] polygons;
+            var polygons = new List<IPolygon>();
             if (lengths == null)
             {
-                polygons = new[] { ParseFlatbufPolygon(ringLengths, coords, dimensions) };
+                var polygon = ParseFlatbufPolygon(ringLengths, coords, dimensions);
+                polygons.Add(polygon);
             }
             else
             {
-                // TODO: consider ring lengths
                 var arraySegment = new ArraySegment<double>(coords);
-                IList<ILinearRing> linearRings = new List<ILinearRing>();
                 uint offset = 0;
+                uint ringOffset = 0;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     var length = lengths[i];
+                    var ringCount = ringCounts[i];
+                    uint[] ringLengthSubset = null;
+                    if (ringCount > 1)
+                    {
+                        var ringLengthsSegment = new ArraySegment<uint>(ringLengths).Skip((int) ringOffset).Take((int) ringCount).ToArray();
+                        ringLengthSubset = ringLengths;
+                    }
+                    ringOffset += ringCount;
+                        
                     var linearRingCoords = arraySegment.Skip((int) offset).Take((int) length).ToArray();
-                    var linearRing = factory.CreateLinearRing(sequenceFactory.Create(linearRingCoords, dimensions));
-                    linearRings.Add(linearRing);
+                    var polygon = ParseFlatbufPolygon(ringLengthSubset, linearRingCoords, dimensions);
+                    polygons.Add(polygon);
                     offset += length;
                 }
-                polygons = linearRings
-                    .Select(lr => factory.CreatePolygon(lr, null))
-                    .ToArray();
             }
             
-            return factory.CreateMultiPolygon(polygons);
+            return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
         public static IGeometry FromFlatbuf(FlatGeobuf.Geometry flatbufGeometry) {
@@ -202,6 +227,7 @@ namespace FlatGeobuf.GeoJson
             var coords = flatbufGeometry.GetCoordsArray();
             var lengths = flatbufGeometry.GetLengthsArray();
             var ringLengths = flatbufGeometry.GetRingLengthsArray();
+            var ringCounts = flatbufGeometry.GetRingCountsArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
 
             var factory = new GeometryFactory();
@@ -218,26 +244,12 @@ namespace FlatGeobuf.GeoJson
                 case GeometryType.Polygon:
                     return ParseFlatbufPolygon(ringLengths, coords, dimensions);
                 case GeometryType.MultiPolygon:
-                    return ParseFlatbufMultiPolygon(lengths, ringLengths, coords, dimensions);
+                    return ParseFlatbufMultiPolygon(lengths, ringLengths, ringCounts, coords, dimensions);
                 default: throw new ApplicationException("FromFlatbuf: Unsupported geometry type");
             }
         }
         
-        public static IEnumerable<TResult> Pairwise<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TSource, TResult> resultSelector)
-        {
-            TSource previous = default(TSource);
-
-            using (var it = source.GetEnumerator())
-            {
-                if (it.MoveNext())
-                    previous = it.Current;
-
-                while (it.MoveNext())
-                    yield return resultSelector(previous, previous = it.Current);
-            }
-        }
-
-        private static Ordinates ConvertDimensions(byte dimensions)
+        static Ordinates ConvertDimensions(byte dimensions)
         {   
             switch (dimensions)
             {
@@ -249,7 +261,7 @@ namespace FlatGeobuf.GeoJson
             }
         }
 
-        private static FlatGeobuf.GeometryType ConvertType(IGeometry geometry)
+        static FlatGeobuf.GeometryType ConvertType(IGeometry geometry)
         {
             switch(geometry)
             {

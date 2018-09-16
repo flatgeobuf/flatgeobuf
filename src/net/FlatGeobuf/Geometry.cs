@@ -51,14 +51,22 @@ public struct Geometry : IFlatbufferObject
   public ArraySegment<byte>? GetRingLengthsBytes() { return __p.__vector_as_arraysegment(14); }
 #endif
   public uint[] GetRingLengthsArray() { return __p.__vector_as_array<uint>(14); }
-  public double Coords(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int CoordsLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public uint RingCounts(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
+  public int RingCountsLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetCoordsBytes() { return __p.__vector_as_span(16); }
+  public Span<byte> GetRingCountsBytes() { return __p.__vector_as_span(16); }
 #else
-  public ArraySegment<byte>? GetCoordsBytes() { return __p.__vector_as_arraysegment(16); }
+  public ArraySegment<byte>? GetRingCountsBytes() { return __p.__vector_as_arraysegment(16); }
 #endif
-  public double[] GetCoordsArray() { return __p.__vector_as_array<double>(16); }
+  public uint[] GetRingCountsArray() { return __p.__vector_as_array<uint>(16); }
+  public double Coords(int j) { int o = __p.__offset(18); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int CoordsLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetCoordsBytes() { return __p.__vector_as_span(18); }
+#else
+  public ArraySegment<byte>? GetCoordsBytes() { return __p.__vector_as_arraysegment(18); }
+#endif
+  public double[] GetCoordsArray() { return __p.__vector_as_array<double>(18); }
 
   public static Offset<Geometry> CreateGeometry(FlatBufferBuilder builder,
       GeometryType type = GeometryType.Point,
@@ -67,9 +75,11 @@ public struct Geometry : IFlatbufferObject
       VectorOffset envelopeOffset = default(VectorOffset),
       VectorOffset lengthsOffset = default(VectorOffset),
       VectorOffset ring_lengthsOffset = default(VectorOffset),
+      VectorOffset ring_countsOffset = default(VectorOffset),
       VectorOffset coordsOffset = default(VectorOffset)) {
-    builder.StartObject(7);
+    builder.StartObject(8);
     Geometry.AddCoords(builder, coordsOffset);
+    Geometry.AddRingCounts(builder, ring_countsOffset);
     Geometry.AddRingLengths(builder, ring_lengthsOffset);
     Geometry.AddLengths(builder, lengthsOffset);
     Geometry.AddEnvelope(builder, envelopeOffset);
@@ -79,7 +89,7 @@ public struct Geometry : IFlatbufferObject
     return Geometry.EndGeometry(builder);
   }
 
-  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartObject(8); }
   public static void AddType(FlatBufferBuilder builder, GeometryType type) { builder.AddByte(0, (byte)type, 0); }
   public static void AddTypes(FlatBufferBuilder builder, VectorOffset typesOffset) { builder.AddOffset(1, typesOffset.Value, 0); }
   public static VectorOffset CreateTypesVector(FlatBufferBuilder builder, GeometryType[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte((byte)data[i]); return builder.EndVector(); }
@@ -98,13 +108,17 @@ public struct Geometry : IFlatbufferObject
   public static VectorOffset CreateRingLengthsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateRingLengthsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartRingLengthsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddCoords(FlatBufferBuilder builder, VectorOffset coordsOffset) { builder.AddOffset(6, coordsOffset.Value, 0); }
+  public static void AddRingCounts(FlatBufferBuilder builder, VectorOffset ringCountsOffset) { builder.AddOffset(6, ringCountsOffset.Value, 0); }
+  public static VectorOffset CreateRingCountsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateRingCountsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartRingCountsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddCoords(FlatBufferBuilder builder, VectorOffset coordsOffset) { builder.AddOffset(7, coordsOffset.Value, 0); }
   public static VectorOffset CreateCoordsVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateCoordsVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartCoordsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static Offset<Geometry> EndGeometry(FlatBufferBuilder builder) {
     int o = builder.EndObject();
-    builder.Required(o, 16);  // coords
+    builder.Required(o, 18);  // coords
     return new Offset<Geometry>(o);
   }
 };

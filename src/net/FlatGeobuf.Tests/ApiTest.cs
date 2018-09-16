@@ -10,11 +10,11 @@ namespace FlatGeobuf.Tests
     [TestClass]
     public class ApiTest
     {
-        private string MakeFeatureCollection(string wkt) {
+        string MakeFeatureCollection(string wkt) {
             return MakeFeatureCollection(new string[] { wkt });
         }
 
-        private string MakeFeatureCollection(string[] wkts) {
+        string MakeFeatureCollection(string[] wkts) {
             var fc = new FeatureCollection();
             foreach (var wkt in wkts)
                 fc.Add(MakeFeature(wkt));
@@ -23,7 +23,7 @@ namespace FlatGeobuf.Tests
             return geojson;
         }
 
-        private NetTopologySuite.Features.Feature MakeFeature(string wkt) {
+        NetTopologySuite.Features.Feature MakeFeature(string wkt) {
             var reader = new WKTReader();
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, null);
