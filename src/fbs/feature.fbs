@@ -6,8 +6,9 @@ namespace FlatGeobuf;
 table Feature {
   geometry: Geometry;
   columns: [Column];
-  column_indexes: [uint];
-  values: [Value];
+  columns_indexes: [uint];
+  values_lengths: [uint];
+  values: [ubyte];
 }
 
 table Value {

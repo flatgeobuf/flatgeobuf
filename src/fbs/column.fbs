@@ -12,7 +12,8 @@ enum ColumnType:ubyte {
   LONG,
   ULONG,
   DOUBLE,
-  STRING
+  STRING,
+  JSON
 }
 
 table Column {

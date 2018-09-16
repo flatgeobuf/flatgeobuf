@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.IO;
 using NetTopologySuite.IO;
 
@@ -11,6 +12,9 @@ namespace FlatGeobuf.GeoJson
         public static byte[] ToFlatGeobuf(string geojson) {
             var reader = new GeoJsonReader();
             var fc = reader.Read<NetTopologySuite.Features.FeatureCollection>(geojson);
+
+            if (fc.Features.Count == 0)
+                throw new ApplicationException("Empty feature collection is not allowed as input");
 
             var header = BuildHeader(fc);
 
@@ -54,7 +58,19 @@ namespace FlatGeobuf.GeoJson
         private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc) {
             var builder = new FlatBufferBuilder(40);
 
+            // TODO: optionally use first feature as column schema
+            var feature = fc.Features.First();
+            VectorOffset? columnsOffset = null;
+            if (feature.Attributes != null && feature.Attributes.Count > 0) {
+                var columns = feature.Attributes.GetNames()
+                    .Select(n => Column.CreateColumn(builder, builder.CreateString(n), ColumnType.STRING))
+                    .ToArray();
+                columnsOffset = Header.CreateColumnsVector(builder, columns);
+            }
+
             Header.StartHeader(builder);
+            if (columnsOffset.HasValue)
+                Header.AddColumns(builder, columnsOffset.Value);
             Header.AddFeaturesCount(builder, (ulong) fc.Features.Count);
             var offset = Header.EndHeader(builder);
 

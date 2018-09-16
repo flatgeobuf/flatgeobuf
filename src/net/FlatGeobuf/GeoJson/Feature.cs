@@ -12,7 +12,10 @@ namespace FlatGeobuf.GeoJson
 
             var geometryOffset = Geometry.BuildGeometry(builder, feature.Geometry);
 
+            // TODO: encode values
+
             FlatGeobuf.Feature.StartFeature(builder);
+            
             FlatGeobuf.Feature.AddGeometry(builder, geometryOffset);
             var offset = FlatGeobuf.Feature.EndFeature(builder);
 

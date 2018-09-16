@@ -19,6 +19,7 @@ public enum ColumnType : byte
  ULONG = 9,
  DOUBLE = 10,
  STRING = 11,
+ JSON = 12,
 };
 
 
