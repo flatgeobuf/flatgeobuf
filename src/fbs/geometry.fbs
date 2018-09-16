@@ -15,9 +15,10 @@ table Geometry {
   types: [GeometryType];
   dimensions: ubyte = 2;
   envelope: [double];
-  ends: [uint];
-  ring_ends: [uint];
-  coords: [double];
+  lengths: [uint];
+  ring_lengths: [uint];
+  ring_counts: [uint];
+  coords: [double] (required);
 }
 
 root_type Geometry;

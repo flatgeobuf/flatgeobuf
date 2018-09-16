@@ -53,7 +53,17 @@ namespace FlatGeobuf.Tests
         [TestMethod]
         public void RoundtripMultiPoint()
         {
-            var expected = MakeFeatureCollection("MULTIPOINT(1.2 -2.1, 2.4 -4.8)");
+            var expected = MakeFeatureCollection("MULTIPOINT(10 40, 40 30, 20 20, 30 10)");
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
+
+        [TestMethod]
+        public void RoundtripMultiPointAlternativeSyntax()
+        {
+            var expected = MakeFeatureCollection("MULTIPOINT((10 40), (40 30), (20 20), (30 10))");
             var bytes = Api.FromGeoJson(expected);
             var result = Api.ToGeoJson(bytes);
             var equals = JToken.DeepEquals(expected, result);
@@ -73,7 +83,7 @@ namespace FlatGeobuf.Tests
         [TestMethod]
         public void RoundtripMultiLineString()
         {
-            var expected = MakeFeatureCollection("MULTILINESTRING((1.2 -2.1, 2.4 -4.8), (10.2 -20.1, 20.4 -40.8))");
+            var expected = MakeFeatureCollection("MULTILINESTRING((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))");
             var bytes = Api.FromGeoJson(expected);
             var result = Api.ToGeoJson(bytes);
             var equals = JToken.DeepEquals(expected, result);
@@ -104,6 +114,16 @@ namespace FlatGeobuf.Tests
         public void RoundtripMultiPolygon()
         {
             var expected = MakeFeatureCollection("MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))");
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
+
+        [TestMethod]
+        public void RoundtripMultiPolygonWithHole()
+        {
+            var expected = MakeFeatureCollection("MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))");
             var bytes = Api.FromGeoJson(expected);
             var result = Api.ToGeoJson(bytes);
             var equals = JToken.DeepEquals(expected, result);
