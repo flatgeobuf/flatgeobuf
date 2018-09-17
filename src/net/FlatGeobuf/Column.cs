@@ -40,6 +40,7 @@ public struct Column : IFlatbufferObject
   public static void AddType(FlatBufferBuilder builder, ColumnType type) { builder.AddByte(1, (byte)type, 0); }
   public static Offset<Column> EndColumn(FlatBufferBuilder builder) {
     int o = builder.EndObject();
+    builder.Required(o, 4);  // name
     return new Offset<Column>(o);
   }
 };

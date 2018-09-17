@@ -17,7 +17,7 @@ enum ColumnType:ubyte {
 }
 
 table Column {
-  name: string;
+  name: string (required);
   type: ColumnType;
 }
 

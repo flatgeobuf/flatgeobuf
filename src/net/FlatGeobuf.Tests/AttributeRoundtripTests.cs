@@ -40,7 +40,7 @@ namespace FlatGeobuf.Tests
         {
             var attributes = new Dictionary<string, object>()
             {
-                ["test"] = 1
+                ["test"] = 1.1
             };
 
             var expected = MakeFeatureCollection(attributes);
