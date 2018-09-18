@@ -29,6 +29,7 @@ public struct Header : IFlatbufferObject
   public byte Dimensions { get { int o = __p.__offset(8); return o != 0 ? __p.bb.Get(o + __p.bb_pos) : (byte)2; } }
   public Column? Columns(int j) { int o = __p.__offset(10); return o != 0 ? (Column?)(new Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ColumnsLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public Column? ColumnsByKey(string key) { int o = __p.__offset(10); return o != 0 ? Column.__lookup_by_key(__p.__vector(o), key, __p.bb) : null; }
   public uint IndexNodeSize { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)640; } }
   public uint IndexNodesCount { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)1; } }
   public ulong FeaturesSize { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }

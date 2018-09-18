@@ -36,7 +36,22 @@ namespace FlatGeobuf.Tests
         }
 
         [TestMethod]
-        public void Integer()
+        public void Number()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = 1
+            };
+
+            var expected = MakeFeatureCollection(attributes);
+            var bytes = Api.FromGeoJson(expected);
+            var result = Api.ToGeoJson(bytes);
+            var equals = JToken.DeepEquals(expected, result);
+            Assert.IsTrue(equals);
+        }
+
+        [TestMethod]
+        public void NumberWithDecimal()
         {
             var attributes = new Dictionary<string, object>()
             {
@@ -49,6 +64,5 @@ namespace FlatGeobuf.Tests
             var equals = JToken.DeepEquals(expected, result);
             Assert.IsTrue(equals);
         }
-
     }
 }

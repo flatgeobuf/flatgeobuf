@@ -22,10 +22,11 @@ namespace FlatGeobuf.GeoJson
                 foreach (var key in columns.Keys) {
                     if (feature.Attributes.Exists(key)) {
                         var value = feature.Attributes[key];
-                        byteByffer.PutDouble(0, (double) value);
+                        var d = Convert.ToDouble(value);
+                        byteByffer.PutDouble(0, d);
                     }
                 }
-                FlatGeobuf.Feature.CreateValuesVector(builder, byteByffer.ToFullArray());
+                valuesOffset = FlatGeobuf.Feature.CreateValuesVector(builder, byteByffer.ToFullArray());
             }
 
             FlatGeobuf.Feature.StartFeature(builder);
@@ -46,8 +47,12 @@ namespace FlatGeobuf.GeoJson
             if (valuesArray != null) {
                 attributesTable = new AttributesTable();
                 var byteBuffer = new ByteBuffer(valuesArray);
+                // TODO: find type
                 var value = byteBuffer.GetDouble(0);
-                attributesTable.AddAttribute("test", 1.1);
+                if (value % 1 == 0)
+                    attributesTable.AddAttribute("test", (int) value);
+                else
+                    attributesTable.AddAttribute("test", value);
             }
 
             var geometry = Geometry.FromFlatbuf(feature.Geometry.Value);

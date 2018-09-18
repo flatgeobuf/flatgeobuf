@@ -53,7 +53,7 @@ namespace FlatGeobuf.GeoJson
             if (header.ColumnsLength > 0) {
                 columns = new Dictionary<string, ColumnType>();
                 for (int i = 0; i < header.ColumnsLength; i++) {
-                    var column = header.Columns(1).Value;
+                    var column = header.Columns(i).Value;
                     columns.Add(column.Name, column.Type);
                 }
             }
@@ -81,14 +81,10 @@ namespace FlatGeobuf.GeoJson
             var feature = fc.Features.First();
             VectorOffset? columnsOffset = null;
             if (columns != null) {
-                var names = columns
-                    .Select(p => builder.CreateString(p.Key))
+                var columnsArray = columns
+                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Key), c.Value))
                     .ToArray();
-                
-                var columnsArray = names
-                    .Select((n, i) => Column.CreateColumn(builder, n, columns[columns.Keys.ToArray()[i]]))
-                    .ToArray();
-                columnsOffset = Header.CreateColumnsVector(builder, columnsArray);
+                columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 
             Header.StartHeader(builder);
