@@ -40,7 +40,34 @@ public struct Column : IFlatbufferObject
   public static void AddType(FlatBufferBuilder builder, ColumnType type) { builder.AddByte(1, (byte)type, 0); }
   public static Offset<Column> EndColumn(FlatBufferBuilder builder) {
     int o = builder.EndObject();
+    builder.Required(o, 4);  // name
     return new Offset<Column>(o);
+  }
+
+  public static VectorOffset CreateSortedVectorOfColumn(FlatBufferBuilder builder, Offset<Column>[] offsets) {
+    Array.Sort(offsets, (Offset<Column> o1, Offset<Column> o2) => Table.CompareStrings(Table.__offset(4, o1.Value, builder.DataBuffer), Table.__offset(4, o2.Value, builder.DataBuffer), builder.DataBuffer));
+    return builder.CreateVectorOfTables(offsets);
+  }
+
+  public static Column? __lookup_by_key(int vectorLocation, string key, ByteBuffer bb) {
+    byte[] byteKey = System.Text.Encoding.UTF8.GetBytes(key);
+    int span = bb.GetInt(vectorLocation - 4);
+    int start = 0;
+    while (span != 0) {
+      int middle = span / 2;
+      int tableOffset = Table.__indirect(vectorLocation + 4 * (start + middle), bb);
+      int comp = Table.CompareStrings(Table.__offset(4, bb.Length - tableOffset, bb), byteKey, bb);
+      if (comp > 0) {
+        span = middle;
+      } else if (comp < 0) {
+        middle++;
+        start += middle;
+        span -= middle;
+      } else {
+        return new Column().__assign(tableOffset, bb);
+      }
+    }
+    return null;
   }
 };
 

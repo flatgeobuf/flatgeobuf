@@ -20,6 +20,7 @@ public struct Feature : IFlatbufferObject
   public Geometry? Geometry { get { int o = __p.__offset(4); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
   public Column? Columns(int j) { int o = __p.__offset(6); return o != 0 ? (Column?)(new Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ColumnsLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public Column? ColumnsByKey(string key) { int o = __p.__offset(6); return o != 0 ? Column.__lookup_by_key(__p.__vector(o), key, __p.bb) : null; }
   public uint ColumnsIndexes(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
   public int ColumnsIndexesLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T

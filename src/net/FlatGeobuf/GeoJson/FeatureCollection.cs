@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using NetTopologySuite.IO;
@@ -16,14 +17,23 @@ namespace FlatGeobuf.GeoJson
             if (fc.Features.Count == 0)
                 throw new ApplicationException("Empty feature collection is not allowed as input");
 
-            var header = BuildHeader(fc);
+            // TODO: make it optional to use first feature as column schema
+            var featureFirst = fc.Features.First();
+            Dictionary<string, ColumnType> columns = null;
+            if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
+            {
+                columns = featureFirst.Attributes.GetNames()
+                    .ToDictionary(n => n, n => ColumnType.INT);
+            }
+
+            var header = BuildHeader(fc, columns);
 
             var memoryStream = new MemoryStream();
             memoryStream.Write(header, 0, header.Length);
 
             foreach (var feature in fc.Features)
             {
-                var buffer = FlatGeobuf.GeoJson.Feature.ToByteBuffer(feature);
+                var buffer = FlatGeobuf.GeoJson.Feature.ToByteBuffer(feature, columns);
                 memoryStream.Write(buffer, 0, buffer.Length);
             }
             
@@ -39,13 +49,22 @@ namespace FlatGeobuf.GeoJson
             bb.Position = FlatBufferConstants.SizePrefixLength;
             var header = Header.GetRootAsHeader(bb);
 
+            IDictionary<string, ColumnType> columns = null;
+            if (header.ColumnsLength > 0) {
+                columns = new Dictionary<string, ColumnType>();
+                for (int i = 0; i < header.ColumnsLength; i++) {
+                    var column = header.Columns(i).Value;
+                    columns.Add(column.Name, column.Type);
+                }
+            }
+
             var count = header.FeaturesCount;
             bb.Position += headerLength;
 
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = Feature.FromByteBuffer(bb);
+                var feature = Feature.FromByteBuffer(bb, columns);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
@@ -55,17 +74,17 @@ namespace FlatGeobuf.GeoJson
             return geojson;
         }
 
-        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc) {
+        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, Dictionary<string, ColumnType> columns) {
             var builder = new FlatBufferBuilder(40);
 
-            // TODO: optionally use first feature as column schema
+            // TODO: make it optional to use first feature as column schema
             var feature = fc.Features.First();
             VectorOffset? columnsOffset = null;
-            if (feature.Attributes != null && feature.Attributes.Count > 0) {
-                var columns = feature.Attributes.GetNames()
-                    .Select(n => Column.CreateColumn(builder, builder.CreateString(n), ColumnType.STRING))
+            if (columns != null) {
+                var columnsArray = columns
+                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Key), c.Value))
                     .ToArray();
-                columnsOffset = Header.CreateColumnsVector(builder, columns);
+                columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 
             Header.StartHeader(builder);
