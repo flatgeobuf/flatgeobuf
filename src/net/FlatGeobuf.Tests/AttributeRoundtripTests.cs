@@ -1,6 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 
+using Json.Comparer.ValueConverters;
+using Json.Comparer;
+
 using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
@@ -42,12 +45,59 @@ namespace FlatGeobuf.Tests
             {
                 ["test"] = 1
             };
-
             var expected = MakeFeatureCollection(attributes);
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        [TestMethod]
+        public void NumberTwoAttribs()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = 1,
+                ["test2"] = 1
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        [TestMethod]
+        public void NumberFiveAttribs()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = 1,
+                ["test2"] = 1,
+                ["test3"] = 1,
+                ["test4"] = 1,
+                ["test5"] = 1
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+        
+        [TestMethod]
+        public void NumberTenAttribs()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = 1,
+                ["test2"] = 1,
+                ["test3"] = 1,
+                ["test4"] = 1,
+                ["test5"] = 1,
+                ["test6"] = 1,
+                ["test7"] = 1,
+                ["test8"] = 1,
+                ["test9"] = 1,
+                ["test10"] = 1
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
@@ -57,12 +107,15 @@ namespace FlatGeobuf.Tests
             {
                 ["test"] = 1.1
             };
-
             var expected = MakeFeatureCollection(attributes);
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        private void AssertJson(string expected, string actual) {
+            var compare = new JTokenComparer(new IndexArrayKeySelector());
+            var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
+            Assert.AreEqual(ComparisonResult.Identical, result.ComparrisonResult);
         }
     }
 }

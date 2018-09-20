@@ -23,7 +23,7 @@ namespace FlatGeobuf.GeoJson
             if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
             {
                 columns = featureFirst.Attributes.GetNames()
-                    .ToDictionary(n => n, n => ColumnType.INT);
+                    .ToDictionary(n => n, n => ToColumnType(featureFirst.Attributes.GetType(n)));
             }
 
             var header = BuildHeader(fc, columns);
@@ -38,6 +38,15 @@ namespace FlatGeobuf.GeoJson
             }
             
             return memoryStream.ToArray();
+        }
+
+        private static ColumnType ToColumnType(Type type) {
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Int32: return ColumnType.INT;
+                case TypeCode.Int64: return ColumnType.LONG;
+                case TypeCode.Double: return ColumnType.DOUBLE;
+                default: throw new ApplicationException("Unknown type");
+            }
         }
 
         public static string FromFlatGeobuf(byte[] bytes) {
@@ -75,7 +84,7 @@ namespace FlatGeobuf.GeoJson
         }
 
         private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, Dictionary<string, ColumnType> columns) {
-            var builder = new FlatBufferBuilder(40);
+            var builder = new FlatBufferBuilder(1024);
 
             // TODO: make it optional to use first feature as column schema
             var feature = fc.Features.First();

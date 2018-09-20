@@ -1,4 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Json.Comparer.ValueConverters;
+using Json.Comparer;
 
 using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
@@ -34,130 +36,110 @@ namespace FlatGeobuf.Tests
         public void Point()
         {
             var expected = MakeFeatureCollection("POINT(1.2 -2.1)");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void Points()
         {
             var expected = MakeFeatureCollection(new string[] { "POINT(1.2 -2.1)", "POINT(2.4 -4.8)" });
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPoint()
         {
             var expected = MakeFeatureCollection("MULTIPOINT(10 40, 40 30, 20 20, 30 10)");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPointAlternativeSyntax()
         {
             var expected = MakeFeatureCollection("MULTIPOINT((10 40), (40 30), (20 20), (30 10))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void LineString()
         {
             var expected = MakeFeatureCollection("LINESTRING(1.2 -2.1, 2.4 -4.8)");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiLineString()
         {
             var expected = MakeFeatureCollection("MULTILINESTRING((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiLineStringSinglePart()
         {
             var expected = MakeFeatureCollection("MULTILINESTRING((1.2 -2.1, 2.4 -4.8))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void Polygon()
         {
             var expected = MakeFeatureCollection("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPolygon()
         {
             var expected = MakeFeatureCollection("MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPolygonWithHole()
         {
             var expected = MakeFeatureCollection("MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPolygonSinglePart()
         {
             var expected = MakeFeatureCollection("MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void MultiPolygonSinglePartWithHole()
         {
             var expected = MakeFeatureCollection("MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30)))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
         }
 
         [TestMethod]
         public void PolygonWithHole()
         {
             var expected = MakeFeatureCollection("POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))");
-            var bytes = Api.FromGeoJson(expected);
-            var result = Api.ToGeoJson(bytes);
-            var equals = JToken.DeepEquals(expected, result);
-            Assert.IsTrue(equals);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        private void AssertJson(string expected, string actual) {
+            var compare = new JTokenComparer(new IndexArrayKeySelector());
+            var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
+            Assert.AreEqual(ComparisonResult.Identical, result.ComparrisonResult);
         }
     }
 }
