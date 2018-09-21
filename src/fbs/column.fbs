@@ -1,19 +1,19 @@
 namespace FlatGeobuf;
 
 enum ColumnType:ubyte {
-  BYTE,
-  UBYTE,
-  BOOL,
-  SHORT,
-  USHOT,
-  INT,
-  UINT,
-  FLOAT,
-  LONG,
-  ULONG,
-  DOUBLE,
-  STRING,
-  JSON
+  Byte,
+  UByte,
+  Bool,
+  Short,
+  UShort,
+  Int,
+  UInt,
+  Long,
+  ULong,
+  Float,
+  Double,
+  String,
+  Json
 }
 
 table Column {

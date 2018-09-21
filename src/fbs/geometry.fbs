@@ -11,13 +11,10 @@ enum GeometryType:ubyte {
 }
 
 table Geometry {
-  type: GeometryType;
   types: [GeometryType];
-  dimensions: ubyte = 2;
-  envelope: [double];
-  lengths: [uint];
-  ring_lengths: [uint];
-  ring_counts: [uint];
+  ring_counts: [uint]; // ring count per part in collection of Polygons
+  ring_lengths: [uint]; // ring lengths
+  lengths: [uint]; // coordinate lengths
   coords: [double] (required);
 }
 

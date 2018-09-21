@@ -5,14 +5,21 @@ include "feature.fbs";
 namespace FlatGeobuf;
 
 table Header {
+  name: string;
+  envelope: [double];
+  layers: [Layer];
+  index_node_size: uint = 640; // 16 items * 40 bytes per item
+  index_nodes_count: uint;
+  features_size: ulong;
+  features_count: ulong;
+}
+
+table Layer {
+  name: string;
   envelope: [double];
   geometry_type: GeometryType;
   dimensions: ubyte = 2;
   columns: [Column];
-  index_node_size: uint = 640; // 16 items * 40 bytes per item
-  index_nodes_count: uint = 1; 
-  features_size: ulong;
-  features_count: ulong = 1;
 }
 
 root_type Header;

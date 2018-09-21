@@ -4,15 +4,28 @@ include "column.fbs";
 namespace FlatGeobuf;
 
 table Feature {
+  string_id: string;
+  ulong_id: ulong = 18446744073709551615;
+  layer: uint = 4294967295;
   geometry: Geometry;
-  columns: [Column];
-  columns_indexes: [uint];
-  values_lengths: [uint];
-  values: [ubyte];
+  values: [Value];
 }
 
 table Value {
-  data: [ubyte];
+  column_index: ushort;
+  byte_value: byte;
+  ubyte_value: byte;
+  bool_value: bool;
+  short_value: short;
+  ushort_value: ushort;
+  int_value: int;
+  uint_value: uint;
+  long_value: long;
+  ulong_value: ulong;
+  float_value: float;
+  double_value: double;
+  string_value: string;
+  json_value: string;
 }
 
 root_type Feature;

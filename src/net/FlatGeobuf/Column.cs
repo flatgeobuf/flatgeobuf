@@ -24,11 +24,11 @@ public struct Column : IFlatbufferObject
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(4); }
 #endif
   public byte[] GetNameArray() { return __p.__vector_as_array<byte>(4); }
-  public ColumnType Type { get { int o = __p.__offset(6); return o != 0 ? (ColumnType)__p.bb.Get(o + __p.bb_pos) : ColumnType.BYTE; } }
+  public ColumnType Type { get { int o = __p.__offset(6); return o != 0 ? (ColumnType)__p.bb.Get(o + __p.bb_pos) : ColumnType.Byte; } }
 
   public static Offset<Column> CreateColumn(FlatBufferBuilder builder,
       StringOffset nameOffset = default(StringOffset),
-      ColumnType type = ColumnType.BYTE) {
+      ColumnType type = ColumnType.Byte) {
     builder.StartObject(2);
     Column.AddName(builder, nameOffset);
     Column.AddType(builder, type);

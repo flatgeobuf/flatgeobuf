@@ -17,27 +17,81 @@ public struct Value : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public Value __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public byte Data(int j) { int o = __p.__offset(4); return o != 0 ? __p.bb.Get(__p.__vector(o) + j * 1) : (byte)0; }
-  public int DataLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public ushort ColumnIndex { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)0; } }
+  public sbyte ByteValue { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetSbyte(o + __p.bb_pos) : (sbyte)0; } }
+  public sbyte UbyteValue { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetSbyte(o + __p.bb_pos) : (sbyte)0; } }
+  public bool BoolValue { get { int o = __p.__offset(10); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
+  public short ShortValue { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetShort(o + __p.bb_pos) : (short)0; } }
+  public ushort UshortValue { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)0; } }
+  public int IntValue { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public uint UintValue { get { int o = __p.__offset(18); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)0; } }
+  public long LongValue { get { int o = __p.__offset(20); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
+  public ulong UlongValue { get { int o = __p.__offset(22); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
+  public float FloatValue { get { int o = __p.__offset(24); return o != 0 ? __p.bb.GetFloat(o + __p.bb_pos) : (float)0.0f; } }
+  public double DoubleValue { get { int o = __p.__offset(26); return o != 0 ? __p.bb.GetDouble(o + __p.bb_pos) : (double)0.0; } }
+  public string StringValue { get { int o = __p.__offset(28); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetDataBytes() { return __p.__vector_as_span(4); }
+  public Span<byte> GetStringValueBytes() { return __p.__vector_as_span(28); }
 #else
-  public ArraySegment<byte>? GetDataBytes() { return __p.__vector_as_arraysegment(4); }
+  public ArraySegment<byte>? GetStringValueBytes() { return __p.__vector_as_arraysegment(28); }
 #endif
-  public byte[] GetDataArray() { return __p.__vector_as_array<byte>(4); }
+  public byte[] GetStringValueArray() { return __p.__vector_as_array<byte>(28); }
+  public string JsonValue { get { int o = __p.__offset(30); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetJsonValueBytes() { return __p.__vector_as_span(30); }
+#else
+  public ArraySegment<byte>? GetJsonValueBytes() { return __p.__vector_as_arraysegment(30); }
+#endif
+  public byte[] GetJsonValueArray() { return __p.__vector_as_array<byte>(30); }
 
   public static Offset<Value> CreateValue(FlatBufferBuilder builder,
-      VectorOffset dataOffset = default(VectorOffset)) {
-    builder.StartObject(1);
-    Value.AddData(builder, dataOffset);
+      ushort column_index = 0,
+      sbyte byte_value = 0,
+      sbyte ubyte_value = 0,
+      bool bool_value = false,
+      short short_value = 0,
+      ushort ushort_value = 0,
+      int int_value = 0,
+      uint uint_value = 0,
+      long long_value = 0,
+      ulong ulong_value = 0,
+      float float_value = 0.0f,
+      double double_value = 0.0,
+      StringOffset string_valueOffset = default(StringOffset),
+      StringOffset json_valueOffset = default(StringOffset)) {
+    builder.StartObject(14);
+    Value.AddDoubleValue(builder, double_value);
+    Value.AddUlongValue(builder, ulong_value);
+    Value.AddLongValue(builder, long_value);
+    Value.AddJsonValue(builder, json_valueOffset);
+    Value.AddStringValue(builder, string_valueOffset);
+    Value.AddFloatValue(builder, float_value);
+    Value.AddUintValue(builder, uint_value);
+    Value.AddIntValue(builder, int_value);
+    Value.AddUshortValue(builder, ushort_value);
+    Value.AddShortValue(builder, short_value);
+    Value.AddColumnIndex(builder, column_index);
+    Value.AddBoolValue(builder, bool_value);
+    Value.AddUbyteValue(builder, ubyte_value);
+    Value.AddByteValue(builder, byte_value);
     return Value.EndValue(builder);
   }
 
-  public static void StartValue(FlatBufferBuilder builder) { builder.StartObject(1); }
-  public static void AddData(FlatBufferBuilder builder, VectorOffset dataOffset) { builder.AddOffset(0, dataOffset.Value, 0); }
-  public static VectorOffset CreateDataVector(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte(data[i]); return builder.EndVector(); }
-  public static VectorOffset CreateDataVectorBlock(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
-  public static void StartDataVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
+  public static void StartValue(FlatBufferBuilder builder) { builder.StartObject(14); }
+  public static void AddColumnIndex(FlatBufferBuilder builder, ushort columnIndex) { builder.AddUshort(0, columnIndex, 0); }
+  public static void AddByteValue(FlatBufferBuilder builder, sbyte byteValue) { builder.AddSbyte(1, byteValue, 0); }
+  public static void AddUbyteValue(FlatBufferBuilder builder, sbyte ubyteValue) { builder.AddSbyte(2, ubyteValue, 0); }
+  public static void AddBoolValue(FlatBufferBuilder builder, bool boolValue) { builder.AddBool(3, boolValue, false); }
+  public static void AddShortValue(FlatBufferBuilder builder, short shortValue) { builder.AddShort(4, shortValue, 0); }
+  public static void AddUshortValue(FlatBufferBuilder builder, ushort ushortValue) { builder.AddUshort(5, ushortValue, 0); }
+  public static void AddIntValue(FlatBufferBuilder builder, int intValue) { builder.AddInt(6, intValue, 0); }
+  public static void AddUintValue(FlatBufferBuilder builder, uint uintValue) { builder.AddUint(7, uintValue, 0); }
+  public static void AddLongValue(FlatBufferBuilder builder, long longValue) { builder.AddLong(8, longValue, 0); }
+  public static void AddUlongValue(FlatBufferBuilder builder, ulong ulongValue) { builder.AddUlong(9, ulongValue, 0); }
+  public static void AddFloatValue(FlatBufferBuilder builder, float floatValue) { builder.AddFloat(10, floatValue, 0.0f); }
+  public static void AddDoubleValue(FlatBufferBuilder builder, double doubleValue) { builder.AddDouble(11, doubleValue, 0.0); }
+  public static void AddStringValue(FlatBufferBuilder builder, StringOffset stringValueOffset) { builder.AddOffset(12, stringValueOffset.Value, 0); }
+  public static void AddJsonValue(FlatBufferBuilder builder, StringOffset jsonValueOffset) { builder.AddOffset(13, jsonValueOffset.Value, 0); }
   public static Offset<Value> EndValue(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Value>(o);
