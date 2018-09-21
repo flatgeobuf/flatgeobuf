@@ -1,7 +1,4 @@
-﻿using System;
-
-using FlatBuffers;
-using FlatGeobuf.GeoJson;
+﻿using FlatGeobuf.GeoJson;
 
 namespace FlatGeobuf
 {

@@ -1,11 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Json.Comparer.ValueConverters;
 using Json.Comparer;
 
 using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
-using FlatGeobuf;
 
 namespace FlatGeobuf.Tests
 {

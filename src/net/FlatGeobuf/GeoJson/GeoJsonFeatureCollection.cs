@@ -5,7 +5,6 @@ using System.IO;
 using NetTopologySuite.IO;
 
 using FlatBuffers;
-using FlatGeobuf;
 
 namespace FlatGeobuf.GeoJson
 {
