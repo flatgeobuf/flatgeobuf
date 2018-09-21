@@ -112,6 +112,45 @@ namespace FlatGeobuf.Tests
             AssertJson(expected, actual);
         }
 
+        [TestMethod]
+        public void Boolean()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = true
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        [TestMethod]
+        public void String()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = "test"
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
+        [TestMethod]
+        public void Mixed()
+        {
+            var attributes = new Dictionary<string, object>()
+            {
+                ["test"] = 1,
+                ["test"] = 1.1,
+                ["test"] = "test",
+                ["test"] = true
+            };
+            var expected = MakeFeatureCollection(attributes);
+            var actual = Api.ToGeoJson(Api.FromGeoJson(expected));
+            AssertJson(expected, actual);
+        }
+
         private void AssertJson(string expected, string actual) {
             var compare = new JTokenComparer(new IndexArrayKeySelector());
             var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));

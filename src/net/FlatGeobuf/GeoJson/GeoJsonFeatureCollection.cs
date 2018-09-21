@@ -49,9 +49,13 @@ namespace FlatGeobuf.GeoJson
 
         private static ColumnType ToColumnType(Type type) {
             switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return ColumnType.UByte;
+                case TypeCode.SByte: return ColumnType.Byte;
+                case TypeCode.Boolean: return ColumnType.Bool;
                 case TypeCode.Int32: return ColumnType.Int;
                 case TypeCode.Int64: return ColumnType.Long;
                 case TypeCode.Double: return ColumnType.Double;
+                case TypeCode.String: return ColumnType.String;
                 default: throw new ApplicationException("Unknown type");
             }
         }

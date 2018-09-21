@@ -21,6 +21,9 @@ namespace FlatGeobuf.GeoJson
                         ushort columnIndex = (ushort) columns.IndexOf(column);
                         var value = feature.Attributes[column.Name];
                         switch(value) {
+                            case bool v:
+                                valueOffsets.Add(Value.CreateValue(builder, columnIndex, bool_value: v));
+                                break;
                             case int v:
                                 valueOffsets.Add(Value.CreateValue(builder, columnIndex, int_value: v));
                                 break;
@@ -29,6 +32,9 @@ namespace FlatGeobuf.GeoJson
                                 break;
                             case double v:
                                 valueOffsets.Add(Value.CreateValue(builder, columnIndex, double_value: v));
+                                break;
+                            case string v:
+                                valueOffsets.Add(Value.CreateValue(builder, columnIndex, string_valueOffset: builder.CreateString(v)));
                                 break;
                             default: throw new ApplicationException("Unknown type");
                         }
@@ -76,6 +82,9 @@ namespace FlatGeobuf.GeoJson
                 var value = feature.Values(i).Value;
                 var column = columns[value.ColumnIndex];
                 switch (column.Type) {
+                    case ColumnType.Bool:
+                        attributesTable.AddAttribute(column.Name, value.BoolValue);
+                        break;
                     case ColumnType.Int:
                         attributesTable.AddAttribute(column.Name, value.IntValue);
                         break;
@@ -84,6 +93,9 @@ namespace FlatGeobuf.GeoJson
                         break;
                     case ColumnType.Double:
                         attributesTable.AddAttribute(column.Name, value.DoubleValue);
+                        break;
+                    case ColumnType.String:
+                        attributesTable.AddAttribute(column.Name, value.StringValue);
                         break;
                     default: throw new ApplicationException("Unknown type");
                 }
