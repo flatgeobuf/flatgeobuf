@@ -9,13 +9,13 @@ namespace FlatGeobuf
     {
         public static byte[] FromGeoJson(string geojson)
         {
-            var bytes = FeatureCollection.ToFlatGeobuf(geojson);
+            var bytes = GeoJsonFeatureCollection.ToFlatGeobuf(geojson);
             return bytes;
         }
 
         public static string ToGeoJson(byte[] bytes)
         {
-            var geojson = FeatureCollection.FromFlatGeobuf(bytes);
+            var geojson = GeoJsonFeatureCollection.FromFlatGeobuf(bytes);
             return geojson;
         }
     }

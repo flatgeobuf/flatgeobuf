@@ -1,19 +1,16 @@
 using System;
 using System.Collections.Generic;
-
-using NetTopologySuite.IO;
 using NetTopologySuite.Features;
-
 using FlatBuffers;
-using FlatGeobuf;
 
 namespace FlatGeobuf.GeoJson
 {
-    public static class Feature {
+    public static class GeoJsonFeature {
         public static byte[] ToByteBuffer(IFeature feature, IList<ColumnMeta> columns) {
+            // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
-            var geometryOffset = Geometry.BuildGeometry(builder, feature.Geometry);
+            var geometryOffset = GeoJsonGeometry.BuildGeometry(builder, feature.Geometry);
             
             VectorOffset? valuesOffset = null;
             if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null) {
@@ -24,27 +21,27 @@ namespace FlatGeobuf.GeoJson
                         ushort columnIndex = (ushort) columns.IndexOf(column);
                         var value = feature.Attributes[column.Name];
                         switch(value) {
-                            case System.Int32 v:
-                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, int_value: v));
+                            case int v:
+                                valueOffsets.Add(Value.CreateValue(builder, columnIndex, int_value: v));
                                 break;
-                            case System.Int64 v:
-                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, long_value: v));
+                            case long v:
+                                valueOffsets.Add(Value.CreateValue(builder, columnIndex, long_value: v));
                                 break;
-                            case System.Double v:
-                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, double_value: v));
+                            case double v:
+                                valueOffsets.Add(Value.CreateValue(builder, columnIndex, double_value: v));
                                 break;
                             default: throw new ApplicationException("Unknown type");
                         }
                     }
                 }
-                valuesOffset = FlatGeobuf.Feature.CreateValuesVector(builder, valueOffsets.ToArray());
+                valuesOffset = Feature.CreateValuesVector(builder, valueOffsets.ToArray());
             }
 
-            FlatGeobuf.Feature.StartFeature(builder);
-            FlatGeobuf.Feature.AddGeometry(builder, geometryOffset);
+            Feature.StartFeature(builder);
+            Feature.AddGeometry(builder, geometryOffset);
             if (valuesOffset.HasValue)
-                FlatGeobuf.Feature.AddValues(builder, valuesOffset.Value);
-            var offset = FlatGeobuf.Feature.EndFeature(builder);
+                Feature.AddValues(builder, valuesOffset.Value);
+            var offset = Feature.EndFeature(builder);
 
             builder.FinishSizePrefixed(offset.Value);
 
@@ -68,7 +65,7 @@ namespace FlatGeobuf.GeoJson
                 }
             }
 
-            var feature = FlatGeobuf.Feature.GetRootAsFeature(bb);
+            var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
 
             if (feature.ValuesLength > 0)
@@ -79,19 +76,20 @@ namespace FlatGeobuf.GeoJson
                 var value = feature.Values(i).Value;
                 var column = columns[value.ColumnIndex];
                 switch (column.Type) {
-                    case FlatGeobuf.ColumnType.Int:
+                    case ColumnType.Int:
                         attributesTable.AddAttribute(column.Name, value.IntValue);
                         break;
-                    case FlatGeobuf.ColumnType.Long:
+                    case ColumnType.Long:
                         attributesTable.AddAttribute(column.Name, value.LongValue);
                         break;
-                    case FlatGeobuf.ColumnType.Double:
+                    case ColumnType.Double:
                         attributesTable.AddAttribute(column.Name, value.DoubleValue);
                         break;
+                    default: throw new ApplicationException("Unknown type");
                 }
             }
 
-            var geometry = Geometry.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
+            var geometry = GeoJsonGeometry.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }

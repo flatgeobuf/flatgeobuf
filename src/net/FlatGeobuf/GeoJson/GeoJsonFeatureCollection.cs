@@ -15,7 +15,7 @@ namespace FlatGeobuf.GeoJson
         public ColumnType Type { get; set; }
     }
 
-    public static class FeatureCollection {
+    public static class GeoJsonFeatureCollection {
         public static byte[] ToFlatGeobuf(string geojson) {
             var reader = new GeoJsonReader();
             var fc = reader.Read<NetTopologySuite.Features.FeatureCollection>(geojson);
@@ -40,7 +40,7 @@ namespace FlatGeobuf.GeoJson
 
             foreach (var feature in fc.Features)
             {
-                var buffer = FlatGeobuf.GeoJson.Feature.ToByteBuffer(feature, columns);
+                var buffer = GeoJsonFeature.ToByteBuffer(feature, columns);
                 memoryStream.Write(buffer, 0, buffer.Length);
             }
             
@@ -59,7 +59,7 @@ namespace FlatGeobuf.GeoJson
         public static string FromFlatGeobuf(byte[] bytes) {
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
-            var bb = new FlatBuffers.ByteBuffer(bytes);
+            var bb = new ByteBuffer(bytes);
             
             var headerLength = ByteBufferUtil.GetSizePrefix(bb);
             bb.Position = FlatBufferConstants.SizePrefixLength;
@@ -71,7 +71,7 @@ namespace FlatGeobuf.GeoJson
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = Feature.FromByteBuffer(bb, header);
+                var feature = GeoJsonFeature.FromByteBuffer(bb, header);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
@@ -82,6 +82,7 @@ namespace FlatGeobuf.GeoJson
         }
 
         private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns) {
+            // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
             // TODO: make it optional to use first feature as column schema
@@ -97,7 +98,7 @@ namespace FlatGeobuf.GeoJson
             Layer.StartLayer(builder);
             if (columnsOffset.HasValue)
                 Layer.AddColumns(builder, columnsOffset.Value);
-            Layer.AddGeometryType(builder, Geometry.ToGeometryType(feature.Geometry));
+            Layer.AddGeometryType(builder, GeoJsonGeometry.ToGeometryType(feature.Geometry));
             var layerOffset = Layer.EndLayer(builder);
             var layerOffsets = new[] { layerOffset };
             var layersOffset = Header.CreateLayersVector(builder, layerOffsets);

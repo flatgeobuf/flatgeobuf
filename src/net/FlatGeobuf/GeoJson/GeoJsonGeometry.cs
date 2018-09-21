@@ -2,22 +2,16 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-using NetTopologySuite.IO;
-using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
 using GeoAPI.Geometries;
 
 using FlatBuffers;
-using FlatGeobuf;
-
-using static FlatGeobuf.Geometry;
-using static FlatGeobuf.GeometryType;
 
 namespace FlatGeobuf.GeoJson
 {
-    public static class Geometry {
-        public static Offset<FlatGeobuf.Geometry> BuildGeometry(FlatBufferBuilder builder, IGeometry geometry)
+    public static class GeoJsonGeometry {
+        public static Offset<Geometry> BuildGeometry(FlatBufferBuilder builder, IGeometry geometry)
         {
             // TODO: introspect?
             uint dimensions = 2;
@@ -25,22 +19,22 @@ namespace FlatGeobuf.GeoJson
             var coordinates = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y })
                 .ToArray();
-            var coordsOffset = CreateCoordsVector(builder, coordinates);
+            var coordsOffset = Geometry.CreateCoordsVector(builder, coordinates);
 
             var types = CreateTypes(geometry, dimensions);
             VectorOffset? typesOffset = null;
             if (types != null)
-                typesOffset = CreateTypesVector(builder, types.ToArray());
+                typesOffset = Geometry.CreateTypesVector(builder, types.ToArray());
             
             var lengths = CreateLengths(geometry, dimensions);
             VectorOffset? lengthsOffset = null;
             if (lengths != null)
-                lengthsOffset = CreateLengthsVector(builder, lengths.ToArray());
+                lengthsOffset = Geometry.CreateLengthsVector(builder, lengths.ToArray());
 
             var ringLengths = CreateRingLengths(geometry, dimensions);
             VectorOffset? ringLengthsOffset = null;
             if (ringLengths != null)
-                ringLengthsOffset = CreateRingLengthsVector(builder, ringLengths.ToArray());
+                ringLengthsOffset = Geometry.CreateRingLengthsVector(builder, ringLengths.ToArray());
             
             VectorOffset? ringCountsOffset = null;
             if (geometry is IGeometryCollection && geometry.NumGeometries > 1 &&
@@ -51,21 +45,21 @@ namespace FlatGeobuf.GeoJson
                     .Where(g => g is IPolygon)
                     .Select(g => g as IPolygon)
                     .Select(p => (uint) p.InteriorRings.Length + 1);
-                ringCountsOffset = CreateRingCountsVector(builder, ringCounts.ToArray());
+                ringCountsOffset = Geometry.CreateRingCountsVector(builder, ringCounts.ToArray());
             }
 
-            StartGeometry(builder);
-            if (typesOffset.HasValue) 
-                AddTypes(builder, typesOffset.Value);
+            Geometry.StartGeometry(builder);
+            if (typesOffset.HasValue)
+                Geometry.AddTypes(builder, typesOffset.Value);
             if (lengthsOffset.HasValue)
-                AddLengths(builder, lengthsOffset.Value);
+                Geometry.AddLengths(builder, lengthsOffset.Value);
             if (ringLengthsOffset.HasValue)
-                AddRingLengths(builder, ringLengthsOffset.Value);
+                Geometry.AddRingLengths(builder, ringLengthsOffset.Value);
             if (ringCountsOffset.HasValue)
-                AddRingCounts(builder, ringCountsOffset.Value);
-            
-            AddCoords(builder, coordsOffset);
-            var offset = EndGeometry(builder);
+                Geometry.AddRingCounts(builder, ringCountsOffset.Value);
+
+            Geometry.AddCoords(builder, coordsOffset);
+            var offset = Geometry.EndGeometry(builder);
 
             return offset;
         }
@@ -116,7 +110,7 @@ namespace FlatGeobuf.GeoJson
             return null;
         }
 
-        static IEnumerable<FlatGeobuf.GeometryType> CreateTypes(IGeometry geometry, uint dimensions)
+        static IEnumerable<GeometryType> CreateTypes(IGeometry geometry, uint dimensions)
         {
             if (geometry.OgcGeometryType == OgcGeometryType.GeometryCollection)
             {
@@ -220,7 +214,7 @@ namespace FlatGeobuf.GeoJson
             return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
-        public static IGeometry FromFlatbuf(FlatGeobuf.Geometry flatbufGeometry, FlatGeobuf.GeometryType type, byte dimensions) {
+        public static IGeometry FromFlatbuf(Geometry flatbufGeometry, GeometryType type, byte dimensions) {
             var coords = flatbufGeometry.GetCoordsArray();
             var lengths = flatbufGeometry.GetLengthsArray();
             var ringLengths = flatbufGeometry.GetRingLengthsArray();
@@ -258,7 +252,7 @@ namespace FlatGeobuf.GeoJson
             }
         }
 
-        public static FlatGeobuf.GeometryType ToGeometryType(IGeometry geometry)
+        public static GeometryType ToGeometryType(IGeometry geometry)
         {
             switch(geometry)
             {
