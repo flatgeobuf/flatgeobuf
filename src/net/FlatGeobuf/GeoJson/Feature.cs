@@ -10,41 +10,34 @@ using FlatGeobuf;
 namespace FlatGeobuf.GeoJson
 {
     public static class Feature {
-        public static byte[] ToByteBuffer(IFeature feature, Dictionary<string, ColumnType> columns) {
+        public static byte[] ToByteBuffer(IFeature feature, IList<ColumnMeta> columns) {
             var builder = new FlatBufferBuilder(1024);
 
             var geometryOffset = Geometry.BuildGeometry(builder, feature.Geometry);
-
-            //VectorOffset? valuesLengthsOffset = null;
+            
             VectorOffset? valuesOffset = null;
-            if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null) {                
-                var byteBuffer = new FlatBuffers.ByteBuffer(1024);
-                
-                var offset2 = 0;
-                foreach (var key in columns.Keys) {
-                    if (feature.Attributes.Exists(key)) {
-                        var value = feature.Attributes[key];
+            if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null) {
+                var valueOffsets = new List<Offset<Value>>();
+
+                foreach (var column in columns) {
+                    if (feature.Attributes.Exists(column.Name)) {
+                        ushort columnIndex = (ushort) columns.IndexOf(column);
+                        var value = feature.Attributes[column.Name];
                         switch(value) {
-                            case System.Int32 v: {
-                                byteBuffer.PutInt(offset2, v);
-                                offset2 += 4;
+                            case System.Int32 v:
+                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, int_value: v));
                                 break;
-                            }
-                            case System.Int64 v: {
-                                byteBuffer.PutLong(offset2, v);
-                                offset2 += 8;
+                            case System.Int64 v:
+                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, long_value: v));
                                 break;
-                            }
-                            case System.Double v: {
-                                byteBuffer.PutDouble(offset2, v);
-                                offset2 += 8;
+                            case System.Double v:
+                                valueOffsets.Add(FlatGeobuf.Value.CreateValue(builder, columnIndex, double_value: v));
                                 break;
-                            }
                             default: throw new ApplicationException("Unknown type");
                         }
                     }
                 }
-                valuesOffset = FlatGeobuf.Feature.CreateValuesVector(builder, byteBuffer.ToFullArray());
+                valuesOffset = FlatGeobuf.Feature.CreateValuesVector(builder, valueOffsets.ToArray());
             }
 
             FlatGeobuf.Feature.StartFeature(builder);
@@ -55,44 +48,50 @@ namespace FlatGeobuf.GeoJson
 
             builder.FinishSizePrefixed(offset.Value);
 
-            return builder.DataBuffer.ToSizedArray();
+            var bytes = builder.DataBuffer.ToSizedArray();
+
+            return bytes;
         }
 
-        public static IFeature FromByteBuffer(ByteBuffer bb, IDictionary<string, ColumnType> columns) {
-            var feature = FlatGeobuf.Feature.GetRootAsFeature(bb);
-            var valuesArray = feature.GetValuesArray();
-            IAttributesTable attributesTable = null;
-            if (valuesArray != null) {
-                attributesTable = new AttributesTable();
-                var byteBuffer = new ByteBuffer(valuesArray);
+        public static IFeature FromByteBuffer(ByteBuffer bb, Header header) {
+            // TODO: introspect which layer
+            var layer = header.Layers(0).Value;
 
-                var offset = 0;
-                foreach (var column in columns)
+            IList<Column> columns = null;
+            if (layer.ColumnsLength > 0)
+            {
+                columns = new List<Column>();
+                for (int i = 0; i < layer.ColumnsLength; i++)
                 {
-                    switch (column.Value) {
-                        case FlatGeobuf.ColumnType.INT: {
-                            var v = byteBuffer.GetInt(offset);
-                            attributesTable.AddAttribute(column.Key, v);
-                            offset += 4;
-                            break;
-                        }
-                        case FlatGeobuf.ColumnType.LONG: {
-                            var v = byteBuffer.GetLong(offset);
-                            attributesTable.AddAttribute(column.Key, v);
-                            offset += 8;
-                            break;
-                        }
-                        case FlatGeobuf.ColumnType.DOUBLE: {
-                            var v = byteBuffer.GetDouble(offset);
-                            attributesTable.AddAttribute(column.Key, v);
-                            offset += 8;
-                            break;
-                        }
-                    }
+                    var column = layer.Columns(i).Value;
+                    columns.Add(column);
                 }
             }
 
-            var geometry = Geometry.FromFlatbuf(feature.Geometry.Value);
+            var feature = FlatGeobuf.Feature.GetRootAsFeature(bb);
+            IAttributesTable attributesTable = null;
+
+            if (feature.ValuesLength > 0)
+                attributesTable = new AttributesTable();
+
+            for (int i = 0; i < feature.ValuesLength; i++)
+            {
+                var value = feature.Values(i).Value;
+                var column = columns[value.ColumnIndex];
+                switch (column.Type) {
+                    case FlatGeobuf.ColumnType.Int:
+                        attributesTable.AddAttribute(column.Name, value.IntValue);
+                        break;
+                    case FlatGeobuf.ColumnType.Long:
+                        attributesTable.AddAttribute(column.Name, value.LongValue);
+                        break;
+                    case FlatGeobuf.ColumnType.Double:
+                        attributesTable.AddAttribute(column.Name, value.DoubleValue);
+                        break;
+                }
+            }
+
+            var geometry = Geometry.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }

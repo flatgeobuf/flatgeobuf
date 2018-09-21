@@ -55,7 +55,6 @@ namespace FlatGeobuf.GeoJson
             }
 
             StartGeometry(builder);
-            AddType(builder, ConvertType(geometry));
             if (typesOffset.HasValue) 
                 AddTypes(builder, typesOffset.Value);
             if (lengthsOffset.HasValue)
@@ -123,7 +122,7 @@ namespace FlatGeobuf.GeoJson
             {
                 var gc = geometry as IGeometryCollection;
                 var types = gc.Geometries
-                    .Select(g => ConvertType(g));
+                    .Select(g => ToGeometryType(g));
                 return types;
             }
             return null;
@@ -221,9 +220,7 @@ namespace FlatGeobuf.GeoJson
             return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
-        public static IGeometry FromFlatbuf(FlatGeobuf.Geometry flatbufGeometry) {
-            var type = flatbufGeometry.Type;
-            var dimensions = flatbufGeometry.Dimensions;
+        public static IGeometry FromFlatbuf(FlatGeobuf.Geometry flatbufGeometry, FlatGeobuf.GeometryType type, byte dimensions) {
             var coords = flatbufGeometry.GetCoordsArray();
             var lengths = flatbufGeometry.GetLengthsArray();
             var ringLengths = flatbufGeometry.GetRingLengthsArray();
@@ -261,7 +258,7 @@ namespace FlatGeobuf.GeoJson
             }
         }
 
-        static FlatGeobuf.GeometryType ConvertType(IGeometry geometry)
+        public static FlatGeobuf.GeometryType ToGeometryType(IGeometry geometry)
         {
             switch(geometry)
             {

@@ -9,6 +9,12 @@ using FlatGeobuf;
 
 namespace FlatGeobuf.GeoJson
 {
+    public class ColumnMeta
+    {
+        public string Name { get; set; }
+        public ColumnType Type { get; set; }
+    }
+
     public static class FeatureCollection {
         public static byte[] ToFlatGeobuf(string geojson) {
             var reader = new GeoJsonReader();
@@ -19,11 +25,12 @@ namespace FlatGeobuf.GeoJson
 
             // TODO: make it optional to use first feature as column schema
             var featureFirst = fc.Features.First();
-            Dictionary<string, ColumnType> columns = null;
+            IList<ColumnMeta> columns = null;
             if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
             {
                 columns = featureFirst.Attributes.GetNames()
-                    .ToDictionary(n => n, n => ToColumnType(featureFirst.Attributes.GetType(n)));
+                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                    .ToList();
             }
 
             var header = BuildHeader(fc, columns);
@@ -42,9 +49,9 @@ namespace FlatGeobuf.GeoJson
 
         private static ColumnType ToColumnType(Type type) {
             switch (Type.GetTypeCode(type)) {
-                case TypeCode.Int32: return ColumnType.INT;
-                case TypeCode.Int64: return ColumnType.LONG;
-                case TypeCode.Double: return ColumnType.DOUBLE;
+                case TypeCode.Int32: return ColumnType.Int;
+                case TypeCode.Int64: return ColumnType.Long;
+                case TypeCode.Double: return ColumnType.Double;
                 default: throw new ApplicationException("Unknown type");
             }
         }
@@ -57,23 +64,14 @@ namespace FlatGeobuf.GeoJson
             var headerLength = ByteBufferUtil.GetSizePrefix(bb);
             bb.Position = FlatBufferConstants.SizePrefixLength;
             var header = Header.GetRootAsHeader(bb);
-
-            IDictionary<string, ColumnType> columns = null;
-            if (header.ColumnsLength > 0) {
-                columns = new Dictionary<string, ColumnType>();
-                for (int i = 0; i < header.ColumnsLength; i++) {
-                    var column = header.Columns(i).Value;
-                    columns.Add(column.Name, column.Type);
-                }
-            }
-
+            
             var count = header.FeaturesCount;
             bb.Position += headerLength;
 
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = Feature.FromByteBuffer(bb, columns);
+                var feature = Feature.FromByteBuffer(bb, header);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
@@ -83,7 +81,7 @@ namespace FlatGeobuf.GeoJson
             return geojson;
         }
 
-        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, Dictionary<string, ColumnType> columns) {
+        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns) {
             var builder = new FlatBufferBuilder(1024);
 
             // TODO: make it optional to use first feature as column schema
@@ -91,14 +89,21 @@ namespace FlatGeobuf.GeoJson
             VectorOffset? columnsOffset = null;
             if (columns != null) {
                 var columnsArray = columns
-                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Key), c.Value))
+                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
                     .ToArray();
                 columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 
-            Header.StartHeader(builder);
+            Layer.StartLayer(builder);
             if (columnsOffset.HasValue)
-                Header.AddColumns(builder, columnsOffset.Value);
+                Layer.AddColumns(builder, columnsOffset.Value);
+            Layer.AddGeometryType(builder, Geometry.ToGeometryType(feature.Geometry));
+            var layerOffset = Layer.EndLayer(builder);
+            var layerOffsets = new[] { layerOffset };
+            var layersOffset = Header.CreateLayersVector(builder, layerOffsets);
+
+            Header.StartHeader(builder);
+            Header.AddLayers(builder, layersOffset);
             Header.AddFeaturesCount(builder, (ulong) fc.Features.Count);
             var offset = Header.EndHeader(builder);
 
