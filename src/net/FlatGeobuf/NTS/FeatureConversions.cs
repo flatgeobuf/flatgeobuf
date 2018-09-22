@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using NetTopologySuite.Features;
 using FlatBuffers;
 
-namespace FlatGeobuf.GeoJson
+namespace FlatGeobuf.NTS
 {
-    public static class GeoJsonFeature {
+    public static class FeatureConversions {
         public static byte[] ToByteBuffer(IFeature feature, IList<ColumnMeta> columns) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
-            var geometryOffset = GeoJsonGeometry.BuildGeometry(builder, feature.Geometry);
+            var geometryOffset = GeometryConversions.BuildGeometry(builder, feature.Geometry);
             
             VectorOffset? valuesOffset = null;
             if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null) {
@@ -101,7 +101,7 @@ namespace FlatGeobuf.GeoJson
                 }
             }
 
-            var geometry = GeoJsonGeometry.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
+            var geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }

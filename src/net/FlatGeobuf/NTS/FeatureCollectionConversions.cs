@@ -5,8 +5,9 @@ using System.IO;
 using NetTopologySuite.IO;
 
 using FlatBuffers;
+using NetTopologySuite.Features;
 
-namespace FlatGeobuf.GeoJson
+namespace FlatGeobuf.NTS
 {
     public class ColumnMeta
     {
@@ -14,10 +15,8 @@ namespace FlatGeobuf.GeoJson
         public ColumnType Type { get; set; }
     }
 
-    public static class GeoJsonFeatureCollection {
-        public static byte[] ToFlatGeobuf(string geojson) {
-            var reader = new GeoJsonReader();
-            var fc = reader.Read<NetTopologySuite.Features.FeatureCollection>(geojson);
+    public static class FeatureCollectionConversions {
+        public static byte[] ToFlatGeobuf(FeatureCollection fc) {
 
             if (fc.Features.Count == 0)
                 throw new ApplicationException("Empty feature collection is not allowed as input");
@@ -39,7 +38,7 @@ namespace FlatGeobuf.GeoJson
 
             foreach (var feature in fc.Features)
             {
-                var buffer = GeoJsonFeature.ToByteBuffer(feature, columns);
+                var buffer = FeatureConversions.ToByteBuffer(feature, columns);
                 memoryStream.Write(buffer, 0, buffer.Length);
             }
             
@@ -59,7 +58,7 @@ namespace FlatGeobuf.GeoJson
             }
         }
 
-        public static string FromFlatGeobuf(byte[] bytes) {
+        public static FeatureCollection FromFlatGeobuf(byte[] bytes) {
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
             var bb = new ByteBuffer(bytes);
@@ -74,14 +73,12 @@ namespace FlatGeobuf.GeoJson
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = GeoJsonFeature.FromByteBuffer(bb, header);
+                var feature = FeatureConversions.FromByteBuffer(bb, header);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
 
-            var writer = new GeoJsonWriter();
-            var geojson = writer.Write(fc);
-            return geojson;
+            return fc;
         }
 
         private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns) {
@@ -101,7 +98,7 @@ namespace FlatGeobuf.GeoJson
             Layer.StartLayer(builder);
             if (columnsOffset.HasValue)
                 Layer.AddColumns(builder, columnsOffset.Value);
-            Layer.AddGeometryType(builder, GeoJsonGeometry.ToGeometryType(feature.Geometry));
+            Layer.AddGeometryType(builder, GeometryConversions.ToGeometryType(feature.Geometry));
             var layerOffset = Layer.EndLayer(builder);
             var layerOffsets = new[] { layerOffset };
             var layersOffset = Header.CreateLayersVector(builder, layerOffsets);

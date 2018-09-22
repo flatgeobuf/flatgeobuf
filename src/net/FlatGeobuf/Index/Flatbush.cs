@@ -1,7 +1,7 @@
 using System;
 
 using FlatBuffers;
-using FlatGeobuf.GeoJson;
+using FlatGeobuf.NTS;
 
 namespace FlatGeobuf
 {

@@ -8,9 +8,9 @@ using GeoAPI.Geometries;
 
 using FlatBuffers;
 
-namespace FlatGeobuf.GeoJson
+namespace FlatGeobuf.NTS
 {
-    public static class GeoJsonGeometry {
+    public static class GeometryConversions {
         public static Offset<Geometry> BuildGeometry(FlatBufferBuilder builder, IGeometry geometry)
         {
             // TODO: introspect?
