@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/bjornharrtell/flatgeobuf.svg?style=svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
 
-A [flatbuffers](http://google.github.io/flatbuffers/) based performant binary encoding for geographic data.
+A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/).
 
 Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity, to be able to use a static spatial index and to avoid fragementation issues.
 
