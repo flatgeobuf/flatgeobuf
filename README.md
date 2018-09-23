@@ -6,6 +6,8 @@ A [flatbuffers](http://google.github.io/flatbuffers/) based performant binary en
 
 Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity, to be able to use a static spatial index and to avoid fragementation issues.
 
+DISCLAIMER: Unfinished work in progress.
+
 ## TODO
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
@@ -15,5 +17,3 @@ Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://gi
 * GDAL/OGR driver
 * QGIS POC
 * Complete test coverage
-
-DISCLAIMER: Unfinished work in progress.
