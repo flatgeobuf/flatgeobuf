@@ -2,15 +2,15 @@
 
 [![CircleCI](https://circleci.com/gh/bjornharrtell/flatgeobuf.svg?style=svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
 
-A flatbuffers based performant binary encoding for geographic data
+A [flatbuffers](http://google.github.io/flatbuffers/) based performant binary encoding for geographic data.
 
-## Goals
+## TODO
 
-* Implementation including high level API
-* Language support for JavaScript, TypeScript, C and C++
+* Language support for JavaScript, TypeScript, C, C++, Java and C#
 * Optional spatial index
-* Random and chunked access
-* GDAL driver
+* Optional attribute indexes (mabye)
+* Efficient I/O (streaming and random access)
+* GDAL/OGR driver
 * QGIS POC
 * Complete test coverage
 
