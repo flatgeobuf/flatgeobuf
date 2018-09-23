@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 
-namespace FlatGeobuf.Tests
+namespace FlatGeobuf.Tests.GeoJson
 {
     [TestClass]
     public class GeometryRoundtripTests

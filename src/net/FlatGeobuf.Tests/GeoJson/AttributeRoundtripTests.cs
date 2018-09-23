@@ -9,7 +9,7 @@ using NetTopologySuite.IO;
 using NetTopologySuite.Geometries;
 using GeoAPI.Geometries;
 
-namespace FlatGeobuf.Tests
+namespace FlatGeobuf.Tests.GeoJson
 {
     [TestClass]
     public class AttributeRoundtripTests
