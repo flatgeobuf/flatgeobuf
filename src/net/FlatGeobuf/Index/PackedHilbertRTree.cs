@@ -72,6 +72,8 @@ namespace FlatGeobuf.Index
 
         public ulong Size => _numNodes * 4 * 8 + _numNodes * 8;
 
+        public ulong[] Indices => _indices;
+
         public PackedHilbertRTree(ulong numItems, ushort nodeSize = 16)
         {
             _numItems = numItems;

@@ -18,10 +18,12 @@ namespace FlatGeobuf.NTS
     public static class FeatureCollectionConversions {
         public static byte[] ToFlatGeobuf(FeatureCollection fc) {
 
-            if (fc.Features.Count == 0)
+            ulong count = (ulong) fc.Features.LongCount();
+
+            if (count == 0)
                 throw new ApplicationException("Empty feature collection is not allowed as input");
 
-            var index = new PackedHilbertRTree((ulong) fc.Features.LongCount());
+            var index = new PackedHilbertRTree(count);
             foreach (var f in fc.Features)
             {
                 var b = f.Geometry.EnvelopeInternal;
@@ -41,20 +43,30 @@ namespace FlatGeobuf.NTS
 
             var header = BuildHeader(fc, columns, index);
 
-            var memoryStream = new MemoryStream();
-            memoryStream.Write(header, 0, header.Length);
-
-            var indexBytes = index.ToBytes();
-            memoryStream.Write(indexBytes, 0, indexBytes.Length);
-
-            // TODO: enumerate sorted by index
-            foreach (var feature in fc.Features)
+            using (var memoryStream = new MemoryStream())
             {
-                var buffer = FeatureConversions.ToByteBuffer(feature, columns);
-                memoryStream.Write(buffer, 0, buffer.Length);
+                memoryStream.Write(header, 0, header.Length);
+
+                var indexBytes = index.ToBytes();
+                memoryStream.Write(indexBytes, 0, indexBytes.Length);
+                
+                using (var offsetsStream = new MemoryStream())
+                using (var offetsWriter = new BinaryWriter(offsetsStream))
+                {
+                    ulong offset = 0;
+                    for (ulong i = 0; i < count; i++)
+                    {
+                        var feature = fc.Features[(int)index.Indices[i]];
+                        var buffer = FeatureConversions.ToByteBuffer(feature, columns);
+                        memoryStream.Write(buffer, 0, buffer.Length);
+                        offetsWriter.Write(offset);
+                        offset += (ulong) buffer.Length;
+                    }
+                    offsetsStream.WriteTo(memoryStream);
+                }
+                
+                return memoryStream.ToArray();
             }
-            
-            return memoryStream.ToArray();
         }
 
         private static ColumnType ToColumnType(Type type) {
