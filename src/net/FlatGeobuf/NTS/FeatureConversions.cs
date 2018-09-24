@@ -36,6 +36,8 @@ namespace FlatGeobuf.NTS
                             case string v:
                                 valueOffsets.Add(Value.CreateValue(builder, columnIndex, string_valueOffset: builder.CreateString(v)));
                                 break;
+                            case null:
+                                break;
                             default: throw new ApplicationException("Unknown type");
                         }
                     }
