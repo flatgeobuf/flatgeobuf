@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 
 namespace FlatGeobuf.Index
 {
@@ -10,7 +11,6 @@ namespace FlatGeobuf.Index
         public double minY;
         public double maxX;
         public double maxY;
-        public int hilbertValue;
 
         public double Width => maxX - minX;
         public double Height => maxY - minY;
@@ -21,7 +21,6 @@ namespace FlatGeobuf.Index
             this.minY = minY;
             this.maxX = maxX;
             this.maxY = maxY;
-            hilbertValue = -1;
         }
 
         public void Expand(Rect r)
@@ -60,14 +59,16 @@ namespace FlatGeobuf.Index
     public class PackedHilbertRTree
     {
         Rect _extent = Rect.CreateInvertedInfiniteRect();
-        IList<Rect> _rects;
-
+        Rect[] _rects;
+        int[] _indices;
+        int _pos;
+        
         int _numItems;
         int _nodeSize;
 
         IList<int> _levelBounds;
 
-        public PackedHilbertRTree(int numItems, int nodeSize = 16)
+        public PackedHilbertRTree(int numItems, int nodeSize = 16, byte[] data = null)
         {
             _numItems = numItems;
             _nodeSize = Math.Min(Math.Max(nodeSize, 2), 65535);
@@ -82,14 +83,20 @@ namespace FlatGeobuf.Index
                 _levelBounds.Add(numNodes);
             } while (n != 1);
 
-            _rects = new List<Rect>(numNodes);
+            _rects = new Rect[numNodes];
+            _indices = new int[numNodes];
+
+            if (data != null)
+                FromBytes(data, numNodes);
         }
 
         public void Add(double minX, double minY, double maxX, double maxY)
         {
             var r = new Rect(minX, minY, maxX, maxY);
-            _rects.Add(r);
+            _indices[_pos] = _pos;
+            _rects[_pos] = r;
             _extent.Expand(r);
+            _pos++;
         }
 
         public void Finish()
@@ -97,40 +104,44 @@ namespace FlatGeobuf.Index
             var hilbertMax = (1 << 16) - 1;
 
             // map item centers into Hilbert coordinate space and calculate Hilbert values
-            for (var i = 0; i < _rects.Count; i++)
+            ulong[] hilbertValues = new ulong[_numItems];
+            for (var i = 0; i < _numItems; i++)
             {
                 var r = _rects[i];
-                var x = (int) Math.Floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.Width);
-                var y = (int) Math.Floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.Height);
-                r.hilbertValue = CalcHilbertValue(x, y);
+                var x = (ulong) Math.Floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.Width);
+                var y = (ulong) Math.Floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.Height);
+                hilbertValues[i] = Hilbert(x, y);
             }
 
             // sort items by their Hilbert value (for packing later)
-            _rects = _rects.OrderBy(r => r.hilbertValue).ToList();
+            Sort(hilbertValues, _rects, _indices, 0, _numItems - 1);
             
             // generate nodes at each tree level, bottom-up
             for (int i = 0, pos = 0; i < _levelBounds.Count - 1; i++)
             {
                 var end = _levelBounds[i];
-                
+
                 while (pos < end)
                 {
                     var nodeRect = Rect.CreateInvertedInfiniteRect();
                     var nodeIndex = pos;
                     for (var j = 0; j < _nodeSize && pos < end; j++)
-                        nodeRect.Expand(_rects[pos++ + j]);
-                    _rects.Add(nodeRect);
+                        nodeRect.Expand(_rects[pos++]);
+                    _rects[_pos] = nodeRect;
+                    _indices[_pos] = nodeIndex;
+                    _pos++;
                 }
             }
         }
+        
 
         public IList<int> Search(double minX, double minY, double maxX, double maxY)
         {
             var r = new Rect(minX, minY, maxX, maxY);
 
-            int nodeIndex = _rects.Count - 1;
+            int nodeIndex = _rects.Length - 1;
             var level = _levelBounds.Count - 1;
-            Queue<int> queue = new Queue<int>();
+            Stack<int> stack = new Stack<int>();
             IList<int> results = new List<int>();
             
             while(true)
@@ -141,32 +152,71 @@ namespace FlatGeobuf.Index
                 // search through child nodes
                 for (var pos = nodeIndex; pos < end; pos++)
                 {
+                    var index = _indices[pos];
+
                     // check if node bbox intersects with query bbox
                     if (!r.Intersects(_rects[pos])) continue;
 
                     if (nodeIndex < _numItems)
                     {
-                        results.Add(pos); // leaf item
+                        results.Add(index); // leaf item
                     }
                     else
                     {
-                        queue.Enqueue(pos); // node; add it to the search queue
-                        queue.Enqueue(level - 1);
+                        stack.Push(index); // node; add it to the search queue
+                        stack.Push(level - 1);
                     }
                 }
 
-                if (queue.Count == 0)
+                if (stack.Count == 0)
                     break;
-                level = queue.Dequeue();
-                nodeIndex = queue.Dequeue();
+                level = stack.Pop();
+                nodeIndex = stack.Pop();
             }
 
             return results;
         }
 
+        // custom quicksort that sorts bbox data alongside the hilbert values
+        static void Sort(ulong[] values, Rect[] boxes, int[] indices, int left, int right)
+        {
+            if (left >= right) return;
+
+            var pivot = values[(left + right) >> 1];
+            var i = left - 1;
+            var j = right + 1;
+
+            while (true)
+            {
+                do i++; while (values[i] < pivot);
+                do j--; while (values[j] > pivot);
+                if (i >= j) break;
+                Swap(values, boxes, indices, i, j);
+            }
+
+            Sort(values, boxes, indices, left, j);
+            Sort(values, boxes, indices, j + 1, right);
+        }
+
+        // swap two values and two corresponding boxes
+        static void Swap(ulong[] values, Rect[] boxes, int[] indices, int i, int j)
+        {
+            var temp = values[i];
+            values[i] = values[j];
+            values[j] = temp;
+            
+            var r = boxes[i];
+            boxes[i] = boxes[j];
+            boxes[j] = r;
+            
+            var e = indices[i];
+            indices[i] = indices[j];
+            indices[j] = e;
+        }
+
         // Fast Hilbert curve algorithm by http://threadlocalmutex.com/
         // Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
-        static int CalcHilbertValue(int x, int y)
+        static ulong Hilbert(ulong x, ulong y)
         {
             var a = x ^ y;
             var b = 0xFFFF ^ a;
@@ -211,6 +261,46 @@ namespace FlatGeobuf.Index
             i1 = (i1 | (i1 << 1)) & 0x55555555;
 
             return ((i1 << 1) | i0) >> 0;
+        }
+
+        public byte[] ToBytes()
+        {
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                foreach (var r in _rects)
+                {
+                    writer.Write(r.minX);
+                    writer.Write(r.minY);
+                    writer.Write(r.maxX);
+                    writer.Write(r.maxY);
+                }
+                foreach (var i in _indices)
+                {
+                    writer.Write(i);
+                }
+                return stream.ToArray();
+            }
+        }
+        
+        void FromBytes(byte[] data, int numNodes)
+        {
+            using (var stream = new MemoryStream(data))
+            using (var reader = new BinaryReader(stream))
+            {
+                for (var i = 0; i < numNodes; i++)
+                {
+                    _rects[i].minX = reader.ReadDouble();
+                    _rects[i].minY = reader.ReadDouble();
+                    _rects[i].maxX = reader.ReadDouble();
+                    _rects[i].maxY = reader.ReadDouble();
+                }
+
+                for (var i = 0; i < numNodes; i++)
+                {
+                    _indices[i] = reader.ReadInt32();
+                }
+            }
         }
     }
 }
