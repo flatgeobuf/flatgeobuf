@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using NetTopologySuite.IO;
 
 using FlatBuffers;
 using NetTopologySuite.Features;
+using FlatGeobuf.Index;
 
 namespace FlatGeobuf.NTS
 {
@@ -21,6 +21,14 @@ namespace FlatGeobuf.NTS
             if (fc.Features.Count == 0)
                 throw new ApplicationException("Empty feature collection is not allowed as input");
 
+            var index = new PackedHilbertRTree((ulong) fc.Features.LongCount());
+            foreach (var f in fc.Features)
+            {
+                var b = f.Geometry.EnvelopeInternal;
+                index.Add(b.MinX, b.MinY, b.MaxX, b.MaxY);
+            }
+            index.Finish();
+
             // TODO: make it optional to use first feature as column schema
             var featureFirst = fc.Features.First();
             IList<ColumnMeta> columns = null;
@@ -31,11 +39,15 @@ namespace FlatGeobuf.NTS
                     .ToList();
             }
 
-            var header = BuildHeader(fc, columns);
+            var header = BuildHeader(fc, columns, index);
 
             var memoryStream = new MemoryStream();
             memoryStream.Write(header, 0, header.Length);
 
+            var indexBytes = index.ToBytes();
+            memoryStream.Write(indexBytes, 0, indexBytes.Length);
+
+            // TODO: enumerate sorted by index
             foreach (var feature in fc.Features)
             {
                 var buffer = FeatureConversions.ToByteBuffer(feature, columns);
@@ -68,7 +80,15 @@ namespace FlatGeobuf.NTS
             var header = Header.GetRootAsHeader(bb);
             
             var count = header.FeaturesCount;
+            var nodeSize = header.IndexNodeSize;
+
             bb.Position += headerLength;
+
+            var index = new PackedHilbertRTree(count, nodeSize);
+            var indexData = bytes.Skip(headerLength).Take((int) index.Size).ToArray();
+            index.Load(indexData);
+
+            bb.Position += (int) index.Size;
 
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
@@ -81,7 +101,7 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns) {
+        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns, PackedHilbertRTree index) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
@@ -105,6 +125,8 @@ namespace FlatGeobuf.NTS
 
             Header.StartHeader(builder);
             Header.AddLayers(builder, layersOffset);
+            if (index != null)
+                Header.AddIndexNodesCount(builder, index.NumNodes);
             Header.AddFeaturesCount(builder, (ulong) fc.Features.Count);
             var offset = Header.EndHeader(builder);
 

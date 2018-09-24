@@ -24,7 +24,10 @@ namespace FlatGeobuf.Tests.Index
             tree.Finish();
             var data = tree.ToBytes();
 
-            var tree2 = new PackedHilbertRTree(1, 16, data);
+            Assert.AreEqual(tree.Size, (ulong) data.LongLength);
+
+            var tree2 = new PackedHilbertRTree(1, 16);
+            tree2.Load(data);
             var list = tree2.Search(0, 0, 1, 1);
 
             Assert.AreEqual(1, list.Count);
