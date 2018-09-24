@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using NetTopologySuite.Features;
 using FlatBuffers;
@@ -6,9 +7,14 @@ using FlatBuffers;
 namespace FlatGeobuf.NTS
 {
     public static class FeatureConversions {
-        public static byte[] ToByteBuffer(IFeature feature, IList<ColumnMeta> columns) {
+        public static byte[] ToByteBuffer(IFeature feature, IList<LayerMeta> layers) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
+
+            // TODO: improve layer introspection
+            var layer = layers.First(l => l.GeometryType == GeometryConversions.ToGeometryType(feature.Geometry));
+            var layerIndex = (uint) layers.IndexOf(layer);
+            var columns = layer.Columns;
 
             var geometryOffset = GeometryConversions.BuildGeometry(builder, feature.Geometry);
             
@@ -47,6 +53,7 @@ namespace FlatGeobuf.NTS
 
             Feature.StartFeature(builder);
             Feature.AddGeometry(builder, geometryOffset);
+            Feature.AddLayer(builder, layerIndex);
             if (valuesOffset.HasValue)
                 Feature.AddValues(builder, valuesOffset.Value);
             var offset = Feature.EndFeature(builder);
@@ -60,15 +67,14 @@ namespace FlatGeobuf.NTS
 
         public static IFeature FromByteBuffer(ByteBuffer bb, Header header) {
             // TODO: introspect which layer
-            var layer = header.Layers(0).Value;
-
+            var columnsLayer = header.Layers(0).Value;
             IList<Column> columns = null;
-            if (layer.ColumnsLength > 0)
+            if (columnsLayer.ColumnsLength > 0)
             {
                 columns = new List<Column>();
-                for (int i = 0; i < layer.ColumnsLength; i++)
+                for (int i = 0; i < columnsLayer.ColumnsLength; i++)
                 {
-                    var column = layer.Columns(i).Value;
+                    var column = columnsLayer.Columns(i).Value;
                     columns.Add(column);
                 }
             }
@@ -78,6 +84,8 @@ namespace FlatGeobuf.NTS
 
             if (feature.ValuesLength > 0)
                 attributesTable = new AttributesTable();
+
+            var layer = header.Layers((int) feature.Layer).Value;
 
             for (int i = 0; i < feature.ValuesLength; i++)
             {

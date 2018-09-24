@@ -15,6 +15,13 @@ namespace FlatGeobuf.NTS
         public ColumnType Type { get; set; }
     }
 
+    public class LayerMeta
+    {
+        public string Name { get; set; }
+        public GeometryType GeometryType { get; set; }
+        public IList<ColumnMeta> Columns { get; set; }
+    }
+
     public static class FeatureCollectionConversions {
         public static byte[] ToFlatGeobuf(FeatureCollection fc) {
 
@@ -40,8 +47,19 @@ namespace FlatGeobuf.NTS
                     .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
                     .ToList();
             }
+            
+            // TODO: improve to only create what's needed or externally supplied
+            IList<LayerMeta> layers = new List<LayerMeta>
+            {
+                new LayerMeta() { GeometryType = GeometryType.Point, Columns = columns },
+                new LayerMeta() { GeometryType = GeometryType.MultiPoint, Columns = columns },
+                new LayerMeta() { GeometryType = GeometryType.LineString, Columns = columns },
+                new LayerMeta() { GeometryType = GeometryType.MultiLineString, Columns = columns },
+                new LayerMeta() { GeometryType = GeometryType.Polygon, Columns = columns },
+                new LayerMeta() { GeometryType = GeometryType.MultiPolygon, Columns = columns }
+            };
 
-            var header = BuildHeader(fc, columns, index);
+            var header = BuildHeader(count, layers, index);
 
             using (var memoryStream = new MemoryStream())
             {
@@ -57,7 +75,7 @@ namespace FlatGeobuf.NTS
                     for (ulong i = 0; i < count; i++)
                     {
                         var feature = fc.Features[(int)index.Indices[i]];
-                        var buffer = FeatureConversions.ToByteBuffer(feature, columns);
+                        var buffer = FeatureConversions.ToByteBuffer(feature, layers);
                         memoryStream.Write(buffer, 0, buffer.Length);
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
@@ -113,33 +131,39 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(NetTopologySuite.Features.FeatureCollection fc, IList<ColumnMeta> columns, PackedHilbertRTree index) {
+        private static byte[] BuildHeader(ulong count, IList<LayerMeta> layers, PackedHilbertRTree index) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
-            // TODO: make it optional to use first feature as column schema
-            var feature = fc.Features.First();
+            // TODO: can be different per layer...
+            var columns = layers.First().Columns;
             VectorOffset? columnsOffset = null;
-            if (columns != null) {
+            if (columns != null)
+            {
                 var columnsArray = columns
-                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
-                    .ToArray();
+                .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
+                .ToArray();
                 columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 
-            Layer.StartLayer(builder);
-            if (columnsOffset.HasValue)
-                Layer.AddColumns(builder, columnsOffset.Value);
-            Layer.AddGeometryType(builder, GeometryConversions.ToGeometryType(feature.Geometry));
-            var layerOffset = Layer.EndLayer(builder);
-            var layerOffsets = new[] { layerOffset };
+            var layerOffsets = layers
+                .Select(l =>
+                {
+                    Layer.StartLayer(builder);
+                    if (columnsOffset.HasValue)
+                        Layer.AddColumns(builder, columnsOffset.Value);
+                    Layer.AddGeometryType(builder, l.GeometryType);
+                    var layerOffset = Layer.EndLayer(builder);
+                    return layerOffset;
+                }).ToArray();
+
             var layersOffset = Header.CreateLayersVector(builder, layerOffsets);
 
             Header.StartHeader(builder);
             Header.AddLayers(builder, layersOffset);
             if (index != null)
                 Header.AddIndexNodesCount(builder, index.NumNodes);
-            Header.AddFeaturesCount(builder, (ulong) fc.Features.Count);
+            Header.AddFeaturesCount(builder, count);
             var offset = Header.EndHeader(builder);
 
             builder.FinishSizePrefixed(offset.Value);
