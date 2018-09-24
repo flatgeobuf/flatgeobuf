@@ -34,8 +34,8 @@ public struct Header : IFlatbufferObject
   public double[] GetEnvelopeArray() { return __p.__vector_as_array<double>(6); }
   public Layer? Layers(int j) { int o = __p.__offset(8); return o != 0 ? (Layer?)(new Layer()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int LayersLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public uint IndexNodeSize { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)640; } }
-  public uint IndexNodesCount { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)0; } }
+  public ushort IndexNodeSize { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)16; } }
+  public ulong IndexNodesCount { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
   public ulong FeaturesSize { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
   public ulong FeaturesCount { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
 
@@ -43,18 +43,18 @@ public struct Header : IFlatbufferObject
       StringOffset nameOffset = default(StringOffset),
       VectorOffset envelopeOffset = default(VectorOffset),
       VectorOffset layersOffset = default(VectorOffset),
-      uint index_node_size = 640,
-      uint index_nodes_count = 0,
+      ushort index_node_size = 16,
+      ulong index_nodes_count = 0,
       ulong features_size = 0,
       ulong features_count = 0) {
     builder.StartObject(7);
     Header.AddFeaturesCount(builder, features_count);
     Header.AddFeaturesSize(builder, features_size);
     Header.AddIndexNodesCount(builder, index_nodes_count);
-    Header.AddIndexNodeSize(builder, index_node_size);
     Header.AddLayers(builder, layersOffset);
     Header.AddEnvelope(builder, envelopeOffset);
     Header.AddName(builder, nameOffset);
+    Header.AddIndexNodeSize(builder, index_node_size);
     return Header.EndHeader(builder);
   }
 
@@ -68,8 +68,8 @@ public struct Header : IFlatbufferObject
   public static VectorOffset CreateLayersVector(FlatBufferBuilder builder, Offset<Layer>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateLayersVectorBlock(FlatBufferBuilder builder, Offset<Layer>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartLayersVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddIndexNodeSize(FlatBufferBuilder builder, uint indexNodeSize) { builder.AddUint(3, indexNodeSize, 640); }
-  public static void AddIndexNodesCount(FlatBufferBuilder builder, uint indexNodesCount) { builder.AddUint(4, indexNodesCount, 0); }
+  public static void AddIndexNodeSize(FlatBufferBuilder builder, ushort indexNodeSize) { builder.AddUshort(3, indexNodeSize, 16); }
+  public static void AddIndexNodesCount(FlatBufferBuilder builder, ulong indexNodesCount) { builder.AddUlong(4, indexNodesCount, 0); }
   public static void AddFeaturesSize(FlatBufferBuilder builder, ulong featuresSize) { builder.AddUlong(5, featuresSize, 0); }
   public static void AddFeaturesCount(FlatBufferBuilder builder, ulong featuresCount) { builder.AddUlong(6, featuresCount, 0); }
   public static Offset<Header> EndHeader(FlatBufferBuilder builder) {

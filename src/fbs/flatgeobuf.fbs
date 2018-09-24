@@ -8,8 +8,8 @@ table Header {
   name: string;
   envelope: [double];
   layers: [Layer];
-  index_node_size: uint = 640; // 16 items * 40 bytes per item
-  index_nodes_count: uint;
+  index_node_size: ushort = 16;
+  index_nodes_count: ulong;
   features_size: ulong;
   features_count: ulong;
 }
