@@ -1,7 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using Json.Comparer;
-using Newtonsoft.Json.Linq;
 using NetTopologySuite.IO;
 using NetTopologySuite.Features;
 using FlatGeobuf.NTS;
