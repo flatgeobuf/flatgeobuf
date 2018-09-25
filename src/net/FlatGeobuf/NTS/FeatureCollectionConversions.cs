@@ -25,7 +25,6 @@ namespace FlatGeobuf.NTS
 
     public static class FeatureCollectionConversions {
         public static byte[] ToFlatGeobuf(FeatureCollection fc, IList<LayerMeta> layers = null) {
-
             ulong count = (ulong) fc.Features.LongCount();
 
             if (count == 0)
@@ -41,16 +40,10 @@ namespace FlatGeobuf.NTS
 
             if (layers == null)
                 layers = IntrospectLayers(fc);
-
-            var header = BuildHeader(count, layers, index);
-
+            
             using (var memoryStream = new MemoryStream())
             {
-                memoryStream.Write(header, 0, header.Length);
-
-                var indexBytes = index.ToBytes();
-                memoryStream.Write(indexBytes, 0, indexBytes.Length);
-                
+                using (var featuresStream = new MemoryStream())
                 using (var offsetsStream = new MemoryStream())
                 using (var offetsWriter = new BinaryWriter(offsetsStream))
                 {
@@ -59,13 +52,17 @@ namespace FlatGeobuf.NTS
                     {
                         var feature = fc.Features[(int)index.Indices[i]];
                         var buffer = FeatureConversions.ToByteBuffer(feature, layers);
-                        memoryStream.Write(buffer, 0, buffer.Length);
+                        featuresStream.Write(buffer, 0, buffer.Length);
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
                     }
+                    var header = BuildHeader(count, offset, layers, index);
+                    memoryStream.Write(header, 0, header.Length);
+                    featuresStream.WriteTo(memoryStream);
+                    var indexBytes = index.ToBytes();
+                    memoryStream.Write(indexBytes, 0, indexBytes.Length);
                     offsetsStream.WriteTo(memoryStream);
                 }
-                
                 return memoryStream.ToArray();
             }
         }
@@ -110,20 +107,19 @@ namespace FlatGeobuf.NTS
 
             var bb = new ByteBuffer(bytes);
             
-            var headerLength = ByteBufferUtil.GetSizePrefix(bb);
+            var headerSize = (ulong) ByteBufferUtil.GetSizePrefix(bb);
             bb.Position = FlatBufferConstants.SizePrefixLength;
             var header = Header.GetRootAsHeader(bb);
             
             var count = header.FeaturesCount;
+            var featuresSize = header.FeaturesSize;
             var nodeSize = header.IndexNodeSize;
 
-            bb.Position += headerLength;
+            bb.Position += (int) headerSize;
 
             var index = new PackedHilbertRTree(count, nodeSize);
-            var indexData = bytes.Skip(headerLength).Take((int) index.Size).ToArray();
+            var indexData = bytes.Skip((int) (headerSize + featuresSize)).Take((int) index.Size).ToArray();
             index.Load(indexData);
-
-            bb.Position += (int) index.Size;
 
             while (count-- > 0) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
@@ -136,7 +132,7 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(ulong count, IList<LayerMeta> layers, PackedHilbertRTree index) {
+        private static byte[] BuildHeader(ulong count, ulong featuresSize, IList<LayerMeta> layers, PackedHilbertRTree index) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
@@ -169,6 +165,7 @@ namespace FlatGeobuf.NTS
             if (index != null)
                 Header.AddIndexNodesCount(builder, index.NumNodes);
             Header.AddFeaturesCount(builder, count);
+            Header.AddFeaturesSize(builder, featuresSize);
             var offset = Header.EndHeader(builder);
 
             builder.FinishSizePrefixed(offset.Value);
