@@ -40,7 +40,7 @@ namespace FlatGeobuf.NTS
             index.Finish();
 
             if (layers == null)
-                layers = IntrospectFeatureCollection(fc);
+                layers = IntrospectLayers(fc);
 
             var header = BuildHeader(count, layers, index);
 
@@ -70,7 +70,7 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        private static IList<LayerMeta> IntrospectFeatureCollection(FeatureCollection fc)
+        private static IList<LayerMeta> IntrospectLayers(FeatureCollection fc)
         {
             var featureFirst = fc.Features.First();
             IList<ColumnMeta> columns = null;
