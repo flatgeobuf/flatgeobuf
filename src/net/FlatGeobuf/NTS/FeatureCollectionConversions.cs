@@ -19,11 +19,12 @@ namespace FlatGeobuf.NTS
     {
         public string Name { get; set; }
         public GeometryType GeometryType { get; set; }
+        public byte Dimensions { get; set; }
         public IList<ColumnMeta> Columns { get; set; }
     }
 
     public static class FeatureCollectionConversions {
-        public static byte[] ToFlatGeobuf(FeatureCollection fc) {
+        public static byte[] ToFlatGeobuf(FeatureCollection fc, IList<LayerMeta> layers = null) {
 
             ulong count = (ulong) fc.Features.LongCount();
 
@@ -38,26 +39,8 @@ namespace FlatGeobuf.NTS
             }
             index.Finish();
 
-            // TODO: make it optional to use first feature as column schema
-            var featureFirst = fc.Features.First();
-            IList<ColumnMeta> columns = null;
-            if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
-            {
-                columns = featureFirst.Attributes.GetNames()
-                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
-                    .ToList();
-            }
-            
-            // TODO: improve to only create what's needed or externally supplied
-            IList<LayerMeta> layers = new List<LayerMeta>
-            {
-                new LayerMeta() { GeometryType = GeometryType.Point, Columns = columns },
-                new LayerMeta() { GeometryType = GeometryType.MultiPoint, Columns = columns },
-                new LayerMeta() { GeometryType = GeometryType.LineString, Columns = columns },
-                new LayerMeta() { GeometryType = GeometryType.MultiLineString, Columns = columns },
-                new LayerMeta() { GeometryType = GeometryType.Polygon, Columns = columns },
-                new LayerMeta() { GeometryType = GeometryType.MultiPolygon, Columns = columns }
-            };
+            if (layers == null)
+                layers = IntrospectFeatureCollection(fc);
 
             var header = BuildHeader(count, layers, index);
 
@@ -85,6 +68,28 @@ namespace FlatGeobuf.NTS
                 
                 return memoryStream.ToArray();
             }
+        }
+
+        private static IList<LayerMeta> IntrospectFeatureCollection(FeatureCollection fc)
+        {
+            var featureFirst = fc.Features.First();
+            IList<ColumnMeta> columns = null;
+            if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
+            {
+                columns = featureFirst.Attributes.GetNames()
+                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                    .ToList();
+            }
+
+            var geometryTypes = fc.Features
+                .Select(f => GeometryConversions.ToGeometryType(f.Geometry))
+                .Distinct();
+            
+            IList<LayerMeta> layers = geometryTypes
+                .Select(geometryType => new LayerMeta() { GeometryType = geometryType, Columns = columns })
+                .ToList();
+
+            return layers;
         }
 
         private static ColumnType ToColumnType(Type type) {
