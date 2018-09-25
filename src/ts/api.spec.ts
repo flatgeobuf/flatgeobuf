@@ -44,7 +44,7 @@ describe('api', () => {
       expect(geojson).to.deep.equal(fc)
     })
 
-    it('Multiple points roundtrip', () => {
+    xit('Multiple points roundtrip', () => {
       const fc = createFCMulti([point, lineString])
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
