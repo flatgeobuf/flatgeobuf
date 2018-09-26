@@ -37,21 +37,21 @@ describe('api', () => {
 
   describe('roundtrips', () => {
 
-    xit('Point roundtrip', () => {
+    it('Point roundtrip', () => {
       const fc = createFC(point)
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
       expect(geojson).to.deep.equal(fc)
     })
 
-    xit('Multiple points roundtrip', () => {
+    it('Multiple features roundtrip', () => {
       const fc = createFCMulti([point, lineString])
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
       expect(geojson).to.deep.equal(fc)
     })
 
-    xit('LineString roundtrip', () => {
+    it('LineString roundtrip', () => {
       const fc = createFC(lineString)
       const data = api.fromGeoJson(fc)
       const geojson = api.toGeoJson(data)
