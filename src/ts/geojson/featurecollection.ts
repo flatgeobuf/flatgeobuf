@@ -109,9 +109,8 @@ function introspectLayers(featurecollection: any) {
     */
 
     const geometryTypeNamesSet = new Set()
-    for (const f of featurecollection.features) {
+    for (const f of featurecollection.features)
         geometryTypeNamesSet.add(f.geometry.type)
-    }
 
     const layers = Array.from(geometryTypeNamesSet)
         .map(n => new LayerMeta(toGeometryType(n), columns))
