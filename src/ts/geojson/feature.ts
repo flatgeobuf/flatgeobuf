@@ -7,9 +7,8 @@ const Feature = FlatGeobuf.Feature
 
 export function buildFeature(feature: any, layers: LayerMeta[]) {
     const layerIndex = layers.findIndex(l => l.geometryType === toGeometryType(feature.geometry.type))
-    if (layerIndex === -1) {
+    if (layerIndex === -1)
         throw new Error('Cannot introspect to an existing layer')
-    }
 
     const builder = new flatbuffers.Builder(0)
     const geometryOffset = buildGeometry(builder, feature.geometry)
