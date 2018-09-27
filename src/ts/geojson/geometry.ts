@@ -41,7 +41,6 @@ function flat(a) {
 
 function parseGeometry(geometry: any): IParsedGeometry {
     const cs = geometry.coordinates
-
     let coords = null
     let lengths = null
     let ringLengths = null
@@ -61,10 +60,8 @@ function parseGeometry(geometry: any): IParsedGeometry {
             break
         case 'Polygon':
             coords = flat(cs)
-            if (cs.length > 1) {
-                ringCounts = [cs.length]
+            if (cs.length > 1)
                 ringLengths = cs.map(c => c.length * 2)
-            }
             break
         case 'MultiPolygon':
             coords = flat(cs)
@@ -72,12 +69,9 @@ function parseGeometry(geometry: any): IParsedGeometry {
                 lengths = cs.map(c => c.map(c => c.length * 2).reduce((a, b) => a + b, 0))
                 ringCounts = cs.map(c => c.length)
                 ringLengths = flat(cs.map(c => c.map(c => c.length * 2)))
-            } else {
-                if (cs[0].length > 1) {
-                    ringCounts = [cs[0].length]
+            } else
+                if (cs[0].length > 1)
                     ringLengths = cs[0].map(c => c.length * 2)
-                }
-            }
             break
     }
     return {
