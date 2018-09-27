@@ -5,14 +5,24 @@ const Geometry = FlatGeobuf.Geometry
 const GeometryType = FlatGeobuf.GeometryType
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: any) {
-    const { coords, lengths } = parseGeometry(geometry)
+    const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
     const coordsOffset = Geometry.createCoordsVector(builder, coords)
     let lengthsOffset = null
+    let ringLengthsOffset = null
+    let ringCountsOffset = null
     if (lengths)
         lengthsOffset = Geometry.createLengthsVector(builder, lengths)
+    if (ringLengths)
+        ringLengthsOffset = Geometry.createRingLengthsVector(builder, ringLengths)
+    if (ringCounts)
+        ringCountsOffset = Geometry.createRingCountsVector(builder, ringCounts)
     Geometry.startGeometry(builder)
     if (lengthsOffset)
         Geometry.addLengths(builder, lengthsOffset)
+    if (ringLengths)
+        Geometry.addRingLengths(builder, ringLengthsOffset)
+    if (ringCounts)
+        Geometry.addRingCounts(builder, ringCountsOffset)
     Geometry.addCoords(builder, coordsOffset)
     const offset = Geometry.endGeometry(builder)
     return offset
@@ -34,8 +44,8 @@ function parseGeometry(geometry: any): IParsedGeometry {
 
     let coords = null
     let lengths = null
-    const ringLengths = null
-    const ringCounts = null
+    let ringLengths = null
+    let ringCounts = null
     switch (geometry.type) {
         case 'Point':
             coords = cs
@@ -48,6 +58,26 @@ function parseGeometry(geometry: any): IParsedGeometry {
             coords = flat(cs)
             if (cs.length > 1)
                 lengths = cs.map(c => c.length * 2)
+            break
+        case 'Polygon':
+            coords = flat(cs)
+            if (cs.length > 1) {
+                ringCounts = [cs.length]
+                ringLengths = cs.map(c => c.length * 2)
+            }
+            break
+        case 'MultiPolygon':
+            coords = flat(cs)
+            if (cs.length > 1) {
+                lengths = cs.map(c => c.map(c => c.length * 2).reduce((a, b) => a + b, 0))
+                ringCounts = cs.map(c => c.length)
+                ringLengths = flat(cs.map(c => c.map(c => c.length * 2)))
+            } else {
+                if (cs[0].length > 1) {
+                    ringCounts = [cs[0].length]
+                    ringLengths = cs[0].map(c => c.length * 2)
+                }
+            }
             break
     }
     return {
@@ -65,9 +95,39 @@ function pairFlatCoordinates(coordinates: Float64Array) {
     return newArray
 }
 
+function extractParts(coords: Float64Array, lengths: Uint32Array) {
+    if (!lengths)
+        return [pairFlatCoordinates(coords)]
+    const parts = []
+    let offset = 0
+    for (let length of lengths) {
+        const slice = coords.slice(offset, offset + length)
+        parts.push(pairFlatCoordinates(slice))
+        offset += length
+    }
+    return parts
+}
+
+function extractPartsParts(coords: Float64Array, lengths: Uint32Array, ringLengths: Uint32Array, ringCounts: Uint32Array) {
+    if (!lengths)
+        return [extractParts(coords, ringLengths)]
+    const parts = []
+    let offset = 0
+    let ringLengthsOffset = 0
+    for (let i = 0; i < lengths.length; i++) {
+        const length = lengths[i]
+        const ringCount = ringCounts[i]
+        const slice = coords.slice(offset, offset + length)
+        const ringLengthsSlice = ringLengths.slice(ringLengthsOffset, ringLengthsOffset + ringCount)
+        parts.push(extractParts(slice, (ringLengthsSlice.length > 0 ? ringLengthsSlice : null)))
+        offset += length
+        ringLengthsOffset += ringCount
+    }
+    return parts
+}
+
 function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
     const coords = geometry.coordsArray()
-    const lengths = geometry.lengthsLength()
     switch (type) {
         case GeometryType.Point:
             return Array.from(coords)
@@ -75,18 +135,11 @@ function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Ge
         case GeometryType.LineString:
             return pairFlatCoordinates(coords)
         case GeometryType.MultiLineString:
-            if (lengths) {
-                const parts = []
-                let offset = 0
-                for (let i = 0; i < lengths; i++) {
-                    const length = geometry.lengths(i)
-                    const slice = coords.slice(offset, offset + length)
-                    parts.push(pairFlatCoordinates(slice))
-                    offset += length
-                }
-                return parts
-            } else
-                return [pairFlatCoordinates(coords)]
+            return extractParts(coords, geometry.lengthsArray())
+        case GeometryType.Polygon:
+            return extractParts(coords, geometry.ringLengthsArray())
+        case GeometryType.MultiPolygon:
+            return extractPartsParts(coords, geometry.lengthsArray(), geometry.ringLengthsArray(), geometry.ringCountsArray())
     }
 }
 

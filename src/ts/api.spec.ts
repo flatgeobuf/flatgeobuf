@@ -61,6 +61,42 @@ describe('api', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('Polygon', () => {
+      const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('PolygonWithHole', () => {
+      const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('MultiPolygon', () => {
+      const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('MultiPolygonWithHole', () => {
+      const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('MultiPolygonSinglePart', () => {
+      const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('MultiPolygonSinglePartWithHole', () => {
+      const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))))`)
+      const actual = api.toGeoJson(api.fromGeoJson(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
   })
 
 })
