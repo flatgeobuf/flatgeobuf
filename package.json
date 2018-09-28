@@ -18,12 +18,12 @@
   "dependencies": {
     "@types/flatbuffers": "1.9.0",
     "flatbuffers": "1.9.0",
-    "typescript": "3.0.3"
+    "typescript": "3.1.1"
   },
   "devDependencies": {
     "@types/chai": "4.1.5",
     "@types/mocha": "5.2.5",
-    "@types/node": "10.11.0",
+    "@types/node": "10.11.2",
     "chai": "4.2.0",
     "esm": "3.0.84",
     "jsts": "2.0.2",

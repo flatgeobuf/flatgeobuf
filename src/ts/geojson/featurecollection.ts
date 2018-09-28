@@ -12,7 +12,7 @@ const Header = FlatGeobuf.Header
 
 const SIZE_PREFIX_LEN: number = 8
 
-export function toFlatGeobuf(featurecollection: any) {
+export function serialize(featurecollection: any) {
 
     const layers = introspectLayers(featurecollection)
 
@@ -38,7 +38,7 @@ export function toFlatGeobuf(featurecollection: any) {
     return uint8
 }
 
-export function fromFlatGeobuf(bytes: Uint8Array) {
+export function deserialize(bytes: Uint8Array) {
     const headerLength = getInt32(bytes, 0)
 
     const headerBytes = new Uint8Array(bytes.buffer, SIZE_PREFIX_LEN)
