@@ -6,16 +6,16 @@ const GeometryType = FlatGeobuf.GeometryType
 
 export interface IGeoJsonGeometry {
     type: string
-    coordinates: number[]
+    coordinates: number[] | number[][] | number[][][] | number[][][][]
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
     const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
     const coordsOffset = Geometry.createCoordsVector(builder, coords)
 
-    let lengthsOffset = null
-    let ringLengthsOffset = null
-    let ringCountsOffset = null
+    let lengthsOffset: number = null
+    let ringLengthsOffset: number = null
+    let ringCountsOffset: number = null
     if (lengths)
         lengthsOffset = Geometry.createLengthsVector(builder, lengths)
     if (ringLengths)
@@ -43,45 +43,53 @@ interface IParsedGeometry {
     ringCounts: number[]
 }
 
-function flat(a) {
+function flat(a: any[]): number[] {
     return a.reduce((acc, val) =>
         Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
- }
+}
 
-function parseGeometry(geometry: any): IParsedGeometry {
+function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
     const cs = geometry.coordinates
-    let coords = null
-    let lengths = null
-    let ringLengths = null
-    let ringCounts = null
+    let coords: number[] = null
+    let lengths: number[] = null
+    let ringLengths: number[] = null
+    let ringCounts: number[] = null
     switch (geometry.type) {
-        case 'Point':
-            coords = cs
+        case 'Point': {
+            coords = cs as number[]
             break
+        }
         case 'MultiPoint':
-        case 'LineString':
-            coords = flat(cs)
+        case 'LineString': {
+            coords = flat(cs as number[][])
             break
-        case 'MultiLineString':
-            coords = flat(cs)
-            if (cs.length > 1)
-                lengths = cs.map(c => c.length * 2)
+        }
+        case 'MultiLineString': {
+            const css = cs as number[][][]
+            coords = flat(css)
+            if (css.length > 1)
+                lengths = css.map(c => c.length * 2)
             break
-        case 'Polygon':
-            coords = flat(cs)
-            if (cs.length > 1)
-                ringLengths = cs.map(c => c.length * 2)
+        }
+        case 'Polygon': {
+            const css = cs as number[][][]
+            coords = flat(css)
+            if (css.length > 1)
+                ringLengths = css.map(c => c.length * 2)
             break
-        case 'MultiPolygon':
-            coords = flat(cs)
-            if (cs.length > 1) {
-                lengths = cs.map(cc => cc.map(c => c.length * 2).reduce((a, b) => a + b, 0))
-                ringCounts = cs.map(c => c.length)
-                ringLengths = flat(cs.map(cc => cc.map(c => c.length * 2)))
+        }
+        case 'MultiPolygon': {
+            const csss = cs as number[][][][]
+            coords = flat(csss)
+            if (csss.length > 1) {
+                lengths = csss.map(cc => cc.map(c => c.length * 2).reduce((a, b) => a + b, 0))
+                ringCounts = csss.map(c => c.length)
+                ringLengths = flat(csss.map(cc => cc.map(c => c.length * 2)))
             } else
-                if (cs[0].length > 1)
-                    ringLengths = cs[0].map(c => c.length * 2)
+                if (csss[0].length > 1)
+                    ringLengths = csss[0].map(c => c.length * 2)
             break
+        }
     }
     return {
         coords,
@@ -92,7 +100,7 @@ function parseGeometry(geometry: any): IParsedGeometry {
 }
 
 function pairFlatCoordinates(coordinates: Float64Array) {
-    const newArray = []
+    const newArray: number[][] = []
     for (let i = 0; i < coordinates.length; i += 2)
         newArray.push([coordinates[i], coordinates[i + 1]])
     return newArray

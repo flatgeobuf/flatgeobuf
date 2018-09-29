@@ -9,7 +9,8 @@
         "quotemark": [true, "single"],
         "object-literal-sort-keys": false,
         "arrow-parens": [true, "ban-single-arg-parens"],
-        "curly": [true, "as-needed"]
+        "curly": [true, "as-needed"],
+        "no-reference": false
     },
     "rulesDirectory": [],
     "linterOptions": {

@@ -1,3 +1,5 @@
+/// <reference path="geojson.spec.d.ts" />
+
 import { expect } from 'chai'
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'

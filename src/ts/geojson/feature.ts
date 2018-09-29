@@ -9,10 +9,14 @@ import { buildGeometry, fromGeometry, IGeoJsonGeometry, toGeometryType } from '.
 const Feature = FlatGeobuf.Feature
 const Value = FlatGeobuf.Value
 
+export interface IGeoJsonProperties {
+    [key: string]: any
+}
+
 export interface IGeoJsonFeature {
     type: string
     geometry: IGeoJsonGeometry
-    properties?: object
+    properties?: IGeoJsonProperties
 }
 
 export function buildFeature(feature: IGeoJsonFeature, layers: LayerMeta[]) {
@@ -42,7 +46,11 @@ export function buildFeature(feature: IGeoJsonFeature, layers: LayerMeta[]) {
     return builder.dataBuffer()
 }
 
-function buildValue(builder: flatbuffers.Builder, column: ColumnMeta, columnIndex: number, properties: any) {
+function buildValue(
+        builder: flatbuffers.Builder,
+        column: ColumnMeta,
+        columnIndex: number,
+        properties: IGeoJsonProperties) {
     const value = properties[column.name]
     switch (column.type) {
         case ColumnType.Bool:
@@ -73,7 +81,7 @@ export function fromFeature(feature: FlatGeobuf.Feature, layers: LayerMeta[]) {
     const layer = layers[feature.layer()]
     const columns = layer.columns
     const geometry = fromGeometry(feature.geometry(), layer.geometryType)
-    const properties: any = parseProperties(feature, columns)
+    const properties = parseProperties(feature, columns)
 
     const geoJsonfeature: IGeoJsonFeature = {
         type: 'Feature',
@@ -98,7 +106,7 @@ function parseProperties(feature: FlatGeobuf.Feature, columns: ColumnMeta[]) {
     if (!columns || columns.length === 0)
         return
     const length = feature.valuesLength()
-    const properties: any = {}
+    const properties: IGeoJsonProperties = {}
     for (let i = 0; i < length; i++) {
         const value = feature.values(i)
         const column = columns[value.columnIndex()]

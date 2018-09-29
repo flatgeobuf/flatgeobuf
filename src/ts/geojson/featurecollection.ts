@@ -6,19 +6,20 @@ import { FlatGeobuf } from '../flatgeobuf_generated'
 import LayerMeta from '../LayerMeta'
 
 import { getInt32, toInt32, toUint8Array } from '../utils'
-import { buildFeature, fromFeature } from './feature'
+import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import { toGeometryType } from './geometry'
 
 const Header = FlatGeobuf.Header
+const Column = FlatGeobuf.Column
 
 const SIZE_PREFIX_LEN: number = 8
 
 export interface IGeoJsonFeatureCollection {
     type: string,
-    features?: any[]
+    features?: IGeoJsonFeature[]
 }
 
-export function serialize(featurecollection: any) {
+export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     const layers = introspectLayers(featurecollection)
     const header = toUint8Array(buildHeader(featurecollection, layers))
 
@@ -82,10 +83,10 @@ export function deserialize(bytes: Uint8Array): IGeoJsonFeatureCollection {
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
     const nameOffset = builder.createString(column.name)
-    FlatGeobuf.Column.startColumn(builder)
-    FlatGeobuf.Column.addName(builder, nameOffset)
-    FlatGeobuf.Column.addType(builder, column.type)
-    return FlatGeobuf.Column.endColumn(builder)
+    Column.startColumn(builder)
+    Column.addName(builder, nameOffset)
+    Column.addType(builder, column.type)
+    return Column.endColumn(builder)
 }
 
 function buildLayer(builder: flatbuffers.Builder, layer: LayerMeta) {
@@ -116,7 +117,7 @@ function buildHeader(featurecollection: any, layers: LayerMeta[]) {
     return builder.dataBuffer()
 }
 
-function valueToType(value: any) {
+function valueToType(value: (number | string | boolean)) {
     if (typeof value === 'boolean')
         return ColumnType.Bool
     else if (typeof value === 'number')
@@ -130,7 +131,7 @@ function valueToType(value: any) {
         throw new Error('Unknown type')
 }
 
-function introspectLayers(featurecollection: any) {
+function introspectLayers(featurecollection: IGeoJsonFeatureCollection) {
     const feature = featurecollection.features[0]
     const properties = feature.properties
 
