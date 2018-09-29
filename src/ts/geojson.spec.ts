@@ -4,16 +4,19 @@ import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
 
 import { deserialize, serialize } from './geojson'
+import { IGeoJsonFeature } from './geojson/feature'
 
-function makeFeatureCollection(wkt: string) {
-  return makeFeatureCollectionFromArray([wkt])
+function makeFeatureCollection(wkt: string, properties?: any) {
+  return makeFeatureCollectionFromArray([wkt], properties)
 }
 
-function makeFeatureCollectionFromArray(wkts: string[]) {
+function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
   const reader: any = new WKTReader()
   const writer: any = new GeoJSONWriter()
   const geometries = wkts.map(wkt => writer.write(reader.read(wkt)))
-  const features = geometries.map(geometry => ({ type: 'Feature', geometry }))
+  const features = geometries.map(geometry => ({ type: 'Feature', geometry } as IGeoJsonFeature))
+  if (properties)
+    features.forEach(f => f.properties = properties)
   return {
     type: 'FeatureCollection',
     features,
@@ -22,7 +25,7 @@ function makeFeatureCollectionFromArray(wkts: string[]) {
 
 describe('geojson', () => {
 
-  describe('roundtrip', () => {
+  describe('geometry roundtrips', () => {
 
     it('Point', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
@@ -97,6 +100,43 @@ describe('geojson', () => {
     it('MultiPolygonSinglePartWithHole', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`)
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+  })
+
+  describe('attribute roundtrips', () => {
+
+    it('Number', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: 1,
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('NumberTwoAttribs', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: 1,
+        test2: 1,
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('NumberWithDecimal', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: 1.1,
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('Boolean', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: true,
+      })
       const actual = deserialize(serialize(expected))
       expect(actual).to.deep.equal(expected)
     })

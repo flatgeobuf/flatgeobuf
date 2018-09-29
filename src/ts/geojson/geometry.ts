@@ -4,7 +4,12 @@ import { FlatGeobuf } from '../flatgeobuf_generated'
 const Geometry = FlatGeobuf.Geometry
 const GeometryType = FlatGeobuf.GeometryType
 
-export function buildGeometry(builder: flatbuffers.Builder, geometry: any) {
+export interface IGeoJsonGeometry {
+    type: string
+    coordinates: number[]
+}
+
+export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
     const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
     const coordsOffset = Geometry.createCoordsVector(builder, coords)
     let lengthsOffset = null
@@ -66,9 +71,9 @@ function parseGeometry(geometry: any): IParsedGeometry {
         case 'MultiPolygon':
             coords = flat(cs)
             if (cs.length > 1) {
-                lengths = cs.map(c => c.map(c => c.length * 2).reduce((a, b) => a + b, 0))
+                lengths = cs.map(cc => cc.map(c => c.length * 2).reduce((a, b) => a + b, 0))
                 ringCounts = cs.map(c => c.length)
-                ringLengths = flat(cs.map(c => c.map(c => c.length * 2)))
+                ringLengths = flat(cs.map(cc => cc.map(c => c.length * 2)))
             } else
                 if (cs[0].length > 1)
                     ringLengths = cs[0].map(c => c.length * 2)
@@ -94,7 +99,7 @@ function extractParts(coords: Float64Array, lengths: Uint32Array) {
         return [pairFlatCoordinates(coords)]
     const parts = []
     let offset = 0
-    for (let length of lengths) {
+    for (const length of lengths) {
         const slice = coords.slice(offset, offset + length)
         parts.push(pairFlatCoordinates(slice))
         offset += length
@@ -102,7 +107,11 @@ function extractParts(coords: Float64Array, lengths: Uint32Array) {
     return parts
 }
 
-function extractPartsParts(coords: Float64Array, lengths: Uint32Array, ringLengths: Uint32Array, ringCounts: Uint32Array) {
+function extractPartsParts(
+        coords: Float64Array,
+        lengths: Uint32Array,
+        ringLengths: Uint32Array,
+        ringCounts: Uint32Array) {
     if (!lengths)
         return [extractParts(coords, ringLengths)]
     const parts = []
@@ -133,7 +142,10 @@ function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Ge
         case GeometryType.Polygon:
             return extractParts(coords, geometry.ringLengthsArray())
         case GeometryType.MultiPolygon:
-            return extractPartsParts(coords, geometry.lengthsArray(), geometry.ringLengthsArray(), geometry.ringCountsArray())
+            return extractPartsParts(coords,
+                geometry.lengthsArray(),
+                geometry.ringLengthsArray(),
+                geometry.ringCountsArray())
     }
 }
 
