@@ -10,7 +10,7 @@ const Feature = FlatGeobuf.Feature
 const Value = FlatGeobuf.Value
 
 export interface IGeoJsonProperties {
-    [key: string]: any
+    [key: string]: boolean | number | string | object
 }
 
 export interface IGeoJsonFeature {
@@ -55,18 +55,18 @@ function buildValue(
     switch (column.type) {
         case ColumnType.Bool:
             Value.startValue(builder)
-            Value.addBoolValue(builder, value)
+            Value.addBoolValue(builder, value as boolean)
             break
         case ColumnType.Int:
             Value.startValue(builder)
-            Value.addIntValue(builder, value)
+            Value.addIntValue(builder, value as number)
             break
         case ColumnType.Double:
             Value.startValue(builder)
-            Value.addDoubleValue(builder, value)
+            Value.addDoubleValue(builder, value as number)
             break
         case ColumnType.String:
-            const stringValue = builder.createString(value)
+            const stringValue = builder.createString(value as string)
             Value.startValue(builder)
             Value.addStringValue(builder, stringValue)
             break

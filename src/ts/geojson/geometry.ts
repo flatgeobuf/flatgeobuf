@@ -48,7 +48,7 @@ function flat(a: any[]): number[] {
         Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
 }
 
-function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
+function parseGeometry(geometry: IGeoJsonGeometry) {
     const cs = geometry.coordinates
     let coords: number[] = null
     let lengths: number[] = null
@@ -96,7 +96,7 @@ function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
         lengths,
         ringLengths,
         ringCounts,
-    }
+    } as IParsedGeometry
 }
 
 function pairFlatCoordinates(coordinates: Float64Array) {
@@ -134,7 +134,7 @@ function extractPartsParts(
         const ringCount = ringCounts[i]
         const slice = coords.slice(offset, offset + length)
         const ringLengthsSlice = ringLengths.slice(ringLengthsOffset, ringLengthsOffset + ringCount)
-        parts.push(extractParts(slice, (ringLengthsSlice.length > 0 ? ringLengthsSlice : null)))
+        parts.push(extractParts(slice, ringLengthsSlice))
         offset += length
         ringLengthsOffset += ringCount
     }
@@ -161,17 +161,15 @@ function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Ge
     }
 }
 
-export function fromGeometry(
-        geometry: FlatGeobuf.Geometry,
-        type: FlatGeobuf.GeometryType): IGeoJsonGeometry {
+export function fromGeometry(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
     const coordinates = toGeoJsonCoordinates(geometry, type)
     return {
         type: GeometryType[type],
         coordinates,
-    }
+    } as IGeoJsonGeometry
 }
 
-export function toGeometryType(name: string): FlatGeobuf.GeometryType {
+export function toGeometryType(name: string) {
     const type: FlatGeobuf.GeometryType = (GeometryType as any)[name]
     return type
 }

@@ -25,9 +25,9 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
   }
 }
 
-describe('geojson', () => {
+describe('geojson module', () => {
 
-  describe('geometry roundtrips', () => {
+  describe('Geometry roundtrips', () => {
 
     it('Point', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
@@ -108,7 +108,7 @@ describe('geojson', () => {
 
   })
 
-  describe('attribute roundtrips', () => {
+  describe('Attribute roundtrips', () => {
 
     it('Number', () => {
       const expected = makeFeatureCollection('POINT(1 1)', {

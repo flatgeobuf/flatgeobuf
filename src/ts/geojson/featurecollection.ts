@@ -10,6 +10,7 @@ import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import { toGeometryType } from './geometry'
 
 const Header = FlatGeobuf.Header
+const Layer = FlatGeobuf.Layer
 const Column = FlatGeobuf.Column
 
 const SIZE_PREFIX_LEN: number = 8
@@ -24,7 +25,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     const header = toUint8Array(buildHeader(featurecollection, layers))
 
     const features: Uint8Array[] = featurecollection.features
-        .map((f: any) => buildFeature(f, layers))
+        .map(f => buildFeature(f, layers))
         .map(toUint8Array)
 
     const featuresLength = features
@@ -43,7 +44,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array): IGeoJsonFeatureCollection {
+export function deserialize(bytes: Uint8Array) {
     const headerLength = getInt32(bytes, 0)
 
     const headerBytes = new Uint8Array(bytes.buffer, SIZE_PREFIX_LEN)
@@ -78,7 +79,7 @@ export function deserialize(bytes: Uint8Array): IGeoJsonFeatureCollection {
     return {
         type: 'FeatureCollection',
         features,
-    }
+    } as IGeoJsonFeatureCollection
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
@@ -92,17 +93,17 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
 function buildLayer(builder: flatbuffers.Builder, layer: LayerMeta) {
     let columnOffsets = null
     if (layer.columns)
-        columnOffsets = FlatGeobuf.Layer.createColumnsVector(builder,
+        columnOffsets = Layer.createColumnsVector(builder,
             layer.columns.map(c => buildColumn(builder, c)))
-    FlatGeobuf.Layer.startLayer(builder)
+    Layer.startLayer(builder)
     if (columnOffsets)
-        FlatGeobuf.Layer.addColumns(builder, columnOffsets)
-    FlatGeobuf.Layer.addGeometryType(builder, layer.geometryType)
-    const layerOffset = FlatGeobuf.Layer.endLayer(builder)
+        Layer.addColumns(builder, columnOffsets)
+    Layer.addGeometryType(builder, layer.geometryType)
+    const layerOffset = Layer.endLayer(builder)
     return layerOffset
 }
 
-function buildHeader(featurecollection: any, layers: LayerMeta[]) {
+function buildHeader(featurecollection: IGeoJsonFeatureCollection, layers: LayerMeta[]) {
     const length = featurecollection.features.length
     const builder = new flatbuffers.Builder(0)
 
@@ -117,7 +118,7 @@ function buildHeader(featurecollection: any, layers: LayerMeta[]) {
     return builder.dataBuffer()
 }
 
-function valueToType(value: (number | string | boolean)) {
+function valueToType(value: boolean | number | string | object): ColumnType {
     if (typeof value === 'boolean')
         return ColumnType.Bool
     else if (typeof value === 'number')
