@@ -12,6 +12,7 @@ export interface IGeoJsonGeometry {
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
     const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
     const coordsOffset = Geometry.createCoordsVector(builder, coords)
+
     let lengthsOffset = null
     let ringLengthsOffset = null
     let ringCountsOffset = null
@@ -21,6 +22,7 @@ export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGe
         ringLengthsOffset = Geometry.createRingLengthsVector(builder, ringLengths)
     if (ringCounts)
         ringCountsOffset = Geometry.createRingCountsVector(builder, ringCounts)
+
     Geometry.startGeometry(builder)
     if (lengthsOffset)
         Geometry.addLengths(builder, lengthsOffset)
@@ -30,6 +32,7 @@ export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGe
         Geometry.addRingCounts(builder, ringCountsOffset)
     Geometry.addCoords(builder, coordsOffset)
     const offset = Geometry.endGeometry(builder)
+
     return offset
 }
 
@@ -41,7 +44,8 @@ interface IParsedGeometry {
 }
 
 function flat(a) {
-    return a.reduce((acc, val) => Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
+    return a.reduce((acc, val) =>
+        Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
  }
 
 function parseGeometry(geometry: any): IParsedGeometry {
@@ -149,7 +153,9 @@ function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Ge
     }
 }
 
-export function fromGeometry(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
+export function fromGeometry(
+        geometry: FlatGeobuf.Geometry,
+        type: FlatGeobuf.GeometryType): IGeoJsonGeometry {
     const coordinates = toGeoJsonCoordinates(geometry, type)
     return {
         type: GeometryType[type],

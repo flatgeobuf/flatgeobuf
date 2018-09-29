@@ -43,22 +43,29 @@ export function buildFeature(feature: IGeoJsonFeature, layers: LayerMeta[]) {
 }
 
 function buildValue(builder: flatbuffers.Builder, column: ColumnMeta, columnIndex: number, properties: any) {
-    Value.startValue(builder)
-    Value.addColumnIndex(builder, columnIndex)
     const value = properties[column.name]
     switch (column.type) {
         case ColumnType.Bool:
+            Value.startValue(builder)
             Value.addBoolValue(builder, value)
             break
         case ColumnType.Int:
+            Value.startValue(builder)
             Value.addIntValue(builder, value)
             break
         case ColumnType.Double:
+            Value.startValue(builder)
             Value.addDoubleValue(builder, value)
+            break
+        case ColumnType.String:
+            const stringValue = builder.createString(value)
+            Value.startValue(builder)
+            Value.addStringValue(builder, stringValue)
             break
         default:
             throw new Error('Unknown type')
     }
+    Value.addColumnIndex(builder, columnIndex)
     return Value.endValue(builder)
 }
 
@@ -83,6 +90,7 @@ function parseValue(value: FlatGeobuf.Value, column: ColumnMeta) {
         case ColumnType.Bool: return value.boolValue()
         case ColumnType.Int: return value.intValue()
         case ColumnType.Double: return value.doubleValue()
+        case ColumnType.String: return value.stringValue()
     }
 }
 

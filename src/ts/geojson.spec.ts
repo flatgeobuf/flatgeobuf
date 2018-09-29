@@ -118,7 +118,7 @@ describe('geojson', () => {
 
     it('NumberTwoAttribs', () => {
       const expected = makeFeatureCollection('POINT(1 1)', {
-        test: 1,
+        test1: 1,
         test2: 1,
       })
       const actual = deserialize(serialize(expected))
@@ -136,6 +136,25 @@ describe('geojson', () => {
     it('Boolean', () => {
       const expected = makeFeatureCollection('POINT(1 1)', {
         test: true,
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('String', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: 'test',
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('Mixed', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test1: 1,
+        test2: 1.1,
+        test3: 'test',
+        test4: true,
       })
       const actual = deserialize(serialize(expected))
       expect(actual).to.deep.equal(expected)
