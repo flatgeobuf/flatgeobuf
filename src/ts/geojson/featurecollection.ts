@@ -12,7 +12,7 @@ import { toGeometryType } from './geometry'
 const Header = FlatGeobuf.Header
 const Column = FlatGeobuf.Column
 
-const SIZE_PREFIX_LEN: number = 8
+const SIZE_PREFIX_LEN: number = 4
 
 export interface IGeoJsonFeatureCollection {
     type: string,
@@ -64,7 +64,7 @@ export function deserialize(bytes: Uint8Array) {
     for (let i = 0; i < count; i++) {
         const featureDataBytes = new Uint8Array(bytes.buffer, offset)
         const featureLength = getInt32(featureDataBytes, offset)
-        const featureBytes = new Uint8Array(bytes.buffer, offset + SIZE_PREFIX_LEN)
+        const featureBytes = new Uint8Array(bytes.buffer.slice(offset + SIZE_PREFIX_LEN))
         const featureBB = new flatbuffers.ByteBuffer(featureBytes)
         const feature = FlatGeobuf.Feature.getRootAsFeature(featureBB)
         features.push(fromFeature(feature, headerMeta))
@@ -94,11 +94,14 @@ function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: Heade
         columnOffsets = Header.createColumnsVector(builder,
             header.columns.map(c => buildColumn(builder, c)))
 
+    const nameOffset = builder.createString('L1')
+
     Header.startHeader(builder)
     Header.addFeaturesCount(builder, new flatbuffers.Long(length, 0))
     Header.addGeometryType(builder, header.geometryType)
     if (columnOffsets)
         Header.addColumns(builder, columnOffsets)
+    Header.addName(builder, nameOffset)
     const offset = Header.endHeader(builder)
     builder.finish(offset)
     return builder.dataBuffer()
