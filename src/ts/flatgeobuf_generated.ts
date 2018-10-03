@@ -482,19 +482,11 @@ ulongId():flatbuffers.Long {
 };
 
 /**
- * @returns number
- */
-layer():number {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? this.bb!.readUint32(this.bb_pos + offset) : 4294967295;
-};
-
-/**
  * @param FlatGeobuf.Geometry= obj
  * @returns FlatGeobuf.Geometry|null
  */
 geometry(obj?:FlatGeobuf.Geometry):FlatGeobuf.Geometry|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? (obj || new FlatGeobuf.Geometry).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
@@ -504,7 +496,7 @@ geometry(obj?:FlatGeobuf.Geometry):FlatGeobuf.Geometry|null {
  * @returns FlatGeobuf.Value
  */
 values(index: number, obj?:FlatGeobuf.Value):FlatGeobuf.Value|null {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? (obj || new FlatGeobuf.Value).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
@@ -512,7 +504,7 @@ values(index: number, obj?:FlatGeobuf.Value):FlatGeobuf.Value|null {
  * @returns number
  */
 valuesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -520,7 +512,7 @@ valuesLength():number {
  * @param flatbuffers.Builder builder
  */
 static startFeature(builder:flatbuffers.Builder) {
-  builder.startObject(5);
+  builder.startObject(4);
 };
 
 /**
@@ -541,18 +533,10 @@ static addUlongId(builder:flatbuffers.Builder, ulongId:flatbuffers.Long) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param number layer
- */
-static addLayer(builder:flatbuffers.Builder, layer:number) {
-  builder.addFieldInt32(2, layer, 4294967295);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @param flatbuffers.Offset geometryOffset
  */
 static addGeometry(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(3, geometryOffset, 0);
+  builder.addFieldOffset(2, geometryOffset, 0);
 };
 
 /**
@@ -560,7 +544,7 @@ static addGeometry(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offse
  * @param flatbuffers.Offset valuesOffset
  */
 static addValues(builder:flatbuffers.Builder, valuesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(4, valuesOffset, 0);
+  builder.addFieldOffset(3, valuesOffset, 0);
 };
 
 /**
@@ -936,244 +920,6 @@ envelopeArray():Float64Array|null {
 };
 
 /**
- * @param number index
- * @param FlatGeobuf.Layer= obj
- * @returns FlatGeobuf.Layer
- */
-layers(index: number, obj?:FlatGeobuf.Layer):FlatGeobuf.Layer|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? (obj || new FlatGeobuf.Layer).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
-};
-
-/**
- * @returns number
- */
-layersLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns number
- */
-indexNodeSize():number {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
-  return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
-};
-
-/**
- * @returns flatbuffers.Long
- */
-indexNodesCount():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
-};
-
-/**
- * @returns flatbuffers.Long
- */
-featuresSize():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
-};
-
-/**
- * @returns flatbuffers.Long
- */
-featuresCount():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- */
-static startHeader(builder:flatbuffers.Builder) {
-  builder.startObject(7);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset nameOffset
- */
-static addName(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(0, nameOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset envelopeOffset
- */
-static addEnvelope(builder:flatbuffers.Builder, envelopeOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(1, envelopeOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<number> data
- * @returns flatbuffers.Offset
- */
-static createEnvelopeVector(builder:flatbuffers.Builder, data:number[] | Uint8Array):flatbuffers.Offset {
-  builder.startVector(8, data.length, 8);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addFloat64(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startEnvelopeVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(8, numElems, 8);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset layersOffset
- */
-static addLayers(builder:flatbuffers.Builder, layersOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, layersOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<flatbuffers.Offset> data
- * @returns flatbuffers.Offset
- */
-static createLayersVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
-  builder.startVector(4, data.length, 4);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startLayersVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(4, numElems, 4);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number indexNodeSize
- */
-static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
-  builder.addFieldInt16(3, indexNodeSize, 16);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long indexNodesCount
- */
-static addIndexNodesCount(builder:flatbuffers.Builder, indexNodesCount:flatbuffers.Long) {
-  builder.addFieldInt64(4, indexNodesCount, builder.createLong(0, 0));
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long featuresSize
- */
-static addFeaturesSize(builder:flatbuffers.Builder, featuresSize:flatbuffers.Long) {
-  builder.addFieldInt64(5, featuresSize, builder.createLong(0, 0));
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long featuresCount
- */
-static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.Long) {
-  builder.addFieldInt64(6, featuresCount, builder.createLong(0, 0));
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @returns flatbuffers.Offset
- */
-static endHeader(builder:flatbuffers.Builder):flatbuffers.Offset {
-  var offset = builder.endObject();
-  return offset;
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset offset
- */
-static finishHeaderBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
-  builder.finish(offset);
-};
-
-}
-}
-/**
- * @constructor
- */
-export namespace FlatGeobuf{
-export class Layer {
-  bb: flatbuffers.ByteBuffer|null = null;
-
-  bb_pos:number = 0;
-/**
- * @param number i
- * @param flatbuffers.ByteBuffer bb
- * @returns Layer
- */
-__init(i:number, bb:flatbuffers.ByteBuffer):Layer {
-  this.bb_pos = i;
-  this.bb = bb;
-  return this;
-};
-
-/**
- * @param flatbuffers.ByteBuffer bb
- * @param Layer= obj
- * @returns Layer
- */
-static getRootAsLayer(bb:flatbuffers.ByteBuffer, obj?:Layer):Layer {
-  return (obj || new Layer).__init(bb.readInt32(bb.position()) + bb.position(), bb);
-};
-
-/**
- * @param flatbuffers.Encoding= optionalEncoding
- * @returns string|Uint8Array|null
- */
-name():string|null
-name(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-name(optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
-};
-
-/**
- * @param number index
- * @returns number
- */
-envelope(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
-};
-
-/**
- * @returns number
- */
-envelopeLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns Float64Array
- */
-envelopeArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
-};
-
-/**
  * @returns FlatGeobuf.GeometryType
  */
 geometryType():FlatGeobuf.GeometryType {
@@ -1208,10 +954,42 @@ columnsLength():number {
 };
 
 /**
+ * @returns number
+ */
+indexNodeSize():number {
+  var offset = this.bb!.__offset(this.bb_pos, 14);
+  return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
+};
+
+/**
+ * @returns flatbuffers.Long
+ */
+indexNodesCount():flatbuffers.Long {
+  var offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
+};
+
+/**
+ * @returns flatbuffers.Long
+ */
+featuresSize():flatbuffers.Long {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
+};
+
+/**
+ * @returns flatbuffers.Long
+ */
+featuresCount():flatbuffers.Long {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
-static startLayer(builder:flatbuffers.Builder) {
-  builder.startObject(5);
+static startHeader(builder:flatbuffers.Builder) {
+  builder.startObject(9);
 };
 
 /**
@@ -1298,11 +1076,51 @@ static startColumnsVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param number indexNodeSize
+ */
+static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
+  builder.addFieldInt16(5, indexNodeSize, 16);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Long indexNodesCount
+ */
+static addIndexNodesCount(builder:flatbuffers.Builder, indexNodesCount:flatbuffers.Long) {
+  builder.addFieldInt64(6, indexNodesCount, builder.createLong(0, 0));
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Long featuresSize
+ */
+static addFeaturesSize(builder:flatbuffers.Builder, featuresSize:flatbuffers.Long) {
+  builder.addFieldInt64(7, featuresSize, builder.createLong(0, 0));
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Long featuresCount
+ */
+static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.Long) {
+  builder.addFieldInt64(8, featuresCount, builder.createLong(0, 0));
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
-static endLayer(builder:flatbuffers.Builder):flatbuffers.Offset {
+static endHeader(builder:flatbuffers.Builder):flatbuffers.Offset {
   var offset = builder.endObject();
   return offset;
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset offset
+ */
+static finishHeaderBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
+  builder.finish(offset);
 };
 
 }

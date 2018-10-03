@@ -3,7 +3,7 @@ import { flatbuffers } from 'flatbuffers'
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { FlatGeobuf } from '../flatgeobuf_generated'
-import LayerMeta from '../LayerMeta'
+import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, fromGeometry, IGeoJsonGeometry, toGeometryType } from './geometry'
 
 const Feature = FlatGeobuf.Feature
@@ -19,12 +19,8 @@ export interface IGeoJsonFeature {
     properties?: IGeoJsonProperties
 }
 
-export function buildFeature(feature: IGeoJsonFeature, layers: LayerMeta[]) {
-    const layerIndex = layers.findIndex(l => l.geometryType === toGeometryType(feature.geometry.type))
-    const layer = layers[layerIndex]
-    const columns = layer.columns
-    if (layerIndex === -1)
-        throw new Error('Cannot introspect to an existing layer')
+export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
+    const columns = header.columns
 
     const builder = new flatbuffers.Builder(0)
 
@@ -32,12 +28,12 @@ export function buildFeature(feature: IGeoJsonFeature, layers: LayerMeta[]) {
     if (columns) {
         const valueOffsets = columns
             .map((c, i) => buildValue(builder, c, i, feature.properties))
+            .filter(v => v !== null)
         valuesOffset = Feature.createValuesVector(builder, valueOffsets)
     }
 
     const geometryOffset = buildGeometry(builder, feature.geometry)
     Feature.startFeature(builder)
-    Feature.addLayer(builder, layerIndex)
     if (valuesOffset)
         Feature.addValues(builder, valuesOffset)
     Feature.addGeometry(builder, geometryOffset)
@@ -52,6 +48,8 @@ function buildValue(
         columnIndex: number,
         properties: IGeoJsonProperties) {
     const value = properties[column.name]
+    if (value === null)
+        return
     switch (column.type) {
         case ColumnType.Bool:
             Value.startValue(builder)
@@ -77,10 +75,9 @@ function buildValue(
     return Value.endValue(builder)
 }
 
-export function fromFeature(feature: FlatGeobuf.Feature, layers: LayerMeta[]) {
-    const layer = layers[feature.layer()]
-    const columns = layer.columns
-    const geometry = fromGeometry(feature.geometry(), layer.geometryType)
+export function fromFeature(feature: FlatGeobuf.Feature, header: HeaderMeta) {
+    const columns = header.columns
+    const geometry = fromGeometry(feature.geometry(), header.geometryType)
     const properties = parseProperties(feature, columns)
 
     const geoJsonfeature: IGeoJsonFeature = {

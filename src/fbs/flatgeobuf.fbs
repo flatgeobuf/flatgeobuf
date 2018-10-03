@@ -7,19 +7,13 @@ namespace FlatGeobuf;
 table Header {
   name: string;
   envelope: [double];
-  layers: [Layer];
+  geometry_type: GeometryType;
+  dimensions: ubyte = 2;
+  columns: [Column];
   index_node_size: ushort = 16;
   index_nodes_count: ulong;
   features_size: ulong;
   features_count: ulong;
-}
-
-table Layer {
-  name: string;
-  envelope: [double];
-  geometry_type: GeometryType;
-  dimensions: ubyte = 2;
-  columns: [Column];
 }
 
 root_type Header;

@@ -10,17 +10,10 @@ int main() {
     FlatBufferBuilder builder(1024);
 
     auto name = builder.CreateString("Test");
-
-    LayerBuilder layer_builder(builder);
-    layer_builder.add_name(name);
-    layer_builder.add_geometry_type(GeometryType::Point);
-    auto layer = layer_builder.Finish();
-    
-    std::vector<Offset<Layer>> layers_vector;
-    auto layers = builder.CreateVector(layers_vector);
     
     HeaderBuilder header_builder(builder);
-    header_builder.add_layers(layers);
+    header_builder.add_name(name);
+    header_builder.add_geometry_type(GeometryType::Point);
     auto header = header_builder.Finish();
 
     builder.FinishSizePrefixed(header);
@@ -32,4 +25,10 @@ int main() {
     outfile.open("point.fgb", std::ios::binary | std::ios::out);
     outfile.write((char *) buf, size);
     outfile.close();
+
+    auto header2 = GetSizePrefixedHeader(buf);
+
+    auto andBack = header2->name()->c_str();
+
+    std::cout << andBack << std::endl;
 }

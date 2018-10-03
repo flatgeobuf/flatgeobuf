@@ -6,7 +6,6 @@ namespace FlatGeobuf;
 table Feature {
   string_id: string;
   ulong_id: ulong = 18446744073709551615;
-  layer: uint = 4294967295;
   geometry: Geometry;
   values: [Value];
 }
