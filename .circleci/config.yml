@@ -7,10 +7,13 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/node:8-browsers
+      - image: circleci/node:10
 
     steps:
       - checkout
+      - run:
+          name: Install Debian dependencies
+          command: sudo apt install python-pip
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
