@@ -305,7 +305,7 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const flatbuffers::String *>(VT_STRING_ID);
   }
   uint64_t ulong_id() const {
-    return GetField<uint64_t>(VT_ULONG_ID, 18446744073709551615);
+    return GetField<uint64_t>(VT_ULONG_ID, 18446744073709551615U);
   }
   const Geometry *geometry() const {
     return GetPointer<const Geometry *>(VT_GEOMETRY);
@@ -334,7 +334,7 @@ struct FeatureBuilder {
     fbb_.AddOffset(Feature::VT_STRING_ID, string_id);
   }
   void add_ulong_id(uint64_t ulong_id) {
-    fbb_.AddElement<uint64_t>(Feature::VT_ULONG_ID, ulong_id, 18446744073709551615);
+    fbb_.AddElement<uint64_t>(Feature::VT_ULONG_ID, ulong_id, 18446744073709551615U);
   }
   void add_geometry(flatbuffers::Offset<Geometry> geometry) {
     fbb_.AddOffset(Feature::VT_GEOMETRY, geometry);
@@ -357,7 +357,7 @@ struct FeatureBuilder {
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> string_id = 0,
-    uint64_t ulong_id = 18446744073709551615,
+    uint64_t ulong_id = 18446744073709551615U,
     flatbuffers::Offset<Geometry> geometry = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Value>>> values = 0) {
   FeatureBuilder builder_(_fbb);
@@ -371,7 +371,7 @@ inline flatbuffers::Offset<Feature> CreateFeature(
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *string_id = nullptr,
-    uint64_t ulong_id = 18446744073709551615,
+    uint64_t ulong_id = 18446744073709551615U,
     flatbuffers::Offset<Geometry> geometry = 0,
     const std::vector<flatbuffers::Offset<Value>> *values = nullptr) {
   return FlatGeobuf::CreateFeature(

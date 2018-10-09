@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
-    "test": "npm-run-all --parallel test-node test-cpp",
-    "test-node": "mocha -r ts-node/register -r esm src/**/*.spec.ts",
-    "test-cpp": "g++ -o ./testcpp -Isrc/cpp src/cpp/test/run_tests.cpp && ./testcpp"
+    "test": "./run_tests.sh"
   },
   "repository": {
     "type": "git",
