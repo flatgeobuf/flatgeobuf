@@ -3,10 +3,23 @@
 #include <iostream>
 #include <fstream>
 
+#include <fstream>
+
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
+#include "rapidjson/reader.h"
+
+class HeaderReaderHandler : public BaseReaderHandler {
+
+};
+
 int main() {
+    HeaderReaderHandler headerReaderHandler();
+
+    
+
+
     FlatBufferBuilder builder(1024);
 
     auto name = builder.CreateString("Test");
