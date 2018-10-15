@@ -1,25 +1,22 @@
-#include "flatbuffers/flatbuffers.h"
-#include "flatgeobuf_generated.h"
 #include <iostream>
 #include <fstream>
 
-#include <fstream>
+#include "flatbuffers/flatbuffers.h"
+#include "flatgeobuf_generated.h"
+#include "geojson.h"
 
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
-#include "rapidjson/reader.h"
-
-class HeaderReaderHandler : public BaseReaderHandler {
-
-};
 
 int main() {
-    HeaderReaderHandler headerReaderHandler();
+    const char* json = "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[1,1]}}]}";
 
-    
+    auto buf = serialize(json);
 
+    return 0;
 
+    /*
     FlatBufferBuilder builder(1024);
 
     auto name = builder.CreateString("Test");
@@ -44,4 +41,5 @@ int main() {
     auto andBack = header2->name()->c_str();
 
     std::cout << andBack << std::endl;
+    */
 }
