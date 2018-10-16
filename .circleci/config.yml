@@ -13,7 +13,10 @@ jobs:
       - checkout
       - run:
           name: Install Debian dependencies
-          command: sudo apt install rapidjson-dev
+          command: |
+            echo "deb http://ftp.debian.org/debian stretch-backports main" | sudo tee -a /etc/apt/sources.list
+            sudo apt-get update
+            sudo apt-get -t stretch-backports install rapidjson-dev
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
