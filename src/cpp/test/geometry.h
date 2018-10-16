@@ -1,15 +1,36 @@
+#include <fstream>
+#include <sstream>
+#include <iostream>
+
 #include "catch.hpp"
 
 #include "flatbuffers/flatbuffers.h"
 #include "../flatgeobuf_generated.h"
 
+#include "../geojson.h"
+
 using namespace flatbuffers;
 using namespace FlatGeobuf;
+
+const std::string getFixture(const std::string &path) {
+    std::ifstream t(path);
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    return buffer.str();
+}
 
 TEST_CASE("Geometry")
 {
     SECTION("Point")
     {
+        auto expected = getFixture("src/cpp/test/fixtures/point.geojson");
+        std::vector<uint8_t> flatgeobuf;
+        serialize(expected, flatgeobuf);
+        auto actual = deserialize(flatgeobuf);
+
+        REQUIRE(expected == actual);
+        
+        /*
         FlatBufferBuilder fbb(1024);
         auto envelope = nullptr;
         auto columns = nullptr;
@@ -33,5 +54,6 @@ TEST_CASE("Geometry")
         size = fbb.GetSize();
 
         REQUIRE(size == 88);
+        */
     }
 }
