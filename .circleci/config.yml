@@ -13,7 +13,7 @@ jobs:
       - checkout
       - run:
           name: Install Debian dependencies
-          command: sudo apt install python-pip
+          command: sudo apt install rapidjson-dev
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
