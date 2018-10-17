@@ -16,6 +16,7 @@ jobs:
           command: |
             echo "deb http://ftp.debian.org/debian stretch-backports main" | sudo tee -a /etc/apt/sources.list
             sudo apt-get update
+            sudo apt-get install clang
             sudo apt-get -t stretch-backports install rapidjson-dev
       - restore_cache:
           keys:
