@@ -68,31 +68,36 @@ const u_int8_t* serialize(const feature_collection fc) {
     return buf;
 }
 
-const std::vector<point> extractPoints(const Vector<double>* coords, u_int32_t length, u_int32_t offset = 0)
+const std::vector<point> extractPoints(const double* coords, u_int32_t length, u_int32_t offset = 0)
 {
+    std::vector<point> points;
+    for (u_int32_t i = offset; i < length; i += 2) {
+        points.push_back(point { coords[i], coords[i+1] });
+    }
+    return points;
+
+    // Functional variant.. ?
+    /*
     auto it = coords->begin() + offset;
     std::vector<double> v { it, it + length };
     auto pairs = iter::chunked(v, 2);
     auto points2 = iter::imap([] (auto pair) { return point( pair[0], pair[1]);}, pairs);
     std::vector<point> points { points2.begin(), points2.end() };
     return points;
-}
-
-const std::vector<point> extractPoints(const Vector<double>* coords, u_int32_t offset = 0)
-{
-    return extractPoints(coords, coords->size(), offset);
+    */
 }
 
 const geometry fromGeometry(const Geometry* geometry, const GeometryType geometryType)
 {
-    auto coords = geometry->coords();
+    auto coords = geometry->coords()->data();
+    auto coordsLength = geometry->coords()->Length();
     switch (geometryType) {
         case GeometryType::Point:
-            return point { coords->Get(0), coords->Get(1) };
+            return point { coords[0], coords[1] };
         case GeometryType::LineString:
-            return line_string(extractPoints(coords));
+            return line_string(extractPoints(coords, coordsLength));
         case GeometryType::Polygon:
-            return polygon { linear_ring { extractPoints(coords) } };
+            return polygon { linear_ring { extractPoints(coords, coordsLength) } };
         default:
             throw std::invalid_argument("Unknown geometry type");
     }
