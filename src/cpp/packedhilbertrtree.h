@@ -18,8 +18,8 @@ struct Rect {
         return {
             std::numeric_limits<double>::infinity(),
             std::numeric_limits<double>::infinity(),
-            -std::numeric_limits<double>::infinity(),
-            -std::numeric_limits<double>::infinity()
+            -1 * std::numeric_limits<double>::infinity(),
+            -1 * std::numeric_limits<double>::infinity()
         };
     }
 
@@ -41,6 +41,7 @@ struct Rect {
 };
 
 class PackedHilbertRTree {
+
     Rect _extent;
     std::vector<Rect> _rects;
     std::vector<u_int64_t> _indices;
@@ -52,18 +53,19 @@ class PackedHilbertRTree {
 
     std::vector<u_int64_t> _levelBounds;
 
-    public:
-        PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize = 16);
-        void add(double minX, double minY, double maxX, double maxY);
-        void finish();
-        std::vector<u_int64_t> search(double minX, double minY, double maxX, double maxY);
-        static void sort(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t left, u_int64_t right);
-        static void swap(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t i, u_int64_t j);
-        static u_int64_t hilbert(u_int64_t x, u_int64_t y);
-        u_int64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
+public:
+    PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize = 16);
+    void add(Rect r);
+    void add(double minX, double minY, double maxX, double maxY);
+    void finish();
+    std::vector<u_int64_t> search(double minX, double minY, double maxX, double maxY);
+    static void sort(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t left, u_int64_t right);
+    static void swap(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t i, u_int64_t j);
+    static u_int64_t hilbert(u_int64_t x, u_int64_t y);
+    u_int64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
 
-        static PackedHilbertRTree fromStream(u_int64_t numItems, char* data);
-        static char* toStream(PackedHilbertRTree packedHilbertRTree);
+    static PackedHilbertRTree fromData(u_int64_t numItems, char* data);
+    static char* toData(PackedHilbertRTree packedHilbertRTree);
 };
 
 }

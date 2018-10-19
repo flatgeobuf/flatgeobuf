@@ -3,3 +3,4 @@
 
 #include "header.h"
 #include "geometry.h"
+#include "packedhilbertrtree.h"

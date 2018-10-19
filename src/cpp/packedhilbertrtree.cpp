@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <stack>
 
@@ -9,17 +8,21 @@ using namespace FlatGeobuf;
 
 PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
 {
+    if (numItems == 0)
+        throw std::invalid_argument("Cannot create empty tree");
+
+    _pos = 0;
     _extent = Rect::createInvertedInfiniteRect();
 
     _numItems = numItems;
     _nodeSize = min(max(nodeSize, static_cast<u_int16_t>(2)), static_cast<u_int16_t>(65535));
 
-    auto n = numItems;
-    auto numNodes = n;
-    _levelBounds.reserve(n);
+    u_int64_t n = numItems;
+    u_int64_t numNodes = n;
+    _levelBounds = std::vector<u_int64_t> { n };
     do
     {
-        n = (ulong) ceil(n / _nodeSize);
+        n = ceil(static_cast<double>(n) / _nodeSize);
         numNodes += n;
         _levelBounds.push_back(numNodes);
     } while (n != 1);
@@ -32,9 +35,14 @@ PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
 
 void PackedHilbertRTree::add(double minX, double minY, double maxX, double maxY)
 {
-    Rect r = { minX, minY, maxX, maxY };
-    _indices[_pos] = _pos;
-    _rects[_pos] = r;
+    Rect r { minX, minY, maxX, maxY };
+    add(r);
+}
+
+void PackedHilbertRTree::add(Rect r)
+{
+    _indices.push_back(_pos);
+    _rects.push_back(r);
     _extent.expand(r);
     _pos++;
 }
@@ -50,7 +58,7 @@ void PackedHilbertRTree::finish()
         Rect r = _rects[i];
         u_int64_t x = floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.width());
         u_int64_t y = floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.height());
-        hilbertValues[i] = hilbert(x, y);
+        hilbertValues.push_back(hilbert(x, y));
     }
 
     // sort items by their Hilbert value (for packing later)
@@ -59,16 +67,15 @@ void PackedHilbertRTree::finish()
     // generate nodes at each tree level, bottom-up
     for (u_int16_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++)
     {
-        auto end = _levelBounds[i];
-
+        u_int64_t end = _levelBounds[i];
         while (pos < end)
         {
-            auto nodeRect = Rect::createInvertedInfiniteRect();
-            auto nodeIndex = pos;
-            for (auto j = 0; j < _nodeSize && pos < end; j++)
+            Rect nodeRect = Rect::createInvertedInfiniteRect();
+            u_int16_t nodeIndex = pos;
+            for (u_int64_t j = 0; j < _nodeSize && pos < end; j++)
                 nodeRect.expand(_rects[pos++]);
-            _rects[_pos] = nodeRect;
-            _indices[_pos] = nodeIndex;
+            _rects.push_back(nodeRect);
+            _indices.push_back(nodeIndex);
             _pos++;
         }
     }
@@ -76,7 +83,7 @@ void PackedHilbertRTree::finish()
 
 std::vector<u_int64_t> PackedHilbertRTree::search(double minX, double minY, double maxX, double maxY)
 {
-    Rect r = { minX, minY, maxX, maxY };
+    Rect r { minX, minY, maxX, maxY };
 
     u_int64_t nodeIndex = _rects.size() - 1;
     u_int16_t level = _levelBounds.size() - 1;
@@ -119,13 +126,13 @@ std::vector<u_int64_t> PackedHilbertRTree::search(double minX, double minY, doub
 }
 
 // custom quicksort that sorts bbox data alongside the hilbert values
-void PackedHilbertRTree::sort(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t left, u_int64_t right)
+void PackedHilbertRTree::sort(std::vector<u_int64_t>& values, std::vector<Rect>& boxes, std::vector<u_int64_t>& indices, u_int64_t left, u_int64_t right)
 {
     if (left >= right) return;
 
-    auto pivot = values[(left + right) >> 1];
-    auto i = left - 1;
-    auto j = right + 1;
+    u_int64_t pivot = values[(left + right) >> 1];
+    u_int64_t i = left - 1;
+    u_int64_t j = right + 1;
 
     while (true)
     {
@@ -140,17 +147,17 @@ void PackedHilbertRTree::sort(std::vector<u_int64_t> &values, std::vector<Rect> 
 }
 
 // swap two values and two corresponding boxes
-void PackedHilbertRTree::swap(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t i, u_int64_t j)
+void PackedHilbertRTree::swap(std::vector<u_int64_t>& values, std::vector<Rect>& boxes, std::vector<u_int64_t> & indices, u_int64_t i, u_int64_t j)
 {
-    auto temp = values[i];
+    u_int64_t temp = values[i];
     values[i] = values[j];
     values[j] = temp;
     
-    auto r = boxes[i];
+    Rect r = boxes[i];
     boxes[i] = boxes[j];
     boxes[j] = r;
     
-    auto e = indices[i];
+    u_int64_t e = indices[i];
     indices[i] = indices[j];
     indices[j] = e;
 }
@@ -159,15 +166,15 @@ void PackedHilbertRTree::swap(std::vector<u_int64_t> &values, std::vector<Rect> 
 // Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
 u_int64_t PackedHilbertRTree::hilbert(u_int64_t x, u_int64_t y)
 {
-    auto a = x ^ y;
-    auto b = 0xFFFF ^ a;
-    auto c = 0xFFFF ^ (x | y);
-    auto d = x & (y ^ 0xFFFF);
+    u_int64_t a = x ^ y;
+    u_int64_t b = 0xFFFF ^ a;
+    u_int64_t c = 0xFFFF ^ (x | y);
+    u_int64_t d = x & (y ^ 0xFFFF);
 
-    auto A = a | (b >> 1);
-    auto B = (a >> 1) ^ a;
-    auto C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
-    auto D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+    u_int64_t A = a | (b >> 1);
+    u_int64_t B = (a >> 1) ^ a;
+    u_int64_t C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+    u_int64_t D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
 
     a = A; b = B; c = C; d = D;
     A = ((a & (a >> 2)) ^ (b & (b >> 2)));
@@ -188,8 +195,8 @@ u_int64_t PackedHilbertRTree::hilbert(u_int64_t x, u_int64_t y)
     a = C ^ (C >> 1);
     b = D ^ (D >> 1);
 
-    auto i0 = x ^ y;
-    auto i1 = b | (0xFFFF ^ (i0 | a));
+    u_int64_t i0 = x ^ y;
+    u_int64_t i1 = b | (0xFFFF ^ (i0 | a));
 
     i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
     i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
@@ -204,3 +211,32 @@ u_int64_t PackedHilbertRTree::hilbert(u_int64_t x, u_int64_t y)
     return ((i1 << 1) | i0) >> 0;
 }
 
+PackedHilbertRTree PackedHilbertRTree::fromData(u_int64_t numItems, char* data)
+{
+    PackedHilbertRTree tree(numItems);
+    auto numNodes = tree._numNodes;
+    auto rectSize = numNodes * 8 * 4;
+    auto indicesSize = 4 + numNodes * 8;
+    Rect* pr = reinterpret_cast<Rect*>(data);
+    for (u_int64_t i = 0; i < numNodes; i++)
+        tree.add(*pr++);
+    u_int64_t* pi = reinterpret_cast<u_int64_t*>(data+rectSize);
+    for (u_int64_t i = 0; i < numNodes; i++)
+        tree._indices[i] = *pi++;
+    return tree;
+}
+
+char* PackedHilbertRTree::toData(PackedHilbertRTree packedHilbertRTree)
+{
+    auto numNodes = packedHilbertRTree._numNodes;
+    auto rectSize = numNodes * 8 * 4;
+    auto indicesSize = 4 + numNodes * 8;
+    auto data = new char[rectSize + indicesSize];
+    Rect* pr = reinterpret_cast<Rect*>(data);
+    for (u_int64_t i = 0; i < numNodes; i++)
+        *pr++ = packedHilbertRTree._rects[i];
+    u_int64_t* pi = (u_int64_t*) (data+rectSize);
+    for (u_int64_t i = 0; i < numNodes; i++)
+        *pi++ = packedHilbertRTree._indices[i];
+    return data;
+}
