@@ -38,7 +38,6 @@ const u_int8_t* serialize(const feature_collection fc) {
     u_int8_t* buf;
 
     const auto featuresCount = fc.size();
-
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
 
@@ -57,29 +56,35 @@ const u_int8_t* serialize(const feature_collection fc) {
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
     PackedHilbertRTree tree(featuresCount);
-
     for (u_int32_t i = 0; i < featuresCount; i++) {
+        tree.add(toRect(fc[i].geometry));
+    }
+    tree.finish();
+
+    auto indices = tree.getIndices();
+    std::vector<u_int64_t> featureOffsets;
+    u_int64_t featureOffset = 0;
+    for (u_int32_t i = 0; i < featuresCount; i++) {
+        auto f = fc[indices[i]];
         FlatBufferBuilder fbb(1024);
         std::vector<double> coords;
-        for_each_point(fc[i].geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
-        tree.add(toRect(fc[i].geometry));
+        for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
         auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
         auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         buf = fbb.GetBufferPointer();
         size = fbb.GetSize();
         std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
+        featureOffsets.push_back(featureOffset);
+        featureOffset += size;
     }
-    tree.finish();
     buf = tree.toData();
     size = tree.size();
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
-
-    // TODO: sort features on index
-    // TODO: create and serialize feature offset index
     
-    buf = new u_int8_t[flatgeobuf.size()];
+    buf = new u_int8_t[flatgeobuf.size() + featureOffsets.size() * 8];
     memcpy(buf, flatgeobuf.data(), flatgeobuf.size());
+    memcpy(buf + flatgeobuf.size(), featureOffsets.data(), featureOffsets.size() * 8);
 
     return buf;
 }

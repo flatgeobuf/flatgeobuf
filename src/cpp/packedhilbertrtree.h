@@ -26,17 +26,18 @@ class PackedHilbertRTree {
     ulong _numNodes;
     u_int16_t _nodeSize;
     std::vector<u_int64_t> _levelBounds;
+    static void sort(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t left, u_int64_t right);
+    static void swap(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t i, u_int64_t j);
+    static u_int64_t hilbert(u_int64_t x, u_int64_t y);
 public:
     PackedHilbertRTree(const u_int64_t numItems, const u_int16_t nodeSize = 16, const void* data = nullptr);
     void add(Rect r);
     void add(double minX, double minY, double maxX, double maxY);
     void finish();
     std::vector<u_int64_t> search(double minX, double minY, double maxX, double maxY);
-    static void sort(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t left, u_int64_t right);
-    static void swap(std::vector<u_int64_t> &values, std::vector<Rect> &boxes, std::vector<u_int64_t> &indices, u_int64_t i, u_int64_t j);
-    static u_int64_t hilbert(u_int64_t x, u_int64_t y);
     u_int64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
     u_int8_t* toData();
+    std::vector<u_int64_t> getIndices() { return _indices; };
 };
 
 }

@@ -44,4 +44,15 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(1, 1, 2, 2);
         REQUIRE(list.size() == 2);
     }
+    SECTION("PackedHilbertRTree four items")
+    {
+        PackedHilbertRTree tree(4);
+        tree.add(0, 0, 1, 1);
+        tree.add(2, 2, 3, 3);
+        tree.add(10, 10, 11, 11);
+        tree.add(100, 100, 110, 110);
+        tree.finish();
+        auto list = tree.search(10, 10, 11, 11);
+        REQUIRE(list.size() == 1);
+    }
 }
