@@ -13,20 +13,22 @@ using namespace mapbox::geojson;
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
-const std::string getFixture(const std::string &path) {
+const std::string getFixture(const std::string &path)
+{
     std::ifstream t(path);
     std::stringstream buffer;
     buffer << t.rdbuf();
     return buffer.str();
 }
 
-namespace Catch {
-    template<>
-    struct StringMaker<feature_collection> {
-        static std::string convert( feature_collection const& value ) {
-            return stringify( value );
-        }
-    };
+namespace Catch
+{
+template<>
+struct StringMaker<feature_collection> {
+    static std::string convert( feature_collection const& value ) {
+        return stringify( value );
+    }
+};
 }
 
 TEST_CASE("Geometry")

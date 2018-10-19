@@ -20,8 +20,7 @@ PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
     u_int64_t n = numItems;
     u_int64_t numNodes = n;
     _levelBounds = std::vector<u_int64_t> { n };
-    do
-    {
+    do {
         n = ceil(static_cast<double>(n) / _nodeSize);
         numNodes += n;
         _levelBounds.push_back(numNodes);
@@ -53,8 +52,7 @@ void PackedHilbertRTree::finish()
 
     // map item centers into Hilbert coordinate space and calculate Hilbert values
     std::vector<u_int64_t> hilbertValues(_numItems);
-    for (u_int64_t i = 0; i < _numItems; i++)
-    {
+    for (u_int64_t i = 0; i < _numItems; i++) {
         Rect r = _rects[i];
         u_int64_t x = floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.width());
         u_int64_t y = floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.height());
@@ -65,11 +63,9 @@ void PackedHilbertRTree::finish()
     sort(hilbertValues, _rects, _indices, 0, _numItems - 1);
     
     // generate nodes at each tree level, bottom-up
-    for (u_int16_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++)
-    {
+    for (u_int16_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
         u_int64_t end = _levelBounds[i];
-        while (pos < end)
-        {
+        while (pos < end) {
             Rect nodeRect = Rect::createInvertedInfiniteRect();
             u_int16_t nodeIndex = pos;
             for (u_int64_t j = 0; j < _nodeSize && pos < end; j++)
@@ -90,32 +86,27 @@ std::vector<u_int64_t> PackedHilbertRTree::search(double minX, double minY, doub
     std::stack<u_int64_t> stack;
     std::vector<u_int64_t> results;
     
-    while(true)
-    {
+    while(true) {
         // find the end index of the node
         u_int64_t end = min(nodeIndex + _nodeSize, _levelBounds[level]);
 
         // search through child nodes
-        for (u_int64_t pos = nodeIndex; pos < end; pos++)
-        {
+        for (u_int64_t pos = nodeIndex; pos < end; pos++) {
             u_int64_t index = _indices[pos];
 
             // check if node bbox intersects with query bbox
             if (!r.intersects(_rects[pos])) continue;
 
-            if (nodeIndex < _numItems)
-            {
+            if (nodeIndex < _numItems) {
                 results.push_back(index); // leaf item
             }
-            else
-            {
+            else {
                 stack.push(index); // node; add it to the search queue
                 stack.push(level - 1);
             }
         }
 
-        if (stack.size() == 0)
-            break;
+        if (stack.size() == 0) break;
         level = stack.top();
         stack.pop();
         nodeIndex = stack.top();
@@ -134,8 +125,7 @@ void PackedHilbertRTree::sort(std::vector<u_int64_t>& values, std::vector<Rect>&
     u_int64_t i = left - 1;
     u_int64_t j = right + 1;
 
-    while (true)
-    {
+    while (true) {
         do i++; while (values[i] < pivot);
         do j--; while (values[j] > pivot);
         if (i >= j) break;

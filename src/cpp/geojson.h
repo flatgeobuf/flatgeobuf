@@ -28,7 +28,9 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("Unknown geometry type");
 }
 
-const std::vector<uint8_t> serialize(const feature_collection fc) {
+const u_int8_t* serialize(const feature_collection fc) {
+    u_int8_t* buf;
+
     const auto featuresCount = fc.size();
 
     if (featuresCount == 0)
@@ -42,10 +44,10 @@ const std::vector<uint8_t> serialize(const feature_collection fc) {
     auto header = CreateHeaderDirect(
         fbb, nullptr, nullptr, geometryType, 2, columns, 16, 0, 0, featuresCount);
     fbb.FinishSizePrefixed(header);
-    uint8_t* buf = fbb.GetBufferPointer();
+    buf = fbb.GetBufferPointer();
     int size = fbb.GetSize();
 
-    std::vector<uint8_t> flatgeobuf;
+    std::vector<u_int8_t> flatgeobuf;
 
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
@@ -60,7 +62,10 @@ const std::vector<uint8_t> serialize(const feature_collection fc) {
 
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
-    return flatgeobuf;
+    buf = new u_int8_t[flatgeobuf.size()];
+    memcpy(buf, flatgeobuf.data(), flatgeobuf.size());
+
+    return buf;
 }
 
 const std::vector<point> extractPoints(const Vector<double>* coords, u_int32_t length, u_int32_t offset = 0)
@@ -81,8 +86,7 @@ const std::vector<point> extractPoints(const Vector<double>* coords, u_int32_t o
 const geometry fromGeometry(const Geometry* geometry, const GeometryType geometryType)
 {
     auto coords = geometry->coords();
-    switch (geometryType)
-    {
+    switch (geometryType) {
         case GeometryType::Point:
             return point { coords->Get(0), coords->Get(1) };
         case GeometryType::LineString:
@@ -101,20 +105,19 @@ const mapbox::geometry::feature<double> fromFeature(const Feature* feature, cons
     return f;
 }
 
-const feature_collection deserialize(std::vector<uint8_t> flatgeobuf)
+const feature_collection deserialize(const void* buf)
 {
-    auto data = flatgeobuf.data();
+    const u_int8_t* bytes = static_cast<const u_int8_t*>(buf);
+    const u_int32_t headerSize = *reinterpret_cast<const u_int8_t*>(bytes) + 4;
 
-    u_int32_t headerSize = *data + 4;
-
-    auto header = GetSizePrefixedHeader(data);
+    auto header = GetSizePrefixedHeader(buf);
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
     feature_collection fc {};
 
     for (auto i = 0; i < featuresCount; i++) {
-        auto feature = GetSizePrefixedRoot<Feature>(data + headerSize);
+        auto feature = GetSizePrefixedRoot<Feature>(bytes + headerSize);
         auto f = fromFeature(feature, geometryType);
         fc.push_back(f);
     }
