@@ -2,9 +2,7 @@
 #include <mapbox/geojson_impl.hpp>
 #include <mapbox/geojson/rapidjson.hpp>
 #include <mapbox/geometry.hpp>
-
-#include <cppitertools/chunked.hpp>
-#include <cppitertools/imap.hpp>
+#include <mapbox/geometry/envelope.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -13,9 +11,17 @@
 #include "flatbuffers/flatbuffers.h"
 #include "flatgeobuf_generated.h"
 
+#include "packedhilbertrtree.h"
+
 using namespace mapbox::geojson;
 using namespace flatbuffers;
 using namespace FlatGeobuf;
+
+Rect toRect(geometry geometry)
+{
+    auto box = envelope(geometry);
+    return { box.min.x, box.min.y, box.max.x, box.max.y };
+}
 
 GeometryType toGeometryType(geometry geometry)
 {
@@ -48,20 +54,30 @@ const u_int8_t* serialize(const feature_collection fc) {
     int size = fbb.GetSize();
 
     std::vector<u_int8_t> flatgeobuf;
-
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
-    fbb.Clear();
-    auto coords = std::vector<double>();
-    for_each_point(featureFirst.geometry, [&coords] (point p) { coords.push_back(p.x); coords.push_back(p.y); });
-    auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
-    auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
-    fbb.FinishSizePrefixed(feature);
-    buf = fbb.GetBufferPointer();
-    size = fbb.GetSize();
+    PackedHilbertRTree tree(featuresCount);
 
+    for (u_int32_t i = 0; i < featuresCount; i++) {
+        FlatBufferBuilder fbb(1024);
+        std::vector<double> coords;
+        for_each_point(fc[i].geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
+        tree.add(toRect(fc[i].geometry));
+        auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
+        auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
+        fbb.FinishSizePrefixed(feature);
+        buf = fbb.GetBufferPointer();
+        size = fbb.GetSize();
+        std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
+    }
+    tree.finish();
+    buf = tree.toData();
+    size = tree.size();
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
+    // TODO: sort features on index
+    // TODO: create and serialize feature offset index
+    
     buf = new u_int8_t[flatgeobuf.size()];
     memcpy(buf, flatgeobuf.data(), flatgeobuf.size());
 
@@ -71,9 +87,8 @@ const u_int8_t* serialize(const feature_collection fc) {
 const std::vector<point> extractPoints(const double* coords, u_int32_t length, u_int32_t offset = 0)
 {
     std::vector<point> points;
-    for (u_int32_t i = offset; i < length; i += 2) {
+    for (u_int32_t i = offset; i < length; i += 2)
         points.push_back(point { coords[i], coords[i+1] });
-    }
     return points;
 
     // Functional variant.. ?
@@ -121,11 +136,16 @@ const feature_collection deserialize(const void* buf)
 
     feature_collection fc {};
 
+    u_int64_t offset = headerSize;
     for (auto i = 0; i < featuresCount; i++) {
-        auto feature = GetSizePrefixedRoot<Feature>(bytes + headerSize);
+        const u_int32_t featureSize = *reinterpret_cast<const u_int8_t*>(bytes + offset) + 4;
+        auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);
         auto f = fromFeature(feature, geometryType);
         fc.push_back(f);
+        offset += featureSize;
     }
+
+    PackedHilbertRTree tree(featuresCount, 16, bytes + offset);
     
     return fc;
 }

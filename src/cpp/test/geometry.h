@@ -40,7 +40,13 @@ TEST_CASE("Geometry")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
-
+    SECTION("Points")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/points.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
     SECTION("LineString")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/linestring.geojson")).get<feature_collection>();
@@ -48,7 +54,6 @@ TEST_CASE("Geometry")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
-
     SECTION("Polygon")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/polygon.geojson")).get<feature_collection>();

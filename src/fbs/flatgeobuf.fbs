@@ -11,8 +11,6 @@ table Header {
   dimensions: ubyte = 2;
   columns: [Column];
   index_node_size: ushort = 16;
-  index_nodes_count: ulong;
-  features_size: ulong;
   features_count: ulong;
 }
 

@@ -6,7 +6,32 @@
 using namespace std;
 using namespace FlatGeobuf;
 
-PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
+Rect Rect::createInvertedInfiniteRect() {
+    return {
+        std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity(),
+        -1 * std::numeric_limits<double>::infinity(),
+        -1 * std::numeric_limits<double>::infinity()
+    };
+}
+
+void Rect::expand(Rect r) {
+    if (r.minX < minX) minX = r.minX;
+    if (r.minY < minY) minY = r.minY;
+    if (r.maxX > maxX) maxX = r.maxX;
+    if (r.maxY > maxY) maxY = r.maxY;
+}
+
+bool Rect::intersects(Rect r)
+{
+    if (maxX < r.minX) return false;
+    if (maxY < r.minY) return false;
+    if (minX > r.maxX) return false;
+    if (minY > r.maxY) return false;
+    return true;
+}
+
+PackedHilbertRTree::PackedHilbertRTree(const u_int64_t numItems, const u_int16_t nodeSize, const void* data)
 {
     if (numItems == 0)
         throw std::invalid_argument("Cannot create empty tree");
@@ -30,6 +55,18 @@ PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
 
     _rects.reserve(_numNodes);
     _indices.reserve(_numNodes);
+
+    if (data != nullptr) {
+        auto buf = reinterpret_cast<const u_int8_t*>(data);
+        auto rectSize = _numNodes * 8 * 4;
+        auto indicesSize = 4 + _numNodes * 8;
+        const Rect* pr = reinterpret_cast<const Rect*>(buf);
+        for (u_int64_t i = 0; i < _numNodes; i++)
+            add(*pr++);
+        const u_int64_t* pi = reinterpret_cast<const u_int64_t*>(buf+rectSize);
+        for (u_int64_t i = 0; i < _numNodes; i++)
+            _indices[i] = *pi++;
+    }
 }
 
 void PackedHilbertRTree::add(double minX, double minY, double maxX, double maxY)
@@ -200,32 +237,16 @@ u_int64_t PackedHilbertRTree::hilbert(u_int64_t x, u_int64_t y)
     return ((i1 << 1) | i0) >> 0;
 }
 
-PackedHilbertRTree PackedHilbertRTree::fromData(u_int64_t numItems, char* data)
+u_int8_t* PackedHilbertRTree::toData()
 {
-    PackedHilbertRTree tree(numItems);
-    auto numNodes = tree._numNodes;
-    auto rectSize = numNodes * 8 * 4;
-    auto indicesSize = 4 + numNodes * 8;
+    auto rectSize = _numNodes * 8 * 4;
+    auto indicesSize = 4 + _numNodes * 8;
+    auto data = new u_int8_t[rectSize + indicesSize];
     Rect* pr = reinterpret_cast<Rect*>(data);
-    for (u_int64_t i = 0; i < numNodes; i++)
-        tree.add(*pr++);
-    u_int64_t* pi = reinterpret_cast<u_int64_t*>(data+rectSize);
-    for (u_int64_t i = 0; i < numNodes; i++)
-        tree._indices[i] = *pi++;
-    return tree;
-}
-
-char* PackedHilbertRTree::toData(PackedHilbertRTree packedHilbertRTree)
-{
-    auto numNodes = packedHilbertRTree._numNodes;
-    auto rectSize = numNodes * 8 * 4;
-    auto indicesSize = 4 + numNodes * 8;
-    auto data = new char[rectSize + indicesSize];
-    Rect* pr = reinterpret_cast<Rect*>(data);
-    for (u_int64_t i = 0; i < numNodes; i++)
-        *pr++ = packedHilbertRTree._rects[i];
+    for (u_int64_t i = 0; i < _numNodes; i++)
+        *pr++ = _rects[i];
     u_int64_t* pi = (u_int64_t*) (data+rectSize);
-    for (u_int64_t i = 0; i < numNodes; i++)
-        *pi++ = packedHilbertRTree._indices[i];
+    for (u_int64_t i = 0; i < _numNodes; i++)
+        *pi++ = _indices[i];
     return data;
 }
