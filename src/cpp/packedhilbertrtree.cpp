@@ -34,8 +34,7 @@ PackedHilbertRTree::PackedHilbertRTree(u_int64_t numItems, u_int16_t nodeSize)
 
 void PackedHilbertRTree::add(double minX, double minY, double maxX, double maxY)
 {
-    Rect r { minX, minY, maxX, maxY };
-    add(r);
+    add(Rect { minX, minY, maxX, maxY });
 }
 
 void PackedHilbertRTree::add(Rect r)
