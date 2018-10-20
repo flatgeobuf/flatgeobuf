@@ -40,15 +40,14 @@ TEST_CASE("Geometry")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
-    // NOTE: disabled because order will be changed due to index clustering
-    /*
+
     SECTION("Points")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/points.geojson")).get<feature_collection>();
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
-        REQUIRE(expected == actual);
-    }*/
+        REQUIRE(expected.size() == actual.size());
+    }
     SECTION("LineString")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/linestring.geojson")).get<feature_collection>();
