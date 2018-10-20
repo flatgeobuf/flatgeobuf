@@ -15,6 +15,7 @@ struct Rect {
     static Rect createInvertedInfiniteRect();
     void expand(Rect r);
     bool intersects(Rect r);
+    std::vector<double> toVector();
 };
 
 class PackedHilbertRTree {
@@ -37,6 +38,7 @@ public:
     std::vector<u_int64_t> search(double minX, double minY, double maxX, double maxY);
     u_int64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
     u_int8_t* toData();
+    Rect getExtent() { return _extent; };
     std::vector<u_int64_t> getIndices() { return _indices; };
 };
 

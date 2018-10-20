@@ -34,12 +34,20 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("Unknown geometry type");
 }
 
-const u_int8_t* serialize(const feature_collection fc) {
+const u_int8_t* serialize(const feature_collection fc)
+{
     u_int8_t* buf;
 
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
+
+    PackedHilbertRTree tree(featuresCount);
+    for (auto f : fc)
+        tree.add(toRect(f.geometry));
+    tree.finish();
+
+    const auto extent = tree.getExtent().toVector();
 
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
@@ -47,19 +55,13 @@ const u_int8_t* serialize(const feature_collection fc) {
     FlatBufferBuilder fbb(1024);
     auto columns = nullptr;
     auto header = CreateHeaderDirect(
-        fbb, nullptr, nullptr, geometryType, 2, columns, 16, 0, 0, featuresCount);
+        fbb, nullptr, &extent, geometryType, 2, columns, 16, 0, 0, featuresCount);
     fbb.FinishSizePrefixed(header);
     buf = fbb.GetBufferPointer();
     int size = fbb.GetSize();
 
     std::vector<u_int8_t> flatgeobuf;
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
-
-    PackedHilbertRTree tree(featuresCount);
-    for (u_int32_t i = 0; i < featuresCount; i++) {
-        tree.add(toRect(fc[i].geometry));
-    }
-    tree.finish();
 
     auto indices = tree.getIndices();
     std::vector<u_int64_t> featureOffsets;

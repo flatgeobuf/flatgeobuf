@@ -31,6 +31,12 @@ bool Rect::intersects(Rect r)
     return true;
 }
 
+
+std::vector<double> Rect::toVector()
+{
+    return std::vector<double> { minX, minY, maxX, maxY };
+}
+
 PackedHilbertRTree::PackedHilbertRTree(const u_int64_t numItems, const u_int16_t nodeSize, const void* data)
 {
     if (numItems == 0)
