@@ -115,11 +115,11 @@ void PackedHilbertRTree::finish()
     sort(hilbertValues, _rects, _indices, 0, _numItems - 1);
 
     // generate nodes at each tree level, bottom-up
-    for (uint16_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
+    for (uint64_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
         uint64_t end = _levelBounds[i];
         while (pos < end) {
             Rect nodeRect = Rect::createInvertedInfiniteRect();
-            uint16_t nodeIndex = pos;
+            uint64_t nodeIndex = pos;
             for (uint64_t j = 0; j < _nodeSize && pos < end; j++)
                 nodeRect.expand(_rects[pos++]);
             _rects.push_back(nodeRect);
