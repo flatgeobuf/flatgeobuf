@@ -34,9 +34,9 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("Unknown geometry type");
 }
 
-const u_int8_t* serialize(const feature_collection fc)
+const uint8_t* serialize(const feature_collection fc)
 {
-    u_int8_t* buf;
+    uint8_t* buf;
 
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
@@ -60,13 +60,13 @@ const u_int8_t* serialize(const feature_collection fc)
     buf = fbb.GetBufferPointer();
     int size = fbb.GetSize();
 
-    std::vector<u_int8_t> flatgeobuf;
+    std::vector<uint8_t> flatgeobuf;
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
 
     auto indices = tree.getIndices();
-    std::vector<u_int64_t> featureOffsets;
-    u_int64_t featureOffset = 0;
-    for (u_int32_t i = 0; i < featuresCount; i++) {
+    std::vector<uint64_t> featureOffsets;
+    uint64_t featureOffset = 0;
+    for (uint32_t i = 0; i < featuresCount; i++) {
         auto f = fc[indices[i]];
         FlatBufferBuilder fbb(1024);
         std::vector<double> coords;
@@ -84,17 +84,17 @@ const u_int8_t* serialize(const feature_collection fc)
     size = tree.size();
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
     
-    buf = new u_int8_t[flatgeobuf.size() + featureOffsets.size() * 8];
+    buf = new uint8_t[flatgeobuf.size() + featureOffsets.size() * 8];
     memcpy(buf, flatgeobuf.data(), flatgeobuf.size());
     memcpy(buf + flatgeobuf.size(), featureOffsets.data(), featureOffsets.size() * 8);
 
     return buf;
 }
 
-const std::vector<point> extractPoints(const double* coords, u_int32_t length, u_int32_t offset = 0)
+const std::vector<point> extractPoints(const double* coords, uint32_t length, uint32_t offset = 0)
 {
     std::vector<point> points;
-    for (u_int32_t i = offset; i < length; i += 2)
+    for (uint32_t i = offset; i < length; i += 2)
         points.push_back(point { coords[i], coords[i+1] });
     return points;
 
@@ -134,8 +134,8 @@ const mapbox::geometry::feature<double> fromFeature(const Feature* feature, cons
 
 const feature_collection deserialize(const void* buf)
 {
-    const u_int8_t* bytes = static_cast<const u_int8_t*>(buf);
-    const u_int32_t headerSize = *reinterpret_cast<const u_int8_t*>(bytes) + 4;
+    const uint8_t* bytes = static_cast<const uint8_t*>(buf);
+    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes) + 4;
 
     auto header = GetSizePrefixedHeader(buf);
     const auto featuresCount = header->features_count();
@@ -143,9 +143,9 @@ const feature_collection deserialize(const void* buf)
 
     feature_collection fc {};
 
-    u_int64_t offset = headerSize;
+    uint64_t offset = headerSize;
     for (auto i = 0; i < featuresCount; i++) {
-        const u_int32_t featureSize = *reinterpret_cast<const u_int8_t*>(bytes + offset) + 4;
+        const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + 4;
         auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);
         auto f = fromFeature(feature, geometryType);
         fc.push_back(f);

@@ -20,7 +20,7 @@ TEST_CASE("Header")
         auto header = CreateHeaderDirect(fbb, "Test", envelope, GeometryType::Point, 2, columns, 16, 0, features_size, features_count);
 
         fbb.FinishSizePrefixed(header);
-        uint8_t *buf = fbb.GetBufferPointer();
+        // uint8_t *buf = fbb.GetBufferPointer();
         int size = fbb.GetSize();
 
         REQUIRE(size == 36);
