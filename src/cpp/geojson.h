@@ -52,36 +52,34 @@ const uint8_t* serialize(const feature_collection fc)
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
-    FlatBufferBuilder fbb(1024);
+    FlatBufferBuilder fbb;
     auto columns = nullptr;
     auto header = CreateHeaderDirect(
         fbb, nullptr, &extent, geometryType, 2, columns, 16, 0, 0, featuresCount);
     fbb.FinishSizePrefixed(header);
-    buf = fbb.GetBufferPointer();
-    int size = fbb.GetSize();
+    auto dbuf = fbb.Release();
 
     std::vector<uint8_t> flatgeobuf;
-    std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
+    std::copy(dbuf.data(), dbuf.data()+dbuf.size(), std::back_inserter(flatgeobuf));
 
     auto indices = tree.getIndices();
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;
     for (uint32_t i = 0; i < featuresCount; i++) {
         auto f = fc[indices[i]];
-        FlatBufferBuilder fbb(1024);
+        FlatBufferBuilder fbb;
         std::vector<double> coords;
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
         auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
         auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
         fbb.FinishSizePrefixed(feature);
-        buf = fbb.GetBufferPointer();
-        size = fbb.GetSize();
-        std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
+        auto dbuf = fbb.Release();
+        std::copy(dbuf.data(), dbuf.data()+dbuf.size(), std::back_inserter(flatgeobuf));
         featureOffsets.push_back(featureOffset);
-        featureOffset += size;
+        featureOffset += dbuf.size();
     }
     buf = tree.toData();
-    size = tree.size();
+    auto size = tree.size();
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
     
     buf = new uint8_t[flatgeobuf.size() + featureOffsets.size() * 8];
