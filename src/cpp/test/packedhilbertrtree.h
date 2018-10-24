@@ -10,7 +10,7 @@ TEST_CASE("PackedHilbertRTree")
 {
     SECTION("PackedHilbertRTree single item")
     {
-        PackedHilbertRTree tree(1);
+        PackedHilbertRTree<uint16_t> tree(1);
         tree.add(0, 0, 1, 1);
         tree.finish();
         auto list = tree.search(0, 0, 1, 1);
@@ -18,7 +18,7 @@ TEST_CASE("PackedHilbertRTree")
     }
     SECTION("PackedHilbertRTree two items")
     {
-        PackedHilbertRTree tree(2);
+        PackedHilbertRTree<uint16_t> tree(2);
         tree.add(0, 0, 1, 1);
         tree.add(2, 2, 3, 3);
         tree.finish();
@@ -27,28 +27,28 @@ TEST_CASE("PackedHilbertRTree")
     }
     SECTION("PackedHilbertRTree roundtrip single item")
     {
-        PackedHilbertRTree tree(1);
+        PackedHilbertRTree<uint16_t> tree(1);
         tree.add(0, 0, 1, 1);
         tree.finish();
         auto data = tree.toData();
-        auto tree2 = PackedHilbertRTree(1, 16, data);
+        auto tree2 = PackedHilbertRTree<uint16_t>(1, 16, data);
         auto list = tree2.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
     }
     SECTION("PackedHilbertRTree roundtrip single item")
     {
-        PackedHilbertRTree tree(2);
+        PackedHilbertRTree<uint16_t> tree(2);
         tree.add(0, 0, 1, 1);
         tree.add(2, 2, 3, 3);
         tree.finish();
         auto data = tree.toData();
-        auto tree2 = PackedHilbertRTree(2, 16, data);
+        auto tree2 = PackedHilbertRTree<uint16_t>(2, 16, data);
         auto list = tree.search(1, 1, 2, 2);
         REQUIRE(list.size() == 2);
     }
     SECTION("PackedHilbertRTree four items")
     {
-        PackedHilbertRTree tree(4);
+        PackedHilbertRTree<uint16_t> tree(4);
         tree.add(0, 0, 1, 1);
         tree.add(2, 2, 3, 3);
         tree.add(10, 10, 11, 11);
@@ -61,7 +61,7 @@ TEST_CASE("PackedHilbertRTree")
     {
         std::uniform_real_distribution<double> unif(0,1);
         std::default_random_engine re;
-        PackedHilbertRTree tree(1000000);
+        PackedHilbertRTree<uint32_t> tree(1000000);
         double x, y;
         for (int i = 0; i < 1000000; i++) {
             x = unif(re);

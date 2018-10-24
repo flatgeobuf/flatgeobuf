@@ -42,7 +42,7 @@ const uint8_t* serialize(const feature_collection fc)
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
 
-    PackedHilbertRTree tree(featuresCount);
+    PackedHilbertRTree<uint64_t> tree(featuresCount);
     for (auto f : fc)
         tree.add(toRect(f.geometry));
     tree.finish();
@@ -150,7 +150,7 @@ const feature_collection deserialize(const void* buf)
         offset += featureSize;
     }
 
-    PackedHilbertRTree tree(featuresCount, 16, bytes + offset);
+    PackedHilbertRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
     
     return fc;
 }
