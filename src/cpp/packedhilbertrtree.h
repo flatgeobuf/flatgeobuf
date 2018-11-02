@@ -13,8 +13,8 @@ struct Rect {
     double minY;
     double maxX;
     double maxY;
-    double width() { return maxX - minX; };
-    double height() { return maxY - minY; };
+    double width() { return maxX - minX; }
+    double height() { return maxY - minY; }
     static Rect createInvertedInfiniteRect() {
         return {
             std::numeric_limits<double>::infinity(),
@@ -69,7 +69,7 @@ class PackedHilbertRTree {
 
         sort(values, boxes, indices, left, j);
         sort(values, boxes, indices, j + 1, right);
-    };
+    }
     static void swap(std::vector<T> &values, std::vector<Rect> &boxes, std::vector<T> &indices, T i, T j) {
         T temp = values[i];
         values[i] = values[j];
@@ -82,7 +82,7 @@ class PackedHilbertRTree {
         T e = indices[i];
         indices[i] = indices[j];
         indices[j] = e;
-    };
+    }
     static T hilbert(T x, T y) {
         T a = x ^ y;
         T b = 0xFFFF ^ a;
@@ -127,7 +127,7 @@ class PackedHilbertRTree {
         i1 = (i1 | (i1 << 1)) & 0x55555555;
 
         return ((i1 << 1) | i0) >> 0;
-    };
+    }
 public:
     PackedHilbertRTree(const T numItems, const uint16_t nodeSize = 16, const void* data = nullptr) {
         if (numItems == 0)
@@ -170,10 +170,10 @@ public:
         _rects.push_back(r);
         _extent.expand(r);
         _pos++;
-    };
+    }
     void add(double minX, double minY, double maxX, double maxY) {
         add(Rect { minX, minY, maxX, maxY });
-    };
+    }
     void finish() {
         T hilbertMax = (1 << 16) - 1;
 
@@ -202,7 +202,7 @@ public:
                 _pos++;
             }
         }
-    };
+    }
     std::vector<T> search(double minX, double minY, double maxX, double maxY) {
         Rect r { minX, minY, maxX, maxY };
 
@@ -239,9 +239,9 @@ public:
         }
 
         return results;
-    };
-    uint64_t numNodes() { return _numNodes; };
-    uint64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
+    }
+    uint64_t numNodes() { return _numNodes; }
+    uint64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; }
     uint8_t* toData() {
         auto rectSize = _numNodes * 8 * 4;
         auto indicesSize = 4 + _numNodes * 8;
@@ -254,8 +254,8 @@ public:
             *pi++ = _indices[i];
         return data;
     }
-    Rect getExtent() { return _extent; };
-    std::vector<T> getIndices() { return _indices; };
+    Rect getExtent() { return _extent; }
+    std::vector<T> getIndices() { return _indices; }
 };
 
 }
