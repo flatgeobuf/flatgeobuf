@@ -17,6 +17,8 @@ using namespace mapbox::geojson;
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
+uint8_t magicbytes[4] = { 0x66, 0x67, 0x62, 0x00 };
+
 Rect toRect(geometry geometry)
 {
     auto box = envelope(geometry);
@@ -32,6 +34,15 @@ GeometryType toGeometryType(geometry geometry)
     if (geometry.is<polygon>())
         return GeometryType::Polygon;
     throw std::invalid_argument("Unknown geometry type");
+}
+
+ColumnType indexStorageType(uint64_t numNodes) {
+    if (numNodes < std::numeric_limits<uint16_t>::max() / 4)
+        return ColumnType::UShort;
+    else if (numNodes < std::numeric_limits<uint32_t>::max() / 4)
+        return ColumnType::UInt;
+    else
+        return ColumnType::ULong;
 }
 
 const uint8_t* serialize(const feature_collection fc)
@@ -74,7 +85,7 @@ const uint8_t* serialize(const feature_collection fc)
         auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
-        std::copy(dbuf.data(), dbuf.data()+dbuf.size(), std::back_inserter(flatgeobuf));
+        std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(flatgeobuf));
         featureOffsets.push_back(featureOffset);
         featureOffset += dbuf.size();
     }
@@ -82,9 +93,10 @@ const uint8_t* serialize(const feature_collection fc)
     auto size = tree.size();
     std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
     
-    buf = new uint8_t[flatgeobuf.size() + featureOffsets.size() * 8];
-    memcpy(buf, flatgeobuf.data(), flatgeobuf.size());
-    memcpy(buf + flatgeobuf.size(), featureOffsets.data(), featureOffsets.size() * 8);
+    buf = new uint8_t[4 + flatgeobuf.size() + featureOffsets.size() * 8];
+    memcpy(buf, magicbytes, 4);
+    memcpy(buf + 4, flatgeobuf.data(), flatgeobuf.size());
+    memcpy(buf + 4 + flatgeobuf.size(), featureOffsets.data(), featureOffsets.size() * 8);
 
     return buf;
 }
@@ -133,15 +145,21 @@ const mapbox::geometry::feature<double> fromFeature(const Feature* feature, cons
 const feature_collection deserialize(const void* buf)
 {
     const uint8_t* bytes = static_cast<const uint8_t*>(buf);
-    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes) + 4;
 
-    auto header = GetSizePrefixedHeader(buf);
+    if (bytes[0] != magicbytes[0] ||
+        bytes[1] != magicbytes[1] ||
+        bytes[2] != magicbytes[2] ||
+        bytes[3] != magicbytes[3])
+        throw new std::invalid_argument("Not a FlatGeobuf file");
+    uint64_t offset = 4; 
+    
+    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + 4;
+    auto header = GetSizePrefixedHeader(bytes + offset);
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
     feature_collection fc {};
-
-    uint64_t offset = headerSize;
+    offset += headerSize;
     for (auto i = 0; i < featuresCount; i++) {
         const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + 4;
         auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);

@@ -240,6 +240,7 @@ public:
 
         return results;
     };
+    uint64_t numNodes() { return _numNodes; };
     uint64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; };
     uint8_t* toData() {
         auto rectSize = _numNodes * 8 * 4;
