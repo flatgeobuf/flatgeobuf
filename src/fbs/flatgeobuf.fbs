@@ -10,8 +10,8 @@ table Header {
   geometry_type: GeometryType;
   dimensions: ubyte = 2;
   columns: [Column];
-  index_node_size: ushort = 16;
   features_count: ulong;
+  features_size: ulong;
 }
 
 root_type Header;

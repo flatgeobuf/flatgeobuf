@@ -59,20 +59,11 @@ const uint8_t* serialize(const feature_collection fc)
     tree.finish();
 
     const auto extent = tree.getExtent().toVector();
-
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
-    FlatBufferBuilder fbb;
-    auto columns = nullptr;
-    auto header = CreateHeaderDirect(
-        fbb, nullptr, &extent, geometryType, 2, columns, 16, 0, 0, featuresCount);
-    fbb.FinishSizePrefixed(header);
-    auto dbuf = fbb.Release();
-
-    std::vector<uint8_t> flatgeobuf;
-    std::copy(dbuf.data(), dbuf.data()+dbuf.size(), std::back_inserter(flatgeobuf));
-
+    std::vector<uint8_t> data;
+    std::vector<uint8_t> featureData;
     auto indices = tree.getIndices();
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;
@@ -85,18 +76,28 @@ const uint8_t* serialize(const feature_collection fc)
         auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
-        std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(flatgeobuf));
+        std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
         featureOffsets.push_back(featureOffset);
         featureOffset += dbuf.size();
     }
     buf = tree.toData();
     auto size = tree.size();
-    std::copy(buf, buf+size, std::back_inserter(flatgeobuf));
+    std::copy(buf, buf+size, std::back_inserter(featureData));
+
+    FlatBufferBuilder fbb;
+    auto columns = nullptr;
+    auto header = CreateHeaderDirect(
+        fbb, nullptr, &extent, geometryType, 2, columns, featuresCount, featureOffset);
+    fbb.FinishSizePrefixed(header);
+    auto hbuf = fbb.Release();
+    std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
+
+    std::copy(featureData.data(), featureData.data() + featureData.size(), std::back_inserter(data));
     
-    buf = new uint8_t[4 + flatgeobuf.size() + featureOffsets.size() * 8];
+    buf = new uint8_t[4 + data.size() + featureOffsets.size() * 8];
     memcpy(buf, magicbytes, 4);
-    memcpy(buf + 4, flatgeobuf.data(), flatgeobuf.size());
-    memcpy(buf + 4 + flatgeobuf.size(), featureOffsets.data(), featureOffsets.size() * 8);
+    memcpy(buf + 4, data.data(), data.size());
+    memcpy(buf + 4 + data.size(), featureOffsets.data(), featureOffsets.size() * 8);
 
     return buf;
 }
