@@ -305,7 +305,7 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const flatbuffers::String *>(VT_STRING_ID);
   }
   uint64_t ulong_id() const {
-    return GetField<uint64_t>(VT_ULONG_ID, 18446744073709551615U);
+    return GetField<uint64_t>(VT_ULONG_ID, 18446744073709551615);
   }
   const Geometry *geometry() const {
     return GetPointer<const Geometry *>(VT_GEOMETRY);
@@ -334,7 +334,7 @@ struct FeatureBuilder {
     fbb_.AddOffset(Feature::VT_STRING_ID, string_id);
   }
   void add_ulong_id(uint64_t ulong_id) {
-    fbb_.AddElement<uint64_t>(Feature::VT_ULONG_ID, ulong_id, 18446744073709551615U);
+    fbb_.AddElement<uint64_t>(Feature::VT_ULONG_ID, ulong_id, 18446744073709551615);
   }
   void add_geometry(flatbuffers::Offset<Geometry> geometry) {
     fbb_.AddOffset(Feature::VT_GEOMETRY, geometry);
@@ -357,7 +357,7 @@ struct FeatureBuilder {
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> string_id = 0,
-    uint64_t ulong_id = 18446744073709551615U,
+    uint64_t ulong_id = 18446744073709551615,
     flatbuffers::Offset<Geometry> geometry = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Value>>> values = 0) {
   FeatureBuilder builder_(_fbb);
@@ -371,7 +371,7 @@ inline flatbuffers::Offset<Feature> CreateFeature(
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *string_id = nullptr,
-    uint64_t ulong_id = 18446744073709551615U,
+    uint64_t ulong_id = 18446744073709551615,
     flatbuffers::Offset<Geometry> geometry = 0,
     const std::vector<flatbuffers::Offset<Value>> *values = nullptr) {
   return FlatGeobuf::CreateFeature(
@@ -596,9 +596,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_DIMENSIONS = 10,
     VT_COLUMNS = 12,
     VT_INDEX_NODE_SIZE = 14,
-    VT_INDEX_NODES_COUNT = 16,
-    VT_FEATURES_SIZE = 18,
-    VT_FEATURES_COUNT = 20
+    VT_FEATURES_COUNT = 16
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -618,12 +616,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t index_node_size() const {
     return GetField<uint16_t>(VT_INDEX_NODE_SIZE, 16);
   }
-  uint64_t index_nodes_count() const {
-    return GetField<uint64_t>(VT_INDEX_NODES_COUNT, 0);
-  }
-  uint64_t features_size() const {
-    return GetField<uint64_t>(VT_FEATURES_SIZE, 0);
-  }
   uint64_t features_count() const {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
   }
@@ -639,8 +631,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(columns()) &&
            verifier.VerifyVectorOfTables(columns()) &&
            VerifyField<uint16_t>(verifier, VT_INDEX_NODE_SIZE) &&
-           VerifyField<uint64_t>(verifier, VT_INDEX_NODES_COUNT) &&
-           VerifyField<uint64_t>(verifier, VT_FEATURES_SIZE) &&
            VerifyField<uint64_t>(verifier, VT_FEATURES_COUNT) &&
            verifier.EndTable();
   }
@@ -667,12 +657,6 @@ struct HeaderBuilder {
   void add_index_node_size(uint16_t index_node_size) {
     fbb_.AddElement<uint16_t>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
   }
-  void add_index_nodes_count(uint64_t index_nodes_count) {
-    fbb_.AddElement<uint64_t>(Header::VT_INDEX_NODES_COUNT, index_nodes_count, 0);
-  }
-  void add_features_size(uint64_t features_size) {
-    fbb_.AddElement<uint64_t>(Header::VT_FEATURES_SIZE, features_size, 0);
-  }
   void add_features_count(uint64_t features_count) {
     fbb_.AddElement<uint64_t>(Header::VT_FEATURES_COUNT, features_count, 0);
   }
@@ -696,13 +680,9 @@ inline flatbuffers::Offset<Header> CreateHeader(
     uint8_t dimensions = 2,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
     uint16_t index_node_size = 16,
-    uint64_t index_nodes_count = 0,
-    uint64_t features_size = 0,
     uint64_t features_count = 0) {
   HeaderBuilder builder_(_fbb);
   builder_.add_features_count(features_count);
-  builder_.add_features_size(features_size);
-  builder_.add_index_nodes_count(index_nodes_count);
   builder_.add_columns(columns);
   builder_.add_envelope(envelope);
   builder_.add_name(name);
@@ -720,8 +700,6 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     uint8_t dimensions = 2,
     const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
     uint16_t index_node_size = 16,
-    uint64_t index_nodes_count = 0,
-    uint64_t features_size = 0,
     uint64_t features_count = 0) {
   return FlatGeobuf::CreateHeader(
       _fbb,
@@ -731,8 +709,6 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       dimensions,
       columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0,
       index_node_size,
-      index_nodes_count,
-      features_size,
       features_count);
 }
 
