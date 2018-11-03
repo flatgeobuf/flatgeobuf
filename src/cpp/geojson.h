@@ -36,7 +36,8 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("Unknown geometry type");
 }
 
-ColumnType indexStorageType(uint64_t numNodes) {
+ColumnType indexStorageType(uint64_t numNodes)
+{
     if (numNodes < std::numeric_limits<uint16_t>::max() / 4)
         return ColumnType::UShort;
     else if (numNodes < std::numeric_limits<uint32_t>::max() / 4)
@@ -47,11 +48,13 @@ ColumnType indexStorageType(uint64_t numNodes) {
 
 const uint8_t* serialize(const feature_collection fc)
 {
-    uint8_t* buf;
-
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
+
+    uint8_t* buf;
+    std::vector<uint8_t> data;
+    std::copy(magicbytes, magicbytes + 4, std::back_inserter(data));
 
     PackedHilbertRTree<uint64_t> tree(featuresCount);
     for (auto f : fc)
@@ -62,11 +65,22 @@ const uint8_t* serialize(const feature_collection fc)
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
-    std::vector<uint8_t> data;
+    FlatBufferBuilder fbb;
+    auto columns = nullptr;
+    auto header = CreateHeaderDirect(
+        fbb, nullptr, &extent, geometryType, 2, columns, featuresCount);
+    fbb.FinishSizePrefixed(header);
+    auto hbuf = fbb.Release();
+    std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
+    
+    buf = tree.toData();
+    auto size = tree.size();
+    std::copy(buf, buf+size, std::back_inserter(data));
+    
     std::vector<uint8_t> featureData;
-    auto indices = tree.getIndices();
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;
+    auto indices = tree.getIndices();
     for (uint32_t i = 0; i < featuresCount; i++) {
         auto f = fc[indices[i]];
         FlatBufferBuilder fbb;
@@ -80,24 +94,12 @@ const uint8_t* serialize(const feature_collection fc)
         featureOffsets.push_back(featureOffset);
         featureOffset += dbuf.size();
     }
-    buf = tree.toData();
-    auto size = tree.size();
-    std::copy(buf, buf+size, std::back_inserter(featureData));
 
-    FlatBufferBuilder fbb;
-    auto columns = nullptr;
-    auto header = CreateHeaderDirect(
-        fbb, nullptr, &extent, geometryType, 2, columns, featuresCount, featureOffset);
-    fbb.FinishSizePrefixed(header);
-    auto hbuf = fbb.Release();
-    std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
-
+    std::copy(featureOffsets.data(), featureOffsets.data() + featureOffsets.size() * 8, std::back_inserter(data));
     std::copy(featureData.data(), featureData.data() + featureData.size(), std::back_inserter(data));
     
-    buf = new uint8_t[4 + data.size() + featureOffsets.size() * 8];
-    memcpy(buf, magicbytes, 4);
-    memcpy(buf + 4, data.data(), data.size());
-    memcpy(buf + 4 + data.size(), featureOffsets.data(), featureOffsets.size() * 8);
+    buf = new uint8_t[data.size()];
+    memcpy(buf, data.data(), data.size());
 
     return buf;
 }
@@ -159,6 +161,11 @@ const feature_collection deserialize(const void* buf)
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
+    PackedHilbertRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
+    offset += tree.size();
+
+    offset += featuresCount * 8;
+
     feature_collection fc {};
     offset += headerSize;
     for (auto i = 0; i < featuresCount; i++) {
@@ -168,8 +175,6 @@ const feature_collection deserialize(const void* buf)
         fc.push_back(f);
         offset += featureSize;
     }
-
-    PackedHilbertRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
     
     return fc;
 }

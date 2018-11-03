@@ -595,8 +595,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_GEOMETRY_TYPE = 8,
     VT_DIMENSIONS = 10,
     VT_COLUMNS = 12,
-    VT_FEATURES_COUNT = 14,
-    VT_FEATURES_SIZE = 16
+    VT_FEATURES_COUNT = 14
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -616,9 +615,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint64_t features_count() const {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
   }
-  uint64_t features_size() const {
-    return GetField<uint64_t>(VT_FEATURES_SIZE, 0);
-  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -631,7 +627,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(columns()) &&
            verifier.VerifyVectorOfTables(columns()) &&
            VerifyField<uint64_t>(verifier, VT_FEATURES_COUNT) &&
-           VerifyField<uint64_t>(verifier, VT_FEATURES_SIZE) &&
            verifier.EndTable();
   }
 };
@@ -657,9 +652,6 @@ struct HeaderBuilder {
   void add_features_count(uint64_t features_count) {
     fbb_.AddElement<uint64_t>(Header::VT_FEATURES_COUNT, features_count, 0);
   }
-  void add_features_size(uint64_t features_size) {
-    fbb_.AddElement<uint64_t>(Header::VT_FEATURES_SIZE, features_size, 0);
-  }
   explicit HeaderBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -679,10 +671,8 @@ inline flatbuffers::Offset<Header> CreateHeader(
     GeometryType geometry_type = GeometryType::Point,
     uint8_t dimensions = 2,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
-    uint64_t features_count = 0,
-    uint64_t features_size = 0) {
+    uint64_t features_count = 0) {
   HeaderBuilder builder_(_fbb);
-  builder_.add_features_size(features_size);
   builder_.add_features_count(features_count);
   builder_.add_columns(columns);
   builder_.add_envelope(envelope);
@@ -699,8 +689,7 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     GeometryType geometry_type = GeometryType::Point,
     uint8_t dimensions = 2,
     const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
-    uint64_t features_count = 0,
-    uint64_t features_size = 0) {
+    uint64_t features_count = 0) {
   return FlatGeobuf::CreateHeader(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
@@ -708,8 +697,7 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       geometry_type,
       dimensions,
       columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0,
-      features_count,
-      features_size);
+      features_count);
 }
 
 inline const FlatGeobuf::Header *GetHeader(const void *buf) {
