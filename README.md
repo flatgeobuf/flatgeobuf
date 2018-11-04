@@ -13,7 +13,7 @@ Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://gi
 * MB: Magic bytes (0x66676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/flatgeobuf.fbs))
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedhilbertrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
-* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s )
+* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 DISCLAIMER: Unfinished work in progress.
 
