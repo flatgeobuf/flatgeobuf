@@ -4,7 +4,16 @@
 
 A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/).
 
-Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity, to be able to use a static spatial index and to avoid fragementation issues.
+Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity and to be able to cluster the data on a optimally balanced R-tree spatial index.
+
+## Specification
+
+![layout](layout.svg "FlatGeobuf file layout")
+
+* MB: Magic bytes (0x66676200)
+* H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/flatgeobuf.fbs))
+* I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedhilbertrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
+* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s )
 
 DISCLAIMER: Unfinished work in progress.
 
