@@ -20,9 +20,7 @@ DISCLAIMER: Unfinished work in progress.
 ## TODO
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
-* Optional spatial index
-* Optional attribute indexes (mabye, perhaps only unique id index?)
 * Efficient I/O (streaming and random access)
-* GDAL/OGR driver
-* QGIS POC
+* GDAL/OGR driver (WIP @ https://github.com/bjornharrtell/gdal/tree/flatgeobuf)
+* QGIS POC (WIP @ https://github.com/bjornharrtell/QGIS/tree/fgb)
 * Complete test coverage
