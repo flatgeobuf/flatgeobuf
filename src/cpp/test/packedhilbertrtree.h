@@ -14,6 +14,16 @@ TEST_CASE("PackedHilbertRTree")
         tree.add(0, 0, 1, 1);
         tree.finish();
         auto list = tree.search(0, 0, 1, 1);
+        REQUIRE(tree.size() == 68);
+        REQUIRE(list.size() == 1);
+    }
+    SECTION("PackedHilbertRTree single item uint32_t")
+    {
+        PackedHilbertRTree<uint32_t> tree(1);
+        tree.add(0, 0, 1, 1);
+        tree.finish();
+        auto list = tree.search(0, 0, 1, 1);
+        REQUIRE(tree.size() == 72);
         REQUIRE(list.size() == 1);
     }
     SECTION("PackedHilbertRTree two items")
@@ -71,5 +81,18 @@ TEST_CASE("PackedHilbertRTree")
         tree.finish();
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1000000);
+    }
+    SECTION("PackedHilbertRTree three items replaced root indices")
+    {
+        PackedHilbertRTree<uint16_t> tree(3);
+        tree.add(0, 0, 1, 1);
+        tree.add(2, 2, 3, 3);
+        tree.add(4, 4, 5, 5);
+        std::vector<uint16_t> rootIndices({80, 60, 70});
+        tree.replaceRootIndices(rootIndices);
+        tree.finish();
+        auto list = tree.search(2, 2, 3, 3);
+        REQUIRE(list.size() == 1);
+        REQUIRE(list[0] == 60);
     }
 }

@@ -155,7 +155,7 @@ public:
 
         if (data != nullptr) {
             auto buf = reinterpret_cast<const uint8_t*>(data);
-            auto rectSize = _numNodes * 8 * 4;
+            uint64_t rectSize = _numNodes * sizeof(double) * 4;
             // auto indicesSize = 4 + _numNodes * 8;
             const Rect* pr = reinterpret_cast<const Rect*>(buf);
             for (T i = 0; i < _numNodes; i++)
@@ -164,6 +164,18 @@ public:
             for (T i = 0; i < _numNodes; i++)
                 _indices[i] = *pi++;
         }
+    }
+    static uint64_t calcNumNodes(const uint64_t numItems, const uint16_t nodeSize = 16) {
+        auto n = numItems;
+        auto numNodes = n;
+        do {
+            n = ceil(static_cast<double>(n) / nodeSize);
+            numNodes += n;
+        } while (n != 1);
+        return numNodes;
+    }
+    void replaceRootIndices(const std::vector<T> rootIndices) {
+        std::copy(rootIndices.begin(), rootIndices.end(), _indices.begin());
     }
     void add(Rect r) {
         _indices.push_back(_pos);
@@ -207,13 +219,13 @@ public:
         Rect r { minX, minY, maxX, maxY };
 
         T nodeIndex = _rects.size() - 1;
-        uint16_t level = _levelBounds.size() - 1;
+        T level = _levelBounds.size() - 1;
         std::stack<T> stack;
         std::vector<T> results;
 
         while(true) {
             // find the end index of the node
-            T end = std::min(static_cast<uint64_t>(nodeIndex + _nodeSize), static_cast<uint64_t>(_levelBounds[level]));
+            T end = std::min(static_cast<T>(nodeIndex + _nodeSize), _levelBounds[level]);
 
             // search through child nodes
             for (T pos = nodeIndex; pos < end; pos++) {
@@ -241,15 +253,15 @@ public:
         return results;
     }
     uint64_t numNodes() { return _numNodes; }
-    uint64_t size() { return _numNodes * 4 * 8 + _numNodes * 8; }
+    uint64_t size() { return _numNodes * 4 * sizeof(double) + _numNodes * sizeof(T); }
     uint8_t* toData() {
-        auto rectSize = _numNodes * 8 * 4;
-        auto indicesSize = 4 + _numNodes * 8;
+        auto rectSize = _numNodes * sizeof(double) * 4;
+        auto indicesSize = _numNodes * sizeof(T);
         auto data = new uint8_t[rectSize + indicesSize];
         Rect* pr = reinterpret_cast<Rect*>(data);
         for (T i = 0; i < _numNodes; i++)
             *pr++ = _rects[i];
-        T* pi = (T*) (data+rectSize);
+        T* pi = (T*) (data + rectSize);
         for (T i = 0; i < _numNodes; i++)
             *pi++ = _indices[i];
         return data;
