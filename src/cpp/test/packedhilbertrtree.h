@@ -35,7 +35,7 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(1, 1, 2, 2);
         REQUIRE(list.size() == 2);
     }
-    SECTION("PackedHilbertRTree roundtrip single item")
+    SECTION("PackedHilbertRTree roundtrip 1 item")
     {
         PackedHilbertRTree<uint16_t> tree(1);
         tree.add(0, 0, 1, 1);
@@ -45,7 +45,7 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree2.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
     }
-    SECTION("PackedHilbertRTree roundtrip single item")
+    SECTION("PackedHilbertRTree roundtrip 2 items")
     {
         PackedHilbertRTree<uint16_t> tree(2);
         tree.add(0, 0, 1, 1);
@@ -56,7 +56,7 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(1, 1, 2, 2);
         REQUIRE(list.size() == 2);
     }
-    SECTION("PackedHilbertRTree four items")
+    SECTION("PackedHilbertRTree 4 items")
     {
         PackedHilbertRTree<uint16_t> tree(4);
         tree.add(0, 0, 1, 1);
@@ -66,6 +66,24 @@ TEST_CASE("PackedHilbertRTree")
         tree.finish();
         auto list = tree.search(10, 10, 11, 11);
         REQUIRE(list.size() == 1);
+        REQUIRE(list[0] == 2);
+    }
+    SECTION("PackedHilbertRTree 8 items")
+    {
+        PackedHilbertRTree<uint16_t> tree(8);
+        tree.add(0, 0, 1, 1);
+        tree.add(2, 2, 3, 3);
+        tree.add(10, 10, 11, 11);
+        tree.add(100, 100, 110, 110);
+        tree.add(101, 101, 111, 111);
+        tree.add(102, 102, 112, 112);
+        tree.add(103, 103, 113, 113);
+        tree.add(104, 104, 114, 114);
+        tree.finish();
+        auto list = tree.search(10, 10, 100, 100);
+        REQUIRE(list.size() == 2);
+        REQUIRE(list[0] == 3);
+        REQUIRE(list[1] == 2);
     }
     SECTION("PackedHilbertRTree 1 million items")
     {
@@ -82,7 +100,7 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1000000);
     }
-    SECTION("PackedHilbertRTree three items replaced root indices")
+    SECTION("PackedHilbertRTree 3 items replaced root indices")
     {
         PackedHilbertRTree<uint16_t> tree(3);
         tree.add(0, 0, 1, 1);
