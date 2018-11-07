@@ -75,7 +75,7 @@ class PackedHilbertRTree {
         values[i] = values[j];
         values[j] = temp;
 
-        Rect r = boxes[i];
+        auto r = boxes[i];
         boxes[i] = boxes[j];
         boxes[j] = r;
 
@@ -129,9 +129,9 @@ class PackedHilbertRTree {
         return ((i1 << 1) | i0) >> 0;
     }
 public:
-    PackedHilbertRTree(const T numItems, const uint16_t nodeSize = 16, const void* data = nullptr) {
+    PackedHilbertRTree(const T numItems, const uint16_t nodeSize = 16, const void *data = nullptr) {
         if (numItems == 0)
-        throw std::invalid_argument("Cannot create empty tree");
+            throw std::invalid_argument("Cannot create empty tree");
 
         _pos = 0;
         _extent = Rect::createInvertedInfiniteRect();
@@ -155,14 +155,13 @@ public:
 
         if (data != nullptr) {
             auto buf = reinterpret_cast<const uint8_t*>(data);
-            uint64_t rectSize = _numNodes * sizeof(double) * 4;
-            // auto indicesSize = 4 + _numNodes * 8;
+            uint64_t rectsSize = _numNodes * sizeof(Rect);
             const Rect* pr = reinterpret_cast<const Rect*>(buf);
-            for (T i = 0; i < _numNodes; i++)
+            const T* pi = reinterpret_cast<const T*>(buf + rectsSize);
+            for (T i = 0; i < _numNodes; i++) {
                 add(*pr++);
-            const T* pi = reinterpret_cast<const T*>(buf+rectSize);
-            for (T i = 0; i < _numNodes; i++)
                 _indices[i] = *pi++;
+            }
         }
     }
     static uint64_t calcNumNodes(const uint64_t numItems, const uint16_t nodeSize = 16) {
@@ -178,21 +177,23 @@ public:
         std::copy(rootIndices.begin(), rootIndices.end(), _indices.begin());
     }
     void add(Rect r) {
-        _indices.push_back(_pos);
+        _indices.push_back(_pos++);
         _rects.push_back(r);
         _extent.expand(r);
-        _pos++;
     }
     void add(double minX, double minY, double maxX, double maxY) {
         add(Rect { minX, minY, maxX, maxY });
     }
     void finish() {
+        if (_pos != _numItems)
+            throw std::runtime_error("this._pos != this.numItems");
+
         T hilbertMax = (1 << 16) - 1;
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
         std::vector<T> hilbertValues(_numItems);
         for (T i = 0; i < _numItems; i++) {
-            Rect r = _rects[i];
+            auto r = _rects[i];
             T x = floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.width());
             T y = floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.height());
             hilbertValues.push_back(hilbert(x, y));
@@ -205,7 +206,7 @@ public:
         for (T i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
             T end = _levelBounds[i];
             while (pos < end) {
-                Rect nodeRect = Rect::createInvertedInfiniteRect();
+                auto nodeRect = Rect::createInvertedInfiniteRect();
                 T nodeIndex = pos;
                 for (T j = 0; j < _nodeSize && pos < end; j++)
                     nodeRect.expand(_rects[pos++]);
@@ -216,6 +217,9 @@ public:
         }
     }
     std::vector<T> search(double minX, double minY, double maxX, double maxY) {
+        if (_pos != _rects.size())
+            throw std::runtime_error("Data not yet indexed - call finish().");
+
         Rect r { minX, minY, maxX, maxY };
 
         T nodeIndex = _rects.size() - 1;
@@ -223,6 +227,7 @@ public:
         std::stack<T> stack;
         std::vector<T> results;
 
+        //bool cont = true;
         while(true) {
             // find the end index of the node
             T end = std::min(static_cast<T>(nodeIndex + _nodeSize), _levelBounds[level]);
@@ -232,38 +237,41 @@ public:
                 T index = _indices[pos];
 
                 // check if node bbox intersects with query bbox
-                if (!r.intersects(_rects[pos])) continue;
+                if (!r.intersects(_rects[pos]))
+                    continue;
 
                 if (nodeIndex < _numItems) {
                     results.push_back(index); // leaf item
-                }
-                else {
+                } else {
                     stack.push(index); // node; add it to the search queue
                     stack.push(level - 1);
                 }
             }
 
-            if (stack.size() == 0) break;
+            if (stack.size() == 0)
+                break;
             level = stack.top();
             stack.pop();
             nodeIndex = stack.top();
             stack.pop();
+            //if (stack.size() == 0)
+            //    cont = false;
         }
 
         return results;
     }
     uint64_t numNodes() { return _numNodes; }
-    uint64_t size() { return _numNodes * 4 * sizeof(double) + _numNodes * sizeof(T); }
+    uint64_t size() { return _numNodes * sizeof(Rect) + _numNodes * sizeof(T); }
     uint8_t* toData() {
-        auto rectSize = _numNodes * sizeof(double) * 4;
-        auto indicesSize = _numNodes * sizeof(T);
-        auto data = new uint8_t[rectSize + indicesSize];
-        Rect* pr = reinterpret_cast<Rect*>(data);
-        for (T i = 0; i < _numNodes; i++)
+        T rectsSize = _numNodes * sizeof(Rect);
+        T indicesSize = _numNodes * sizeof(T);
+        uint8_t *data = new uint8_t[rectsSize + indicesSize];
+        Rect *pr = reinterpret_cast<Rect *>(data);
+        T *pi = reinterpret_cast<T *>(data + rectsSize);
+        for (T i = 0; i < _numNodes; i++) {
             *pr++ = _rects[i];
-        T* pi = (T*) (data + rectSize);
-        for (T i = 0; i < _numNodes; i++)
             *pi++ = _indices[i];
+        }
         return data;
     }
     Rect getExtent() { return _extent; }
