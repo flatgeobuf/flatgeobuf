@@ -29,16 +29,14 @@ struct Rect {
         if (r.maxX > maxX) maxX = r.maxX;
         if (r.maxY > maxY) maxY = r.maxY;
     }
-    bool intersects(Rect r)
-    {
+    bool intersects(Rect r) {
         if (maxX < r.minX) return false;
         if (maxY < r.minY) return false;
         if (minX > r.maxX) return false;
         if (minY > r.maxY) return false;
         return true;
     }
-    std::vector<double> toVector()
-    {
+    std::vector<double> toVector() {
         return std::vector<double> { minX, minY, maxX, maxY };
     }
 };
