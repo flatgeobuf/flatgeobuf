@@ -80,9 +80,8 @@ const uint8_t* serialize(const feature_collection fc)
     std::vector<uint8_t> featureData;
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;
-    auto indices = tree.getIndices();
     for (uint32_t i = 0; i < featuresCount; i++) {
-        auto f = fc[indices[i]];
+        auto f = fc[tree.getIndex(i)];
         FlatBufferBuilder fbb;
         std::vector<double> coords;
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });

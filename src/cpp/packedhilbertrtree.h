@@ -29,7 +29,7 @@ struct Rect {
         if (r.maxX > maxX) maxX = r.maxX;
         if (r.maxY > maxY) maxY = r.maxY;
     }
-    bool intersects(Rect r) {
+    bool intersects(Rect r) const {
         if (maxX < r.minX) return false;
         if (maxY < r.minY) return false;
         if (minX > r.maxX) return false;
@@ -124,7 +124,7 @@ class PackedHilbertRTree {
         i1 = (i1 | (i1 << 2)) & 0x33333333;
         i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-        return ((i1 << 1) | i0) >> 0;
+        return ((i1 << 1) | i0);
     }
 public:
     PackedHilbertRTree(const T numItems, const uint16_t nodeSize = 16, const void *data = nullptr) {
@@ -184,7 +184,7 @@ public:
     }
     void finish() {
         if (_pos != _numItems)
-            throw std::runtime_error("this._pos != this.numItems");
+            throw std::runtime_error("_pos != _numItems");
 
         T hilbertMax = (1 << 16) - 1;
 
@@ -214,7 +214,7 @@ public:
             }
         }
     }
-    std::vector<T> search(double minX, double minY, double maxX, double maxY) {
+    std::vector<T> search(double minX, double minY, double maxX, double maxY) const {
         if (_pos != _rects.size())
             throw std::runtime_error("Data not yet indexed - call finish().");
 
@@ -258,9 +258,9 @@ public:
 
         return results;
     }
-    uint64_t numNodes() { return _numNodes; }
-    uint64_t size() { return _numNodes * sizeof(Rect) + _numNodes * sizeof(T); }
-    uint8_t* toData() {
+    uint64_t numNodes() const { return _numNodes; }
+    uint64_t size() const { return _numNodes * sizeof(Rect) + _numNodes * sizeof(T); }
+    uint8_t* toData() const {
         T rectsSize = _numNodes * sizeof(Rect);
         T indicesSize = _numNodes * sizeof(T);
         uint8_t *data = new uint8_t[rectsSize + indicesSize];
@@ -272,8 +272,9 @@ public:
         }
         return data;
     }
-    Rect getExtent() { return _extent; }
-    std::vector<T> getIndices() { return _indices; }
+    Rect getExtent() const { return _extent; }
+    Rect getRect(T i) const { return _rects[i]; }
+    T getIndex(T i) const { return _indices[i]; }
 };
 
 }
