@@ -41,6 +41,14 @@ struct Rect {
     }
 };
 
+std::ostream& operator << ( std::ostream& os, Rect const& value ) {
+    os << std::to_string(value.minX) << " "
+       << std::to_string(value.minY) << " "
+       << std::to_string(value.maxX) << " "
+       << std::to_string(value.maxY);
+    return os;
+}
+
 /**
  * Packed Hilbert R-Tree
  * Based on https://github.com/mourner/flatbush
