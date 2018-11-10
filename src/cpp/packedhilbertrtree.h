@@ -153,7 +153,7 @@ public:
 
         T n = numItems;
         T numNodes = n;
-        _levelBounds = std::vector<T> { n };
+        _levelBounds.push_back(n);
         do {
             n = ceil(static_cast<double>(n) / _nodeSize);
             numNodes += n;

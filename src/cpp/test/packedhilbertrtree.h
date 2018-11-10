@@ -209,7 +209,7 @@ TEST_CASE("PackedHilbertRTree")
         REQUIRE(list.size() == 1);
         REQUIRE(list[0] == 60);
     }
-    SECTION("PackedHilbertRTree 1 million items in denmark")
+    /*SECTION("PackedHilbertRTree 1 million items in denmark")
     {
         std::uniform_real_distribution<double> unifx(466379,708929);
         std::uniform_real_distribution<double> unify(6096801,6322352);
@@ -226,7 +226,33 @@ TEST_CASE("PackedHilbertRTree")
         for (uint64_t i = 0; i < list.size(); i++) {
             auto rect = tree.getRect(tree.getIndex(list[i]));
             INFO(rect);
-            REQUIRE(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
+            CHECK(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
         }
     }
+    SECTION("PackedHilbertRTree 1 million items 2")
+    {
+        PackedHilbertRTree<uint64_t> tree(1000000);
+        double x, y;
+        for (int i = 0; i < 1000000; i++) {
+            x = i;
+            y = 1000000 - i - 1;
+            tree.add(x, y, x, y);
+        }
+        tree.finish();
+        //auto list = tree.search(30000, 30000, 60000, 60000);
+        auto list = tree.search(0, 0, 1000000, 1000000);
+        REQUIRE(list.size() == 1000000);
+        for (uint64_t i = 0; i < list.size(); i++) {
+            auto rect = tree.getRect(tree.getIndex(list[i]));
+            INFO(rect);
+            REQUIRE(rect.intersects({0, 0, 1000000, 1000000}) == true);
+        }
+        list = tree.search(0, 0, 750000, 750000);
+        REQUIRE(list.size() == 500002);
+        for (uint64_t i = 0; i < list.size(); i++) {
+            auto rect = tree.getRect(tree.getIndex(list[i]));
+            INFO(rect);
+            CHECK(rect.intersects({0, 0, 750000, 750000}) == true);
+        }
+    }*/
 }
