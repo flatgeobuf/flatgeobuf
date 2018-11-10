@@ -86,7 +86,7 @@ const uint8_t* serialize(const feature_collection fc)
         std::vector<double> coords;
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
         auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
-        auto feature = CreateFeatureDirect(fbb, 0, 0, geometry, 0);
+        auto feature = CreateFeatureDirect(fbb, i, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
