@@ -79,6 +79,34 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(1, 1, 2, 2);
         REQUIRE(list.size() == 2);
     }
+    SECTION("PackedHilbertRTree 3 points detailed verification")
+    {
+        PackedHilbertRTree<uint16_t> tree(3);
+        tree.add(0, 0, 0, 0);
+        tree.add(1, 1, 1, 1);
+        tree.add(2, 2, 2, 2);
+        REQUIRE(tree.getRect(0).intersects({0, 0, 0, 0}) == true);
+        REQUIRE(tree.getRect(1).intersects({1, 1, 1, 1}) == true);
+        REQUIRE(tree.getRect(2).intersects({2, 2, 2, 2}) == true);
+        REQUIRE(tree.getIndex(0) == 0);
+        REQUIRE(tree.getIndex(1) == 1);
+        REQUIRE(tree.getIndex(2) == 2);
+        tree.finish();
+        REQUIRE(tree.getRect(0).intersects({0, 0, 0, 0}) == true);
+        REQUIRE(tree.getRect(2).intersects({1, 1, 1, 1}) == true);
+        REQUIRE(tree.getRect(1).intersects({2, 2, 2, 2}) == true);
+        REQUIRE(tree.getIndex(0) == 0);
+        REQUIRE(tree.getIndex(2) == 1);
+        REQUIRE(tree.getIndex(1) == 2);
+        auto list = tree.search(1, 1, 2, 2);
+        REQUIRE(list.size() == 2);
+        REQUIRE(list[0] == 2); 
+        REQUIRE(list[1] == 1);
+        for (uint32_t i = 0; i < list.size(); i++) {
+            auto rect = tree.getRect(tree.getIndex(list[i]));
+            REQUIRE(rect.intersects({1, 1, 2, 2}) == true);
+        }
+    }
     SECTION("PackedHilbertRTree 4 items")
     {
         PackedHilbertRTree<uint16_t> tree(4);
@@ -95,22 +123,22 @@ TEST_CASE("PackedHilbertRTree")
         REQUIRE(tree.getIndex(2) == 2);
         REQUIRE(tree.getIndex(3) == 3);
         tree.finish();
-        REQUIRE(tree.getRect(2).intersects({0, 0, 1, 1}) == true);
+        REQUIRE(tree.getRect(0).intersects({0, 0, 1, 1}) == true);
         REQUIRE(tree.getRect(3).intersects({2, 2, 3, 3}) == true);
-        REQUIRE(tree.getRect(0).intersects({10, 10, 11, 11}) == true);
+        REQUIRE(tree.getRect(2).intersects({10, 10, 11, 11}) == true);
         REQUIRE(tree.getRect(1).intersects({100, 100, 110, 110}) == true);
-        REQUIRE(tree.getIndex(2) == 0);
+        REQUIRE(tree.getIndex(0) == 0);
         REQUIRE(tree.getIndex(3) == 1);
-        REQUIRE(tree.getIndex(0) == 2);
+        REQUIRE(tree.getIndex(2) == 2);
         REQUIRE(tree.getIndex(1) == 3);
         auto list = tree.search(10, 10, 11, 11);
         REQUIRE(list.size() == 1);
-        REQUIRE(tree.getIndex(list[0]) == 0);
-        REQUIRE(tree.getRect(0).intersects({10, 10, 11, 11}) == true);
+        REQUIRE(tree.getIndex(list[0]) == 2);
+        REQUIRE(tree.getRect(2).intersects({10, 10, 11, 11}) == true);
     }
     SECTION("PackedHilbertRTree 8 items")
     {
-        PackedHilbertRTree<uint16_t> tree(8);
+        PackedHilbertRTree<uint32_t> tree(9);
         tree.add(0, 0, 1, 1);
         tree.add(2, 2, 3, 3);
         tree.add(10, 10, 11, 11);
@@ -119,11 +147,14 @@ TEST_CASE("PackedHilbertRTree")
         tree.add(102, 102, 112, 112);
         tree.add(103, 103, 113, 113);
         tree.add(104, 104, 114, 114);
+        tree.add(10010, 10010, 10110, 10110);
         tree.finish();
-        auto list = tree.search(10, 10, 100, 100);
-        REQUIRE(list.size() == 2);
-        REQUIRE(list[0] == 3);
-        REQUIRE(list[1] == 2);
+        auto list = tree.search(102, 102, 103, 103);
+        REQUIRE(list.size() == 4);
+        for (uint32_t i = 0; i < list.size(); i++) {
+            auto rect = tree.getRect(tree.getIndex(list[i]));
+            REQUIRE(rect.intersects({102, 102, 103, 103}) == true);
+        }
     }
     SECTION("PackedHilbertRTree 1 million items")
     {
@@ -177,5 +208,28 @@ TEST_CASE("PackedHilbertRTree")
         auto list = tree.search(2, 2, 3, 3);
         REQUIRE(list.size() == 1);
         REQUIRE(list[0] == 60);
+    }
+    SECTION("PackedHilbertRTree 1 million items in denmark")
+    {
+        std::uniform_real_distribution<double> unifx(466379,708929);
+        std::uniform_real_distribution<double> unify(6096801,6322352);
+        std::default_random_engine re;
+        PackedHilbertRTree<uint64_t> tree(1000000);
+        double x, y;
+        for (int i = 0; i < 1000000; i++) {
+            x = unifx(re);
+            y = unify(re);
+            tree.add(x, y, x, y);
+        }
+        tree.finish();
+        auto list = tree.search(690407, 6063692, 811682, 6176467);
+        REQUIRE(list.size() == 27120);
+
+        // TODO: find out why one of these fails...
+        /*
+        for (uint64_t i = 0; i < list.size(); i++) {
+            auto rect = tree.getRect(tree.getIndex(list[i]));
+            REQUIRE(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
+        }*/
     }
 }

@@ -128,7 +128,9 @@ class PackedHilbertRTree {
         i1 = (i1 | (i1 << 2)) & 0x33333333;
         i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-        return ((i1 << 1) | i0);
+        auto value = ((i1 << 1) | i0);
+
+        return value;
     }
 public:
     PackedHilbertRTree(const T numItems, const uint16_t nodeSize = 16, const void *data = nullptr) {
@@ -193,12 +195,14 @@ public:
         T hilbertMax = (1 << 16) - 1;
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        std::vector<T> hilbertValues(_numItems);
+        std::vector<T> hilbertValues;
+        hilbertValues.reserve(_numItems);
         for (T i = 0; i < _numItems; i++) {
             auto r = _rects[i];
             T x = floor(hilbertMax * ((r.minX + r.maxX) / 2 - _extent.minX) / _extent.width());
             T y = floor(hilbertMax * ((r.minY + r.maxY) / 2 - _extent.minY) / _extent.height());
-            hilbertValues.push_back(hilbert(x, y));
+            auto v = hilbert(x, y);
+            hilbertValues.push_back(v);
         }
 
         // sort items by their Hilbert value (for packing later)
