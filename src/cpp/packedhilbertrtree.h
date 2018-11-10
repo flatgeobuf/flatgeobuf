@@ -41,6 +41,10 @@ struct Rect {
     }
 };
 
+/**
+ * Packed Hilbert R-Tree
+ * Based on https://github.com/mourner/flatbush
+ */
 template <class T>
 class PackedHilbertRTree {
     Rect _extent;
@@ -152,10 +156,10 @@ public:
         _indices.reserve(_numNodes);
 
         if (data != nullptr) {
-            auto buf = reinterpret_cast<const uint8_t*>(data);
+            auto buf = reinterpret_cast<const uint8_t *>(data);
             uint64_t rectsSize = _numNodes * sizeof(Rect);
-            const Rect* pr = reinterpret_cast<const Rect*>(buf);
-            const T* pi = reinterpret_cast<const T*>(buf + rectsSize);
+            const Rect *pr = reinterpret_cast<const Rect*>(buf);
+            const T *pi = reinterpret_cast<const T*>(buf + rectsSize);
             for (T i = 0; i < _numNodes; i++) {
                 add(*pr++);
                 _indices[i] = *pi++;
@@ -260,7 +264,7 @@ public:
     }
     uint64_t numNodes() const { return _numNodes; }
     uint64_t size() const { return _numNodes * sizeof(Rect) + _numNodes * sizeof(T); }
-    uint8_t* toData() const {
+    uint8_t *toData() const {
         T rectsSize = _numNodes * sizeof(Rect);
         T indicesSize = _numNodes * sizeof(T);
         uint8_t *data = new uint8_t[rectsSize + indicesSize];
