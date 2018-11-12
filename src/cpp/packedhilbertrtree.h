@@ -225,13 +225,18 @@ public:
 
         Rect r { minX, minY, maxX, maxY };
 
-        T nodeIndex = _rects.size() - 1;
-        T level = _levelBounds.size() - 1;
-        std::stack<T> stack;
+        std::vector<T> queue;
         std::vector<T> results;
 
-        //bool cont = true;
-        while(true) {
+        queue.push_back(_rects.size() - 1);
+	    queue.push_back(_levelBounds.size() - 1);
+
+        while(queue.size() != 0) {
+            T nodeIndex = queue[queue.size() - 2];
+            T level = queue[queue.size() - 1];
+            queue.pop_back();
+            queue.pop_back();
+
             // find the end index of the node
             T end = std::min(static_cast<T>(nodeIndex + _nodeSize), _levelBounds[level]);
 
@@ -246,19 +251,10 @@ public:
                 if (nodeIndex < _numItems) {
                     results.push_back(index); // leaf item
                 } else {
-                    stack.push(index); // node; add it to the search queue
-                    stack.push(level - 1);
+                    queue.push_back(index); // node; add it to the search queue
+                    queue.push_back(level - 1);
                 }
             }
-
-            if (stack.size() == 0)
-                break;
-            level = stack.top();
-            stack.pop();
-            nodeIndex = stack.top();
-            stack.pop();
-            //if (stack.size() == 0)
-            //    cont = false;
         }
 
         return results;
