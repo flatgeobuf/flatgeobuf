@@ -63,7 +63,7 @@ class PackedHilbertRTree {
     T _numNodes;
     uint16_t _nodeSize;
     std::vector<T> _levelBounds;
-    static void sort(std::vector<T> &values, std::vector<Rect> &boxes, std::vector<T> &indices, T left, T right) {
+    static void sort(T *values, Rect *boxes, T *indices, T left, T right) {
         if (left >= right) return;
 
         T pivot = values[(left + right) >> 1];
@@ -74,24 +74,13 @@ class PackedHilbertRTree {
             do i++; while (values[i] < pivot);
             do j--; while (values[j] > pivot);
             if (i >= j) break;
-            swap(values, boxes, indices, i, j);
+            std::swap(values[i], values[j]);
+		    std::swap(boxes[i], boxes[j]);
+            std::swap(indices[i], indices[j]);
         }
 
         sort(values, boxes, indices, left, j);
         sort(values, boxes, indices, j + 1, right);
-    }
-    static void swap(std::vector<T> &values, std::vector<Rect> &boxes, std::vector<T> &indices, T i, T j) {
-        T temp = values[i];
-        values[i] = values[j];
-        values[j] = temp;
-
-        auto r = boxes[i];
-        boxes[i] = boxes[j];
-        boxes[j] = r;
-
-        T e = indices[i];
-        indices[i] = indices[j];
-        indices[j] = e;
     }
     static T hilbert(T x, T y) {
         T a = x ^ y;
@@ -214,7 +203,7 @@ public:
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, _rects, _indices, 0, _numItems - 1);
+        sort(hilbertValues.data(), _rects.data(), _indices.data(), 0, _numItems - 1);
 
         // generate nodes at each tree level, bottom-up
         for (T i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
