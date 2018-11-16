@@ -144,7 +144,7 @@ public:
         T numNodes = n;
         _levelBounds.push_back(n);
         do {
-            n = ceil(static_cast<double>(n) / _nodeSize);
+            n = (n + _nodeSize - 1) / _nodeSize;
             numNodes += n;
             _levelBounds.push_back(numNodes);
         } while (n != 1);
@@ -173,9 +173,6 @@ public:
             numNodes += n;
         } while (n != 1);
         return numNodes;
-    }
-    void replaceRootIndices(const std::vector<T> rootIndices) {
-        std::copy(rootIndices.begin(), rootIndices.end(), _indices.begin());
     }
     void add(Rect r) {
         _indices.push_back(_pos++);

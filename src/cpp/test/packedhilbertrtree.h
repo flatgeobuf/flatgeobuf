@@ -196,19 +196,6 @@ TEST_CASE("PackedHilbertRTree")
             REQUIRE(rect.intersects({0, 0, 1, 1}) == true);
         }
     }
-    SECTION("PackedHilbertRTree 3 items replaced root indices")
-    {
-        PackedHilbertRTree<uint16_t> tree(3);
-        tree.add(0, 0, 1, 1);
-        tree.add(2, 2, 3, 3);
-        tree.add(4, 4, 5, 5);
-        std::vector<uint16_t> rootIndices({80, 60, 70});
-        tree.replaceRootIndices(rootIndices);
-        tree.finish();
-        auto list = tree.search(2, 2, 3, 3);
-        REQUIRE(list.size() == 1);
-        REQUIRE(list[0] == 60);
-    }
     /*SECTION("PackedHilbertRTree 1 million items in denmark")
     {
         std::uniform_real_distribution<double> unifx(466379,708929);
