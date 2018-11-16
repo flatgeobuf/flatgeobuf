@@ -11,7 +11,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "flatgeobuf_generated.h"
 
-#include "packedhilbertrtree.h"
+#include "packedrtree.h"
 
 using namespace mapbox::geojson;
 using namespace flatbuffers;
@@ -56,7 +56,7 @@ const uint8_t* serialize(const feature_collection fc)
     std::vector<uint8_t> data;
     std::copy(magicbytes, magicbytes + 4, std::back_inserter(data));
 
-    PackedHilbertRTree<uint64_t> tree(featuresCount);
+    PackedRTree<uint64_t> tree(featuresCount);
     for (auto f : fc)
         tree.add(toRect(f.geometry));
     tree.finish();
@@ -81,7 +81,7 @@ const uint8_t* serialize(const feature_collection fc)
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;
     for (uint32_t i = 0; i < featuresCount; i++) {
-        auto f = fc[tree.getIndex(i)];
+        auto f = fc[i];
         FlatBufferBuilder fbb;
         std::vector<double> coords;
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
@@ -160,7 +160,7 @@ const feature_collection deserialize(const void* buf)
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
-    PackedHilbertRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
+    PackedRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
     offset += tree.size();
 
     offset += featuresCount * 8;

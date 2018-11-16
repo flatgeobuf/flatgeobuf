@@ -10,6 +10,7 @@ using namespace FlatGeobuf;
 
 
 int main() {
+    /*
     PackedHilbertRTree<uint16_t> tree(3);
     tree.add(0, 0, 0, 0);
     tree.add(1, 1, 1, 1);
@@ -32,4 +33,5 @@ int main() {
         //auto rect = tree.getRect(tree.getIndex(list[i]));
     }
     std::cout << std::endl;
+    */
 }

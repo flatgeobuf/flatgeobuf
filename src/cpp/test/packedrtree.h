@@ -2,12 +2,32 @@
 
 #include "catch.hpp"
 
-#include "../packedhilbertrtree.h"
+#include "../packedrtree.h"
 
 using namespace FlatGeobuf;
 
-TEST_CASE("PackedHilbertRTree")
+TEST_CASE("PackedRTree")
 {
+    SECTION("PackedRTree 2 items 2")
+    {
+        std::vector<Rect> rects;
+        rects.push_back({0, 0, 1, 1});
+        rects.push_back({2, 2, 3, 3});
+        REQUIRE(rects[0].intersects({0, 0, 1, 1}) == true);
+        REQUIRE(rects[1].intersects({2, 2, 3, 3}) == true);
+        hilbertSort<uint64_t>(rects);
+        REQUIRE(rects[1].intersects({0, 0, 1, 1}) == true);
+        REQUIRE(rects[0].intersects({2, 2, 3, 3}) == true);
+        PackedRTree<uint16_t> tree(rects.size());
+        for (auto r : rects)
+            tree.add(r);
+        tree.finish();
+        auto list = tree.search(0, 0, 1, 1);
+        REQUIRE(list.size() == 1);
+        REQUIRE(rects[list[0]].intersects({0, 0, 1, 1}) == true);
+    }
+
+    /*
     SECTION("PackedHilbertRTree single item")
     {
         PackedHilbertRTree<uint16_t> tree(1);
@@ -135,111 +155,58 @@ TEST_CASE("PackedHilbertRTree")
         REQUIRE(list.size() == 1);
         REQUIRE(tree.getIndex(list[0]) == 2);
         REQUIRE(tree.getRect(2).intersects({10, 10, 11, 11}) == true);
-    }
-    SECTION("PackedHilbertRTree 8 items")
+    }*/
+
+    SECTION("PackedRTree 8 items")
     {
-        PackedHilbertRTree<uint32_t> tree(9);
-        tree.add(0, 0, 1, 1);
-        tree.add(2, 2, 3, 3);
-        tree.add(10, 10, 11, 11);
-        tree.add(100, 100, 110, 110);
-        tree.add(101, 101, 111, 111);
-        tree.add(102, 102, 112, 112);
-        tree.add(103, 103, 113, 113);
-        tree.add(104, 104, 114, 114);
-        tree.add(10010, 10010, 10110, 10110);
+        std::vector<Rect> rects;
+        rects.push_back({0, 0, 1, 1});
+        rects.push_back({2, 2, 3, 3});
+        rects.push_back({10, 10, 11, 11});
+        rects.push_back({100, 100, 110, 110});
+        rects.push_back({101, 101, 111, 111});
+        rects.push_back({102, 102, 112, 112});
+        rects.push_back({103, 103, 113, 113});
+        rects.push_back({104, 104, 114, 114});
+        rects.push_back({10010, 10010, 10110, 10110});
+        hilbertSort<uint64_t>(rects);
+        PackedRTree<uint32_t> tree(rects.size());
+        for (auto r : rects)
+            tree.add(r);
         tree.finish();
         auto list = tree.search(102, 102, 103, 103);
         REQUIRE(list.size() == 4);
         for (uint32_t i = 0; i < list.size(); i++) {
-            auto rect = tree.getRect(tree.getIndex(list[i]));
+            auto rect = rects[list[i]];
             REQUIRE(rect.intersects({102, 102, 103, 103}) == true);
         }
     }
-    SECTION("PackedHilbertRTree 1 million items")
-    {
-        std::uniform_real_distribution<double> unif(0,1);
-        std::default_random_engine re;
-        PackedHilbertRTree<uint32_t> tree(1000000);
-        double x, y;
-        for (int i = 0; i < 1000000; i++) {
-            x = unif(re);
-            y = unif(re);
-            tree.add(x, y, x, y);
-        }
-        tree.finish();
-        auto list = tree.search(0, 0, 1, 1);
-        REQUIRE(list.size() == 1000000);
-    }
-    SECTION("PackedHilbertRTree 2 million items")
-    {
-        std::uniform_real_distribution<double> unif1(0,1);
-        std::uniform_real_distribution<double> unif2(100,200);
-        std::default_random_engine re;
-        PackedHilbertRTree<uint32_t> tree(2000000);
-        double x, y;
-        for (int i = 0; i < 1000000; i++) {
-            x = unif1(re);
-            y = unif1(re);
-            tree.add(x, y, x, y);
-        }
-        for (int i = 0; i < 1000000; i++) {
-            x = unif2(re);
-            y = unif2(re);
-            tree.add(x, y, x, y);
-        }
-        tree.finish();
-        auto list = tree.search(0, 0, 1, 1);
-        REQUIRE(list.size() == 1000000);
-        for (uint32_t i = 0; i < list.size(); i++) {
-            auto rect = tree.getRect(tree.getIndex(list[i]));
-            REQUIRE(rect.intersects({0, 0, 1, 1}) == true);
-        }
-    }
-    /*SECTION("PackedHilbertRTree 1 million items in denmark")
+    
+    SECTION("PackedRTree 1 million items in denmark")
     {
         std::uniform_real_distribution<double> unifx(466379,708929);
         std::uniform_real_distribution<double> unify(6096801,6322352);
         std::default_random_engine re;
-        PackedHilbertRTree<uint64_t> tree(1000000);
+        std::vector<Rect> rects;
         double x, y;
         for (int i = 0; i < 1000000; i++) {
             x = unifx(re);
             y = unify(re);
-            tree.add(x, y, x, y);
+            rects.push_back({x, y, x, y});
         }
+        
+        hilbertSort<uint64_t>(rects);
+        
+        PackedRTree<uint64_t> tree(rects.size());
+        for (auto r : rects)
+            tree.add(r);
+        
         tree.finish();
         auto list = tree.search(690407, 6063692, 811682, 6176467);
         for (uint64_t i = 0; i < list.size(); i++) {
-            auto rect = tree.getRect(tree.getIndex(list[i]));
+            auto rect = rects[list[i]];
             INFO(rect);
             CHECK(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
         }
     }
-    SECTION("PackedHilbertRTree 1 million items 2")
-    {
-        PackedHilbertRTree<uint64_t> tree(1000000);
-        double x, y;
-        for (int i = 0; i < 1000000; i++) {
-            x = i;
-            y = 1000000 - i - 1;
-            tree.add(x, y, x, y);
-        }
-        tree.finish();
-        //auto list = tree.search(30000, 30000, 60000, 60000);
-        auto list = tree.search(0, 0, 1000000, 1000000);
-        REQUIRE(list.size() == 1000000);
-        for (uint64_t i = 0; i < list.size(); i++) {
-            auto rect = tree.getRect(tree.getIndex(list[i]));
-            INFO(rect);
-            REQUIRE(rect.intersects({0, 0, 1000000, 1000000}) == true);
-        }
-        list = tree.search(0, 0, 750000, 750000);
-        REQUIRE(list.size() == 500002);
-        for (uint64_t i = 0; i < list.size(); i++) {
-            auto rect = tree.getRect(tree.getIndex(list[i]));
-            INFO(rect);
-            CHECK(rect.intersects({0, 0, 750000, 750000}) == true);
-        }
-    }*/
 }
