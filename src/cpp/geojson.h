@@ -60,7 +60,7 @@ const uint8_t* serialize(const feature_collection fc)
     for (auto f : fc)
         rects.push_back(toRect(f.geometry));
     Rect extent = calcExtent(rects);
-    PackedRTree<uint64_t> tree(rects, extent);
+    PackedRTree tree(rects, extent);
 
     const auto extentVector = extent.toVector();
     const auto featureFirst = fc.at(0);
@@ -162,7 +162,7 @@ const feature_collection deserialize(const void* buf)
     const auto geometryType = header->geometry_type();
 
     std::vector<Rect> rects;
-    PackedRTree<uint64_t> tree(bytes + offset, featuresCount);
+    PackedRTree tree(bytes + offset, featuresCount);
     offset += tree.size();
 
     offset += featuresCount * 8;

@@ -6,6 +6,10 @@
 
 using namespace FlatGeobuf;
 
+struct FeatureItem : Item {
+    FeatureItem(Rect r) { rect = r; };
+};
+
 TEST_CASE("PackedRTree")
 {
     SECTION("PackedRTree 2 items 2")
@@ -16,13 +20,30 @@ TEST_CASE("PackedRTree")
         Rect extent = calcExtent(rects);
         REQUIRE(rects[0].intersects({0, 0, 1, 1}) == true);
         REQUIRE(rects[1].intersects({2, 2, 3, 3}) == true);
-        hilbertSort<uint64_t>(rects);
+        hilbertSort(rects);
         REQUIRE(rects[1].intersects({0, 0, 1, 1}) == true);
         REQUIRE(rects[0].intersects({2, 2, 3, 3}) == true);
-        PackedRTree<uint16_t> tree(rects, extent);
+        PackedRTree tree(rects, extent);
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
         REQUIRE(rects[list[0]].intersects({0, 0, 1, 1}) == true);
+    }
+
+    SECTION("PackedRTree 2 rectitems 2")
+    {
+        std::vector<Item *> items;
+        items.push_back(new FeatureItem({0, 0, 1, 1}) );
+        items.push_back(new FeatureItem({2, 2, 3, 3}) );
+        Rect extent = calcExtent(items);
+        REQUIRE(items[0]->rect.intersects({0, 0, 1, 1}) == true);
+        REQUIRE(items[1]->rect.intersects({2, 2, 3, 3}) == true);
+        hilbertSort(items);
+        REQUIRE(items[1]->rect.intersects({0, 0, 1, 1}) == true);
+        REQUIRE(items[0]->rect.intersects({2, 2, 3, 3}) == true);
+        PackedRTree tree(items, extent);
+        auto list = tree.search(0, 0, 1, 1);
+        REQUIRE(list.size() == 1);
+        REQUIRE(items[list[0]]->rect.intersects({0, 0, 1, 1}) == true);
     }
 
     /*
@@ -168,8 +189,8 @@ TEST_CASE("PackedRTree")
         rects.push_back({104, 104, 114, 114});
         rects.push_back({10010, 10010, 10110, 10110});
         Rect extent = calcExtent(rects);
-        hilbertSort<uint64_t>(rects);
-        PackedRTree<uint32_t> tree(rects, extent);
+        hilbertSort(rects);
+        PackedRTree tree(rects, extent);
         auto list = tree.search(102, 102, 103, 103);
         REQUIRE(list.size() == 4);
         for (uint32_t i = 0; i < list.size(); i++) {
@@ -191,8 +212,8 @@ TEST_CASE("PackedRTree")
             rects.push_back({x, y, x, y});
         }
         Rect extent = calcExtent(rects);
-        hilbertSort<uint64_t>(rects);
-        PackedRTree<uint64_t> tree(rects, extent);
+        hilbertSort(rects);
+        PackedRTree tree(rects, extent);
         auto list = tree.search(690407, 6063692, 811682, 6176467);
         for (uint64_t i = 0; i < list.size(); i++) {
             auto rect = rects[list[i]];
