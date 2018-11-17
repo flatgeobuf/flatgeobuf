@@ -56,19 +56,20 @@ const uint8_t* serialize(const feature_collection fc)
     std::vector<uint8_t> data;
     std::copy(magicbytes, magicbytes + 4, std::back_inserter(data));
 
-    PackedRTree<uint64_t> tree(featuresCount);
+    std::vector<Rect> rects;
     for (auto f : fc)
-        tree.add(toRect(f.geometry));
-    tree.finish();
+        rects.push_back(toRect(f.geometry));
+    Rect extent = calcExtent(rects);
+    PackedRTree<uint64_t> tree(rects, extent);
 
-    const auto extent = tree.getExtent().toVector();
+    const auto extentVector = extent.toVector();
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
     FlatBufferBuilder fbb;
     auto columns = nullptr;
     auto header = CreateHeaderDirect(
-        fbb, nullptr, &extent, geometryType, 2, columns, featuresCount);
+        fbb, nullptr, &extentVector, geometryType, 2, columns, featuresCount);
     fbb.FinishSizePrefixed(header);
     auto hbuf = fbb.Release();
     std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
@@ -160,7 +161,8 @@ const feature_collection deserialize(const void* buf)
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
-    PackedRTree<uint64_t> tree(featuresCount, 16, bytes + offset);
+    std::vector<Rect> rects;
+    PackedRTree<uint64_t> tree(bytes + offset, featuresCount);
     offset += tree.size();
 
     offset += featuresCount * 8;

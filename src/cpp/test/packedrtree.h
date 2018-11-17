@@ -13,15 +13,13 @@ TEST_CASE("PackedRTree")
         std::vector<Rect> rects;
         rects.push_back({0, 0, 1, 1});
         rects.push_back({2, 2, 3, 3});
+        Rect extent = calcExtent(rects);
         REQUIRE(rects[0].intersects({0, 0, 1, 1}) == true);
         REQUIRE(rects[1].intersects({2, 2, 3, 3}) == true);
         hilbertSort<uint64_t>(rects);
         REQUIRE(rects[1].intersects({0, 0, 1, 1}) == true);
         REQUIRE(rects[0].intersects({2, 2, 3, 3}) == true);
-        PackedRTree<uint16_t> tree(rects.size());
-        for (auto r : rects)
-            tree.add(r);
-        tree.finish();
+        PackedRTree<uint16_t> tree(rects, extent);
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
         REQUIRE(rects[list[0]].intersects({0, 0, 1, 1}) == true);
@@ -169,11 +167,9 @@ TEST_CASE("PackedRTree")
         rects.push_back({103, 103, 113, 113});
         rects.push_back({104, 104, 114, 114});
         rects.push_back({10010, 10010, 10110, 10110});
+        Rect extent = calcExtent(rects);
         hilbertSort<uint64_t>(rects);
-        PackedRTree<uint32_t> tree(rects.size());
-        for (auto r : rects)
-            tree.add(r);
-        tree.finish();
+        PackedRTree<uint32_t> tree(rects, extent);
         auto list = tree.search(102, 102, 103, 103);
         REQUIRE(list.size() == 4);
         for (uint32_t i = 0; i < list.size(); i++) {
@@ -194,14 +190,9 @@ TEST_CASE("PackedRTree")
             y = unify(re);
             rects.push_back({x, y, x, y});
         }
-        
+        Rect extent = calcExtent(rects);
         hilbertSort<uint64_t>(rects);
-        
-        PackedRTree<uint64_t> tree(rects.size());
-        for (auto r : rects)
-            tree.add(r);
-        
-        tree.finish();
+        PackedRTree<uint64_t> tree(rects, extent);
         auto list = tree.search(690407, 6063692, 811682, 6176467);
         for (uint64_t i = 0; i < list.size(); i++) {
             auto rect = rects[list[i]];

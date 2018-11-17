@@ -138,6 +138,13 @@ void hilbertSort(std::vector<Rect> &items)
     hilbertSort<T, Rect>(items, [] (Rect r) { return r; });
 }
 
+
+Rect calcExtent(std::vector<Rect> &rects)
+{
+    Rect extent = std::accumulate(rects.begin(), rects.end(), Rect::createInvertedInfiniteRect(), Rect::sum);
+    return extent;
+}
+
 /**
  * Packed Hilbert R-Tree
  * Based on https://github.com/mourner/flatbush
@@ -152,17 +159,13 @@ class PackedRTree {
     T _numNonLeafNodes;
     uint16_t _nodeSize;
     std::vector<T> _levelBounds;
-public:
-    PackedRTree(const T numItems, const uint16_t nodeSize = 16, const void *data = nullptr) {
-        if (numItems == 0)
+    void init(const uint16_t nodeSize) {
+        if (_numItems == 0)
             throw std::invalid_argument("Cannot create empty tree");
 
-        _extent = Rect::createInvertedInfiniteRect();
-
-        _numItems = numItems;
         _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
 
-        T n = numItems;
+        T n = _numItems;
         T numNodes = n;
         _levelBounds.push_back(n);
         do {
@@ -176,36 +179,8 @@ public:
 
         _rects.reserve(_numNodes);
         _indices.reserve(_numNonLeafNodes);
-
-        if (data != nullptr) {
-            auto buf = reinterpret_cast<const uint8_t *>(data);
-            const Rect *pr = reinterpret_cast<const Rect*>(buf);
-            for (T i = 0; i < _numNodes; i++)
-                add(*pr++);
-            uint64_t rectsSize = _numNodes * sizeof(Rect);
-            const T *pi = reinterpret_cast<const T*>(buf + rectsSize);
-            for (T i = 0; i < _numNonLeafNodes; i++)
-                _indices[i] = *pi++;
-        }
     }
-    static uint64_t calcNumNodes(const uint64_t numItems, const uint16_t nodeSize = 16) {
-        uint64_t n = numItems;
-        uint64_t numNodes = n;
-        do {
-            n = (n + nodeSize - 1) / nodeSize;
-            numNodes += n;
-        } while (n != 1);
-        return numNodes;
-    }
-    void add(Rect r) {
-        _rects.push_back(r);
-        _extent.expand(r);
-    }
-    void add(double minX, double minY, double maxX, double maxY) {
-        add(Rect { minX, minY, maxX, maxY });
-    }
-    void finish() {
-        // generate nodes at each tree level, bottom-up
+    void generateNodes() {
         for (T i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
             T end = _levelBounds[i];
             while (pos < end) {
@@ -218,24 +193,48 @@ public:
             }
         }
     }
+    void fromData(const void *data) {
+        auto buf = reinterpret_cast<const uint8_t *>(data);
+        const Rect *pr = reinterpret_cast<const Rect*>(buf);
+        for (T i = 0; i < _numNodes; i++) {
+            Rect r = *pr++;
+            _rects.push_back(r);
+            _extent.expand(r);
+        }
+        uint64_t rectsSize = _numNodes * sizeof(Rect);
+        const T *pi = reinterpret_cast<const T*>(buf + rectsSize);
+        for (T i = 0; i < _numNonLeafNodes; i++)
+            _indices[i] = *pi++;
+    }
+public:
+    PackedRTree(std::vector<Rect> &rects, Rect extent, const uint16_t nodeSize = 16) :
+        _extent(extent),
+        _rects(rects),
+        _numItems(_rects.size())
+    {
+        init(nodeSize);
+        generateNodes();
+    }
+    PackedRTree(const void *data, const T numItems, const uint16_t nodeSize = 16) :
+        _extent(Rect::createInvertedInfiniteRect()),
+        _numItems(numItems)
+    {
+        init(nodeSize);
+        fromData(data);
+    }
     std::vector<T> search(double minX, double minY, double maxX, double maxY) const {
         Rect r { minX, minY, maxX, maxY };
-
         std::vector<T> queue;
         std::vector<T> results;
-
         queue.push_back(_rects.size() - 1);
 	    queue.push_back(_levelBounds.size() - 1);
-
         while(queue.size() != 0) {
             T nodeIndex = queue[queue.size() - 2];
             T level = queue[queue.size() - 1];
             queue.pop_back();
             queue.pop_back();
-
             // find the end index of the node
             T end = std::min(static_cast<T>(nodeIndex + _nodeSize), _levelBounds[level]);
-
             // search through child nodes
             for (T pos = nodeIndex; pos < end; pos++) {
                 T index = pos < _numItems ? pos : _indices[pos - _numItems];
@@ -249,15 +248,13 @@ public:
                 }
             }
         }
-
         return results;
     }
-    uint64_t numNodes() const { return _numNodes; }
-    uint64_t size() const { return _numNodes * sizeof(Rect); }
+    uint64_t size() const { return _numNodes * sizeof(Rect) + _numNonLeafNodes * sizeof(T); }
     uint8_t *toData() const {
         T rectsSize = _numNodes * sizeof(Rect);
         T indicesSize = _numNonLeafNodes * sizeof(T);
-        uint8_t *data = new uint8_t[rectsSize + indicesSize ];
+        uint8_t *data = new uint8_t[rectsSize + indicesSize];
         Rect *pr = reinterpret_cast<Rect *>(data);
         for (T i = 0; i < _numNodes; i++)
             *pr++ = _rects[i];
