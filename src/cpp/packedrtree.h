@@ -2,7 +2,7 @@
 #define FLATGEOBUF_PACKEDRTREE_H_
 
 #include <cmath>
-#include <stack>
+#include <numeric>
 
 #include "flatbuffers/flatbuffers.h"
 
@@ -251,6 +251,16 @@ public:
         return results;
     }
     uint64_t size() const { return _numNodes * sizeof(Rect) + _numNonLeafNodes * sizeof(T); }
+    static uint64_t size(const T numItems, const uint16_t nodeSize = 16) {
+        const uint16_t nodeSizeMin = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
+        T n = numItems;
+        T numNodes = n;
+        do {
+            n = (n + nodeSizeMin - 1) / nodeSizeMin;
+            numNodes += n;
+        } while (n != 1);
+        return numNodes * sizeof(Rect) + (numNodes - numItems) * sizeof(T);
+    }
     uint8_t *toData() const {
         T rectsSize = _numNodes * sizeof(Rect);
         T indicesSize = _numNonLeafNodes * sizeof(T);
