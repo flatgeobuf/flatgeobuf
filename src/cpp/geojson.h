@@ -29,10 +29,16 @@ GeometryType toGeometryType(geometry geometry)
 {
     if (geometry.is<point>())
         return GeometryType::Point;
+    if (geometry.is<multi_point>())
+        return GeometryType::MultiPoint;
     if (geometry.is<line_string>())
         return GeometryType::LineString;
+    if (geometry.is<multi_line_string>())
+        return GeometryType::MultiLineString;
     if (geometry.is<polygon>())
         return GeometryType::Polygon;
+    if (geometry.is<multi_polygon>())
+        return GeometryType::MultiPolygon;
     throw std::invalid_argument("Unknown geometry type");
 }
 
@@ -85,8 +91,46 @@ const uint8_t* serialize(const feature_collection fc)
         auto f = fc[i];
         FlatBufferBuilder fbb;
         std::vector<double> coords;
+        std::vector<uint32_t> lengths;
+        std::vector<uint32_t> ringLengths;
+        std::vector<uint32_t> ringCounts;
+        if (f.geometry.is<multi_line_string>()) {
+            auto mls = f.geometry.get<multi_line_string>();
+            if (mls.size() > 1)
+                for (auto ls : mls)
+                    lengths.push_back(ls.size()*2);
+        } else if (f.geometry.is<polygon>()) {
+            auto p = f.geometry.get<polygon>();
+            if (p.size() > 1)
+                for (auto lr : p)
+                    ringLengths.push_back(lr.size()*2);
+        }
+        else if (f.geometry.is<multi_polygon>()) {
+            auto mp = f.geometry.get<multi_polygon>();
+            if (mp.size() == 1){
+                auto p = mp[0];
+                for (auto lr : p)
+                    ringLengths.push_back(lr.size()*2);
+            } else {
+                for (auto p : mp) {
+                    uint32_t length = 0;
+                    uint32_t ringCount = 0;
+                    for (auto lr : p){
+                        uint32_t ringLength = lr.size()*2;
+                        length += ringLength;
+                        ringLengths.push_back(ringLength);
+                        ringCount++;
+                    }
+                    lengths.push_back(length);
+                    ringCounts.push_back(ringCount);
+                }
+            }
+        }
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
-        auto geometry = CreateGeometryDirect(fbb, nullptr, nullptr, nullptr, nullptr, &coords);
+        auto pRingCounts = ringCounts.size() == 0 ? nullptr : &ringCounts;
+        auto pRingLengths = ringLengths.size() == 0 ? nullptr : &ringLengths;
+        auto pLength = lengths.size() == 0 ? nullptr : &lengths;
+        auto geometry = CreateGeometryDirect(fbb, nullptr, pRingCounts, pRingLengths, pLength, &coords);
         auto feature = CreateFeatureDirect(fbb, i, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
@@ -107,7 +151,7 @@ const uint8_t* serialize(const feature_collection fc)
 const std::vector<point> extractPoints(const double* coords, uint32_t length, uint32_t offset = 0)
 {
     std::vector<point> points;
-    for (uint32_t i = offset; i < length; i += 2)
+    for (uint32_t i = offset; i < offset + length; i += 2)
         points.push_back(point { coords[i], coords[i+1] });
     return points;
 
@@ -122,6 +166,64 @@ const std::vector<point> extractPoints(const double* coords, uint32_t length, ui
     */
 }
 
+const multi_line_string fromMultiLineString(
+    const double *coords,
+    const size_t coordsLength,
+    const Vector<uint32_t> *lengths)
+{
+    if (lengths == nullptr || lengths->size() < 2)
+        return multi_line_string { line_string(extractPoints(coords, coordsLength)) };
+    std::vector<line_string> lineStrings;
+    size_t offset = 0;
+    for (size_t i = 0; i < lengths->size(); i++) {
+        lineStrings.push_back(line_string(extractPoints(coords, lengths->Get(i), offset)));
+        offset += lengths->Get(i);
+    }
+    return multi_line_string(lineStrings);
+}
+
+const polygon fromPolygon(
+    const double *coords,
+    const size_t coordsLength,
+    const Vector<uint32_t> *ringLengths)
+{
+    if (ringLengths == nullptr || ringLengths->size() < 2)
+        return polygon { extractPoints(coords, coordsLength) };
+    std::vector<linear_ring> linearRings;
+    size_t offset = 0;
+    for (size_t i = 0; i < ringLengths->size(); i++) {
+        linearRings.push_back(linear_ring(extractPoints(coords, ringLengths->Get(i), offset)));
+        offset += ringLengths->Get(i);
+    }
+    return polygon(linearRings);
+}
+
+const multi_polygon fromMultiPolygon(
+    const double *coords,
+    const size_t coordsLength,
+    const Vector<uint32_t> *lengths,
+    const Vector<uint32_t> *ringLengths,
+    const Vector<uint32_t> *ringCounts)
+{
+    if (lengths == nullptr || lengths->size() < 2)
+        return multi_polygon { fromPolygon(coords, coordsLength, ringLengths) };
+    std::vector<polygon> polygons;
+    size_t offset = 0;
+    for (size_t i = 0; i < lengths->size(); i++) {
+        std::vector<linear_ring> linearRings;
+        uint32_t ringCount = ringCounts->Get(i);
+        size_t roffset = 0;
+        for (size_t j=0; j < ringCount; j++) {
+            uint32_t ringLength = ringLengths->Get(j+roffset);
+            linearRings.push_back(linear_ring(extractPoints(coords, ringLength, offset)));
+            offset += ringLength;
+            roffset++;
+        }
+        polygons.push_back(linearRings);
+    }
+    return multi_polygon(polygons);
+}
+
 const geometry fromGeometry(const Geometry* geometry, const GeometryType geometryType)
 {
     auto coords = geometry->coords()->data();
@@ -129,10 +231,16 @@ const geometry fromGeometry(const Geometry* geometry, const GeometryType geometr
     switch (geometryType) {
         case GeometryType::Point:
             return point { coords[0], coords[1] };
+        case GeometryType::MultiPoint:
+            return multi_point { extractPoints(coords, coordsLength) };
         case GeometryType::LineString:
             return line_string(extractPoints(coords, coordsLength));
+        case GeometryType::MultiLineString: 
+            return fromMultiLineString(coords, coordsLength, geometry->lengths());
         case GeometryType::Polygon:
-            return polygon { linear_ring { extractPoints(coords, coordsLength) } };
+            return fromPolygon(coords, coordsLength, geometry->ring_lengths());
+        case GeometryType::MultiPolygon:
+            return fromMultiPolygon(coords, coordsLength, geometry->lengths(), geometry->ring_lengths(), geometry->ring_counts());
         default:
             throw std::invalid_argument("Unknown geometry type");
     }

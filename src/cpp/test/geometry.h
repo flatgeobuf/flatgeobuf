@@ -41,6 +41,14 @@ TEST_CASE("Geometry")
         REQUIRE(expected == actual);
     }
 
+    SECTION("MultiPoint")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/multipoint.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+
     SECTION("Points")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/points.geojson")).get<feature_collection>();
@@ -55,9 +63,44 @@ TEST_CASE("Geometry")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
+    SECTION("MultiLineString")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/multilinestring.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+    SECTION("MultiLineString single LineString")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/multilinestringsingle.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
     SECTION("Polygon")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/polygon.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+    SECTION("Polygon with hole")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/polygonwithhole.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+    SECTION("MultiPolygon")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/multipolygon.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+    SECTION("MultiPolygon single Polygon")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/multipolygonsingle.geojson")).get<feature_collection>();
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
