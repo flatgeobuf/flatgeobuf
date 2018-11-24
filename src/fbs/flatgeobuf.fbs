@@ -7,10 +7,15 @@ namespace FlatGeobuf;
 table Header {
   name: string;
   envelope: [double];
-  geometry_type: GeometryType;
-  dimensions: ubyte = 2;
+  geometry_type: GeometryType = Point;
+  dimensions: ubyte = 2; // must be > 1
   columns: [Column];
   features_count: ulong;
+  index_node_size: ushort = 16; // 0 = no index otherwise must be > 1
+  index_offset_size: ubyte = 4; // offset type size in bytes
+  srs: uint;
+  srs_org: string; // optional, assumed to be EPSG if not supplied
+  has_fid: bool = true;
 }
 
 root_type Header;

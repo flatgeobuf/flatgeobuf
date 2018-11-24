@@ -21,7 +21,12 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_GEOMETRY_TYPE = 8,
     VT_DIMENSIONS = 10,
     VT_COLUMNS = 12,
-    VT_FEATURES_COUNT = 14
+    VT_FEATURES_COUNT = 14,
+    VT_INDEX_NODE_SIZE = 16,
+    VT_INDEX_OFFSET_SIZE = 18,
+    VT_SRS = 20,
+    VT_SRS_ORG = 22,
+    VT_HAS_FID = 24
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -41,6 +46,21 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint64_t features_count() const {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
   }
+  uint16_t index_node_size() const {
+    return GetField<uint16_t>(VT_INDEX_NODE_SIZE, 16);
+  }
+  uint8_t index_offset_size() const {
+    return GetField<uint8_t>(VT_INDEX_OFFSET_SIZE, 4);
+  }
+  uint32_t srs() const {
+    return GetField<uint32_t>(VT_SRS, 0);
+  }
+  const flatbuffers::String *srs_org() const {
+    return GetPointer<const flatbuffers::String *>(VT_SRS_ORG);
+  }
+  bool has_fid() const {
+    return GetField<uint8_t>(VT_HAS_FID, 1) != 0;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -53,6 +73,12 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(columns()) &&
            verifier.VerifyVectorOfTables(columns()) &&
            VerifyField<uint64_t>(verifier, VT_FEATURES_COUNT) &&
+           VerifyField<uint16_t>(verifier, VT_INDEX_NODE_SIZE) &&
+           VerifyField<uint8_t>(verifier, VT_INDEX_OFFSET_SIZE) &&
+           VerifyField<uint32_t>(verifier, VT_SRS) &&
+           VerifyOffset(verifier, VT_SRS_ORG) &&
+           verifier.VerifyString(srs_org()) &&
+           VerifyField<uint8_t>(verifier, VT_HAS_FID) &&
            verifier.EndTable();
   }
 };
@@ -78,6 +104,21 @@ struct HeaderBuilder {
   void add_features_count(uint64_t features_count) {
     fbb_.AddElement<uint64_t>(Header::VT_FEATURES_COUNT, features_count, 0);
   }
+  void add_index_node_size(uint16_t index_node_size) {
+    fbb_.AddElement<uint16_t>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
+  }
+  void add_index_offset_size(uint8_t index_offset_size) {
+    fbb_.AddElement<uint8_t>(Header::VT_INDEX_OFFSET_SIZE, index_offset_size, 4);
+  }
+  void add_srs(uint32_t srs) {
+    fbb_.AddElement<uint32_t>(Header::VT_SRS, srs, 0);
+  }
+  void add_srs_org(flatbuffers::Offset<flatbuffers::String> srs_org) {
+    fbb_.AddOffset(Header::VT_SRS_ORG, srs_org);
+  }
+  void add_has_fid(bool has_fid) {
+    fbb_.AddElement<uint8_t>(Header::VT_HAS_FID, static_cast<uint8_t>(has_fid), 1);
+  }
   explicit HeaderBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -97,12 +138,22 @@ inline flatbuffers::Offset<Header> CreateHeader(
     GeometryType geometry_type = GeometryType::Point,
     uint8_t dimensions = 2,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
-    uint64_t features_count = 0) {
+    uint64_t features_count = 0,
+    uint16_t index_node_size = 16,
+    uint8_t index_offset_size = 4,
+    uint32_t srs = 0,
+    flatbuffers::Offset<flatbuffers::String> srs_org = 0,
+    bool has_fid = true) {
   HeaderBuilder builder_(_fbb);
   builder_.add_features_count(features_count);
+  builder_.add_srs_org(srs_org);
+  builder_.add_srs(srs);
   builder_.add_columns(columns);
   builder_.add_envelope(envelope);
   builder_.add_name(name);
+  builder_.add_index_node_size(index_node_size);
+  builder_.add_has_fid(has_fid);
+  builder_.add_index_offset_size(index_offset_size);
   builder_.add_dimensions(dimensions);
   builder_.add_geometry_type(geometry_type);
   return builder_.Finish();
@@ -115,7 +166,12 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     GeometryType geometry_type = GeometryType::Point,
     uint8_t dimensions = 2,
     const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
-    uint64_t features_count = 0) {
+    uint64_t features_count = 0,
+    uint16_t index_node_size = 16,
+    uint8_t index_offset_size = 4,
+    uint32_t srs = 0,
+    const char *srs_org = nullptr,
+    bool has_fid = true) {
   return FlatGeobuf::CreateHeader(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
@@ -123,7 +179,12 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       geometry_type,
       dimensions,
       columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0,
-      features_count);
+      features_count,
+      index_node_size,
+      index_offset_size,
+      srs,
+      srs_org ? _fbb.CreateString(srs_org) : 0,
+      has_fid);
 }
 
 inline const FlatGeobuf::Header *GetHeader(const void *buf) {

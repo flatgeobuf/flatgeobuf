@@ -4,7 +4,7 @@ include "column.fbs";
 namespace FlatGeobuf;
 
 table Feature {
-  fid: ulong = 18446744073709551615;
+  fid: ulong;
   geometry: Geometry;
   values: [Value];
 }
