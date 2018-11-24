@@ -16,6 +16,7 @@ table Header {
   srs: uint;
   srs_org: string; // optional, assumed to be EPSG if not supplied
   has_fid: bool = true;
+  has_srs: bool = false;
 }
 
 root_type Header;

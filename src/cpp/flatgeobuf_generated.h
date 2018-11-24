@@ -26,7 +26,8 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_INDEX_OFFSET_SIZE = 18,
     VT_SRS = 20,
     VT_SRS_ORG = 22,
-    VT_HAS_FID = 24
+    VT_HAS_FID = 24,
+    VT_HAS_SRS = 26
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -61,6 +62,9 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool has_fid() const {
     return GetField<uint8_t>(VT_HAS_FID, 1) != 0;
   }
+  bool has_srs() const {
+    return GetField<uint8_t>(VT_HAS_SRS, 0) != 0;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -79,6 +83,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_SRS_ORG) &&
            verifier.VerifyString(srs_org()) &&
            VerifyField<uint8_t>(verifier, VT_HAS_FID) &&
+           VerifyField<uint8_t>(verifier, VT_HAS_SRS) &&
            verifier.EndTable();
   }
 };
@@ -119,6 +124,9 @@ struct HeaderBuilder {
   void add_has_fid(bool has_fid) {
     fbb_.AddElement<uint8_t>(Header::VT_HAS_FID, static_cast<uint8_t>(has_fid), 1);
   }
+  void add_has_srs(bool has_srs) {
+    fbb_.AddElement<uint8_t>(Header::VT_HAS_SRS, static_cast<uint8_t>(has_srs), 0);
+  }
   explicit HeaderBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -143,7 +151,8 @@ inline flatbuffers::Offset<Header> CreateHeader(
     uint8_t index_offset_size = 4,
     uint32_t srs = 0,
     flatbuffers::Offset<flatbuffers::String> srs_org = 0,
-    bool has_fid = true) {
+    bool has_fid = true,
+    bool has_srs = false) {
   HeaderBuilder builder_(_fbb);
   builder_.add_features_count(features_count);
   builder_.add_srs_org(srs_org);
@@ -152,6 +161,7 @@ inline flatbuffers::Offset<Header> CreateHeader(
   builder_.add_envelope(envelope);
   builder_.add_name(name);
   builder_.add_index_node_size(index_node_size);
+  builder_.add_has_srs(has_srs);
   builder_.add_has_fid(has_fid);
   builder_.add_index_offset_size(index_offset_size);
   builder_.add_dimensions(dimensions);
@@ -171,7 +181,8 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     uint8_t index_offset_size = 4,
     uint32_t srs = 0,
     const char *srs_org = nullptr,
-    bool has_fid = true) {
+    bool has_fid = true,
+    bool has_srs = false) {
   return FlatGeobuf::CreateHeader(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
@@ -184,7 +195,8 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       index_offset_size,
       srs,
       srs_org ? _fbb.CreateString(srs_org) : 0,
-      has_fid);
+      has_fid,
+      has_srs);
 }
 
 inline const FlatGeobuf::Header *GetHeader(const void *buf) {
