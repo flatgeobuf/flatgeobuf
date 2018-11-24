@@ -1,15 +1,18 @@
 #include "packedrtree.h"
 
-namespace FlatGeobuf {
+namespace FlatGeobuf
+{
 
-void Rect::expand(Rect r) {
+void Rect::expand(Rect r)
+{
     if (r.minX < minX) minX = r.minX;
     if (r.minY < minY) minY = r.minY;
     if (r.maxX > maxX) maxX = r.maxX;
     if (r.maxY > maxY) maxY = r.maxY;
 }
 
-Rect Rect::createInvertedInfiniteRect() {
+Rect Rect::createInvertedInfiniteRect()
+{
     return {
         std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity(),
@@ -18,7 +21,8 @@ Rect Rect::createInvertedInfiniteRect() {
     };
 }
 
-bool Rect::intersects(Rect r) const {
+bool Rect::intersects(Rect r) const
+{
     if (maxX < r.minX) return false;
     if (maxY < r.minY) return false;
     if (minX > r.maxX) return false;
@@ -26,11 +30,13 @@ bool Rect::intersects(Rect r) const {
     return true;
 }
 
-std::vector<double> Rect::toVector() {
+std::vector<double> Rect::toVector()
+{
     return std::vector<double> { minX, minY, maxX, maxY };
 }
 
-std::ostream& operator << ( std::ostream& os, Rect const& value ) {
+std::ostream& operator << ( std::ostream& os, Rect const& value )
+{
     os << std::to_string(value.minX) << " "
        << std::to_string(value.minY) << " "
        << std::to_string(value.maxX) << " "
@@ -38,7 +44,8 @@ std::ostream& operator << ( std::ostream& os, Rect const& value ) {
     return os;
 }
 
-uint32_t hilbert(uint32_t x, uint32_t y) {
+uint32_t hilbert(uint32_t x, uint32_t y)
+{
     uint32_t a = x ^ y;
     uint32_t b = 0xFFFF ^ a;
     uint32_t c = 0xFFFF ^ (x | y);
@@ -88,8 +95,8 @@ uint32_t hilbert(uint32_t x, uint32_t y) {
 
 uint32_t hilbert(Rect r, uint32_t hilbertMax, Rect extent)
 {
-    uint32_t x = floor(hilbertMax * ((r.minX + r.maxX) / 2 - extent.minX) / extent.width());
-    uint32_t y = floor(hilbertMax * ((r.minY + r.maxY) / 2 - extent.minY) / extent.height());
+    uint32_t x = static_cast<uint32_t>(floor(hilbertMax * ((r.minX + r.maxX) / 2 - extent.minX) / extent.width()));
+    uint32_t y = static_cast<uint32_t>(floor(hilbertMax * ((r.minY + r.maxY) / 2 - extent.minY) / extent.height()));
     uint32_t v = hilbert(x, y);
     return v;
 }
@@ -137,7 +144,8 @@ void hilbertSort(std::vector<Rect> &items)
     });
 }
 
-void PackedRTree::init(const uint16_t nodeSize) {
+void PackedRTree::init(const uint16_t nodeSize)
+{
     if (_numItems == 0)
         throw std::invalid_argument("Cannot create empty tree");
 
@@ -158,7 +166,9 @@ void PackedRTree::init(const uint16_t nodeSize) {
     _rects.reserve(_numNodes);
     _indices.reserve(_numNonLeafNodes);
 }
-void PackedRTree::generateNodes() {
+
+void PackedRTree::generateNodes()
+{
     for (uint64_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
         uint64_t end = _levelBounds[i];
         while (pos < end) {
@@ -171,7 +181,9 @@ void PackedRTree::generateNodes() {
         }
     }
 }
-void PackedRTree::fromData(const void *data) {
+
+void PackedRTree::fromData(const void *data)
+{
     auto buf = reinterpret_cast<const uint8_t *>(data);
     const Rect *pr = reinterpret_cast<const Rect*>(buf);
     for (uint64_t i = 0; i < _numNodes; i++) {
@@ -185,11 +197,11 @@ void PackedRTree::fromData(const void *data) {
         _indices[i] = *pi++;
 }
 
-std::vector<Rect> convert(std::vector<Item *> &items) {
+static std::vector<Rect> convert(std::vector<Item *> &items)
+{
     std::vector<Rect> rects;
-    for (const Item *item: items) {
+    for (const Item *item: items)
         rects.push_back(item->rect);
-    }
     return rects;
 }
 
@@ -210,6 +222,7 @@ PackedRTree::PackedRTree(std::vector<Rect> &rects, Rect extent, const uint16_t n
     init(nodeSize);
     generateNodes();
 }
+
 PackedRTree::PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize) :
     _extent(Rect::createInvertedInfiniteRect()),
     _numItems(numItems)
@@ -217,7 +230,9 @@ PackedRTree::PackedRTree(const void *data, const uint64_t numItems, const uint16
     init(nodeSize);
     fromData(data);
 }
-std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX, double maxY) const {
+
+std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX, double maxY) const
+{
     Rect r { minX, minY, maxX, maxY };
     std::vector<uint64_t> queue;
     std::vector<uint64_t> results;
@@ -246,7 +261,9 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
     return results;
 }
 uint64_t PackedRTree::size() const { return _numNodes * sizeof(Rect) + _numNonLeafNodes * sizeof(uint32_t); }
-uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize) {
+
+uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
+{
     const uint16_t nodeSizeMin = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     uint64_t n = numItems;
     uint64_t numNodes = n;
@@ -256,6 +273,7 @@ uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize) {
     } while (n != 1);
     return numNodes * sizeof(Rect) + (numNodes - numItems) * sizeof(uint32_t);
 }
+
 uint8_t *PackedRTree::toData() const {
     uint64_t rectsSize = _numNodes * sizeof(Rect);
     uint64_t indicesSize = _numNonLeafNodes * sizeof(uint64_t);
@@ -268,6 +286,7 @@ uint8_t *PackedRTree::toData() const {
         *pi++ = _indices[i];
     return data;
 }
+
 Rect PackedRTree::getExtent() const { return _extent; }
 
 }
