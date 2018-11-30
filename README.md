@@ -29,5 +29,4 @@ DISCLAIMER: Unfinished work in progress.
 
 ## TODO
 
-* Spatial reference metainformation
 * Feature offset smallest needed type

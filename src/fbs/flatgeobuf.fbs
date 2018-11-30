@@ -4,6 +4,16 @@ include "feature.fbs";
 
 namespace FlatGeobuf;
 
+table Index {
+  node_size: ushort = 16; // must be > 1
+  offset_size: ubyte = 4; // offset type size in bytes
+}
+
+table Srs {
+  code: int;
+  org: string; // assumed to be EPSG if not supplied
+}
+
 table Header {
   name: string;
   envelope: [double];
@@ -11,12 +21,9 @@ table Header {
   dimensions: ubyte = 2; // must be > 1
   columns: [Column];
   features_count: ulong;
-  index_node_size: ushort = 16; // 0 = no index otherwise must be > 1
-  index_offset_size: ubyte = 4; // offset type size in bytes
-  srs: uint;
-  srs_org: string; // optional, assumed to be EPSG if not supplied
-  has_fid: bool = true;
-  has_srs: bool = false;
+  fids: bool = true;
+  index: Index;
+  srs: Srs;
 }
 
 root_type Header;

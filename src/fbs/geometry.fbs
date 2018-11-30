@@ -6,12 +6,10 @@ enum GeometryType:ubyte {
   LineString,
   MultiLineString,
   Polygon,
-  MultiPolygon,
-  GeometryCollection
+  MultiPolygon
 }
 
 table Geometry {
-  types: [GeometryType];
   ring_counts: [uint]; // ring count per part in collection of Polygons
   ring_lengths: [uint]; // ring lengths
   lengths: [uint]; // coordinate lengths

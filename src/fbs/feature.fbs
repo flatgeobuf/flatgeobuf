@@ -24,6 +24,7 @@ table Value {
   double_value: double;
   string_value: string;
   json_value: string;
+  datetime_value: string; // mandated to be encoded as an ISO 8601:2004 string
 }
 
 root_type Feature;
