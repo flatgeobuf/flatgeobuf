@@ -17,20 +17,18 @@ enum class GeometryType : uint8_t {
   MultiLineString = 3,
   Polygon = 4,
   MultiPolygon = 5,
-  GeometryCollection = 6,
   MIN = Point,
-  MAX = GeometryCollection
+  MAX = MultiPolygon
 };
 
-inline const GeometryType (&EnumValuesGeometryType())[7] {
+inline const GeometryType (&EnumValuesGeometryType())[6] {
   static const GeometryType values[] = {
     GeometryType::Point,
     GeometryType::MultiPoint,
     GeometryType::LineString,
     GeometryType::MultiLineString,
     GeometryType::Polygon,
-    GeometryType::MultiPolygon,
-    GeometryType::GeometryCollection
+    GeometryType::MultiPolygon
   };
   return values;
 }
@@ -43,7 +41,6 @@ inline const char * const *EnumNamesGeometryType() {
     "MultiLineString",
     "Polygon",
     "MultiPolygon",
-    "GeometryCollection",
     nullptr
   };
   return names;
@@ -56,15 +53,11 @@ inline const char *EnumNameGeometryType(GeometryType e) {
 
 struct Geometry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_TYPES = 4,
-    VT_RING_COUNTS = 6,
-    VT_RING_LENGTHS = 8,
-    VT_LENGTHS = 10,
-    VT_COORDS = 12
+    VT_RING_COUNTS = 4,
+    VT_RING_LENGTHS = 6,
+    VT_LENGTHS = 8,
+    VT_COORDS = 10
   };
-  const flatbuffers::Vector<uint8_t> *types() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_TYPES);
-  }
   const flatbuffers::Vector<uint32_t> *ring_counts() const {
     return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_RING_COUNTS);
   }
@@ -79,8 +72,6 @@ struct Geometry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_TYPES) &&
-           verifier.VerifyVector(types()) &&
            VerifyOffset(verifier, VT_RING_COUNTS) &&
            verifier.VerifyVector(ring_counts()) &&
            VerifyOffset(verifier, VT_RING_LENGTHS) &&
@@ -96,9 +87,6 @@ struct Geometry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct GeometryBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_types(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> types) {
-    fbb_.AddOffset(Geometry::VT_TYPES, types);
-  }
   void add_ring_counts(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts) {
     fbb_.AddOffset(Geometry::VT_RING_COUNTS, ring_counts);
   }
@@ -126,7 +114,6 @@ struct GeometryBuilder {
 
 inline flatbuffers::Offset<Geometry> CreateGeometry(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> types = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
@@ -136,20 +123,17 @@ inline flatbuffers::Offset<Geometry> CreateGeometry(
   builder_.add_lengths(lengths);
   builder_.add_ring_lengths(ring_lengths);
   builder_.add_ring_counts(ring_counts);
-  builder_.add_types(types);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Geometry> CreateGeometryDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<uint8_t> *types = nullptr,
     const std::vector<uint32_t> *ring_counts = nullptr,
     const std::vector<uint32_t> *ring_lengths = nullptr,
     const std::vector<uint32_t> *lengths = nullptr,
     const std::vector<double> *coords = nullptr) {
   return FlatGeobuf::CreateGeometry(
       _fbb,
-      types ? _fbb.CreateVector<uint8_t>(*types) : 0,
       ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0,
       ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0,
       lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0,

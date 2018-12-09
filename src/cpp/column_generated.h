@@ -24,11 +24,12 @@ enum class ColumnType : uint8_t {
   Double = 10,
   String = 11,
   Json = 12,
+  DateTime = 13,
   MIN = Byte,
-  MAX = Json
+  MAX = DateTime
 };
 
-inline const ColumnType (&EnumValuesColumnType())[13] {
+inline const ColumnType (&EnumValuesColumnType())[14] {
   static const ColumnType values[] = {
     ColumnType::Byte,
     ColumnType::UByte,
@@ -42,7 +43,8 @@ inline const ColumnType (&EnumValuesColumnType())[13] {
     ColumnType::Float,
     ColumnType::Double,
     ColumnType::String,
-    ColumnType::Json
+    ColumnType::Json,
+    ColumnType::DateTime
   };
   return values;
 }
@@ -62,6 +64,7 @@ inline const char * const *EnumNamesColumnType() {
     "Double",
     "String",
     "Json",
+    "DateTime",
     nullptr
   };
   return names;

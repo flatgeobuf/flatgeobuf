@@ -105,7 +105,8 @@ struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_FLOAT_VALUE = 24,
     VT_DOUBLE_VALUE = 26,
     VT_STRING_VALUE = 28,
-    VT_JSON_VALUE = 30
+    VT_JSON_VALUE = 30,
+    VT_DATETIME_VALUE = 32
   };
   uint16_t column_index() const {
     return GetField<uint16_t>(VT_COLUMN_INDEX, 0);
@@ -149,6 +150,9 @@ struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *json_value() const {
     return GetPointer<const flatbuffers::String *>(VT_JSON_VALUE);
   }
+  const flatbuffers::String *datetime_value() const {
+    return GetPointer<const flatbuffers::String *>(VT_DATETIME_VALUE);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint16_t>(verifier, VT_COLUMN_INDEX) &&
@@ -167,6 +171,8 @@ struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(string_value()) &&
            VerifyOffset(verifier, VT_JSON_VALUE) &&
            verifier.VerifyString(json_value()) &&
+           VerifyOffset(verifier, VT_DATETIME_VALUE) &&
+           verifier.VerifyString(datetime_value()) &&
            verifier.EndTable();
   }
 };
@@ -216,6 +222,9 @@ struct ValueBuilder {
   void add_json_value(flatbuffers::Offset<flatbuffers::String> json_value) {
     fbb_.AddOffset(Value::VT_JSON_VALUE, json_value);
   }
+  void add_datetime_value(flatbuffers::Offset<flatbuffers::String> datetime_value) {
+    fbb_.AddOffset(Value::VT_DATETIME_VALUE, datetime_value);
+  }
   explicit ValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -243,11 +252,13 @@ inline flatbuffers::Offset<Value> CreateValue(
     float float_value = 0.0f,
     double double_value = 0.0,
     flatbuffers::Offset<flatbuffers::String> string_value = 0,
-    flatbuffers::Offset<flatbuffers::String> json_value = 0) {
+    flatbuffers::Offset<flatbuffers::String> json_value = 0,
+    flatbuffers::Offset<flatbuffers::String> datetime_value = 0) {
   ValueBuilder builder_(_fbb);
   builder_.add_double_value(double_value);
   builder_.add_ulong_value(ulong_value);
   builder_.add_long_value(long_value);
+  builder_.add_datetime_value(datetime_value);
   builder_.add_json_value(json_value);
   builder_.add_string_value(string_value);
   builder_.add_float_value(float_value);
@@ -277,7 +288,8 @@ inline flatbuffers::Offset<Value> CreateValueDirect(
     float float_value = 0.0f,
     double double_value = 0.0,
     const char *string_value = nullptr,
-    const char *json_value = nullptr) {
+    const char *json_value = nullptr,
+    const char *datetime_value = nullptr) {
   return FlatGeobuf::CreateValue(
       _fbb,
       column_index,
@@ -293,7 +305,8 @@ inline flatbuffers::Offset<Value> CreateValueDirect(
       float_value,
       double_value,
       string_value ? _fbb.CreateString(string_value) : 0,
-      json_value ? _fbb.CreateString(json_value) : 0);
+      json_value ? _fbb.CreateString(json_value) : 0,
+      datetime_value ? _fbb.CreateString(datetime_value) : 0);
 }
 
 inline const FlatGeobuf::Feature *GetFeature(const void *buf) {
