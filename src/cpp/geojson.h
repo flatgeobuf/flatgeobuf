@@ -130,7 +130,7 @@ const uint8_t* serialize(const feature_collection fc)
         auto pRingCounts = ringCounts.size() == 0 ? nullptr : &ringCounts;
         auto pRingLengths = ringLengths.size() == 0 ? nullptr : &ringLengths;
         auto pLength = lengths.size() == 0 ? nullptr : &lengths;
-        auto geometry = CreateGeometryDirect(fbb, nullptr, pRingCounts, pRingLengths, pLength, &coords);
+        auto geometry = CreateGeometryDirect(fbb, pRingCounts, pRingLengths, pLength, &coords);
         auto feature = CreateFeatureDirect(fbb, i, geometry, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
