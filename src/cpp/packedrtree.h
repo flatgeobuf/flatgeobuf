@@ -62,8 +62,7 @@ public:
     std::vector<uint64_t> search(double minX, double minY, double maxX, double maxY) const;
     static std::vector<uint64_t> streamSearch(
         const uint64_t numItems, const uint16_t nodeSize, Rect r,
-        const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeIndices,
-        const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeRects);
+        const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNode);
     uint64_t size() const;
     static uint64_t size(const uint64_t numItems, const uint16_t nodeSize = 16);
     uint8_t *toData() const;

@@ -176,7 +176,7 @@ TEST_CASE("PackedRTree")
         REQUIRE(tree.getRect(2).intersects({10, 10, 11, 11}) == true);
     }*/
 
-    SECTION("PackedRTree 9 items + roundtrip + streamSearch")
+    SECTION("PackedRTree 19 items + roundtrip + streamSearch")
     {
         std::vector<Rect> rects;
         rects.push_back({0, 0, 1, 1});
@@ -188,6 +188,17 @@ TEST_CASE("PackedRTree")
         rects.push_back({103, 103, 113, 113});
         rects.push_back({104, 104, 114, 114});
         rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
+        rects.push_back({10010, 10010, 10110, 10110});
         Rect extent = calcExtent(rects);
         hilbertSort(rects);
         PackedRTree tree(rects, extent);
@@ -198,20 +209,17 @@ TEST_CASE("PackedRTree")
             REQUIRE(rect.intersects({102, 102, 103, 103}) == true);
         }
         auto data = tree.toData();
-        PackedRTree tree2(data, 9);
+        PackedRTree tree2(data, rects.size());
         auto list2 = tree2.search(102, 102, 103, 103);
         REQUIRE(list2.size() == 4);
         for (uint32_t i = 0; i < list2.size(); i++) {
             auto rect = rects[list2[i]];
             REQUIRE(rect.intersects({102, 102, 103, 103}) == true);
         }
-        auto readNodeIndices = [data] (uint8_t *indices, uint32_t i, uint32_t s) {
-            std::copy(data + i, data + i + s, indices);
+        auto readNode = [data] (uint8_t *buf, uint32_t i, uint32_t s) {
+            std::copy(data + i, data + i + s, buf);
         };
-        auto readNodeRects = [data] (uint8_t *rects, uint32_t i, uint32_t s) {
-            std::copy(data + i, data + i + s, rects);
-        };
-        auto list3 = PackedRTree::streamSearch(9, 16, {102, 102, 103, 103}, readNodeIndices, readNodeRects);
+        auto list3 = PackedRTree::streamSearch(rects.size(), 16, {102, 102, 103, 103}, readNode);
         REQUIRE(list3.size() == 4);
         for (uint32_t i = 0; i < list3.size(); i++) {
             auto rect = rects[list3[i]];
@@ -219,7 +227,7 @@ TEST_CASE("PackedRTree")
         }
     }
     
-    SECTION("PackedRTree 1 million items in denmark")
+    /*SECTION("PackedRTree 1 million items in denmark")
     {
         std::uniform_real_distribution<double> unifx(466379,708929);
         std::uniform_real_distribution<double> unify(6096801,6322352);
@@ -240,5 +248,15 @@ TEST_CASE("PackedRTree")
             INFO(rect);
             CHECK(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
         }
-    }
+        auto data = tree.toData();
+        auto readNode = [data] (uint8_t *buf, uint32_t i, uint32_t s) {
+            std::copy(data + i, data + i + s, buf);
+        };
+        auto list2 = PackedRTree::streamSearch(rects.size(), 16, {690407, 6063692, 811682, 6176467}, readNode, readNode);
+        for (uint64_t i = 0; i < list2.size(); i++) {
+            auto rect = rects[list2[i]];
+            INFO(rect);
+            CHECK(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
+        }
+    }*/    
 }

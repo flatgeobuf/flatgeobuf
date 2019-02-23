@@ -264,11 +264,10 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
 
 std::vector<uint64_t> PackedRTree::streamSearch(
     const uint64_t numItems, const uint16_t nodeSize, Rect r,
-    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeIndices,
-    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeRects)
+    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNode)
 {
     auto levelBounds = generateLevelBounds(numItems, nodeSize);
-    auto numNodes = levelBounds.back();
+    uint64_t numNodes = levelBounds.back();
     std::vector<uint32_t> nodeIndices;
     nodeIndices.reserve(nodeSize);
     uint8_t *nodeIndicesBuf = reinterpret_cast<uint8_t *>(nodeIndices.data());
@@ -287,17 +286,19 @@ std::vector<uint64_t> PackedRTree::streamSearch(
         queue.pop_back();
         // find the end index of the node
         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[level]);
-        if (isLeafNode)
-            readNodeIndices(nodeIndicesBuf, numNodes * sizeof(Rect) + nodeIndex * sizeof(uint32_t), (end - nodeIndex) * sizeof(uint32_t));
-        readNodeRects(nodeRectsBuf, nodeIndex * sizeof(Rect), (end - nodeIndex) * sizeof(Rect));
+        uint64_t length = end - nodeIndex;
+        if (!isLeafNode)
+            readNode(nodeIndicesBuf, numNodes * sizeof(Rect) + (nodeIndex - numItems) * sizeof(uint32_t), length * sizeof(uint32_t));
+        readNode(nodeRectsBuf, nodeIndex * sizeof(Rect), length * sizeof(Rect));
         // search through child nodes
         for (uint64_t pos = nodeIndex; pos < end; pos++) {
-            if (!r.intersects(nodeRects[pos - nodeIndex]))
+            uint64_t nodePos = pos - nodeIndex;
+            if (!r.intersects(nodeRects[nodePos]))
                 continue;
             if (isLeafNode) {
                 results.push_back(pos); // leaf item
             } else {
-                queue.push_back(nodeIndices[pos - nodeIndex - numItems]); // node; add it to the search queue
+                queue.push_back(nodeIndices[nodePos]); // node; add it to the search queue
                 queue.push_back(level - 1);
             }
         }
