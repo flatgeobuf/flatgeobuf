@@ -47,6 +47,7 @@ class PackedRTree {
     std::vector<Rect> _rects;
     std::vector<uint32_t> _indices;
     uint64_t _numItems;
+    uint64_t _numNodes;
     uint64_t _numNonLeafNodes;
     uint16_t _nodeSize;
     std::vector<uint64_t> _levelBounds;
@@ -55,7 +56,6 @@ class PackedRTree {
     void generateNodes();
     void fromData(const void *data);
 public:
-    uint64_t _numNodes;
     PackedRTree(std::vector<Item *> &items, Rect extent, const uint16_t nodeSize = 16);
     PackedRTree(std::vector<Rect> &rects, Rect extent, const uint16_t nodeSize = 16);
     PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize = 16);
