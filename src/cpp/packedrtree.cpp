@@ -148,23 +148,25 @@ void PackedRTree::init(const uint16_t nodeSize)
 {
     if (_numItems == 0)
         throw std::invalid_argument("Cannot create empty tree");
-
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
-
-    uint64_t n = _numItems;
-    uint64_t numNodes = n;
-    _levelBounds.push_back(n);
-    do {
-        n = (n + _nodeSize - 1) / _nodeSize;
-        numNodes += n;
-        _levelBounds.push_back(numNodes);
-    } while (n != 1);
-
-    _numNodes = numNodes;
+    _levelBounds = generateLevelBounds(_numItems, _nodeSize);
+    _numNodes = _levelBounds.back();
     _numNonLeafNodes = _numNodes - _numItems;
-
     _rects.reserve(_numNodes);
     _indices.reserve(_numNonLeafNodes);
+}
+
+std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize) {
+    std::vector<uint64_t> levelBounds;
+    uint64_t n = numItems;
+    uint64_t numNodes = n;
+    levelBounds.push_back(n);
+    do {
+        n = (n + nodeSize - 1) / nodeSize;
+        numNodes += n;
+        levelBounds.push_back(numNodes);
+    } while (n != 1);
+    return levelBounds;
 }
 
 void PackedRTree::generateNodes()
@@ -247,19 +249,62 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + _nodeSize), _levelBounds[level]);
         // search through child nodes
         for (uint64_t pos = nodeIndex; pos < end; pos++) {
-            uint64_t index = pos < _numItems ? pos : _indices[pos - _numItems];
             if (!r.intersects(_rects[pos]))
                 continue;
             if (nodeIndex < _numItems) {
-                results.push_back(index); // leaf item
+                results.push_back(pos); // leaf item
             } else {
-                queue.push_back(index); // node; add it to the search queue
+                queue.push_back(_indices[pos - _numItems]); // node; add it to the search queue
                 queue.push_back(level - 1);
             }
         }
     }
     return results;
 }
+
+std::vector<uint64_t> PackedRTree::streamSearch(
+    const uint64_t numItems, const uint16_t nodeSize, Rect r,
+    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeIndices,
+    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNodeRects)
+{
+    auto levelBounds = generateLevelBounds(numItems, nodeSize);
+    auto numNodes = levelBounds.back();
+    std::vector<uint32_t> nodeIndices;
+    nodeIndices.reserve(nodeSize);
+    uint8_t *nodeIndicesBuf = reinterpret_cast<uint8_t *>(nodeIndices.data());
+    std::vector<Rect> nodeRects;
+    nodeRects.reserve(nodeSize);
+    uint8_t *nodeRectsBuf = reinterpret_cast<uint8_t *>(nodeRects.data());
+    std::vector<uint64_t> queue;
+    std::vector<uint64_t> results;
+    queue.push_back(numNodes - 1);
+    queue.push_back(levelBounds.size() - 1);
+    while(queue.size() != 0) {
+        uint64_t nodeIndex = queue[queue.size() - 2];
+        bool isLeafNode = nodeIndex < numItems;
+        uint64_t level = queue[queue.size() - 1];
+        queue.pop_back();
+        queue.pop_back();
+        // find the end index of the node
+        uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[level]);
+        if (isLeafNode)
+            readNodeIndices(nodeIndicesBuf, numNodes * sizeof(Rect) + nodeIndex * sizeof(uint32_t), (end - nodeIndex) * sizeof(uint32_t));
+        readNodeRects(nodeRectsBuf, nodeIndex * sizeof(Rect), (end - nodeIndex) * sizeof(Rect));
+        // search through child nodes
+        for (uint64_t pos = nodeIndex; pos < end; pos++) {
+            if (!r.intersects(nodeRects[pos - nodeIndex]))
+                continue;
+            if (isLeafNode) {
+                results.push_back(pos); // leaf item
+            } else {
+                queue.push_back(nodeIndices[pos - nodeIndex - numItems]); // node; add it to the search queue
+                queue.push_back(level - 1);
+            }
+        }
+    }
+    return results;
+}
+
 uint64_t PackedRTree::size() const { return _numNodes * sizeof(Rect) + _numNonLeafNodes * sizeof(uint32_t); }
 
 uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
