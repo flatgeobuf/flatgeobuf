@@ -17,7 +17,9 @@ struct multi_line_string : Cont<line_string<T>>
     using size_type = typename container_type::size_type;
 
     template <class... Args>
-    multi_line_string(Args&&... args) : container_type(std::forward<Args>(args)...) {}
+    multi_line_string(Args&&... args) : container_type(std::forward<Args>(args)...)
+    {
+    }
     multi_line_string(std::initializer_list<line_string_type> args)
         : container_type(std::move(args)) {}
 };

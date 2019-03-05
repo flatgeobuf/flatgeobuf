@@ -110,7 +110,7 @@ template <>
 value convert<value>(const rapidjson_value &json) {
     switch (json.GetType()) {
     case rapidjson::kNullType:
-        return ::mapbox::geometry::null_value_t{};
+        return null_value_t{};
     case rapidjson::kFalseType:
         return false;
     case rapidjson::kTrueType:
@@ -262,6 +262,10 @@ rapidjson_value convert<feature_collection>(const feature_collection&, rapidjson
 
 struct to_type {
 public:
+    const char * operator()(const empty&) {
+        return "Empty";
+    }
+
     const char * operator()(const point&) {
         return "Point";
     }
@@ -404,8 +408,8 @@ rapidjson_value convert<feature>(const feature& element, rapidjson_allocator& al
     rapidjson_value result(rapidjson::kObjectType);
     result.AddMember("type", "Feature", allocator);
 
-    if (element.id) {
-        result.AddMember("id", identifier::visit(*element.id, to_value { allocator }), allocator);
+    if (!element.id.is<null_value_t>()) {
+        result.AddMember("id", identifier::visit(element.id, to_value { allocator }), allocator);
     }
 
     result.AddMember("geometry", convert(element.geometry, allocator), allocator);

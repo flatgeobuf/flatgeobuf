@@ -246,10 +246,10 @@ const geometry fromGeometry(const Geometry* geometry, const GeometryType geometr
     }
 }
 
-const mapbox::geometry::feature<double> fromFeature(const Feature* feature, const GeometryType geometryType)
+const mapbox::feature::feature<double> fromFeature(const Feature* feature, const GeometryType geometryType)
 {
     auto geometry = feature->geometry();
-    mapbox::geometry::feature<double> f { fromGeometry(geometry, geometryType) };
+    mapbox::feature::feature<double> f { fromGeometry(geometry, geometryType) };
     return f;
 }
 
