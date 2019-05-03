@@ -153,7 +153,7 @@ inline uint64_t ReadUInt64(const uint8_t *data, uint8_t byte_width) {
   // constant, which here it isn't. Test if memcpy is still faster than
   // the conditionals in ReadSizedScalar. Can also use inline asm.
   // clang-format off
-  #ifdef _MSC_VER
+  #if defined(_MSC_VER) && (defined(_M_X64) || defined _M_IX86)
     uint64_t u = 0;
     __movsb(reinterpret_cast<uint8_t *>(&u),
             reinterpret_cast<const uint8_t *>(data), byte_width);
@@ -337,6 +337,16 @@ class Map : public Vector {
   bool IsTheEmptyMap() const { return data_ == EmptyMap().data_; }
 };
 
+template<typename T>
+void AppendToString(std::string &s, T &&v, bool keys_quoted) {
+    s += "[ ";
+    for (size_t i = 0; i < v.size(); i++) {
+      if (i) s += ", ";
+      v[i].ToString(true, keys_quoted, s);
+    }
+    s += " ]";
+}
+
 class Reference {
  public:
   Reference(const uint8_t *data, uint8_t parent_width, uint8_t byte_width,
@@ -484,7 +494,7 @@ class Reference {
   }
 
   // Unlike AsString(), this will convert any type to a std::string.
-  std::string ToString() {
+  std::string ToString() const {
     std::string s;
     ToString(false, false, s);
     return s;
@@ -532,13 +542,14 @@ class Reference {
       }
       s += " }";
     } else if (IsVector()) {
-      s += "[ ";
-      auto v = AsVector();
-      for (size_t i = 0; i < v.size(); i++) {
-        v[i].ToString(true, keys_quoted, s);
-        if (i < v.size() - 1) s += ", ";
-      }
-      s += " ]";
+      AppendToString<Vector>(s, AsVector(), keys_quoted);
+    } else if (IsTypedVector()) {
+      AppendToString<TypedVector>(s, AsTypedVector(), keys_quoted);
+    } else if (IsFixedTypedVector()) {
+      AppendToString<FixedTypedVector>(s, AsFixedTypedVector(), keys_quoted);
+    } else if (IsBlob()) {
+      auto blob = AsBlob();
+      flatbuffers::EscapeString(reinterpret_cast<const char*>(blob.data()), blob.size(), &s, true, false);
     } else {
       s += "(?)";
     }
@@ -591,7 +602,7 @@ class Reference {
     }
   }
 
-  template<typename T> T As();
+  template<typename T> T As() const;
 
   // Experimental: Mutation functions.
   // These allow scalars in an already created buffer to be updated in-place.
@@ -704,35 +715,35 @@ class Reference {
 };
 
 // Template specialization for As().
-template<> inline bool Reference::As<bool>() { return AsBool(); }
+template<> inline bool Reference::As<bool>() const { return AsBool(); }
 
-template<> inline int8_t Reference::As<int8_t>() { return AsInt8(); }
-template<> inline int16_t Reference::As<int16_t>() { return AsInt16(); }
-template<> inline int32_t Reference::As<int32_t>() { return AsInt32(); }
-template<> inline int64_t Reference::As<int64_t>() { return AsInt64(); }
+template<> inline int8_t Reference::As<int8_t>() const { return AsInt8(); }
+template<> inline int16_t Reference::As<int16_t>() const { return AsInt16(); }
+template<> inline int32_t Reference::As<int32_t>() const { return AsInt32(); }
+template<> inline int64_t Reference::As<int64_t>() const { return AsInt64(); }
 
-template<> inline uint8_t Reference::As<uint8_t>() { return AsUInt8(); }
-template<> inline uint16_t Reference::As<uint16_t>() { return AsUInt16(); }
-template<> inline uint32_t Reference::As<uint32_t>() { return AsUInt32(); }
-template<> inline uint64_t Reference::As<uint64_t>() { return AsUInt64(); }
+template<> inline uint8_t Reference::As<uint8_t>() const { return AsUInt8(); }
+template<> inline uint16_t Reference::As<uint16_t>() const { return AsUInt16(); }
+template<> inline uint32_t Reference::As<uint32_t>() const { return AsUInt32(); }
+template<> inline uint64_t Reference::As<uint64_t>() const { return AsUInt64(); }
 
-template<> inline double Reference::As<double>() { return AsDouble(); }
-template<> inline float Reference::As<float>() { return AsFloat(); }
+template<> inline double Reference::As<double>() const { return AsDouble(); }
+template<> inline float Reference::As<float>() const { return AsFloat(); }
 
-template<> inline String Reference::As<String>() { return AsString(); }
-template<> inline std::string Reference::As<std::string>() {
+template<> inline String Reference::As<String>() const { return AsString(); }
+template<> inline std::string Reference::As<std::string>() const {
   return AsString().str();
 }
 
-template<> inline Blob Reference::As<Blob>() { return AsBlob(); }
-template<> inline Vector Reference::As<Vector>() { return AsVector(); }
-template<> inline TypedVector Reference::As<TypedVector>() {
+template<> inline Blob Reference::As<Blob>() const { return AsBlob(); }
+template<> inline Vector Reference::As<Vector>() const { return AsVector(); }
+template<> inline TypedVector Reference::As<TypedVector>() const {
   return AsTypedVector();
 }
-template<> inline FixedTypedVector Reference::As<FixedTypedVector>() {
+template<> inline FixedTypedVector Reference::As<FixedTypedVector>() const {
   return AsFixedTypedVector();
 }
-template<> inline Map Reference::As<Map>() { return AsMap(); }
+template<> inline Map Reference::As<Map>() const { return AsMap(); }
 
 inline uint8_t PackedType(BitWidth bit_width, Type type) {
   return static_cast<uint8_t>(bit_width | (type << 2));
