@@ -12,6 +12,7 @@ enum ColumnType {
  Double = 10,
  String = 11,
  Json = 12,
+ DateTime = 13,
 }
 
 export default ColumnType

@@ -18,7 +18,8 @@ export enum ColumnType{
   Float= 9,
   Double= 10,
   String= 11,
-  Json= 12
+  Json= 12,
+  DateTime= 13
 }};
 
 /**
@@ -31,8 +32,7 @@ export enum GeometryType{
   LineString= 2,
   MultiLineString= 3,
   Polygon= 4,
-  MultiPolygon= 5,
-  GeometryCollection= 6
+  MultiPolygon= 5
 }};
 
 /**
@@ -147,35 +147,10 @@ static getRootAsGeometry(bb:flatbuffers.ByteBuffer, obj?:Geometry):Geometry {
 
 /**
  * @param number index
- * @returns FlatGeobuf.GeometryType
- */
-types(index: number):FlatGeobuf.GeometryType|null {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb!.__vector(this.bb_pos + offset) + index)) : /**  */ (0);
-};
-
-/**
- * @returns number
- */
-typesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns Uint8Array
- */
-typesArray():Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? new Uint8Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
-};
-
-/**
- * @param number index
  * @returns number
  */
 ringCounts(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+  var offset = this.bb!.__offset(this.bb_pos, 4);
   return offset ? this.bb!.readUint32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
 };
 
@@ -183,7 +158,7 @@ ringCounts(index: number):number|null {
  * @returns number
  */
 ringCountsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+  var offset = this.bb!.__offset(this.bb_pos, 4);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -191,7 +166,7 @@ ringCountsLength():number {
  * @returns Uint32Array
  */
 ringCountsArray():Uint32Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+  var offset = this.bb!.__offset(this.bb_pos, 4);
   return offset ? new Uint32Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -200,7 +175,7 @@ ringCountsArray():Uint32Array|null {
  * @returns number
  */
 ringLengths(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.readUint32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
 };
 
@@ -208,7 +183,7 @@ ringLengths(index: number):number|null {
  * @returns number
  */
 ringLengthsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -216,7 +191,7 @@ ringLengthsLength():number {
  * @returns Uint32Array
  */
 ringLengthsArray():Uint32Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? new Uint32Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -225,7 +200,7 @@ ringLengthsArray():Uint32Array|null {
  * @returns number
  */
 lengths(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.readUint32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
 };
 
@@ -233,7 +208,7 @@ lengths(index: number):number|null {
  * @returns number
  */
 lengthsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -241,7 +216,7 @@ lengthsLength():number {
  * @returns Uint32Array
  */
 lengthsArray():Uint32Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? new Uint32Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -250,7 +225,7 @@ lengthsArray():Uint32Array|null {
  * @returns number
  */
 coords(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
 };
 
@@ -258,7 +233,7 @@ coords(index: number):number|null {
  * @returns number
  */
 coordsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -266,7 +241,7 @@ coordsLength():number {
  * @returns Float64Array
  */
 coordsArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -274,36 +249,7 @@ coordsArray():Float64Array|null {
  * @param flatbuffers.Builder builder
  */
 static startGeometry(builder:flatbuffers.Builder) {
-  builder.startObject(5);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset typesOffset
- */
-static addTypes(builder:flatbuffers.Builder, typesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(0, typesOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<FlatGeobuf.GeometryType> data
- * @returns flatbuffers.Offset
- */
-static createTypesVector(builder:flatbuffers.Builder, data:FlatGeobuf.GeometryType[]):flatbuffers.Offset {
-  builder.startVector(1, data.length, 1);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addInt8(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startTypesVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(1, numElems, 1);
+  builder.startObject(4);
 };
 
 /**
@@ -311,7 +257,7 @@ static startTypesVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset ringCountsOffset
  */
 static addRingCounts(builder:flatbuffers.Builder, ringCountsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(1, ringCountsOffset, 0);
+  builder.addFieldOffset(0, ringCountsOffset, 0);
 };
 
 /**
@@ -340,7 +286,7 @@ static startRingCountsVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset ringLengthsOffset
  */
 static addRingLengths(builder:flatbuffers.Builder, ringLengthsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, ringLengthsOffset, 0);
+  builder.addFieldOffset(1, ringLengthsOffset, 0);
 };
 
 /**
@@ -369,7 +315,7 @@ static startRingLengthsVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset lengthsOffset
  */
 static addLengths(builder:flatbuffers.Builder, lengthsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(3, lengthsOffset, 0);
+  builder.addFieldOffset(2, lengthsOffset, 0);
 };
 
 /**
@@ -398,7 +344,7 @@ static startLengthsVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset coordsOffset
  */
 static addCoords(builder:flatbuffers.Builder, coordsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(4, coordsOffset, 0);
+  builder.addFieldOffset(3, coordsOffset, 0);
 };
 
 /**
@@ -428,7 +374,7 @@ static startCoordsVector(builder:flatbuffers.Builder, numElems:number) {
  */
 static endGeometry(builder:flatbuffers.Builder):flatbuffers.Offset {
   var offset = builder.endObject();
-  builder.requiredField(offset, 12); // coords
+  builder.requiredField(offset, 10); // coords
   return offset;
 };
 
@@ -463,22 +409,11 @@ static getRootAsFeature(bb:flatbuffers.ByteBuffer, obj?:Feature):Feature {
 };
 
 /**
- * @param flatbuffers.Encoding= optionalEncoding
- * @returns string|Uint8Array|null
- */
-stringId():string|null
-stringId(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-stringId(optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
-};
-
-/**
  * @returns flatbuffers.Long
  */
-ulongId():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(-1, 2147483647);
+fid():flatbuffers.Long {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
 };
 
 /**
@@ -486,7 +421,7 @@ ulongId():flatbuffers.Long {
  * @returns FlatGeobuf.Geometry|null
  */
 geometry(obj?:FlatGeobuf.Geometry):FlatGeobuf.Geometry|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? (obj || new FlatGeobuf.Geometry).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
@@ -496,7 +431,7 @@ geometry(obj?:FlatGeobuf.Geometry):FlatGeobuf.Geometry|null {
  * @returns FlatGeobuf.Value
  */
 values(index: number, obj?:FlatGeobuf.Value):FlatGeobuf.Value|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? (obj || new FlatGeobuf.Value).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
@@ -504,7 +439,7 @@ values(index: number, obj?:FlatGeobuf.Value):FlatGeobuf.Value|null {
  * @returns number
  */
 valuesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -512,23 +447,15 @@ valuesLength():number {
  * @param flatbuffers.Builder builder
  */
 static startFeature(builder:flatbuffers.Builder) {
-  builder.startObject(4);
+  builder.startObject(3);
 };
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset stringIdOffset
+ * @param flatbuffers.Long fid
  */
-static addStringId(builder:flatbuffers.Builder, stringIdOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(0, stringIdOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long ulongId
- */
-static addUlongId(builder:flatbuffers.Builder, ulongId:flatbuffers.Long) {
-  builder.addFieldInt64(1, ulongId, builder.createLong(-1, 2147483647));
+static addFid(builder:flatbuffers.Builder, fid:flatbuffers.Long) {
+  builder.addFieldInt64(0, fid, builder.createLong(0, 0));
 };
 
 /**
@@ -536,7 +463,7 @@ static addUlongId(builder:flatbuffers.Builder, ulongId:flatbuffers.Long) {
  * @param flatbuffers.Offset geometryOffset
  */
 static addGeometry(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, geometryOffset, 0);
+  builder.addFieldOffset(1, geometryOffset, 0);
 };
 
 /**
@@ -544,7 +471,7 @@ static addGeometry(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offse
  * @param flatbuffers.Offset valuesOffset
  */
 static addValues(builder:flatbuffers.Builder, valuesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(3, valuesOffset, 0);
+  builder.addFieldOffset(2, valuesOffset, 0);
 };
 
 /**
@@ -726,10 +653,21 @@ jsonValue(optionalEncoding?:any):string|Uint8Array|null {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+datetimeValue():string|null
+datetimeValue(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+datetimeValue(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 32);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static startValue(builder:flatbuffers.Builder) {
-  builder.startObject(14);
+  builder.startObject(15);
 };
 
 /**
@@ -846,9 +784,176 @@ static addJsonValue(builder:flatbuffers.Builder, jsonValueOffset:flatbuffers.Off
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset datetimeValueOffset
+ */
+static addDatetimeValue(builder:flatbuffers.Builder, datetimeValueOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(14, datetimeValueOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static endValue(builder:flatbuffers.Builder):flatbuffers.Offset {
+  var offset = builder.endObject();
+  return offset;
+};
+
+}
+}
+/**
+ * @constructor
+ */
+export namespace FlatGeobuf{
+export class Index {
+  bb: flatbuffers.ByteBuffer|null = null;
+
+  bb_pos:number = 0;
+/**
+ * @param number i
+ * @param flatbuffers.ByteBuffer bb
+ * @returns Index
+ */
+__init(i:number, bb:flatbuffers.ByteBuffer):Index {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param flatbuffers.ByteBuffer bb
+ * @param Index= obj
+ * @returns Index
+ */
+static getRootAsIndex(bb:flatbuffers.ByteBuffer, obj?:Index):Index {
+  return (obj || new Index).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns number
+ */
+nodeSize():number {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
+};
+
+/**
+ * @returns number
+ */
+offsetSize():number {
+  var offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? this.bb!.readUint8(this.bb_pos + offset) : 4;
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ */
+static startIndex(builder:flatbuffers.Builder) {
+  builder.startObject(2);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number nodeSize
+ */
+static addNodeSize(builder:flatbuffers.Builder, nodeSize:number) {
+  builder.addFieldInt16(0, nodeSize, 16);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number offsetSize
+ */
+static addOffsetSize(builder:flatbuffers.Builder, offsetSize:number) {
+  builder.addFieldInt8(1, offsetSize, 4);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @returns flatbuffers.Offset
+ */
+static endIndex(builder:flatbuffers.Builder):flatbuffers.Offset {
+  var offset = builder.endObject();
+  return offset;
+};
+
+}
+}
+/**
+ * @constructor
+ */
+export namespace FlatGeobuf{
+export class Srs {
+  bb: flatbuffers.ByteBuffer|null = null;
+
+  bb_pos:number = 0;
+/**
+ * @param number i
+ * @param flatbuffers.ByteBuffer bb
+ * @returns Srs
+ */
+__init(i:number, bb:flatbuffers.ByteBuffer):Srs {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param flatbuffers.ByteBuffer bb
+ * @param Srs= obj
+ * @returns Srs
+ */
+static getRootAsSrs(bb:flatbuffers.ByteBuffer, obj?:Srs):Srs {
+  return (obj || new Srs).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns number
+ */
+code():number {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.readInt32(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+org():string|null
+org(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+org(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ */
+static startSrs(builder:flatbuffers.Builder) {
+  builder.startObject(2);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number code
+ */
+static addCode(builder:flatbuffers.Builder, code:number) {
+  builder.addFieldInt32(0, code, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset orgOffset
+ */
+static addOrg(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(1, orgOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @returns flatbuffers.Offset
+ */
+static endSrs(builder:flatbuffers.Builder):flatbuffers.Offset {
   var offset = builder.endObject();
   return offset;
 };
@@ -954,35 +1059,37 @@ columnsLength():number {
 };
 
 /**
- * @returns number
- */
-indexNodeSize():number {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
-  return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
-};
-
-/**
- * @returns flatbuffers.Long
- */
-indexNodesCount():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
-};
-
-/**
- * @returns flatbuffers.Long
- */
-featuresSize():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
-};
-
-/**
  * @returns flatbuffers.Long
  */
 featuresCount():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 20);
+  var offset = this.bb!.__offset(this.bb_pos, 14);
   return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
+};
+
+/**
+ * @returns boolean
+ */
+fids():boolean {
+  var offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : true;
+};
+
+/**
+ * @param FlatGeobuf.Index= obj
+ * @returns FlatGeobuf.Index|null
+ */
+index(obj?:FlatGeobuf.Index):FlatGeobuf.Index|null {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? (obj || new FlatGeobuf.Index).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
+};
+
+/**
+ * @param FlatGeobuf.Srs= obj
+ * @returns FlatGeobuf.Srs|null
+ */
+srs(obj?:FlatGeobuf.Srs):FlatGeobuf.Srs|null {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
+  return offset ? (obj || new FlatGeobuf.Srs).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
 /**
@@ -1076,34 +1183,34 @@ static startColumnsVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param number indexNodeSize
- */
-static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
-  builder.addFieldInt16(5, indexNodeSize, 16);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long indexNodesCount
- */
-static addIndexNodesCount(builder:flatbuffers.Builder, indexNodesCount:flatbuffers.Long) {
-  builder.addFieldInt64(6, indexNodesCount, builder.createLong(0, 0));
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Long featuresSize
- */
-static addFeaturesSize(builder:flatbuffers.Builder, featuresSize:flatbuffers.Long) {
-  builder.addFieldInt64(7, featuresSize, builder.createLong(0, 0));
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @param flatbuffers.Long featuresCount
  */
 static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.Long) {
-  builder.addFieldInt64(8, featuresCount, builder.createLong(0, 0));
+  builder.addFieldInt64(5, featuresCount, builder.createLong(0, 0));
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param boolean fids
+ */
+static addFids(builder:flatbuffers.Builder, fids:boolean) {
+  builder.addFieldInt8(6, +fids, +true);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset indexOffset
+ */
+static addIndex(builder:flatbuffers.Builder, indexOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(7, indexOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset srsOffset
+ */
+static addSrs(builder:flatbuffers.Builder, srsOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(8, srsOffset, 0);
 };
 
 /**
