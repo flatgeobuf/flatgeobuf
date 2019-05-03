@@ -17,40 +17,26 @@ public struct Feature : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public Feature __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public string StringId { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
-#if ENABLE_SPAN_T
-  public Span<byte> GetStringIdBytes() { return __p.__vector_as_span(4); }
-#else
-  public ArraySegment<byte>? GetStringIdBytes() { return __p.__vector_as_arraysegment(4); }
-#endif
-  public byte[] GetStringIdArray() { return __p.__vector_as_array<byte>(4); }
-  public ulong UlongId { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)18446744073709551615; } }
-  public uint Layer { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetUint(o + __p.bb_pos) : (uint)4294967295; } }
-  public Geometry? Geometry { get { int o = __p.__offset(10); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
-  public Value? Values(int j) { int o = __p.__offset(12); return o != 0 ? (Value?)(new Value()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
-  public int ValuesLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public ulong Fid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
+  public Geometry? Geometry { get { int o = __p.__offset(6); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public Value? Values(int j) { int o = __p.__offset(8); return o != 0 ? (Value?)(new Value()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int ValuesLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<Feature> CreateFeature(FlatBufferBuilder builder,
-      StringOffset string_idOffset = default(StringOffset),
-      ulong ulong_id = 18446744073709551615,
-      uint layer = 4294967295,
+      ulong fid = 0,
       Offset<Geometry> geometryOffset = default(Offset<Geometry>),
       VectorOffset valuesOffset = default(VectorOffset)) {
-    builder.StartObject(5);
-    Feature.AddUlongId(builder, ulong_id);
+    builder.StartObject(3);
+    Feature.AddFid(builder, fid);
     Feature.AddValues(builder, valuesOffset);
     Feature.AddGeometry(builder, geometryOffset);
-    Feature.AddLayer(builder, layer);
-    Feature.AddStringId(builder, string_idOffset);
     return Feature.EndFeature(builder);
   }
 
-  public static void StartFeature(FlatBufferBuilder builder) { builder.StartObject(5); }
-  public static void AddStringId(FlatBufferBuilder builder, StringOffset stringIdOffset) { builder.AddOffset(0, stringIdOffset.Value, 0); }
-  public static void AddUlongId(FlatBufferBuilder builder, ulong ulongId) { builder.AddUlong(1, ulongId, 18446744073709551615); }
-  public static void AddLayer(FlatBufferBuilder builder, uint layer) { builder.AddUint(2, layer, 4294967295); }
-  public static void AddGeometry(FlatBufferBuilder builder, Offset<Geometry> geometryOffset) { builder.AddOffset(3, geometryOffset.Value, 0); }
-  public static void AddValues(FlatBufferBuilder builder, VectorOffset valuesOffset) { builder.AddOffset(4, valuesOffset.Value, 0); }
+  public static void StartFeature(FlatBufferBuilder builder) { builder.StartObject(3); }
+  public static void AddFid(FlatBufferBuilder builder, ulong fid) { builder.AddUlong(0, fid, 0); }
+  public static void AddGeometry(FlatBufferBuilder builder, Offset<Geometry> geometryOffset) { builder.AddOffset(1, geometryOffset.Value, 0); }
+  public static void AddValues(FlatBufferBuilder builder, VectorOffset valuesOffset) { builder.AddOffset(2, valuesOffset.Value, 0); }
   public static VectorOffset CreateValuesVector(FlatBufferBuilder builder, Offset<Value>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateValuesVectorBlock(FlatBufferBuilder builder, Offset<Value>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartValuesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }

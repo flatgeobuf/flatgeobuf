@@ -47,12 +47,13 @@ inline const char * const *EnumNamesGeometryType() {
 }
 
 inline const char *EnumNameGeometryType(GeometryType e) {
-  const size_t index = static_cast<int>(e);
+  if (e < GeometryType::Point || e > GeometryType::MultiPolygon) return "";
+  const size_t index = static_cast<size_t>(e);
   return EnumNamesGeometryType()[index];
 }
 
 struct Geometry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_RING_COUNTS = 4,
     VT_RING_LENGTHS = 6,
     VT_LENGTHS = 8,
@@ -132,12 +133,16 @@ inline flatbuffers::Offset<Geometry> CreateGeometryDirect(
     const std::vector<uint32_t> *ring_lengths = nullptr,
     const std::vector<uint32_t> *lengths = nullptr,
     const std::vector<double> *coords = nullptr) {
+  auto ring_counts__ = ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0;
+  auto ring_lengths__ = ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0;
+  auto lengths__ = lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0;
+  auto coords__ = coords ? _fbb.CreateVector<double>(*coords) : 0;
   return FlatGeobuf::CreateGeometry(
       _fbb,
-      ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0,
-      ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0,
-      lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0,
-      coords ? _fbb.CreateVector<double>(*coords) : 0);
+      ring_counts__,
+      ring_lengths__,
+      lengths__,
+      coords__);
 }
 
 inline const FlatGeobuf::Geometry *GetGeometry(const void *buf) {

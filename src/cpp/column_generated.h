@@ -71,12 +71,13 @@ inline const char * const *EnumNamesColumnType() {
 }
 
 inline const char *EnumNameColumnType(ColumnType e) {
-  const size_t index = static_cast<int>(e);
+  if (e < ColumnType::Byte || e > ColumnType::DateTime) return "";
+  const size_t index = static_cast<size_t>(e);
   return EnumNamesColumnType()[index];
 }
 
 struct Column FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_TYPE = 6
   };
@@ -137,9 +138,10 @@ inline flatbuffers::Offset<Column> CreateColumnDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     ColumnType type = ColumnType::Byte) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
   return FlatGeobuf::CreateColumn(
       _fbb,
-      name ? _fbb.CreateString(name) : 0,
+      name__,
       type);
 }
 

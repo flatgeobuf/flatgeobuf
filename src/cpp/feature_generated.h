@@ -16,7 +16,7 @@ struct Feature;
 struct Value;
 
 struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FID = 4,
     VT_GEOMETRY = 6,
     VT_VALUES = 8
@@ -83,15 +83,16 @@ inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     uint64_t fid = 0,
     flatbuffers::Offset<Geometry> geometry = 0,
     const std::vector<flatbuffers::Offset<Value>> *values = nullptr) {
+  auto values__ = values ? _fbb.CreateVector<flatbuffers::Offset<Value>>(*values) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       fid,
       geometry,
-      values ? _fbb.CreateVector<flatbuffers::Offset<Value>>(*values) : 0);
+      values__);
 }
 
 struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_COLUMN_INDEX = 4,
     VT_BYTE_VALUE = 6,
     VT_UBYTE_VALUE = 8,
@@ -290,6 +291,9 @@ inline flatbuffers::Offset<Value> CreateValueDirect(
     const char *string_value = nullptr,
     const char *json_value = nullptr,
     const char *datetime_value = nullptr) {
+  auto string_value__ = string_value ? _fbb.CreateString(string_value) : 0;
+  auto json_value__ = json_value ? _fbb.CreateString(json_value) : 0;
+  auto datetime_value__ = datetime_value ? _fbb.CreateString(datetime_value) : 0;
   return FlatGeobuf::CreateValue(
       _fbb,
       column_index,
@@ -304,9 +308,9 @@ inline flatbuffers::Offset<Value> CreateValueDirect(
       ulong_value,
       float_value,
       double_value,
-      string_value ? _fbb.CreateString(string_value) : 0,
-      json_value ? _fbb.CreateString(json_value) : 0,
-      datetime_value ? _fbb.CreateString(datetime_value) : 0);
+      string_value__,
+      json_value__,
+      datetime_value__);
 }
 
 inline const FlatGeobuf::Feature *GetFeature(const void *buf) {

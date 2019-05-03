@@ -43,6 +43,13 @@ public struct Value : IFlatbufferObject
   public ArraySegment<byte>? GetJsonValueBytes() { return __p.__vector_as_arraysegment(30); }
 #endif
   public byte[] GetJsonValueArray() { return __p.__vector_as_array<byte>(30); }
+  public string DatetimeValue { get { int o = __p.__offset(32); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetDatetimeValueBytes() { return __p.__vector_as_span(32); }
+#else
+  public ArraySegment<byte>? GetDatetimeValueBytes() { return __p.__vector_as_arraysegment(32); }
+#endif
+  public byte[] GetDatetimeValueArray() { return __p.__vector_as_array<byte>(32); }
 
   public static Offset<Value> CreateValue(FlatBufferBuilder builder,
       ushort column_index = 0,
@@ -58,11 +65,13 @@ public struct Value : IFlatbufferObject
       float float_value = 0.0f,
       double double_value = 0.0,
       StringOffset string_valueOffset = default(StringOffset),
-      StringOffset json_valueOffset = default(StringOffset)) {
-    builder.StartObject(14);
+      StringOffset json_valueOffset = default(StringOffset),
+      StringOffset datetime_valueOffset = default(StringOffset)) {
+    builder.StartObject(15);
     Value.AddDoubleValue(builder, double_value);
     Value.AddUlongValue(builder, ulong_value);
     Value.AddLongValue(builder, long_value);
+    Value.AddDatetimeValue(builder, datetime_valueOffset);
     Value.AddJsonValue(builder, json_valueOffset);
     Value.AddStringValue(builder, string_valueOffset);
     Value.AddFloatValue(builder, float_value);
@@ -77,7 +86,7 @@ public struct Value : IFlatbufferObject
     return Value.EndValue(builder);
   }
 
-  public static void StartValue(FlatBufferBuilder builder) { builder.StartObject(14); }
+  public static void StartValue(FlatBufferBuilder builder) { builder.StartObject(15); }
   public static void AddColumnIndex(FlatBufferBuilder builder, ushort columnIndex) { builder.AddUshort(0, columnIndex, 0); }
   public static void AddByteValue(FlatBufferBuilder builder, sbyte byteValue) { builder.AddSbyte(1, byteValue, 0); }
   public static void AddUbyteValue(FlatBufferBuilder builder, sbyte ubyteValue) { builder.AddSbyte(2, ubyteValue, 0); }
@@ -92,6 +101,7 @@ public struct Value : IFlatbufferObject
   public static void AddDoubleValue(FlatBufferBuilder builder, double doubleValue) { builder.AddDouble(11, doubleValue, 0.0); }
   public static void AddStringValue(FlatBufferBuilder builder, StringOffset stringValueOffset) { builder.AddOffset(12, stringValueOffset.Value, 0); }
   public static void AddJsonValue(FlatBufferBuilder builder, StringOffset jsonValueOffset) { builder.AddOffset(13, jsonValueOffset.Value, 0); }
+  public static void AddDatetimeValue(FlatBufferBuilder builder, StringOffset datetimeValueOffset) { builder.AddOffset(14, datetimeValueOffset.Value, 0); }
   public static Offset<Value> EndValue(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Value>(o);

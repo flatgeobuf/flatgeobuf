@@ -13,7 +13,6 @@ public enum GeometryType : byte
  MultiLineString = 3,
  Polygon = 4,
  MultiPolygon = 5,
- GeometryCollection = 6,
 };
 
 

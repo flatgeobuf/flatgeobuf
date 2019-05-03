@@ -20,6 +20,7 @@ public enum ColumnType : byte
  Double = 10,
  String = 11,
  Json = 12,
+ DateTime = 13,
 };
 
 

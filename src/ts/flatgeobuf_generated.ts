@@ -2,7 +2,7 @@
 
 import { flatbuffers } from "flatbuffers"
 /**
- * @enum
+ * @enum {number}
  */
 export namespace FlatGeobuf{
 export enum ColumnType{
@@ -23,7 +23,7 @@ export enum ColumnType{
 }};
 
 /**
- * @enum
+ * @enum {number}
  */
 export namespace FlatGeobuf{
 export enum GeometryType{
@@ -115,6 +115,12 @@ static endColumn(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createColumn(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:FlatGeobuf.ColumnType):flatbuffers.Offset {
+  Column.startColumn(builder);
+  Column.addName(builder, nameOffset);
+  Column.addType(builder, type);
+  return Column.endColumn(builder);
+}
 }
 }
 /**
@@ -378,6 +384,14 @@ static endGeometry(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createGeometry(builder:flatbuffers.Builder, ringCountsOffset:flatbuffers.Offset, ringLengthsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, coordsOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Geometry.startGeometry(builder);
+  Geometry.addRingCounts(builder, ringCountsOffset);
+  Geometry.addRingLengths(builder, ringLengthsOffset);
+  Geometry.addLengths(builder, lengthsOffset);
+  Geometry.addCoords(builder, coordsOffset);
+  return Geometry.endGeometry(builder);
+}
 }
 }
 /**
@@ -504,6 +518,13 @@ static endFeature(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createFeature(builder:flatbuffers.Builder, fid:flatbuffers.Long, geometryOffset:flatbuffers.Offset, valuesOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Feature.startFeature(builder);
+  Feature.addFid(builder, fid);
+  Feature.addGeometry(builder, geometryOffset);
+  Feature.addValues(builder, valuesOffset);
+  return Feature.endFeature(builder);
+}
 }
 }
 /**
@@ -799,6 +820,25 @@ static endValue(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createValue(builder:flatbuffers.Builder, columnIndex:number, byteValue:number, ubyteValue:number, boolValue:boolean, shortValue:number, ushortValue:number, intValue:number, uintValue:number, longValue:flatbuffers.Long, ulongValue:flatbuffers.Long, floatValue:number, doubleValue:number, stringValueOffset:flatbuffers.Offset, jsonValueOffset:flatbuffers.Offset, datetimeValueOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Value.startValue(builder);
+  Value.addColumnIndex(builder, columnIndex);
+  Value.addByteValue(builder, byteValue);
+  Value.addUbyteValue(builder, ubyteValue);
+  Value.addBoolValue(builder, boolValue);
+  Value.addShortValue(builder, shortValue);
+  Value.addUshortValue(builder, ushortValue);
+  Value.addIntValue(builder, intValue);
+  Value.addUintValue(builder, uintValue);
+  Value.addLongValue(builder, longValue);
+  Value.addUlongValue(builder, ulongValue);
+  Value.addFloatValue(builder, floatValue);
+  Value.addDoubleValue(builder, doubleValue);
+  Value.addStringValue(builder, stringValueOffset);
+  Value.addJsonValue(builder, jsonValueOffset);
+  Value.addDatetimeValue(builder, datetimeValueOffset);
+  return Value.endValue(builder);
+}
 }
 }
 /**
@@ -877,6 +917,12 @@ static endIndex(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createIndex(builder:flatbuffers.Builder, nodeSize:number, offsetSize:number):flatbuffers.Offset {
+  Index.startIndex(builder);
+  Index.addNodeSize(builder, nodeSize);
+  Index.addOffsetSize(builder, offsetSize);
+  return Index.endIndex(builder);
+}
 }
 }
 /**
@@ -958,6 +1004,12 @@ static endSrs(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
+static createSrs(builder:flatbuffers.Builder, code:number, orgOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Srs.startSrs(builder);
+  Srs.addCode(builder, code);
+  Srs.addOrg(builder, orgOffset);
+  return Srs.endSrs(builder);
+}
 }
 }
 /**
@@ -1230,5 +1282,18 @@ static finishHeaderBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset
   builder.finish(offset);
 };
 
+static createHeader(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:FlatGeobuf.GeometryType, dimensions:number, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, fids:boolean, indexOffset:flatbuffers.Offset, srsOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Header.startHeader(builder);
+  Header.addName(builder, nameOffset);
+  Header.addEnvelope(builder, envelopeOffset);
+  Header.addGeometryType(builder, geometryType);
+  Header.addDimensions(builder, dimensions);
+  Header.addColumns(builder, columnsOffset);
+  Header.addFeaturesCount(builder, featuresCount);
+  Header.addFids(builder, fids);
+  Header.addIndex(builder, indexOffset);
+  Header.addSrs(builder, srsOffset);
+  return Header.endHeader(builder);
+}
 }
 }

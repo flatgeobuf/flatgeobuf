@@ -32,46 +32,55 @@ public struct Header : IFlatbufferObject
   public ArraySegment<byte>? GetEnvelopeBytes() { return __p.__vector_as_arraysegment(6); }
 #endif
   public double[] GetEnvelopeArray() { return __p.__vector_as_array<double>(6); }
-  public Layer? Layers(int j) { int o = __p.__offset(8); return o != 0 ? (Layer?)(new Layer()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
-  public int LayersLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public ushort IndexNodeSize { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)16; } }
-  public ulong IndexNodesCount { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
-  public ulong FeaturesSize { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
-  public ulong FeaturesCount { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
+  public GeometryType GeometryType { get { int o = __p.__offset(8); return o != 0 ? (GeometryType)__p.bb.Get(o + __p.bb_pos) : GeometryType.Point; } }
+  public byte Dimensions { get { int o = __p.__offset(10); return o != 0 ? __p.bb.Get(o + __p.bb_pos) : (byte)2; } }
+  public Column? Columns(int j) { int o = __p.__offset(12); return o != 0 ? (Column?)(new Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int ColumnsLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public Column? ColumnsByKey(string key) { int o = __p.__offset(12); return o != 0 ? Column.__lookup_by_key(__p.__vector(o), key, __p.bb) : null; }
+  public ulong FeaturesCount { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
+  public bool Fids { get { int o = __p.__offset(16); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)true; } }
+  public Index? Index { get { int o = __p.__offset(18); return o != 0 ? (Index?)(new Index()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public Srs? Srs { get { int o = __p.__offset(20); return o != 0 ? (Srs?)(new Srs()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<Header> CreateHeader(FlatBufferBuilder builder,
       StringOffset nameOffset = default(StringOffset),
       VectorOffset envelopeOffset = default(VectorOffset),
-      VectorOffset layersOffset = default(VectorOffset),
-      ushort index_node_size = 16,
-      ulong index_nodes_count = 0,
-      ulong features_size = 0,
-      ulong features_count = 0) {
-    builder.StartObject(7);
+      GeometryType geometry_type = GeometryType.Point,
+      byte dimensions = 2,
+      VectorOffset columnsOffset = default(VectorOffset),
+      ulong features_count = 0,
+      bool fids = true,
+      Offset<Index> indexOffset = default(Offset<Index>),
+      Offset<Srs> srsOffset = default(Offset<Srs>)) {
+    builder.StartObject(9);
     Header.AddFeaturesCount(builder, features_count);
-    Header.AddFeaturesSize(builder, features_size);
-    Header.AddIndexNodesCount(builder, index_nodes_count);
-    Header.AddLayers(builder, layersOffset);
+    Header.AddSrs(builder, srsOffset);
+    Header.AddIndex(builder, indexOffset);
+    Header.AddColumns(builder, columnsOffset);
     Header.AddEnvelope(builder, envelopeOffset);
     Header.AddName(builder, nameOffset);
-    Header.AddIndexNodeSize(builder, index_node_size);
+    Header.AddFids(builder, fids);
+    Header.AddDimensions(builder, dimensions);
+    Header.AddGeometryType(builder, geometry_type);
     return Header.EndHeader(builder);
   }
 
-  public static void StartHeader(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartHeader(FlatBufferBuilder builder) { builder.StartObject(9); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(0, nameOffset.Value, 0); }
   public static void AddEnvelope(FlatBufferBuilder builder, VectorOffset envelopeOffset) { builder.AddOffset(1, envelopeOffset.Value, 0); }
   public static VectorOffset CreateEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateEnvelopeVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartEnvelopeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddLayers(FlatBufferBuilder builder, VectorOffset layersOffset) { builder.AddOffset(2, layersOffset.Value, 0); }
-  public static VectorOffset CreateLayersVector(FlatBufferBuilder builder, Offset<Layer>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
-  public static VectorOffset CreateLayersVectorBlock(FlatBufferBuilder builder, Offset<Layer>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
-  public static void StartLayersVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddIndexNodeSize(FlatBufferBuilder builder, ushort indexNodeSize) { builder.AddUshort(3, indexNodeSize, 16); }
-  public static void AddIndexNodesCount(FlatBufferBuilder builder, ulong indexNodesCount) { builder.AddUlong(4, indexNodesCount, 0); }
-  public static void AddFeaturesSize(FlatBufferBuilder builder, ulong featuresSize) { builder.AddUlong(5, featuresSize, 0); }
-  public static void AddFeaturesCount(FlatBufferBuilder builder, ulong featuresCount) { builder.AddUlong(6, featuresCount, 0); }
+  public static void AddGeometryType(FlatBufferBuilder builder, GeometryType geometryType) { builder.AddByte(2, (byte)geometryType, 0); }
+  public static void AddDimensions(FlatBufferBuilder builder, byte dimensions) { builder.AddByte(3, dimensions, 2); }
+  public static void AddColumns(FlatBufferBuilder builder, VectorOffset columnsOffset) { builder.AddOffset(4, columnsOffset.Value, 0); }
+  public static VectorOffset CreateColumnsVector(FlatBufferBuilder builder, Offset<Column>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartColumnsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddFeaturesCount(FlatBufferBuilder builder, ulong featuresCount) { builder.AddUlong(5, featuresCount, 0); }
+  public static void AddFids(FlatBufferBuilder builder, bool fids) { builder.AddBool(6, fids, true); }
+  public static void AddIndex(FlatBufferBuilder builder, Offset<Index> indexOffset) { builder.AddOffset(7, indexOffset.Value, 0); }
+  public static void AddSrs(FlatBufferBuilder builder, Offset<Srs> srsOffset) { builder.AddOffset(8, srsOffset.Value, 0); }
   public static Offset<Header> EndHeader(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Header>(o);

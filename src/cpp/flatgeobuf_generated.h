@@ -19,7 +19,7 @@ struct Srs;
 struct Header;
 
 struct Index FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NODE_SIZE = 4,
     VT_OFFSET_SIZE = 6
   };
@@ -69,7 +69,7 @@ inline flatbuffers::Offset<Index> CreateIndex(
 }
 
 struct Srs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_CODE = 4,
     VT_ORG = 6
   };
@@ -123,14 +123,15 @@ inline flatbuffers::Offset<Srs> CreateSrsDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t code = 0,
     const char *org = nullptr) {
+  auto org__ = org ? _fbb.CreateString(org) : 0;
   return FlatGeobuf::CreateSrs(
       _fbb,
       code,
-      org ? _fbb.CreateString(org) : 0);
+      org__);
 }
 
 struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_ENVELOPE = 6,
     VT_GEOMETRY_TYPE = 8,
@@ -266,13 +267,16 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     bool fids = true,
     flatbuffers::Offset<Index> index = 0,
     flatbuffers::Offset<Srs> srs = 0) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto envelope__ = envelope ? _fbb.CreateVector<double>(*envelope) : 0;
+  auto columns__ = columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0;
   return FlatGeobuf::CreateHeader(
       _fbb,
-      name ? _fbb.CreateString(name) : 0,
-      envelope ? _fbb.CreateVector<double>(*envelope) : 0,
+      name__,
+      envelope__,
       geometry_type,
       dimensions,
-      columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0,
+      columns__,
       features_count,
       fids,
       index,
