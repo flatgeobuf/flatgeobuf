@@ -6,18 +6,18 @@ import com.google.flatbuffers.FlatBufferBuilder;
 
 import flatgeobuf.generated.*;
 
-import org.locationtech.jts.geom.Geometry;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 
 public class FeatureConversions {
 
-    public static byte[] write(SimpleFeature feature, byte geometryType, byte dimensions) throws IOException {
+    public static byte[] serialize(SimpleFeature feature, int geometryType, int dimensions) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-        Geometry geometry = (Geometry) feature.getDefaultGeometry();
+        org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
         long fid = 0;
         // TODO: parse fid - feature.getID()
-        int geometryOffset = GeometryConversions.write(builder, geometry, geometryType, dimensions);
+        int geometryOffset = GeometryConversions.serialize(builder, geometry, geometryType, dimensions);
         int valuesOffset = 0;
         // TODO: parse values
         /*for (int j = 0; j < types.size(); j++) {
@@ -37,5 +37,12 @@ public class FeatureConversions {
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();
+    }
+
+    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, int geometryType, int dimensions) {
+        Geometry geometry = feature.geometry();
+        fb.add(GeometryConversions.deserialize(geometry, geometryType, dimensions));
+        SimpleFeature f = fb.buildFeature("fid");
+        return f;
     }
 }

@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -13,6 +15,7 @@ import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -39,43 +42,43 @@ public class GeometryRoundtripTest {
         return fc;
     }
 
+    String roundTrip(String wkt) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        
+        FeatureCollectionConversions.serialize(makeFC(wkt), os);
+        ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
+        Geometry geometry = (Geometry) fc.features().next().getDefaultGeometry();
+        WKTWriter writer = new WKTWriter();
+        return writer.write(geometry);
+    }
+
     @Test
     public void point() throws IOException
     {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        SimpleFeatureCollection fc = makeFC("POINT(1.2 -2.1)");
-        FeatureCollectionConversions.write(fc, os);
-        int size = os.size();
-        assertEquals(80, size);
+        String expected = "POINT (1.2 -2.1)";
+        assertEquals(expected, roundTrip(expected));
     }
 
     @Test
     public void multipoint() throws IOException
     {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        SimpleFeatureCollection fc = makeFC("MULTIPOINT(10 40, 40 30, 20 20, 30 10)");
-        FeatureCollectionConversions.write(fc, os);
-        int size = os.size();
-        assertEquals(140, size);
+        String expected = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
+        assertEquals(expected, roundTrip(expected));
     }
 
     @Test
     public void linestring() throws IOException
     {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        SimpleFeatureCollection fc = makeFC("LINESTRING(1.2 -2.1, 2.4 -4.8)");
-        FeatureCollectionConversions.write(fc, os);
-        int size = os.size();
-        assertEquals(108, size);
+        String expected = "LINESTRING (1.2 -2.1, 2.4 -4.8)";
+        assertEquals(expected, roundTrip(expected));
     }
 
     @Test
     public void polygon() throws IOException
     {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        SimpleFeatureCollection fc = makeFC("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
-        FeatureCollectionConversions.write(fc, os);
-        int size = os.size();
-        assertEquals(172, size);
+        String expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
+        assertEquals(expected, roundTrip(expected));
     }
 }
