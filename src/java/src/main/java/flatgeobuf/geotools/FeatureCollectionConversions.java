@@ -33,6 +33,8 @@ public class FeatureCollectionConversions {
         public List<ColumnMeta> columns;
     }
 
+    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00 };
+
     public static void serialize(SimpleFeatureCollection featureCollection, OutputStream outputStream) throws IOException {
         // TODO: if no features do not output
 
@@ -40,6 +42,8 @@ public class FeatureCollectionConversions {
         byte geometryType = toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
         // TODO: determine dimensions from type
         byte dimensions = 2;
+
+        outputStream.write(magicbytes);
 
         byte[] headerBuffer = buildHeader(geometryType);
         outputStream.write(headerBuffer);
@@ -65,6 +69,12 @@ public class FeatureCollectionConversions {
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb) {
         int offset = 0;
+        if (bb.get() != magicbytes[0] ||
+            bb.get() != magicbytes[1] ||
+            bb.get() != magicbytes[2] ||
+            bb.get() != magicbytes[3])
+            throw new RuntimeException("Not a FlatGeobuf file");
+        bb.position(offset += 4);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
         bb.position(offset += 4);
         Header header = Header.getRootAsHeader(bb);
