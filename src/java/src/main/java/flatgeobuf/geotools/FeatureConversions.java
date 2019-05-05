@@ -11,12 +11,10 @@ import org.opengis.feature.simple.SimpleFeature;
 
 public class FeatureConversions {
 
-    public static byte[] serialize(SimpleFeature feature, int geometryType, int dimensions) throws IOException {
+    public static byte[] serialize(SimpleFeature feature, long fid, int geometryType, int dimensions) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
-        long fid = 0;
-        // TODO: parse fid - feature.getID()
         int geometryOffset = GeometryConversions.serialize(builder, geometry, geometryType, dimensions);
         int valuesOffset = 0;
         // TODO: parse values
@@ -41,8 +39,9 @@ public class FeatureConversions {
 
     public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, int geometryType, int dimensions) {
         Geometry geometry = feature.geometry();
+        long fid = feature.fid();
         fb.add(GeometryConversions.deserialize(geometry, geometryType, dimensions));
-        SimpleFeature f = fb.buildFeature("fid");
+        SimpleFeature f = fb.buildFeature(Long.toString(fid));
         return f;
     }
 }

@@ -33,9 +33,7 @@ public class FeatureCollectionConversions {
         public List<ColumnMeta> columns;
     }
 
-    public static void serialize(SimpleFeatureCollection featureCollection,
-            OutputStream outputStream) throws IOException {
-
+    public static void serialize(SimpleFeatureCollection featureCollection, OutputStream outputStream) throws IOException {
         // TODO: if no features do not output
 
         SimpleFeatureType featureType = featureCollection.getSchema();
@@ -47,18 +45,30 @@ public class FeatureCollectionConversions {
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
+            long fid = 0;
             while (iterator.hasNext()) {
                 SimpleFeature feature = iterator.next();
-                byte[] featureBuffer = FeatureConversions.serialize(feature, geometryType, dimensions);
+                String id = feature.getID();
+                if (id != null) {
+                    try {
+                        fid = Long.parseLong(id);
+                    } catch (NumberFormatException e) {
+
+                    }
+                }
+                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, geometryType, dimensions);
                 outputStream.write(featureBuffer);
+                fid++;
             }
         }
     }
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb) {
+        int offset = 0;
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
-        bb.position(4);
+        bb.position(offset += 4);
         Header header = Header.getRootAsHeader(bb);
+        bb.position(offset += headerSize);
         int geometryType = header.geometryType();
         int dimensions = header.dimensions();
         Class<?> geometryClass;
@@ -83,16 +93,16 @@ public class FeatureCollectionConversions {
         ftb.setName("testType");
         ftb.add("geometryProperty", geometryClass);
         SimpleFeatureType ft = ftb.buildFeatureType();
-        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
-        
+        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);        
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
-        bb.position(4 + headerSize);
-        int featureSize = ByteBufferUtil.getSizePrefix(bb);
-        bb.position(4 + headerSize + 4);
-        Feature feature = Feature.getRootAsFeature(bb);
-        SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions);
-        
-        fc.add(f);
+        while (bb.hasRemaining()) {
+            int featureSize = ByteBufferUtil.getSizePrefix(bb);
+            bb.position(offset += 4);
+            Feature feature = Feature.getRootAsFeature(bb);
+            bb.position(offset += featureSize);
+            SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions);
+            fc.add(f);
+        }
         return fc;
     }
 
