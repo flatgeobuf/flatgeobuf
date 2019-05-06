@@ -14,6 +14,8 @@ const Column = FlatGeobuf.Column
 
 const SIZE_PREFIX_LEN: number = 4
 
+const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x00]);
+
 export interface IGeoJsonFeatureCollection {
     type: string,
     features?: IGeoJsonFeature[]
@@ -31,23 +33,26 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
         .map(f => SIZE_PREFIX_LEN + f.length)
         .reduce((a, b) => a + b)
 
-    const uint8 = new Uint8Array(SIZE_PREFIX_LEN + header.length + featuresLength)
-    uint8.set(toInt32(header.length), 0)
-    uint8.set(header, SIZE_PREFIX_LEN)
-    let offset = SIZE_PREFIX_LEN + header.length
+    const uint8 = new Uint8Array(4 + SIZE_PREFIX_LEN + header.length + featuresLength)
+    uint8.set(toInt32(header.length), 4)
+    uint8.set(header, 4 + SIZE_PREFIX_LEN)
+    let offset = 4 + SIZE_PREFIX_LEN + header.length
     for (const feature of features) {
         uint8.set(toInt32(feature.length), offset)
         uint8.set(feature, offset + SIZE_PREFIX_LEN)
         offset += SIZE_PREFIX_LEN + feature.length
     }
+    uint8.set(magicbytes)
     return uint8
 }
 
 export function deserialize(bytes: Uint8Array) {
-    const headerLength = getInt32(bytes, 0)
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
+        throw new Error('Not a FlatGeobuf file')
 
-    const headerBytes = new Uint8Array(bytes.buffer, SIZE_PREFIX_LEN)
-    let offset = SIZE_PREFIX_LEN + headerLength
+    const headerLength = getInt32(bytes, 4)
+    const headerBytes = new Uint8Array(bytes.buffer, 4 + SIZE_PREFIX_LEN)
+    let offset = 4 + SIZE_PREFIX_LEN + headerLength
 
     const bb = new flatbuffers.ByteBuffer(headerBytes)
     const header = FlatGeobuf.Header.getRootAsHeader(bb)
