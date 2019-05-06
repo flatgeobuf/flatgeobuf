@@ -174,7 +174,7 @@ describe('geojson module', () => {
       const buffer = readFileSync('/home/bjorn/code/flatgeobuf/test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes)
-      expect(geojson.features.length).to.eq(1)
+      expect(geojson.features.length).to.eq(287)
     })
   })
   */

@@ -142,7 +142,11 @@ function extractPartsParts(
 }
 
 function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
-    const coords = geometry.coordsArray()
+    // NOTE: workaround for alignment issues
+    const coordsLength = geometry.coordsLength()
+    const coords = new Float64Array(coordsLength)
+    for (let i = 0; i < coordsLength; i++)
+        coords[i] = geometry.coords(i)
     switch (type) {
         case GeometryType.Point:
             return Array.from(coords)
