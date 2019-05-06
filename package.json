@@ -3,8 +3,13 @@
   "version": "0.1.0",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
+    "build": "tsc && rollup -c",
     "test": "./run_tests.sh"
   },
+  "files": [
+    "lib/**/*",
+    "dist/**/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bjornharrtell/flatgeobuf.git"
@@ -16,19 +21,25 @@
   },
   "homepage": "https://github.com/bjornharrtell/flatgeobuf#readme",
   "dependencies": {
-    "@types/flatbuffers": "1.9.1",
-    "flatbuffers": "1.11.0",
-    "typescript": "3.4.5"
+    "flatbuffers": "1.11.0"
   },
   "devDependencies": {
+    "@babel/core": "7.4.4",
+    "@babel/preset-env": "7.4.4",
     "@types/chai": "4.1.7",
     "@types/mocha": "5.2.6",
     "@types/node": "10.14.6",
+    "@types/flatbuffers": "1.9.1",
     "chai": "4.2.0",
     "esm": "3.2.22",
     "jsts": "2.0.4",
     "mocha": "6.1.4",
+    "rollup-plugin-terser": "4.0.4",
     "ts-node": "8.1.0",
-    "tslint": "5.16.0"
+    "tslint": "5.16.0",
+    "rollup": "1.11.3",
+    "rollup-plugin-babel": "4.3.2",
+    "rollup-plugin-node-resolve": "4.2.3",
+    "typescript": "3.4.5"
   }
 }

@@ -1,15 +1,15 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "ES6",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outFile": "./test.js",
+        "outDir": "./lib",
         "sourceMap": true,
         "target": "ES6"
     },
     "include": [
-        "src/**/*"
+        "src/ts"
     ],
     "exclude": [
         "node_modules",
