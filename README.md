@@ -25,6 +25,8 @@ DISCLAIMER: Unfinished work in progress.
 * Efficient I/O (streaming and random access)
 * GDAL/OGR format (WIP @ https://github.com/bjornharrtell/gdal/tree/flatgeobuf)
 * QGIS provider (WIP @ https://github.com/bjornharrtell/QGIS/tree/fgb)
+* OpenLayers example (WIP @ https://github.com/bjornharrtell/ol3/tree/flatgeobuf)
+* GeoServer WFS output format (WIP @ https://github.com/bjornharrtell/geoserver/tree/flatgeobuf-output)
 * Complete test coverage
 
 ## TODO
