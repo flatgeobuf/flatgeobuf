@@ -5,7 +5,7 @@ import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
 
-import { writeFile } from 'fs'
+import { writeFile, readFileSync } from 'fs'
 
 import { deserialize, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
@@ -167,5 +167,16 @@ describe('geojson module', () => {
     })
 
   })
+
+  /*
+  describe("External file tests", () => {
+    it('Should parse a fgb from GDAL', () => {
+      const buffer = readFileSync('/home/bjorn/code/flatgeobuf/test/data/countries.fgb')
+      const bytes = new Uint8Array(buffer)
+      const geojson = deserialize(bytes)
+      expect(geojson.features.length).to.eq(1)
+    })
+  })
+  */
 
 })

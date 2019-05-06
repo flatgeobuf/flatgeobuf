@@ -8,11 +8,13 @@ import HeaderMeta from '../HeaderMeta'
 import { getInt32, toInt32, toUint8Array } from '../utils'
 import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import { toGeometryType } from './geometry'
+import * as tree from '../packedrtree'
 
 const Header = FlatGeobuf.Header
 const Column = FlatGeobuf.Column
 
 const SIZE_PREFIX_LEN: number = 4
+const FEATURE_OFFSET_LEN: number = 8
 
 const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x00]);
 
@@ -51,6 +53,7 @@ export function deserialize(bytes: Uint8Array) {
         throw new Error('Not a FlatGeobuf file')
 
     const headerLength = getInt32(bytes, 4)
+
     const headerBytes = new Uint8Array(bytes.buffer, 4 + SIZE_PREFIX_LEN)
     let offset = 4 + SIZE_PREFIX_LEN + headerLength
 
@@ -64,6 +67,12 @@ export function deserialize(bytes: Uint8Array) {
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns)
+
+    const index = header.index()
+    if (index) {
+        const nodeSize = index.nodeSize()
+        offset += tree.size(count, index.nodeSize()) + (count * FEATURE_OFFSET_LEN)
+    }
 
     const features = []
     for (let i = 0; i < count; i++) {
