@@ -76,7 +76,7 @@ public class GeometryRoundtripTest {
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
         Geometry geometry = (Geometry) fc.features().next().getDefaultGeometry();
         WKTWriter writer = new WKTWriter();
-        return writer.write(geometry);
+        return writer.write(geometry).replace('−', '-');
     }
 
     String[] roundTrip(String[] wkts, Class<?> geometryClass) throws IOException {
@@ -92,7 +92,7 @@ public class GeometryRoundtripTest {
             while (iterator.hasNext()) {
                 SimpleFeature feature = iterator.next();
                 Geometry geometry = (Geometry) feature.getDefaultGeometry();
-                newWkts[c++] = writer.write(geometry);
+                newWkts[c++] = writer.write(geometry).replace('−', '-');
             }
         }
         return newWkts;
@@ -127,9 +127,37 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void multilinestring() throws IOException
+    {
+        String expected = "MULTILINESTRING ((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void polygon() throws IOException
     {
         String expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void polygon_hole() throws IOException
+    {
+        String expected = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))";
+        assertEquals(expected, roundTrip(expected));
+    }
+    
+    @Test
+    public void multipolygon_single() throws IOException
+    {
+        String expected = "MULTIPOLYGON (((30 10, 40 40, 20 40, 10 20, 30 10)))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void multipolygon() throws IOException
+    {
+        String expected = "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))";
         assertEquals(expected, roundTrip(expected));
     }
 }

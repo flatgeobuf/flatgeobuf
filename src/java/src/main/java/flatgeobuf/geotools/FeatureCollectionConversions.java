@@ -92,8 +92,14 @@ public class FeatureCollectionConversions {
             case GeometryType.LineString:
                 geometryClass = LineString.class;
                 break;
+            case GeometryType.MultiLineString:
+                geometryClass = MultiLineString.class;
+                break;
             case GeometryType.Polygon:
                 geometryClass = Polygon.class;
+                break;
+            case GeometryType.MultiPolygon:
+                geometryClass = MultiPolygon.class;
                 break;
             default:
                 throw new RuntimeException("Unknown geometry type");
@@ -117,18 +123,18 @@ public class FeatureCollectionConversions {
     }
 
     private static byte toGeometryType(Class<?> geometryClass) {
-        if (geometryClass.isAssignableFrom(Point.class))
-            return GeometryType.Point;
-        else if (geometryClass.isAssignableFrom(MultiPoint.class))
+        if (geometryClass.isAssignableFrom(MultiPoint.class))
             return GeometryType.MultiPoint;
-        else if (geometryClass.isAssignableFrom(LineString.class))
-            return GeometryType.LineString;
+        else if (geometryClass.isAssignableFrom(Point.class))
+            return GeometryType.Point;
         else if (geometryClass.isAssignableFrom(MultiLineString.class))
             return GeometryType.MultiLineString;
-        else if (geometryClass.isAssignableFrom(Polygon.class))
-            return GeometryType.Polygon;
+        else if (geometryClass.isAssignableFrom(LineString.class))
+            return GeometryType.LineString;
         else if (geometryClass.isAssignableFrom(MultiPolygon.class))
             return GeometryType.MultiPolygon;
+        else if (geometryClass.isAssignableFrom(Polygon.class))
+            return GeometryType.Polygon;
         else
             throw new RuntimeException("Unknown geometry type");
     }
