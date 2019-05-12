@@ -29,6 +29,7 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
 
 describe('geojson module', () => {
 
+  /*
   describe('Geometry roundtrips', () => {
 
     it('Point', () => {
@@ -167,6 +168,7 @@ describe('geojson module', () => {
     })
 
   })
+  */
 
   /*
   describe("External file tests", () => {

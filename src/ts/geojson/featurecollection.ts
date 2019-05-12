@@ -5,7 +5,7 @@ import ColumnType from '../ColumnType'
 import { FlatGeobuf } from '../flatgeobuf_generated'
 import HeaderMeta from '../HeaderMeta'
 
-import { getInt32, toInt32, toUint8Array } from '../utils'
+import { getInt32, toUint8Array } from '../utils'
 import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import { toGeometryType } from './geometry'
 import * as tree from '../packedrtree'
@@ -26,23 +26,18 @@ export interface IGeoJsonFeatureCollection {
 export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     const headerMeta = introspectHeaderMeta(featurecollection)
     const header = toUint8Array(buildHeader(featurecollection, headerMeta))
-
     const features: Uint8Array[] = featurecollection.features
         .map(f => buildFeature(f, headerMeta))
         .map(toUint8Array)
-
     const featuresLength = features
-        .map(f => SIZE_PREFIX_LEN + f.length)
+        .map(f => f.length)
         .reduce((a, b) => a + b)
-
-    const uint8 = new Uint8Array(4 + SIZE_PREFIX_LEN + header.length + featuresLength)
-    uint8.set(toInt32(header.length), 4)
-    uint8.set(header, 4 + SIZE_PREFIX_LEN)
-    let offset = 4 + SIZE_PREFIX_LEN + header.length
+    const uint8 = new Uint8Array(magicbytes.length + header.length + featuresLength)
+    uint8.set(header, magicbytes.length)
+    let offset = magicbytes.length + header.length
     for (const feature of features) {
-        uint8.set(toInt32(feature.length), offset)
-        uint8.set(feature, offset + SIZE_PREFIX_LEN)
-        offset += SIZE_PREFIX_LEN + feature.length
+        uint8.set(feature, offset)
+        offset += feature.length
     }
     uint8.set(magicbytes)
     return uint8
@@ -52,12 +47,10 @@ export function deserialize(bytes: Uint8Array) {
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
-    const headerLength = getInt32(bytes, 4)
-
-    const headerBytes = new Uint8Array(bytes.buffer, 4 + SIZE_PREFIX_LEN)
-    let offset = 4 + SIZE_PREFIX_LEN + headerLength
-
+    const headerLength = getInt32(bytes, magicbytes.length)
+    const headerBytes = new Uint8Array(bytes.buffer, magicbytes.length)
     const bb = new flatbuffers.ByteBuffer(headerBytes)
+    bb.setPosition(SIZE_PREFIX_LEN)
     const header = FlatGeobuf.Header.getRootAsHeader(bb)
     const count = header.featuresCount().toFloat64()
 
@@ -68,21 +61,21 @@ export function deserialize(bytes: Uint8Array) {
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns)
 
+    let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
+
     const index = header.index()
-    if (index) {
-        const nodeSize = index.nodeSize()
+    if (index)
         offset += tree.size(count, index.nodeSize()) + (count * FEATURE_OFFSET_LEN)
-    }
 
     const features = []
     for (let i = 0; i < count; i++) {
         const featureDataBytes = new Uint8Array(bytes.buffer, offset)
         const featureLength = getInt32(featureDataBytes, offset)
-        const featureBytes = new Uint8Array(bytes.buffer.slice(offset + SIZE_PREFIX_LEN))
-        const featureBB = new flatbuffers.ByteBuffer(featureBytes)
-        const feature = FlatGeobuf.Feature.getRootAsFeature(featureBB)
+        const bb = new flatbuffers.ByteBuffer(featureDataBytes)
+        bb.setPosition(SIZE_PREFIX_LEN)
+        const feature = FlatGeobuf.Feature.getRootAsFeature(bb)
         features.push(fromFeature(feature, headerMeta))
-        offset += (SIZE_PREFIX_LEN + featureLength)
+        offset += SIZE_PREFIX_LEN + featureLength
     }
 
     return {
@@ -117,7 +110,8 @@ function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: Heade
         Header.addColumns(builder, columnOffsets)
     Header.addName(builder, nameOffset)
     const offset = Header.endHeader(builder)
-    builder.finish(offset)
+    //Header.finishSizePrefixedHeaderBuffer(builder, offset)
+    Header.finishHeaderBuffer(builder, offset)
     return builder.dataBuffer()
 }
 
