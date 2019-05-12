@@ -5,7 +5,6 @@ import ColumnType from '../ColumnType'
 import { FlatGeobuf } from '../flatgeobuf_generated'
 import HeaderMeta from '../HeaderMeta'
 
-import { getInt32, toUint8Array } from '../utils'
 import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import { toGeometryType } from './geometry'
 import * as tree from '../packedrtree'
@@ -25,10 +24,9 @@ export interface IGeoJsonFeatureCollection {
 
 export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     const headerMeta = introspectHeaderMeta(featurecollection)
-    const header = toUint8Array(buildHeader(featurecollection, headerMeta))
+    const header = buildHeader(featurecollection, headerMeta)
     const features: Uint8Array[] = featurecollection.features
         .map(f => buildFeature(f, headerMeta))
-        .map(toUint8Array)
     const featuresLength = features
         .map(f => f.length)
         .reduce((a, b) => a + b)
@@ -47,9 +45,8 @@ export function deserialize(bytes: Uint8Array) {
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
-    const headerLength = getInt32(bytes, magicbytes.length)
-    const headerBytes = new Uint8Array(bytes.buffer, magicbytes.length)
-    const bb = new flatbuffers.ByteBuffer(headerBytes)
+    const headerLength = new DataView(bytes.buffer).getInt32(magicbytes.length, true)
+    const bb = new flatbuffers.ByteBuffer(Uint8Array.from(bytes.slice(magicbytes.length, magicbytes.length + SIZE_PREFIX_LEN + headerLength)))
     bb.setPosition(SIZE_PREFIX_LEN)
     const header = FlatGeobuf.Header.getRootAsHeader(bb)
     const count = header.featuresCount().toFloat64()
@@ -69,9 +66,8 @@ export function deserialize(bytes: Uint8Array) {
 
     const features = []
     for (let i = 0; i < count; i++) {
-        const featureDataBytes = new Uint8Array(bytes.buffer, offset)
-        const featureLength = getInt32(featureDataBytes, offset)
-        const bb = new flatbuffers.ByteBuffer(featureDataBytes)
+        const featureLength = new DataView(bytes.buffer).getInt32(offset, true)
+        const bb = new flatbuffers.ByteBuffer(Uint8Array.from(bytes.slice(offset, offset + SIZE_PREFIX_LEN + featureLength)))
         bb.setPosition(SIZE_PREFIX_LEN)
         const feature = FlatGeobuf.Feature.getRootAsFeature(bb)
         features.push(fromFeature(feature, headerMeta))
@@ -110,9 +106,9 @@ function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: Heade
         Header.addColumns(builder, columnOffsets)
     Header.addName(builder, nameOffset)
     const offset = Header.endHeader(builder)
-    //Header.finishSizePrefixedHeaderBuffer(builder, offset)
-    Header.finishHeaderBuffer(builder, offset)
-    return builder.dataBuffer()
+    //builder.finishSizePrefixed(offset)
+    builder.finish(offset)
+    return builder.asUint8Array()
 }
 
 function valueToType(value: boolean | number | string | object): ColumnType {

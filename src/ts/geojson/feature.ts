@@ -40,7 +40,7 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
     const offset = Feature.endFeature(builder)
     //builder.finishSizePrefixed(offset)
     builder.finish(offset)
-    return builder.dataBuffer()
+    return builder.asUint8Array()
 }
 
 function buildValue(
