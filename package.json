@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "tsc && rollup -c",
