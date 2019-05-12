@@ -70,7 +70,7 @@ public class GeometryRoundtripTest {
 
     String roundTrip(String wkt) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkt), os);
+        FeatureCollectionConversions.serialize(makeFC(wkt), 0, os);
         ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
@@ -82,7 +82,7 @@ public class GeometryRoundtripTest {
     String[] roundTrip(String[] wkts, Class<?> geometryClass) throws IOException {
         String[] newWkts = new String[wkts.length];
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkts, geometryClass), os);
+        FeatureCollectionConversions.serialize(makeFC(wkts, geometryClass), 0, os);
         ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);

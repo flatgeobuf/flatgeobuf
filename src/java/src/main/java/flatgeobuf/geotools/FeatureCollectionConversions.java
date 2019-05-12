@@ -35,7 +35,7 @@ public class FeatureCollectionConversions {
 
     static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00 };
 
-    public static void serialize(SimpleFeatureCollection featureCollection, OutputStream outputStream) throws IOException {
+    public static void serialize(SimpleFeatureCollection featureCollection, long featureCount, OutputStream outputStream) throws IOException {
         // TODO: if no features do not output
 
         SimpleFeatureType featureType = featureCollection.getSchema();
@@ -45,7 +45,7 @@ public class FeatureCollectionConversions {
 
         outputStream.write(magicbytes);
 
-        byte[] headerBuffer = buildHeader(geometryType);
+        byte[] headerBuffer = buildHeader(geometryType, featureCount);
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
@@ -139,11 +139,12 @@ public class FeatureCollectionConversions {
             throw new RuntimeException("Unknown geometry type");
     }
 
-    private static byte[] buildHeader(int geometryType) {
+    private static byte[] buildHeader(int geometryType, long featuresCount) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
 
         Header.startHeader(builder);
         Header.addGeometryType(builder, geometryType);
+        Header.addFeaturesCount(builder, featuresCount);
         int offset = Header.endHeader(builder);
 
         builder.finishSizePrefixed(offset);
