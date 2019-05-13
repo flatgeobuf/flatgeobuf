@@ -34,7 +34,7 @@ inline const GeometryType (&EnumValuesGeometryType())[6] {
 }
 
 inline const char * const *EnumNamesGeometryType() {
-  static const char * const names[] = {
+  static const char * const names[7] = {
     "Point",
     "MultiPoint",
     "LineString",

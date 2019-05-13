@@ -50,7 +50,7 @@ inline const ColumnType (&EnumValuesColumnType())[14] {
 }
 
 inline const char * const *EnumNamesColumnType() {
-  static const char * const names[] = {
+  static const char * const names[15] = {
     "Byte",
     "UByte",
     "Bool",
