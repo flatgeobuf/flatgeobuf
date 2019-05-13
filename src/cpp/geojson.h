@@ -17,7 +17,7 @@ using namespace mapbox::geojson;
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
-uint8_t magicbytes[4] = { 0x66, 0x67, 0x62, 0x00 };
+uint8_t magicbytes[] = { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
 
 Rect toRect(geometry geometry)
 {
@@ -60,7 +60,7 @@ const uint8_t* serialize(const feature_collection fc)
 
     uint8_t* buf;
     std::vector<uint8_t> data;
-    std::copy(magicbytes, magicbytes + 4, std::back_inserter(data));
+    std::copy(magicbytes, magicbytes + sizeof(magicbytes), std::back_inserter(data));
 
     std::vector<Rect> rects;
     for (auto f : fc)
@@ -260,11 +260,15 @@ const feature_collection deserialize(const void* buf)
     if (bytes[0] != magicbytes[0] ||
         bytes[1] != magicbytes[1] ||
         bytes[2] != magicbytes[2] ||
-        bytes[3] != magicbytes[3])
+        bytes[3] != magicbytes[3] ||
+        bytes[4] != magicbytes[4] ||
+        bytes[5] != magicbytes[5] ||
+        bytes[6] != magicbytes[6] ||
+        bytes[7] != magicbytes[7])
         throw new std::invalid_argument("Not a FlatGeobuf file");
-    uint64_t offset = 4; 
+    uint64_t offset = sizeof(magicbytes);
     
-    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + 4;
+    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + sizeof(uoffset_t);
     auto header = GetSizePrefixedHeader(bytes + offset);
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
@@ -278,7 +282,7 @@ const feature_collection deserialize(const void* buf)
     feature_collection fc {};
     offset += headerSize;
     for (auto i = 0; i < featuresCount; i++) {
-        const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + 4;
+        const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + sizeof(uoffset_t);
         auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);
         auto f = fromFeature(feature, geometryType);
         fc.push_back(f);

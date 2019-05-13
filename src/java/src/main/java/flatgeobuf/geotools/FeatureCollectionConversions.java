@@ -7,6 +7,7 @@ import java.util.*;
 
 import com.google.flatbuffers.ByteBufferUtil;
 import com.google.flatbuffers.FlatBufferBuilder;
+import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
 import flatgeobuf.generated.*;
 
@@ -33,7 +34,7 @@ public class FeatureCollectionConversions {
         public List<ColumnMeta> columns;
     }
 
-    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00 };
+    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
 
     public static void serialize(SimpleFeatureCollection featureCollection, long featureCount, OutputStream outputStream) throws IOException {
         // TODO: if no features do not output
@@ -72,11 +73,15 @@ public class FeatureCollectionConversions {
         if (bb.get() != magicbytes[0] ||
             bb.get() != magicbytes[1] ||
             bb.get() != magicbytes[2] ||
-            bb.get() != magicbytes[3])
+            bb.get() != magicbytes[3] ||
+            bb.get() != magicbytes[4] ||
+            bb.get() != magicbytes[5] ||
+            bb.get() != magicbytes[6] ||
+            bb.get() != magicbytes[7])
             throw new RuntimeException("Not a FlatGeobuf file");
-        bb.position(offset += 4);
+        bb.position(offset += magicbytes.length);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
-        bb.position(offset += 4);
+        bb.position(offset += SIZE_PREFIX_LENGTH);
         Header header = Header.getRootAsHeader(bb);
         bb.position(offset += headerSize);
         int geometryType = header.geometryType();
@@ -113,7 +118,7 @@ public class FeatureCollectionConversions {
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
         while (bb.hasRemaining()) {
             int featureSize = ByteBufferUtil.getSizePrefix(bb);
-            bb.position(offset += 4);
+            bb.position(offset += SIZE_PREFIX_LENGTH);
             Feature feature = Feature.getRootAsFeature(bb);
             bb.position(offset += featureSize);
             SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions);
