@@ -1,0 +1,47 @@
+namespace FlatGeobuf;
+
+enum GeometryType:ubyte {
+  Point,
+  MultiPoint,
+  LineString,
+  MultiLineString,
+  Polygon,
+  MultiPolygon
+}
+
+enum ColumnType: ubyte {
+  Byte,
+  UByte,
+  Bool,
+  Short,
+  UShort,
+  Int,
+  UInt,
+  Long,
+  ULong,
+  Float,
+  Double,
+  String,
+  Json,
+  DateTime
+}
+
+table Column {
+  name: string (key, required);
+  type: ColumnType;
+}
+
+table Header {
+  name: string;
+  envelope: [double];
+  geometry_type: GeometryType = Point;
+  dimensions: ubyte = 2; // must be > 1
+  columns: [Column];
+  features_count: ulong;
+  fids: bool = true;
+  index_node_size: ushort = 16; // must be > 1
+  srs_code: int;
+  srs_org: string; // assumed to be EPSG if not supplied
+}
+
+root_type Header;
