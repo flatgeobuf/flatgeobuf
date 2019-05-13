@@ -17,8 +17,7 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_RING_LENGTHS = 8,
     VT_LENGTHS = 10,
     VT_COORDS = 12,
-    VT_BITMAP = 14,
-    VT_VALUES = 16
+    VT_PROPERTIES = 14
   };
   uint64_t fid() const {
     return GetField<uint64_t>(VT_FID, 0);
@@ -35,11 +34,8 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<double> *coords() const {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_COORDS);
   }
-  const flatbuffers::Vector<int8_t> *bitmap() const {
-    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_BITMAP);
-  }
-  const flatbuffers::Vector<int8_t> *values() const {
-    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_VALUES);
+  const flatbuffers::Vector<int8_t> *properties() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_PROPERTIES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -52,10 +48,8 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(lengths()) &&
            VerifyOffset(verifier, VT_COORDS) &&
            verifier.VerifyVector(coords()) &&
-           VerifyOffset(verifier, VT_BITMAP) &&
-           verifier.VerifyVector(bitmap()) &&
-           VerifyOffset(verifier, VT_VALUES) &&
-           verifier.VerifyVector(values()) &&
+           VerifyOffset(verifier, VT_PROPERTIES) &&
+           verifier.VerifyVector(properties()) &&
            verifier.EndTable();
   }
 };
@@ -78,11 +72,8 @@ struct FeatureBuilder {
   void add_coords(flatbuffers::Offset<flatbuffers::Vector<double>> coords) {
     fbb_.AddOffset(Feature::VT_COORDS, coords);
   }
-  void add_bitmap(flatbuffers::Offset<flatbuffers::Vector<int8_t>> bitmap) {
-    fbb_.AddOffset(Feature::VT_BITMAP, bitmap);
-  }
-  void add_values(flatbuffers::Offset<flatbuffers::Vector<int8_t>> values) {
-    fbb_.AddOffset(Feature::VT_VALUES, values);
+  void add_properties(flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties) {
+    fbb_.AddOffset(Feature::VT_PROPERTIES, properties);
   }
   explicit FeatureBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -103,12 +94,10 @@ inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> coords = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int8_t>> bitmap = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int8_t>> values = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties = 0) {
   FeatureBuilder builder_(_fbb);
   builder_.add_fid(fid);
-  builder_.add_values(values);
-  builder_.add_bitmap(bitmap);
+  builder_.add_properties(properties);
   builder_.add_coords(coords);
   builder_.add_lengths(lengths);
   builder_.add_ring_lengths(ring_lengths);
@@ -123,14 +112,12 @@ inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     const std::vector<uint32_t> *ring_lengths = nullptr,
     const std::vector<uint32_t> *lengths = nullptr,
     const std::vector<double> *coords = nullptr,
-    const std::vector<int8_t> *bitmap = nullptr,
-    const std::vector<int8_t> *values = nullptr) {
+    const std::vector<int8_t> *properties = nullptr) {
   auto ring_counts__ = ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0;
   auto ring_lengths__ = ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0;
   auto lengths__ = lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0;
   auto coords__ = coords ? _fbb.CreateVector<double>(*coords) : 0;
-  auto bitmap__ = bitmap ? _fbb.CreateVector<int8_t>(*bitmap) : 0;
-  auto values__ = values ? _fbb.CreateVector<int8_t>(*values) : 0;
+  auto properties__ = properties ? _fbb.CreateVector<int8_t>(*properties) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       fid,
@@ -138,8 +125,7 @@ inline flatbuffers::Offset<Feature> CreateFeatureDirect(
       ring_lengths__,
       lengths__,
       coords__,
-      bitmap__,
-      values__);
+      properties__);
 }
 
 inline const FlatGeobuf::Feature *GetFeature(const void *buf) {

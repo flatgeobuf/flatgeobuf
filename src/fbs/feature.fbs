@@ -6,8 +6,7 @@ table Feature {
   ring_lengths: [uint]; // ring lengths
   lengths: [uint]; // coordinate lengths
   coords: [double];
-  bitmap: [byte];
-  values: [byte];
+  properties: [byte]; // custom buffer, array of key/value pairs (key=ushort)
 }
 
 root_type Feature;
