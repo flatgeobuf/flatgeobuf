@@ -38,8 +38,7 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
         Feature.addValues(builder, valuesOffset)
     Feature.addGeometry(builder, geometryOffset)
     const offset = Feature.endFeature(builder)
-    //builder.finishSizePrefixed(offset)
-    builder.finish(offset)
+    builder.finishSizePrefixed(offset)
     return builder.asUint8Array()
 }
 

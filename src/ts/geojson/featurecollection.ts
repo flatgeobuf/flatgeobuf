@@ -106,8 +106,7 @@ function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: Heade
         Header.addColumns(builder, columnOffsets)
     Header.addName(builder, nameOffset)
     const offset = Header.endHeader(builder)
-    //builder.finishSizePrefixed(offset)
-    builder.finish(offset)
+    builder.finishSizePrefixed(offset)
     return builder.asUint8Array()
 }
 
