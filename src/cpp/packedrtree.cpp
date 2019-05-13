@@ -322,7 +322,7 @@ uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
 
 uint8_t *PackedRTree::toData() const {
     uint64_t rectsSize = _numNodes * sizeof(Rect);
-    uint64_t indicesSize = _numNonLeafNodes * sizeof(uint64_t);
+    uint64_t indicesSize = _numNonLeafNodes * sizeof(uint32_t);
     uint8_t *data = new uint8_t[rectsSize + indicesSize];
     Rect *pr = reinterpret_cast<Rect *>(data);
     for (uint64_t i = 0; i < _numNodes; i++)
