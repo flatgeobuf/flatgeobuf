@@ -4,6 +4,7 @@ package-lock.json
 /src/cpp/include/flatbuffers
 /src/cpp/include/mapbox
 /src/cpp/include/rapidjson
+/src/cpp/test/catch.hpp
 /dist
 /lib
 /.vs
