@@ -49,6 +49,7 @@ class PackedRTree {
     uint64_t _numItems;
     uint64_t _numNodes;
     uint64_t _numNonLeafNodes;
+    uint32_t _minAlign;
     uint16_t _nodeSize;
     std::vector<uint64_t> _levelBounds;
     void init(const uint16_t nodeSize);

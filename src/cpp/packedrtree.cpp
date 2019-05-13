@@ -152,6 +152,7 @@ void PackedRTree::init(const uint16_t nodeSize)
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
     _numNodes = _levelBounds.back();
     _numNonLeafNodes = _numNodes - _numItems;
+    _minAlign = _numNonLeafNodes % 2;
     _rects.reserve(_numNodes);
     _indices.reserve(_numNonLeafNodes);
 }
@@ -306,7 +307,7 @@ std::vector<uint64_t> PackedRTree::streamSearch(
     return results;
 }
 
-uint64_t PackedRTree::size() const { return _numNodes * sizeof(Rect) + _numNonLeafNodes * sizeof(uint32_t); }
+uint64_t PackedRTree::size() const { return _numNodes * sizeof(Rect) + (_numNonLeafNodes + _minAlign) * sizeof(uint32_t); }
 
 uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
 {
@@ -317,12 +318,14 @@ uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
         n = (n + nodeSizeMin - 1) / nodeSizeMin;
         numNodes += n;
     } while (n != 1);
-    return numNodes * sizeof(Rect) + (numNodes - numItems) * sizeof(uint32_t);
+    const uint64_t numNonLeafNodes = numNodes - numItems;
+    const uint32_t minAlign = numNonLeafNodes % 2;
+    return numNodes * sizeof(Rect) + (numNonLeafNodes + minAlign) * sizeof(uint32_t);
 }
 
 uint8_t *PackedRTree::toData() const {
     uint64_t rectsSize = _numNodes * sizeof(Rect);
-    uint64_t indicesSize = _numNonLeafNodes * sizeof(uint32_t);
+    uint64_t indicesSize = (_numNonLeafNodes + _minAlign) * sizeof(uint32_t);
     uint8_t *data = new uint8_t[rectsSize + indicesSize];
     Rect *pr = reinterpret_cast<Rect *>(data);
     for (uint64_t i = 0; i < _numNodes; i++)
