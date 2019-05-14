@@ -15,7 +15,7 @@ public class FeatureConversions {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
-        int geometryOffset = GeometryConversions.serialize(builder, geometry, geometryType, dimensions);
+        
         int valuesOffset = 0;
         // TODO: parse values
         /*for (int j = 0; j < types.size(); j++) {
@@ -31,16 +31,16 @@ public class FeatureConversions {
                 //value;
             }
         }*/
-        int featureOffset = Feature.createFeature(builder, fid, geometryOffset, valuesOffset);
+        GeometryOffsets go = GeometryConversions.serialize(builder, geometry, geometryType, dimensions);
+        int featureOffset = Feature.createFeature(builder, fid, go.ringCountsOffset, go.ringLengthsOffset, go.lengthsOffset, go.coordsOffset, valuesOffset);
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();
     }
 
     public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, int geometryType, int dimensions) {
-        Geometry geometry = feature.geometry();
         long fid = feature.fid();
-        fb.add(GeometryConversions.deserialize(geometry, geometryType, dimensions));
+        fb.add(GeometryConversions.deserialize(feature, geometryType, dimensions));
         SimpleFeature f = fb.buildFeature(Long.toString(fid));
         return f;
     }
