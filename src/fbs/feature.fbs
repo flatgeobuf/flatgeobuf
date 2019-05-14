@@ -1,12 +1,10 @@
-namespace FlatGeobuf;
-
 table Feature {
   fid: ulong;
   ring_counts: [uint]; // ring count per part in collection of Polygons
   ring_lengths: [uint]; // ring lengths
   lengths: [uint]; // coordinate lengths
   coords: [double];
-  properties: [byte]; // custom buffer, array of key/value pairs (key=ushort)
+  properties: [ubyte]; // custom buffer, array of key/value pairs (key=ushort)
 }
 
 root_type Feature;

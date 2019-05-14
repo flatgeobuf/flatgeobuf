@@ -1,2 +1,2 @@
 #!/bin/bash
-flatc --ts --gen-all --size-prefixed -o src/ts src/fbs/flatgeobuf.fbs
+flatc --ts --gen-all --no-ts-reexport --short-names --size-prefixed -o src/ts src/fbs/*.fbs

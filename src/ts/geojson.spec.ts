@@ -5,8 +5,6 @@ import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
 
-import { writeFile, readFileSync } from 'fs'
-
 import { deserialize, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 
@@ -34,7 +32,6 @@ describe('geojson module', () => {
     it('Point', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
-      writeFile('/home/bjorn/point.fgb', s, e => { })
       const actual = deserialize(s)
       expect(actual).to.deep.equal(expected)
     })

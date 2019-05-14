@@ -1,5 +1,3 @@
-namespace FlatGeobuf;
-
 enum GeometryType:ubyte {
   Point,
   MultiPoint,
@@ -39,7 +37,7 @@ table Header {
   columns: [Column];
   features_count: ulong;
   fids: bool = true;
-  index_node_size: ushort = 16; // must be > 1
+  index_node_size: ushort = 16; // 0 = no index
   srs_code: int;
   srs_org: string; // assumed to be EPSG if not supplied
 }

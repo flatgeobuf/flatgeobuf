@@ -2,12 +2,11 @@ import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { FlatGeobuf } from '../flatgeobuf_generated'
+import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, fromGeometry, IGeoJsonGeometry, toGeometryType } from './geometry'
 
-const Feature = FlatGeobuf.Feature
-const Value = FlatGeobuf.Value
+import { TextDecoder, TextEncoder } from 'util'
 
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | object
@@ -24,60 +23,61 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
 
     const builder = new flatbuffers.Builder(0)
 
-    let valuesOffset = null
+    const propertiesArray = new Uint8Array(100000)
+    let offset = 0;
     if (columns) {
-        const valueOffsets = columns
-            .map((c, i) => buildValue(builder, c, i, feature.properties))
-            .filter(v => v !== null)
-        valuesOffset = Feature.createValuesVector(builder, valueOffsets)
+        const view = new DataView(propertiesArray.buffer)
+        for (let i = 0; i < columns.length; i++) {
+            const column = columns[i]
+            const value = feature.properties[column.name]
+            if (value === null)
+                continue
+            view.setUint16(offset, i, true)
+            offset += 2
+            switch (column.type) {
+                case ColumnType.Bool:
+                    view.setUint8(offset, value as number)
+                    offset += 1
+                    break
+                case ColumnType.Int:
+                    view.setInt32(offset, value as number, true)
+                    offset += 4
+                    break
+                case ColumnType.Double:
+                    view.setFloat64(offset, value as number, true)
+                    offset += 8
+                    break
+                case ColumnType.String:
+                    const str = value as string
+                    view.setUint32(offset, str.length, true)
+                    offset += 4
+                    const encoder = new TextEncoder()
+                    const stringArray = encoder.encode(str)
+                    propertiesArray.set(stringArray, offset)
+                    offset += stringArray.length
+                    break
+                default:
+                    throw new Error('Unknown type')
+            }
+        }
     }
-
-    const geometryOffset = buildGeometry(builder, feature.geometry)
-    Feature.startFeature(builder)
-    if (valuesOffset)
-        Feature.addValues(builder, valuesOffset)
-    Feature.addGeometry(builder, geometryOffset)
-    const offset = Feature.endFeature(builder)
-    builder.finishSizePrefixed(offset)
+    let propertiesOffset = null
+    if (offset > 0)
+        propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
+    
+    const finalizeGeometry = buildGeometry(builder, feature.geometry)
+    Feature.start(builder)
+    if (propertiesOffset)
+        Feature.addProperties(builder, propertiesOffset)
+    finalizeGeometry()
+    const featureOffset = Feature.end(builder)
+    builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array()
 }
 
-function buildValue(
-        builder: flatbuffers.Builder,
-        column: ColumnMeta,
-        columnIndex: number,
-        properties: IGeoJsonProperties) {
-    const value = properties[column.name]
-    if (value === null)
-        return
-    switch (column.type) {
-        case ColumnType.Bool:
-            Value.startValue(builder)
-            Value.addBoolValue(builder, value as boolean)
-            break
-        case ColumnType.Int:
-            Value.startValue(builder)
-            Value.addIntValue(builder, value as number)
-            break
-        case ColumnType.Double:
-            Value.startValue(builder)
-            Value.addDoubleValue(builder, value as number)
-            break
-        case ColumnType.String:
-            const stringValue = builder.createString(value as string)
-            Value.startValue(builder)
-            Value.addStringValue(builder, stringValue)
-            break
-        default:
-            throw new Error('Unknown type')
-    }
-    Value.addColumnIndex(builder, columnIndex)
-    return Value.endValue(builder)
-}
-
-export function fromFeature(feature: FlatGeobuf.Feature, header: HeaderMeta) {
+export function fromFeature(feature: Feature, header: HeaderMeta) {
     const columns = header.columns
-    const geometry = fromGeometry(feature.geometry(), header.geometryType)
+    const geometry = fromGeometry(feature, header.geometryType)
     const properties = parseProperties(feature, columns)
 
     const geoJsonfeature: IGeoJsonFeature = {
@@ -90,24 +90,43 @@ export function fromFeature(feature: FlatGeobuf.Feature, header: HeaderMeta) {
     return geoJsonfeature
 }
 
-function parseValue(value: FlatGeobuf.Value, column: ColumnMeta) {
-    switch (column.type) {
-        case ColumnType.Bool: return value.boolValue()
-        case ColumnType.Int: return value.intValue()
-        case ColumnType.Double: return value.doubleValue()
-        case ColumnType.String: return value.stringValue()
-    }
-}
-
-function parseProperties(feature: FlatGeobuf.Feature, columns: ColumnMeta[]) {
+function parseProperties(feature: Feature, columns: ColumnMeta[]) {
     if (!columns || columns.length === 0)
         return
-    const length = feature.valuesLength()
+    const array = feature.propertiesArray()
+    const view = new DataView(array.buffer, array.byteOffset)
+    const length = feature.propertiesLength()
+    let offset = 0
     const properties: IGeoJsonProperties = {}
-    for (let i = 0; i < length; i++) {
-        const value = feature.values(i)
-        const column = columns[value.columnIndex()]
-        properties[column.name] = parseValue(value, column)
+    while (offset < length) {
+        const i = view.getUint16(offset, true)
+        offset += 2
+        const column = columns[i]
+        switch (column.type) {
+            case ColumnType.Bool: {
+                properties[column.name] = !!view.getUint8(offset)
+                offset += 1
+                break
+            }
+            case ColumnType.Int: {
+                properties[column.name] = view.getInt32(offset, true)
+                offset += 4
+                break
+            }
+            case ColumnType.Double: {
+                properties[column.name] = view.getFloat64(offset, true)
+                offset += 8
+                break
+            }
+            case ColumnType.String: {
+                const length = view.getUint32(offset, true)
+                offset += 4
+                const decoder = new TextDecoder()
+                properties[column.name] = decoder.decode(array.subarray(offset, offset + length))
+                offset += length
+                break
+            }
+        }
     }
     return properties
 }
