@@ -19,6 +19,8 @@ DISCLAIMER: Unfinished work in progress.
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
+Any 64-bit type contained anywhere in the file (for example coordinate values) is to be aligned to 8 bytes to from the start of the file to allow for direct memory access.
+
 ## WIP
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
