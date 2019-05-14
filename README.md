@@ -36,4 +36,7 @@ Any 64-bit type contained anywhere in the file (for example coordinate values) i
 * Direct TS/JS OpenLayers geometry read/write
 * Java read support
 * Java index support
+* Java properties support
+* C++ attribute roundtrip tests
+* C# support
 * Optimizations
