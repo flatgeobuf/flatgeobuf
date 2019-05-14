@@ -34,8 +34,8 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<double> *coords() const {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_COORDS);
   }
-  const flatbuffers::Vector<int8_t> *properties() const {
-    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_PROPERTIES);
+  const flatbuffers::Vector<uint8_t> *properties() const {
+    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_PROPERTIES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -72,7 +72,7 @@ struct FeatureBuilder {
   void add_coords(flatbuffers::Offset<flatbuffers::Vector<double>> coords) {
     fbb_.AddOffset(Feature::VT_COORDS, coords);
   }
-  void add_properties(flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties) {
+  void add_properties(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties) {
     fbb_.AddOffset(Feature::VT_PROPERTIES, properties);
   }
   explicit FeatureBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -94,7 +94,7 @@ inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> coords = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties = 0) {
   FeatureBuilder builder_(_fbb);
   builder_.add_fid(fid);
   builder_.add_properties(properties);
@@ -112,12 +112,12 @@ inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     const std::vector<uint32_t> *ring_lengths = nullptr,
     const std::vector<uint32_t> *lengths = nullptr,
     const std::vector<double> *coords = nullptr,
-    const std::vector<int8_t> *properties = nullptr) {
+    const std::vector<uint8_t> *properties = nullptr) {
   auto ring_counts__ = ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0;
   auto ring_lengths__ = ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0;
   auto lengths__ = lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0;
   auto coords__ = coords ? _fbb.CreateVector<double>(*coords) : 0;
-  auto properties__ = properties ? _fbb.CreateVector<int8_t>(*properties) : 0;
+  auto properties__ = properties ? _fbb.CreateVector<uint8_t>(*properties) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       fid,
