@@ -1,8 +1,7 @@
 import { flatbuffers } from 'flatbuffers'
-import { FlatGeobuf } from '../flatgeobuf_generated'
+import { GeometryType } from '../header_generated'
+import { Feature  } from '../feature_generated'
 
-const Geometry = FlatGeobuf.Geometry
-const GeometryType = FlatGeobuf.GeometryType
 
 export interface IGeoJsonGeometry {
     type: string
@@ -11,29 +10,27 @@ export interface IGeoJsonGeometry {
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
     const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
-    const coordsOffset = Geometry.createCoordsVector(builder, coords)
+    const coordsOffset = Feature.createCoordsVector(builder, coords)
 
     let lengthsOffset: number = null
     let ringLengthsOffset: number = null
     let ringCountsOffset: number = null
     if (lengths)
-        lengthsOffset = Geometry.createLengthsVector(builder, lengths)
+        lengthsOffset = Feature.createLengthsVector(builder, lengths)
     if (ringLengths)
-        ringLengthsOffset = Geometry.createRingLengthsVector(builder, ringLengths)
+        ringLengthsOffset = Feature.createRingLengthsVector(builder, ringLengths)
     if (ringCounts)
-        ringCountsOffset = Geometry.createRingCountsVector(builder, ringCounts)
+        ringCountsOffset = Feature.createRingCountsVector(builder, ringCounts)
 
-    Geometry.startGeometry(builder)
-    if (lengthsOffset)
-        Geometry.addLengths(builder, lengthsOffset)
-    if (ringLengths)
-        Geometry.addRingLengths(builder, ringLengthsOffset)
-    if (ringCounts)
-        Geometry.addRingCounts(builder, ringCountsOffset)
-    Geometry.addCoords(builder, coordsOffset)
-    const offset = Geometry.endGeometry(builder)
-
-    return offset
+    return function() {
+        if (lengthsOffset)
+            Feature.addLengths(builder, lengthsOffset)
+        if (ringLengths)
+            Feature.addRingLengths(builder, ringLengthsOffset)
+        if (ringCounts)
+            Feature.addRingCounts(builder, ringCountsOffset)
+        Feature.addCoords(builder, coordsOffset)
+    }
 }
 
 interface IParsedGeometry {
@@ -141,13 +138,13 @@ function extractPartsParts(
     return parts
 }
 
-function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
+function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
     // NOTE: workaround for alignment issues
     /*const coordsLength = geometry.coordsLength()
     const coords = new Float64Array(coordsLength)
     for (let i = 0; i < coordsLength; i++)
         coords[i] = geometry.coords(i)*/
-    const coords = geometry.coordsArray()
+    const coords = feature.coordsArray()
     switch (type) {
         case GeometryType.Point:
             return Array.from(coords)
@@ -155,19 +152,19 @@ function toGeoJsonCoordinates(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Ge
         case GeometryType.LineString:
             return pairFlatCoordinates(coords)
         case GeometryType.MultiLineString:
-            return extractParts(coords, geometry.lengthsArray())
+            return extractParts(coords, feature.lengthsArray())
         case GeometryType.Polygon:
-            return extractParts(coords, geometry.ringLengthsArray())
+            return extractParts(coords, feature.ringLengthsArray())
         case GeometryType.MultiPolygon:
             return extractPartsParts(coords,
-                geometry.lengthsArray(),
-                geometry.ringLengthsArray(),
-                geometry.ringCountsArray())
+                feature.lengthsArray(),
+                feature.ringLengthsArray(),
+                feature.ringCountsArray())
     }
 }
 
-export function fromGeometry(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.GeometryType) {
-    const coordinates = toGeoJsonCoordinates(geometry, type)
+export function fromGeometry(feature: Feature, type: GeometryType) {
+    const coordinates = toGeoJsonCoordinates(feature, type)
     return {
         type: GeometryType[type],
         coordinates,
@@ -175,6 +172,6 @@ export function fromGeometry(geometry: FlatGeobuf.Geometry, type: FlatGeobuf.Geo
 }
 
 export function toGeometryType(name: string) {
-    const type: FlatGeobuf.GeometryType = (GeometryType as any)[name]
+    const type: GeometryType = (GeometryType as any)[name]
     return type
 }

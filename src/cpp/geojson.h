@@ -9,7 +9,8 @@
 #include <vector>
 
 #include "flatbuffers/flatbuffers.h"
-#include "flatgeobuf_generated.h"
+#include "header_generated.h"
+#include "feature_generated.h"
 
 #include "packedrtree.h"
 
@@ -40,16 +41,6 @@ GeometryType toGeometryType(geometry geometry)
     if (geometry.is<multi_polygon>())
         return GeometryType::MultiPolygon;
     throw std::invalid_argument("Unknown geometry type");
-}
-
-ColumnType indexStorageType(uint64_t numNodes)
-{
-    if (numNodes < std::numeric_limits<uint16_t>::max() / 4)
-        return ColumnType::UShort;
-    else if (numNodes < std::numeric_limits<uint32_t>::max() / 4)
-        return ColumnType::UInt;
-    else
-        return ColumnType::ULong;
 }
 
 const uint8_t* serialize(const feature_collection fc)
@@ -130,8 +121,7 @@ const uint8_t* serialize(const feature_collection fc)
         auto pRingCounts = ringCounts.size() == 0 ? nullptr : &ringCounts;
         auto pRingLengths = ringLengths.size() == 0 ? nullptr : &ringLengths;
         auto pLength = lengths.size() == 0 ? nullptr : &lengths;
-        auto geometry = CreateGeometryDirect(fbb, pRingCounts, pRingLengths, pLength, &coords);
-        auto feature = CreateFeatureDirect(fbb, i, geometry, 0);
+        auto feature = CreateFeatureDirect(fbb, i, pRingCounts, pRingLengths, pLength, &coords, 0);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
@@ -224,10 +214,10 @@ const multi_polygon fromMultiPolygon(
     return multi_polygon(polygons);
 }
 
-const geometry fromGeometry(const Geometry* geometry, const GeometryType geometryType)
+const geometry fromGeometry(const Feature* feature, const GeometryType geometryType)
 {
-    auto coords = geometry->coords()->data();
-    auto coordsLength = geometry->coords()->Length();
+    auto coords = feature->coords()->data();
+    auto coordsLength = feature->coords()->Length();
     switch (geometryType) {
         case GeometryType::Point:
             return point { coords[0], coords[1] };
@@ -236,11 +226,11 @@ const geometry fromGeometry(const Geometry* geometry, const GeometryType geometr
         case GeometryType::LineString:
             return line_string(extractPoints(coords, coordsLength));
         case GeometryType::MultiLineString: 
-            return fromMultiLineString(coords, coordsLength, geometry->lengths());
+            return fromMultiLineString(coords, coordsLength, feature->lengths());
         case GeometryType::Polygon:
-            return fromPolygon(coords, coordsLength, geometry->ring_lengths());
+            return fromPolygon(coords, coordsLength, feature->ring_lengths());
         case GeometryType::MultiPolygon:
-            return fromMultiPolygon(coords, coordsLength, geometry->lengths(), geometry->ring_lengths(), geometry->ring_counts());
+            return fromMultiPolygon(coords, coordsLength, feature->lengths(), feature->ring_lengths(), feature->ring_counts());
         default:
             throw std::invalid_argument("Unknown geometry type");
     }
@@ -248,8 +238,7 @@ const geometry fromGeometry(const Geometry* geometry, const GeometryType geometr
 
 const mapbox::feature::feature<double> fromFeature(const Feature* feature, const GeometryType geometryType)
 {
-    auto geometry = feature->geometry();
-    mapbox::feature::feature<double> f { fromGeometry(geometry, geometryType) };
+    mapbox::feature::feature<double> f { fromGeometry(feature, geometryType) };
     return f;
 }
 

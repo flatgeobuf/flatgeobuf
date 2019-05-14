@@ -6,38 +6,50 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-#include "column_generated.h"
-#include "geometry_generated.h"
-
 namespace FlatGeobuf {
 
 struct Feature;
 
-struct Value;
-
 struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FID = 4,
-    VT_GEOMETRY = 6,
-    VT_VALUES = 8
+    VT_RING_COUNTS = 6,
+    VT_RING_LENGTHS = 8,
+    VT_LENGTHS = 10,
+    VT_COORDS = 12,
+    VT_PROPERTIES = 14
   };
   uint64_t fid() const {
     return GetField<uint64_t>(VT_FID, 0);
   }
-  const Geometry *geometry() const {
-    return GetPointer<const Geometry *>(VT_GEOMETRY);
+  const flatbuffers::Vector<uint32_t> *ring_counts() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_RING_COUNTS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<Value>> *values() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Value>> *>(VT_VALUES);
+  const flatbuffers::Vector<uint32_t> *ring_lengths() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_RING_LENGTHS);
+  }
+  const flatbuffers::Vector<uint32_t> *lengths() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_LENGTHS);
+  }
+  const flatbuffers::Vector<double> *coords() const {
+    return GetPointer<const flatbuffers::Vector<double> *>(VT_COORDS);
+  }
+  const flatbuffers::Vector<int8_t> *properties() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_PROPERTIES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint64_t>(verifier, VT_FID) &&
-           VerifyOffset(verifier, VT_GEOMETRY) &&
-           verifier.VerifyTable(geometry()) &&
-           VerifyOffset(verifier, VT_VALUES) &&
-           verifier.VerifyVector(values()) &&
-           verifier.VerifyVectorOfTables(values()) &&
+           VerifyOffset(verifier, VT_RING_COUNTS) &&
+           verifier.VerifyVector(ring_counts()) &&
+           VerifyOffset(verifier, VT_RING_LENGTHS) &&
+           verifier.VerifyVector(ring_lengths()) &&
+           VerifyOffset(verifier, VT_LENGTHS) &&
+           verifier.VerifyVector(lengths()) &&
+           VerifyOffset(verifier, VT_COORDS) &&
+           verifier.VerifyVector(coords()) &&
+           VerifyOffset(verifier, VT_PROPERTIES) &&
+           verifier.VerifyVector(properties()) &&
            verifier.EndTable();
   }
 };
@@ -48,11 +60,20 @@ struct FeatureBuilder {
   void add_fid(uint64_t fid) {
     fbb_.AddElement<uint64_t>(Feature::VT_FID, fid, 0);
   }
-  void add_geometry(flatbuffers::Offset<Geometry> geometry) {
-    fbb_.AddOffset(Feature::VT_GEOMETRY, geometry);
+  void add_ring_counts(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts) {
+    fbb_.AddOffset(Feature::VT_RING_COUNTS, ring_counts);
   }
-  void add_values(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Value>>> values) {
-    fbb_.AddOffset(Feature::VT_VALUES, values);
+  void add_ring_lengths(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths) {
+    fbb_.AddOffset(Feature::VT_RING_LENGTHS, ring_lengths);
+  }
+  void add_lengths(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths) {
+    fbb_.AddOffset(Feature::VT_LENGTHS, lengths);
+  }
+  void add_coords(flatbuffers::Offset<flatbuffers::Vector<double>> coords) {
+    fbb_.AddOffset(Feature::VT_COORDS, coords);
+  }
+  void add_properties(flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties) {
+    fbb_.AddOffset(Feature::VT_PROPERTIES, properties);
   }
   explicit FeatureBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -69,248 +90,42 @@ struct FeatureBuilder {
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t fid = 0,
-    flatbuffers::Offset<Geometry> geometry = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Value>>> values = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
+    flatbuffers::Offset<flatbuffers::Vector<double>> coords = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> properties = 0) {
   FeatureBuilder builder_(_fbb);
   builder_.add_fid(fid);
-  builder_.add_values(values);
-  builder_.add_geometry(geometry);
+  builder_.add_properties(properties);
+  builder_.add_coords(coords);
+  builder_.add_lengths(lengths);
+  builder_.add_ring_lengths(ring_lengths);
+  builder_.add_ring_counts(ring_counts);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t fid = 0,
-    flatbuffers::Offset<Geometry> geometry = 0,
-    const std::vector<flatbuffers::Offset<Value>> *values = nullptr) {
-  auto values__ = values ? _fbb.CreateVector<flatbuffers::Offset<Value>>(*values) : 0;
+    const std::vector<uint32_t> *ring_counts = nullptr,
+    const std::vector<uint32_t> *ring_lengths = nullptr,
+    const std::vector<uint32_t> *lengths = nullptr,
+    const std::vector<double> *coords = nullptr,
+    const std::vector<int8_t> *properties = nullptr) {
+  auto ring_counts__ = ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0;
+  auto ring_lengths__ = ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0;
+  auto lengths__ = lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0;
+  auto coords__ = coords ? _fbb.CreateVector<double>(*coords) : 0;
+  auto properties__ = properties ? _fbb.CreateVector<int8_t>(*properties) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       fid,
-      geometry,
-      values__);
-}
-
-struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_COLUMN_INDEX = 4,
-    VT_BYTE_VALUE = 6,
-    VT_UBYTE_VALUE = 8,
-    VT_BOOL_VALUE = 10,
-    VT_SHORT_VALUE = 12,
-    VT_USHORT_VALUE = 14,
-    VT_INT_VALUE = 16,
-    VT_UINT_VALUE = 18,
-    VT_LONG_VALUE = 20,
-    VT_ULONG_VALUE = 22,
-    VT_FLOAT_VALUE = 24,
-    VT_DOUBLE_VALUE = 26,
-    VT_STRING_VALUE = 28,
-    VT_JSON_VALUE = 30,
-    VT_DATETIME_VALUE = 32
-  };
-  uint16_t column_index() const {
-    return GetField<uint16_t>(VT_COLUMN_INDEX, 0);
-  }
-  int8_t byte_value() const {
-    return GetField<int8_t>(VT_BYTE_VALUE, 0);
-  }
-  int8_t ubyte_value() const {
-    return GetField<int8_t>(VT_UBYTE_VALUE, 0);
-  }
-  bool bool_value() const {
-    return GetField<uint8_t>(VT_BOOL_VALUE, 0) != 0;
-  }
-  int16_t short_value() const {
-    return GetField<int16_t>(VT_SHORT_VALUE, 0);
-  }
-  uint16_t ushort_value() const {
-    return GetField<uint16_t>(VT_USHORT_VALUE, 0);
-  }
-  int32_t int_value() const {
-    return GetField<int32_t>(VT_INT_VALUE, 0);
-  }
-  uint32_t uint_value() const {
-    return GetField<uint32_t>(VT_UINT_VALUE, 0);
-  }
-  int64_t long_value() const {
-    return GetField<int64_t>(VT_LONG_VALUE, 0);
-  }
-  uint64_t ulong_value() const {
-    return GetField<uint64_t>(VT_ULONG_VALUE, 0);
-  }
-  float float_value() const {
-    return GetField<float>(VT_FLOAT_VALUE, 0.0f);
-  }
-  double double_value() const {
-    return GetField<double>(VT_DOUBLE_VALUE, 0.0);
-  }
-  const flatbuffers::String *string_value() const {
-    return GetPointer<const flatbuffers::String *>(VT_STRING_VALUE);
-  }
-  const flatbuffers::String *json_value() const {
-    return GetPointer<const flatbuffers::String *>(VT_JSON_VALUE);
-  }
-  const flatbuffers::String *datetime_value() const {
-    return GetPointer<const flatbuffers::String *>(VT_DATETIME_VALUE);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint16_t>(verifier, VT_COLUMN_INDEX) &&
-           VerifyField<int8_t>(verifier, VT_BYTE_VALUE) &&
-           VerifyField<int8_t>(verifier, VT_UBYTE_VALUE) &&
-           VerifyField<uint8_t>(verifier, VT_BOOL_VALUE) &&
-           VerifyField<int16_t>(verifier, VT_SHORT_VALUE) &&
-           VerifyField<uint16_t>(verifier, VT_USHORT_VALUE) &&
-           VerifyField<int32_t>(verifier, VT_INT_VALUE) &&
-           VerifyField<uint32_t>(verifier, VT_UINT_VALUE) &&
-           VerifyField<int64_t>(verifier, VT_LONG_VALUE) &&
-           VerifyField<uint64_t>(verifier, VT_ULONG_VALUE) &&
-           VerifyField<float>(verifier, VT_FLOAT_VALUE) &&
-           VerifyField<double>(verifier, VT_DOUBLE_VALUE) &&
-           VerifyOffset(verifier, VT_STRING_VALUE) &&
-           verifier.VerifyString(string_value()) &&
-           VerifyOffset(verifier, VT_JSON_VALUE) &&
-           verifier.VerifyString(json_value()) &&
-           VerifyOffset(verifier, VT_DATETIME_VALUE) &&
-           verifier.VerifyString(datetime_value()) &&
-           verifier.EndTable();
-  }
-};
-
-struct ValueBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_column_index(uint16_t column_index) {
-    fbb_.AddElement<uint16_t>(Value::VT_COLUMN_INDEX, column_index, 0);
-  }
-  void add_byte_value(int8_t byte_value) {
-    fbb_.AddElement<int8_t>(Value::VT_BYTE_VALUE, byte_value, 0);
-  }
-  void add_ubyte_value(int8_t ubyte_value) {
-    fbb_.AddElement<int8_t>(Value::VT_UBYTE_VALUE, ubyte_value, 0);
-  }
-  void add_bool_value(bool bool_value) {
-    fbb_.AddElement<uint8_t>(Value::VT_BOOL_VALUE, static_cast<uint8_t>(bool_value), 0);
-  }
-  void add_short_value(int16_t short_value) {
-    fbb_.AddElement<int16_t>(Value::VT_SHORT_VALUE, short_value, 0);
-  }
-  void add_ushort_value(uint16_t ushort_value) {
-    fbb_.AddElement<uint16_t>(Value::VT_USHORT_VALUE, ushort_value, 0);
-  }
-  void add_int_value(int32_t int_value) {
-    fbb_.AddElement<int32_t>(Value::VT_INT_VALUE, int_value, 0);
-  }
-  void add_uint_value(uint32_t uint_value) {
-    fbb_.AddElement<uint32_t>(Value::VT_UINT_VALUE, uint_value, 0);
-  }
-  void add_long_value(int64_t long_value) {
-    fbb_.AddElement<int64_t>(Value::VT_LONG_VALUE, long_value, 0);
-  }
-  void add_ulong_value(uint64_t ulong_value) {
-    fbb_.AddElement<uint64_t>(Value::VT_ULONG_VALUE, ulong_value, 0);
-  }
-  void add_float_value(float float_value) {
-    fbb_.AddElement<float>(Value::VT_FLOAT_VALUE, float_value, 0.0f);
-  }
-  void add_double_value(double double_value) {
-    fbb_.AddElement<double>(Value::VT_DOUBLE_VALUE, double_value, 0.0);
-  }
-  void add_string_value(flatbuffers::Offset<flatbuffers::String> string_value) {
-    fbb_.AddOffset(Value::VT_STRING_VALUE, string_value);
-  }
-  void add_json_value(flatbuffers::Offset<flatbuffers::String> json_value) {
-    fbb_.AddOffset(Value::VT_JSON_VALUE, json_value);
-  }
-  void add_datetime_value(flatbuffers::Offset<flatbuffers::String> datetime_value) {
-    fbb_.AddOffset(Value::VT_DATETIME_VALUE, datetime_value);
-  }
-  explicit ValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ValueBuilder &operator=(const ValueBuilder &);
-  flatbuffers::Offset<Value> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Value>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Value> CreateValue(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    uint16_t column_index = 0,
-    int8_t byte_value = 0,
-    int8_t ubyte_value = 0,
-    bool bool_value = false,
-    int16_t short_value = 0,
-    uint16_t ushort_value = 0,
-    int32_t int_value = 0,
-    uint32_t uint_value = 0,
-    int64_t long_value = 0,
-    uint64_t ulong_value = 0,
-    float float_value = 0.0f,
-    double double_value = 0.0,
-    flatbuffers::Offset<flatbuffers::String> string_value = 0,
-    flatbuffers::Offset<flatbuffers::String> json_value = 0,
-    flatbuffers::Offset<flatbuffers::String> datetime_value = 0) {
-  ValueBuilder builder_(_fbb);
-  builder_.add_double_value(double_value);
-  builder_.add_ulong_value(ulong_value);
-  builder_.add_long_value(long_value);
-  builder_.add_datetime_value(datetime_value);
-  builder_.add_json_value(json_value);
-  builder_.add_string_value(string_value);
-  builder_.add_float_value(float_value);
-  builder_.add_uint_value(uint_value);
-  builder_.add_int_value(int_value);
-  builder_.add_ushort_value(ushort_value);
-  builder_.add_short_value(short_value);
-  builder_.add_column_index(column_index);
-  builder_.add_bool_value(bool_value);
-  builder_.add_ubyte_value(ubyte_value);
-  builder_.add_byte_value(byte_value);
-  return builder_.Finish();
-}
-
-inline flatbuffers::Offset<Value> CreateValueDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    uint16_t column_index = 0,
-    int8_t byte_value = 0,
-    int8_t ubyte_value = 0,
-    bool bool_value = false,
-    int16_t short_value = 0,
-    uint16_t ushort_value = 0,
-    int32_t int_value = 0,
-    uint32_t uint_value = 0,
-    int64_t long_value = 0,
-    uint64_t ulong_value = 0,
-    float float_value = 0.0f,
-    double double_value = 0.0,
-    const char *string_value = nullptr,
-    const char *json_value = nullptr,
-    const char *datetime_value = nullptr) {
-  auto string_value__ = string_value ? _fbb.CreateString(string_value) : 0;
-  auto json_value__ = json_value ? _fbb.CreateString(json_value) : 0;
-  auto datetime_value__ = datetime_value ? _fbb.CreateString(datetime_value) : 0;
-  return FlatGeobuf::CreateValue(
-      _fbb,
-      column_index,
-      byte_value,
-      ubyte_value,
-      bool_value,
-      short_value,
-      ushort_value,
-      int_value,
-      uint_value,
-      long_value,
-      ulong_value,
-      float_value,
-      double_value,
-      string_value__,
-      json_value__,
-      datetime_value__);
+      ring_counts__,
+      ring_lengths__,
+      lengths__,
+      coords__,
+      properties__);
 }
 
 inline const FlatGeobuf::Feature *GetFeature(const void *buf) {

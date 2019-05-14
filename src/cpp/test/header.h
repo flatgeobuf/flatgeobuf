@@ -1,7 +1,7 @@
 #include "catch.hpp"
 
 #include "flatbuffers/flatbuffers.h"
-#include "../flatgeobuf_generated.h"
+#include "../header_generated.h"
 
 using namespace flatbuffers;
 using namespace FlatGeobuf;
