@@ -19,34 +19,44 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.*;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.GeometryDescriptor;
 
 public class FeatureCollectionConversions {
-
-    public class ColumnMeta {
-        public String name;
-        public ColumnType type;
-    }
-
-    public class HeaderMeta {
-        public String name;
-        public GeometryType geometryType;
-        public byte dimensions;
-        public List<ColumnMeta> columns;
-    }
-
     static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
 
-    public static void serialize(SimpleFeatureCollection featureCollection, long featureCount, OutputStream outputStream) throws IOException {
-        // TODO: if no features do not output
+    public static void serialize(SimpleFeatureCollection featureCollection, long featureCount,
+            OutputStream outputStream) throws IOException {
+        if (featureCount == 0)
+            return;
 
         SimpleFeatureType featureType = featureCollection.getSchema();
+        
+        List<AttributeDescriptor> types = featureType.getAttributeDescriptors();
+        List<ColumnMeta> columns = new ArrayList<ColumnMeta>();
+        /*
+        for (int j = 0; j < types.size(); j++) {
+            AttributeDescriptor ad = types.get(j);
+            if (ad instanceof GeometryDescriptor) {
+                // multiple geometries per feature is not supported
+            } else {
+                String key = ad.getLocalName();
+                //Class<?> binding = ad.getType().getBinding();
+                ColumnMeta column = new ColumnMeta();
+                column.name = key;
+                column.type = ColumnType.Int;
+                columns.add(column);
+            }
+        }*/
+
+        
         byte geometryType = toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
         // TODO: determine dimensions from type
         byte dimensions = 2;
 
         outputStream.write(magicbytes);
 
-        byte[] headerBuffer = buildHeader(geometryType, featureCount);
+        byte[] headerBuffer = buildHeader(geometryType, featureCount, columns);
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
@@ -144,11 +154,20 @@ public class FeatureCollectionConversions {
             throw new RuntimeException("Unknown geometry type");
     }
 
-    private static byte[] buildHeader(int geometryType, long featuresCount) {
+    private static byte[] buildHeader(int geometryType, long featuresCount, List<ColumnMeta> columns) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
+
+        /*int[] columnsArray = columns.stream().mapToInt(c -> {
+            int nameOffset = builder.createString(c.name);
+            int type = c.type;
+            return Column.createColumn(builder, nameOffset, type);
+        }).toArray();
+        int columnsOffset = Header.createColumnsVector(builder, columnsArray);*/
 
         Header.startHeader(builder);
         Header.addGeometryType(builder, geometryType);
+        //Header.addIndexNodeSize(builder, 0);
+        //Header.addColumns(builder, columnsOffset);
         Header.addFeaturesCount(builder, featuresCount);
         int offset = Header.endHeader(builder);
 
