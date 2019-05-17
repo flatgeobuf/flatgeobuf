@@ -21,6 +21,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class FeatureCollectionConversions {
     static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
@@ -31,32 +32,40 @@ public class FeatureCollectionConversions {
             return;
 
         SimpleFeatureType featureType = featureCollection.getSchema();
-        
+
         List<AttributeDescriptor> types = featureType.getAttributeDescriptors();
         List<ColumnMeta> columns = new ArrayList<ColumnMeta>();
-        /*
-        for (int j = 0; j < types.size(); j++) {
-            AttributeDescriptor ad = types.get(j);
+
+        for (int i = 0; i < types.size(); i++) {
+            AttributeDescriptor ad = types.get(i);
             if (ad instanceof GeometryDescriptor) {
                 // multiple geometries per feature is not supported
             } else {
                 String key = ad.getLocalName();
-                //Class<?> binding = ad.getType().getBinding();
+                Class<?> binding = ad.getType().getBinding();
                 ColumnMeta column = new ColumnMeta();
                 column.name = key;
-                column.type = ColumnType.Int;
+                if (binding.isAssignableFrom(Boolean.class))
+                    column.type = ColumnType.Bool;
+                else if (binding.isAssignableFrom(Integer.class))
+                    column.type = ColumnType.Int;
+                else if (binding.isAssignableFrom(Long.class))
+                    column.type = ColumnType.Long;
+                else if (binding.isAssignableFrom(Double.class))
+                    column.type = ColumnType.Double;
+                else if (binding.isAssignableFrom(String.class))
+                    column.type = ColumnType.String;
                 columns.add(column);
             }
-        }*/
+        }
 
-        
+        CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
         byte geometryType = toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        // TODO: determine dimensions from type
-        byte dimensions = 2;
+        byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
 
         outputStream.write(magicbytes);
 
-        byte[] headerBuffer = buildHeader(geometryType, featureCount, columns);
+        byte[] headerBuffer = buildHeader(geometryType, dimensions, featureCount, columns);
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
@@ -71,7 +80,7 @@ public class FeatureCollectionConversions {
 
                     }
                 }
-                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, geometryType, dimensions);
+                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, geometryType, dimensions, columns);
                 outputStream.write(featureBuffer);
                 fid++;
             }
@@ -80,14 +89,9 @@ public class FeatureCollectionConversions {
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb) {
         int offset = 0;
-        if (bb.get() != magicbytes[0] ||
-            bb.get() != magicbytes[1] ||
-            bb.get() != magicbytes[2] ||
-            bb.get() != magicbytes[3] ||
-            bb.get() != magicbytes[4] ||
-            bb.get() != magicbytes[5] ||
-            bb.get() != magicbytes[6] ||
-            bb.get() != magicbytes[7])
+        if (bb.get() != magicbytes[0] || bb.get() != magicbytes[1] || bb.get() != magicbytes[2]
+                || bb.get() != magicbytes[3] || bb.get() != magicbytes[4] || bb.get() != magicbytes[5]
+                || bb.get() != magicbytes[6] || bb.get() != magicbytes[7])
             throw new RuntimeException("Not a FlatGeobuf file");
         bb.position(offset += magicbytes.length);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
@@ -98,40 +102,51 @@ public class FeatureCollectionConversions {
         int dimensions = header.dimensions();
         Class<?> geometryClass;
         switch (geometryType) {
-            case GeometryType.Point:
-                geometryClass = Point.class;
-                break;
-            case GeometryType.MultiPoint:
-                geometryClass = MultiPoint.class;
-                break;
-            case GeometryType.LineString:
-                geometryClass = LineString.class;
-                break;
-            case GeometryType.MultiLineString:
-                geometryClass = MultiLineString.class;
-                break;
-            case GeometryType.Polygon:
-                geometryClass = Polygon.class;
-                break;
-            case GeometryType.MultiPolygon:
-                geometryClass = MultiPolygon.class;
-                break;
-            default:
-                throw new RuntimeException("Unknown geometry type");
+        case GeometryType.Point:
+            geometryClass = Point.class;
+            break;
+        case GeometryType.MultiPoint:
+            geometryClass = MultiPoint.class;
+            break;
+        case GeometryType.LineString:
+            geometryClass = LineString.class;
+            break;
+        case GeometryType.MultiLineString:
+            geometryClass = MultiLineString.class;
+            break;
+        case GeometryType.Polygon:
+            geometryClass = Polygon.class;
+            break;
+        case GeometryType.MultiPolygon:
+            geometryClass = MultiPolygon.class;
+            break;
+        default:
+            throw new RuntimeException("Unknown geometry type");
+        }
+
+        int columnsLength = header.columnsLength();
+        ColumnMeta[] columns = new ColumnMeta[columnsLength];
+        for (int i = 0; i < columnsLength; i++) {
+            ColumnMeta columnMeta = new ColumnMeta();
+            columnMeta.name = header.columns(i).name();
+            columnMeta.type = (byte) header.columns(i).type();
+            columns[i] = columnMeta;
         }
 
         SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
         ftb.setName("testType");
         ftb.add("geometryProperty", geometryClass);
+        for (ColumnMeta column : columns)
+            ftb.add(column.name, column.getBinding());
         SimpleFeatureType ft = ftb.buildFeatureType();
-        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);        
+        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
         while (bb.hasRemaining()) {
             int featureSize = ByteBufferUtil.getSizePrefix(bb);
             bb.position(offset += SIZE_PREFIX_LENGTH);
             Feature feature = Feature.getRootAsFeature(bb);
             bb.position(offset += featureSize);
-            SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions);
+            SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions, columns);
             fc.add(f);
         }
         return fc;
@@ -154,20 +169,21 @@ public class FeatureCollectionConversions {
             throw new RuntimeException("Unknown geometry type");
     }
 
-    private static byte[] buildHeader(int geometryType, long featuresCount, List<ColumnMeta> columns) {
+    private static byte[] buildHeader(int geometryType, byte dimensions, long featuresCount, List<ColumnMeta> columns) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
 
-        /*int[] columnsArray = columns.stream().mapToInt(c -> {
+        int[] columnsArray = columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
             return Column.createColumn(builder, nameOffset, type);
         }).toArray();
-        int columnsOffset = Header.createColumnsVector(builder, columnsArray);*/
+        int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
         Header.startHeader(builder);
         Header.addGeometryType(builder, geometryType);
-        //Header.addIndexNodeSize(builder, 0);
-        //Header.addColumns(builder, columnsOffset);
+        Header.addDimensions(builder, dimensions);
+        Header.addIndexNodeSize(builder, 0);
+        Header.addColumns(builder, columnsOffset);
         Header.addFeaturesCount(builder, featuresCount);
         int offset = Header.endHeader(builder);
 

@@ -3,16 +3,19 @@ package flatgeobuf.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 import org.geotools.data.memory.MemoryFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geojson.feature.FeatureJSON;
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
@@ -25,6 +28,19 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import flatgeobuf.geotools.FeatureCollectionConversions;
 
 public class GeometryRoundtripTest {
+
+    SimpleFeatureCollection makeFCFromGeoJSON(String geojson) {
+        FeatureJSON featureJSON = new FeatureJSON();
+        SimpleFeatureCollection fc;
+        try {
+            fc = (SimpleFeatureCollection) featureJSON
+                    .readFeatureCollection(new ByteArrayInputStream(geojson.getBytes(StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return fc;
+    }
+
     SimpleFeatureCollection makeFC(String wkt) {
         WKTReader reader = new WKTReader();
         Geometry geometry;
@@ -62,15 +78,14 @@ public class GeometryRoundtripTest {
             }
             fb.add(geometry);
             SimpleFeature f = fb.buildFeature(Integer.toString(i));
-            boolean result = fc.add(f);
-            System.out.println(result);
+            fc.add(f);
         }
         return fc;
     }
 
     String roundTrip(String wkt) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkt), 0, os);
+        FeatureCollectionConversions.serialize(makeFC(wkt), 1, os);
         ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
@@ -82,7 +97,7 @@ public class GeometryRoundtripTest {
     String[] roundTrip(String[] wkts, Class<?> geometryClass) throws IOException {
         String[] newWkts = new String[wkts.length];
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkts, geometryClass), 0, os);
+        FeatureCollectionConversions.serialize(makeFC(wkts, geometryClass), newWkts.length, os);
         ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
@@ -99,64 +114,55 @@ public class GeometryRoundtripTest {
     }
 
     @Test
-    public void point() throws IOException
-    {
+    public void point() throws IOException {
         String expected = "POINT (1.2 -2.1)";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void points() throws IOException
-    {
+    public void points() throws IOException {
         String[] expected = new String[] { "POINT (1.2 -2.1)", "POINT (10.2 -20.1)" };
         assertArrayEquals(expected, roundTrip(expected, Point.class));
     }
 
     @Test
-    public void multipoint() throws IOException
-    {
+    public void multipoint() throws IOException {
         String expected = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void linestring() throws IOException
-    {
+    public void linestring() throws IOException {
         String expected = "LINESTRING (1.2 -2.1, 2.4 -4.8)";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void multilinestring() throws IOException
-    {
+    public void multilinestring() throws IOException {
         String expected = "MULTILINESTRING ((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10))";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void polygon() throws IOException
-    {
+    public void polygon() throws IOException {
         String expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void polygon_hole() throws IOException
-    {
+    public void polygon_hole() throws IOException {
         String expected = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))";
         assertEquals(expected, roundTrip(expected));
     }
-    
+
     @Test
-    public void multipolygon_single() throws IOException
-    {
+    public void multipolygon_single() throws IOException {
         String expected = "MULTIPOLYGON (((30 10, 40 40, 20 40, 10 20, 30 10)))";
         assertEquals(expected, roundTrip(expected));
     }
 
     @Test
-    public void multipolygon() throws IOException
-    {
+    public void multipolygon() throws IOException {
         String expected = "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))";
         assertEquals(expected, roundTrip(expected));
     }
