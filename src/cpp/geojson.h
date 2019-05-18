@@ -43,6 +43,21 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("Unknown geometry type");
 }
 
+static const ColumnType toColumnType(value value)
+{
+    if (value.is<bool>())
+        return ColumnType::Bool;
+    if (value.is<uint64_t>())
+        return ColumnType::ULong;
+    if (value.is<int64_t>())
+        return ColumnType::Long;
+    if (value.is<double>())
+        return ColumnType::Double;
+    if (value.is<std::string>())
+        return ColumnType::String;
+    throw std::invalid_argument("Unknown column type");
+}
+
 const uint8_t* serialize(const feature_collection fc)
 {
     const auto featuresCount = fc.size();
@@ -64,9 +79,13 @@ const uint8_t* serialize(const feature_collection fc)
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
     FlatBufferBuilder fbb;
-    auto columns = nullptr;
+    std::vector<flatbuffers::Offset<Column>> columns;
+    //auto propertiesSize = featureFirst.properties.size();
+    for (auto p : featureFirst.properties)
+        columns.push_back(CreateColumnDirect(fbb, p.first.c_str(), toColumnType(p.second)));
+
     auto header = CreateHeaderDirect(
-        fbb, nullptr, &extentVector, geometryType, 2, columns, featuresCount);
+        fbb, nullptr, &extentVector, geometryType, 2, &columns, featuresCount);
     fbb.FinishSizePrefixed(header);
     auto hbuf = fbb.Release();
     std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));

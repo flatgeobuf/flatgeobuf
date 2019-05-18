@@ -31,7 +31,7 @@ struct StringMaker<feature_collection> {
 };
 }
 
-TEST_CASE("Geometry")
+TEST_CASE("Geometry roundtrips")
 {
     SECTION("Point")
     {
@@ -101,6 +101,17 @@ TEST_CASE("Geometry")
     SECTION("MultiPolygon single Polygon")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/multipolygonsingle.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
+}
+
+TEST_CASE("Attribute roundtrips")
+{
+    SECTION("Point with properties")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/properties.geojson")).get<feature_collection>();
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
