@@ -50,6 +50,7 @@ namespace FlatGeobuf.NTS
                                 bb.PutInt(offset, v.Length);
                                 offset += 4;
                                 bb.PutStringUTF8(offset, v);
+                                offset += v.Length;
                                 break;
                             case null:
                                 break;
