@@ -139,10 +139,10 @@ namespace FlatGeobuf.Tests.GeoJson
         {
             var attributes = new Dictionary<string, object>()
             {
-                ["test"] = 1,
-                ["test"] = 1.1,
-                ["test"] = "test",
-                ["test"] = true
+                ["test1"] = 1,
+                ["test2"] = 1.1,
+                ["test3"] = "test",
+                ["test4"] = true
             };
             var expected = MakeFeatureCollection(attributes);
             var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
