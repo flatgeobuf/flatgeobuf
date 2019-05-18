@@ -7,18 +7,14 @@ using FlatBuffers;
 namespace FlatGeobuf.NTS
 {
     public static class FeatureConversions {
-        public static byte[] ToByteBuffer(IFeature feature, IList<LayerMeta> layers) {
+        public static byte[] ToByteBuffer(IFeature feature, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
-            // TODO: improve layer introspection
-            var layer = layers.First(l => l.GeometryType == GeometryConversions.ToGeometryType(feature.Geometry));
-            var layerIndex = (uint) layers.IndexOf(layer);
-            var columns = layer.Columns;
+            var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, dimensions);
 
-            var geometryOffset = GeometryConversions.BuildGeometry(builder, feature.Geometry);
             
-            VectorOffset? valuesOffset = null;
+            /*VectorOffset? valuesOffset = null;
             if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null) {
                 var valueOffsets = new List<Offset<Value>>();
 
@@ -49,13 +45,19 @@ namespace FlatGeobuf.NTS
                     }
                 }
                 valuesOffset = Feature.CreateValuesVector(builder, valueOffsets.ToArray());
-            }
+            }*/
 
             Feature.StartFeature(builder);
-            Feature.AddGeometry(builder, geometryOffset);
-            Feature.AddLayer(builder, layerIndex);
-            if (valuesOffset.HasValue)
-                Feature.AddValues(builder, valuesOffset.Value);
+            Feature.AddCoords(builder, go.coordsOffset.Value);
+            if (go.lengthsOffset.HasValue)
+                Feature.AddLengths(builder, go.lengthsOffset.Value);
+            if (go.ringLengthsOffset.HasValue)
+                Feature.AddRingLengths(builder, go.ringLengthsOffset.Value);
+            if (go.ringCountsOffset.HasValue)
+                Feature.AddRingCounts(builder, go.ringCountsOffset.Value);
+            
+            //if (valuesOffset.HasValue)
+            //    Feature.AddValues(builder, valuesOffset.Value);
             var offset = Feature.EndFeature(builder);
 
             builder.FinishSizePrefixed(offset.Value);
@@ -66,15 +68,13 @@ namespace FlatGeobuf.NTS
         }
 
         public static IFeature FromByteBuffer(ByteBuffer bb, Header header) {
-            // TODO: introspect which layer
-            var columnsLayer = header.Layers(0).Value;
             IList<Column> columns = null;
-            if (columnsLayer.ColumnsLength > 0)
+            if (header.ColumnsLength > 0)
             {
                 columns = new List<Column>();
-                for (int i = 0; i < columnsLayer.ColumnsLength; i++)
+                for (int i = 0; i < header.ColumnsLength; i++)
                 {
-                    var column = columnsLayer.Columns(i).Value;
+                    var column = header.Columns(i).Value;
                     columns.Add(column);
                 }
             }
@@ -82,12 +82,10 @@ namespace FlatGeobuf.NTS
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
 
-            if (feature.ValuesLength > 0)
-                attributesTable = new AttributesTable();
+            //if (feature.ValuesLength > 0)
+            //    attributesTable = new AttributesTable();
 
-            var layer = header.Layers((int) feature.Layer).Value;
-
-            for (int i = 0; i < feature.ValuesLength; i++)
+            /*for (int i = 0; i < feature.ValuesLength; i++)
             {
                 var value = feature.Values(i).Value;
                 var column = columns[value.ColumnIndex];
@@ -109,9 +107,9 @@ namespace FlatGeobuf.NTS
                         break;
                     default: throw new ApplicationException("Unknown type");
                 }
-            }
+            }*/
 
-            var geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, layer.GeometryType, layer.Dimensions);
+            var geometry = GeometryConversions.FromFlatbuf(feature, header.GeometryType, header.Dimensions);
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }

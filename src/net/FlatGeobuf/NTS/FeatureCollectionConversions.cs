@@ -24,12 +24,12 @@ namespace FlatGeobuf.NTS
     }
 
     public static class FeatureCollectionConversions {
-        public static byte[] ToFlatGeobuf(FeatureCollection fc, IList<LayerMeta> layers = null) {
+        public static byte[] ToFlatGeobuf(FeatureCollection fc, GeometryType? geometryType = null, byte dimensions = 2, IList<ColumnMeta> columns = null) {
             ulong count = (ulong) fc.Features.LongCount();
 
             if (count == 0)
-                throw new ApplicationException("Empty feature collection is not allowed as input");
-
+                return new byte[0];
+            
             var index = new PackedHilbertRTree(count);
             foreach (var f in fc.Features)
             {
@@ -38,9 +38,17 @@ namespace FlatGeobuf.NTS
             }
             index.Finish();
 
-            if (layers == null)
-                layers = IntrospectLayers(fc);
-            
+            var featureFirst = fc.Features.First();
+
+            if (geometryType == null)
+                geometryType = GeometryConversions.ToGeometryType(featureFirst.Geometry);
+
+            if (columns == null && featureFirst.Attributes != null) {
+                columns = featureFirst.Attributes.GetNames()
+                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                    .ToList();
+            }
+
             using (var memoryStream = new MemoryStream())
             {
                 using (var featuresStream = new MemoryStream())
@@ -51,12 +59,12 @@ namespace FlatGeobuf.NTS
                     for (ulong i = 0; i < count; i++)
                     {
                         var feature = fc.Features[(int)index.Indices[i]];
-                        var buffer = FeatureConversions.ToByteBuffer(feature, layers);
+                        var buffer = FeatureConversions.ToByteBuffer(feature, geometryType.Value, dimensions, columns);
                         featuresStream.Write(buffer, 0, buffer.Length);
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
                     }
-                    var header = BuildHeader(count, offset, layers, index);
+                    var header = BuildHeader(count, offset, geometryType.Value, dimensions, columns, index);
                     memoryStream.Write(header, 0, header.Length);
                     featuresStream.WriteTo(memoryStream);
                     var indexBytes = index.ToBytes();
@@ -65,28 +73,6 @@ namespace FlatGeobuf.NTS
                 }
                 return memoryStream.ToArray();
             }
-        }
-
-        private static IList<LayerMeta> IntrospectLayers(FeatureCollection fc)
-        {
-            var featureFirst = fc.Features.First();
-            IList<ColumnMeta> columns = null;
-            if (featureFirst.Attributes != null && featureFirst.Attributes.Count > 0)
-            {
-                columns = featureFirst.Attributes.GetNames()
-                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
-                    .ToList();
-            }
-
-            var geometryTypes = fc.Features
-                .Select(f => GeometryConversions.ToGeometryType(f.Geometry))
-                .Distinct();
-            
-            IList<LayerMeta> layers = geometryTypes
-                .Select(geometryType => new LayerMeta() { GeometryType = geometryType, Columns = columns })
-                .ToList();
-
-            return layers;
         }
 
         private static ColumnType ToColumnType(Type type) {
@@ -112,13 +98,12 @@ namespace FlatGeobuf.NTS
             var header = Header.GetRootAsHeader(bb);
             
             var count = header.FeaturesCount;
-            var featuresSize = header.FeaturesSize;
             var nodeSize = header.IndexNodeSize;
 
             bb.Position += (int) headerSize;
 
             var index = new PackedHilbertRTree(count, nodeSize);
-            var indexData = bytes.Skip((int) (headerSize + featuresSize)).Take((int) index.Size).ToArray();
+            var indexData = bytes.Skip((int) (headerSize)).Take((int) index.Size).ToArray();
             index.Load(indexData);
 
             while (count-- > 0) {
@@ -132,12 +117,10 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(ulong count, ulong featuresSize, IList<LayerMeta> layers, PackedHilbertRTree index) {
+        private static byte[] BuildHeader(ulong count, ulong featuresSize, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedHilbertRTree index) {
             // TODO: size might not be enough, need to be adaptive
             var builder = new FlatBufferBuilder(1024);
 
-            // TODO: can be different per layer...
-            var columns = layers.First().Columns;
             VectorOffset? columnsOffset = null;
             if (columns != null)
             {
@@ -147,25 +130,14 @@ namespace FlatGeobuf.NTS
                 columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 
-            var layerOffsets = layers
-                .Select(l =>
-                {
-                    Layer.StartLayer(builder);
-                    if (columnsOffset.HasValue)
-                        Layer.AddColumns(builder, columnsOffset.Value);
-                    Layer.AddGeometryType(builder, l.GeometryType);
-                    var layerOffset = Layer.EndLayer(builder);
-                    return layerOffset;
-                }).ToArray();
-
-            var layersOffset = Header.CreateLayersVector(builder, layerOffsets);
-
             Header.StartHeader(builder);
-            Header.AddLayers(builder, layersOffset);
+            Header.AddGeometryType(builder, geometryType);
+            Header.AddDimensions(builder, dimensions);
+            if (columnsOffset.HasValue)
+                Header.AddColumns(builder, columnsOffset.Value);
             if (index != null)
-                Header.AddIndexNodesCount(builder, index.NumNodes);
+                Header.AddIndexNodeSize(builder, 16);
             Header.AddFeaturesCount(builder, count);
-            Header.AddFeaturesSize(builder, featuresSize);
             var offset = Header.EndHeader(builder);
 
             builder.FinishSizePrefixed(offset.Value);

@@ -10,83 +10,48 @@ using FlatBuffers;
 
 namespace FlatGeobuf.NTS
 {
+    public class GeometryOffsets {
+        public VectorOffset? coordsOffset = null;
+        public VectorOffset? lengthsOffset = null;
+        public VectorOffset? ringLengthsOffset = null;
+        public VectorOffset? ringCountsOffset = null;
+    }
+
     public static class GeometryConversions {
-        public static Offset<Geometry> BuildGeometry(FlatBufferBuilder builder, IGeometry geometry)
+        public static GeometryOffsets BuildGeometry(FlatBufferBuilder builder, IGeometry geometry, GeometryType geometryType, byte dimensions)
         {
-            // TODO: introspect?
-            uint dimensions = 2;
+            var go = new GeometryOffsets();
 
             var coordinates = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y })
                 .ToArray();
-            var coordsOffset = Geometry.CreateCoordsVector(builder, coordinates);
+            go.coordsOffset = Geometry.CreateCoordsVector(builder, coordinates);
 
-            var types = CreateTypes(geometry, dimensions);
-            VectorOffset? typesOffset = null;
-            if (types != null)
-                typesOffset = Geometry.CreateTypesVector(builder, types.ToArray());
-            
             var lengths = CreateLengths(geometry, dimensions);
-            VectorOffset? lengthsOffset = null;
             if (lengths != null)
-                lengthsOffset = Geometry.CreateLengthsVector(builder, lengths.ToArray());
+                go.lengthsOffset = Geometry.CreateLengthsVector(builder, lengths.ToArray());
 
-            var ringLengths = CreateRingLengths(geometry, dimensions);
-            VectorOffset? ringLengthsOffset = null;
+            var ringLengths = CreateRingLengths(geometry, geometryType, dimensions);
             if (ringLengths != null)
-                ringLengthsOffset = Geometry.CreateRingLengthsVector(builder, ringLengths.ToArray());
+                go.ringLengthsOffset = Geometry.CreateRingLengthsVector(builder, ringLengths.ToArray());
             
-            VectorOffset? ringCountsOffset = null;
-            if (geometry is IGeometryCollection && geometry.NumGeometries > 1 &&
-                (geometry as IGeometryCollection).Geometries.Any(g => g is IPolygon))
+            if (geometryType == GeometryType.MultiPolygon && geometry.NumGeometries > 1)
             {
-                var gc = geometry as IGeometryCollection;
-                var ringCounts = gc.Geometries
-                    .Where(g => g is IPolygon)
+                var mp = geometry as IMultiPolygon;
+                var ringCounts = mp.Geometries
                     .Select(g => g as IPolygon)
                     .Select(p => (uint) p.InteriorRings.Length + 1);
-                ringCountsOffset = Geometry.CreateRingCountsVector(builder, ringCounts.ToArray());
+                go.ringCountsOffset = Geometry.CreateRingCountsVector(builder, ringCounts.ToArray());
             }
 
-            Geometry.StartGeometry(builder);
-            if (typesOffset.HasValue)
-                Geometry.AddTypes(builder, typesOffset.Value);
-            if (lengthsOffset.HasValue)
-                Geometry.AddLengths(builder, lengthsOffset.Value);
-            if (ringLengthsOffset.HasValue)
-                Geometry.AddRingLengths(builder, ringLengthsOffset.Value);
-            if (ringCountsOffset.HasValue)
-                Geometry.AddRingCounts(builder, ringCountsOffset.Value);
-
-            Geometry.AddCoords(builder, coordsOffset);
-            var offset = Geometry.EndGeometry(builder);
-
-            return offset;
+            return go;
         }
 
-        static IEnumerable<uint> CreateRingLengths(IGeometry geometry, uint dimensions)
+        static IEnumerable<uint> CreateRingLengths(IGeometry geometry, GeometryType geometryType, uint dimensions)
         {
-            if (geometry is IGeometryCollection && geometry.NumGeometries > 1)
+            if (geometryType == GeometryType.Polygon)
             {
-                var gc = geometry as IGeometryCollection;
-                var lengths = gc.Geometries
-                    .Where(g => g is IPolygon)
-                    .Select(g => g as IPolygon)
-                    .Where(p => p.InteriorRings.Length > 0)
-                    .Select(p => new[] { p.ExteriorRing }.Concat(p.InteriorRings))
-                    .Select(rs => rs.Select(r => dimensions * (uint) r.Coordinates.Length))
-                    .SelectMany(rls => rls)
-                    .ToList();
-                if (lengths.Count > 0)
-                    return lengths;
-            }
-            else if (geometry is IPolygon || (geometry is IGeometryCollection && geometry.GetGeometryN(0) is IPolygon))
-            {
-                IPolygon polygon;
-                if (geometry is IPolygon)
-                    polygon = geometry as IPolygon;
-                else
-                    polygon = geometry.GetGeometryN(0) as IPolygon;
+                IPolygon polygon = geometry as IPolygon;
                 if (polygon.InteriorRings.Length > 0)
                 {
                     var rings = new[] { polygon.ExteriorRing }.Concat(polygon.InteriorRings);
@@ -94,6 +59,10 @@ namespace FlatGeobuf.NTS
                         .Select(r => dimensions * (uint) r.Coordinates.Length);
                     return ringLengths;
                 }
+            }
+            else if (geometryType == GeometryType.MultiPolygon)
+            {
+                return (geometry as IMultiPolygon).Geometries.SelectMany(g => CreateRingLengths(g, GeometryType.Polygon, dimensions));
             }
             return null;
         }
@@ -106,18 +75,6 @@ namespace FlatGeobuf.NTS
                 var lengths = gc.Geometries
                     .Select(g => dimensions * (uint) g.Coordinates.Length);
                 return lengths;
-            }
-            return null;
-        }
-
-        static IEnumerable<GeometryType> CreateTypes(IGeometry geometry, uint dimensions)
-        {
-            if (geometry.OgcGeometryType == OgcGeometryType.GeometryCollection)
-            {
-                var gc = geometry as IGeometryCollection;
-                var types = gc.Geometries
-                    .Select(g => ToGeometryType(g));
-                return types;
             }
             return null;
         }
@@ -214,11 +171,11 @@ namespace FlatGeobuf.NTS
             return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
-        public static IGeometry FromFlatbuf(Geometry flatbufGeometry, GeometryType type, byte dimensions) {
-            var coords = flatbufGeometry.GetCoordsArray();
-            var lengths = flatbufGeometry.GetLengthsArray();
-            var ringLengths = flatbufGeometry.GetRingLengthsArray();
-            var ringCounts = flatbufGeometry.GetRingCountsArray();
+        public static IGeometry FromFlatbuf(Feature feature, GeometryType type, byte dimensions) {
+            var coords = feature.GetCoordsArray();
+            var lengths = feature.GetLengthsArray();
+            var ringLengths = feature.GetRingLengthsArray();
+            var ringCounts = feature.GetRingCountsArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
 
             var factory = new GeometryFactory();
@@ -268,8 +225,6 @@ namespace FlatGeobuf.NTS
                     return GeometryType.Polygon;
                 case IMultiPolygon _:
                     return GeometryType.MultiPolygon;
-                case IGeometryCollection _:
-                    return GeometryType.GeometryCollection;
                 default:
                     throw new ApplicationException("Unknown or null geometry");
             }
