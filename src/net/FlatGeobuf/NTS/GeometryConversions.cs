@@ -32,7 +32,8 @@ namespace FlatGeobuf.NTS
                 go.lengthsOffset = Geometry.CreateLengthsVector(builder, lengths.ToArray());
 
             var ringLengths = CreateRingLengths(geometry, geometryType, dimensions);
-            if (ringLengths != null)
+            if ((geometryType == GeometryType.Polygon && (geometry as IPolygon).InteriorRings.Length > 0) ||
+                (geometryType == GeometryType.MultiPolygon))
                 go.ringLengthsOffset = Geometry.CreateRingLengthsVector(builder, ringLengths.ToArray());
             
             if (geometryType == GeometryType.MultiPolygon && geometry.NumGeometries > 1)
@@ -52,13 +53,10 @@ namespace FlatGeobuf.NTS
             if (geometryType == GeometryType.Polygon)
             {
                 IPolygon polygon = geometry as IPolygon;
-                if (polygon.InteriorRings.Length > 0)
-                {
-                    var rings = new[] { polygon.ExteriorRing }.Concat(polygon.InteriorRings);
-                    var ringLengths = rings
-                        .Select(r => dimensions * (uint) r.Coordinates.Length);
-                    return ringLengths;
-                }
+                var rings = new[] { polygon.ExteriorRing }.Concat(polygon.InteriorRings);
+                var ringLengths = rings
+                    .Select(r => dimensions * (uint) r.Coordinates.Length);
+                return ringLengths;
             }
             else if (geometryType == GeometryType.MultiPolygon)
             {
