@@ -43,11 +43,10 @@ namespace FlatGeobuf.NTS
             if (geometryType == null)
                 geometryType = GeometryConversions.ToGeometryType(featureFirst.Geometry);
 
-            if (columns == null && featureFirst.Attributes != null) {
+            if (columns == null && featureFirst.Attributes != null)
                 columns = featureFirst.Attributes.GetNames()
                     .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
                     .ToList();
-            }
 
             using (var memoryStream = new MemoryStream())
             {
@@ -64,12 +63,12 @@ namespace FlatGeobuf.NTS
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
                     }
-                    var header = BuildHeader(count, offset, geometryType.Value, dimensions, columns, index);
+                    var header = BuildHeader(count, geometryType.Value, dimensions, columns, index);
                     memoryStream.Write(header, 0, header.Length);
-                    featuresStream.WriteTo(memoryStream);
                     var indexBytes = index.ToBytes();
                     memoryStream.Write(indexBytes, 0, indexBytes.Length);
                     offsetsStream.WriteTo(memoryStream);
+                    featuresStream.WriteTo(memoryStream);
                 }
                 return memoryStream.ToArray();
             }
@@ -93,23 +92,38 @@ namespace FlatGeobuf.NTS
 
             var bb = new ByteBuffer(bytes);
             
-            var headerSize = (ulong) ByteBufferUtil.GetSizePrefix(bb);
+            var headerSize = ByteBufferUtil.GetSizePrefix(bb);
             bb.Position = FlatBufferConstants.SizePrefixLength;
             var header = Header.GetRootAsHeader(bb);
             
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
+            var geometryType = header.GeometryType;
+            var dimensions = header.Dimensions;
 
-            bb.Position += (int) headerSize;
+            IList<ColumnMeta> columns = null;
+            if (header.ColumnsLength > 0)
+            {
+                columns = new List<ColumnMeta>();
+                for (int i = 0; i < header.ColumnsLength; i++){
+                    var column = header.Columns(i).Value;
+                    columns.Add(new ColumnMeta() { Name = column.Name, Type = column.Type });
+                }
+            }
 
-            var index = new PackedHilbertRTree(count, nodeSize);
-            var indexData = bytes.Skip((int) (headerSize)).Take((int) index.Size).ToArray();
-            index.Load(indexData);
+            bb.Position += headerSize;
+            
+            if (nodeSize > 0) {
+                var index = new PackedHilbertRTree(count, nodeSize);
+                var indexData = bytes.Skip(headerSize).Take((int) index.Size).ToArray();
+                index.Load(indexData);
+                bb.Position += (int) index.Size + (int) count * 8;
+            }
 
-            while (count-- > 0) {
+            while (bb.Position < bb.Length) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = FeatureConversions.FromByteBuffer(bb, header);
+                var feature = FeatureConversions.FromByteBuffer(bb, geometryType, dimensions, columns);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
@@ -117,16 +131,15 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(ulong count, ulong featuresSize, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedHilbertRTree index) {
-            // TODO: size might not be enough, need to be adaptive
-            var builder = new FlatBufferBuilder(1024);
+        private static byte[] BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedHilbertRTree index) {
+            var builder = new FlatBufferBuilder(4096);
 
             VectorOffset? columnsOffset = null;
             if (columns != null)
             {
                 var columnsArray = columns
-                .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
-                .ToArray();
+                    .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
+                    .ToArray();
                 columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
             }
 

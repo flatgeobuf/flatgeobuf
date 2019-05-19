@@ -60,7 +60,12 @@ namespace FlatGeobuf.NTS
             }
             else if (geometryType == GeometryType.MultiPolygon)
             {
-                return (geometry as IMultiPolygon).Geometries.SelectMany(g => CreateRingLengths(g, GeometryType.Polygon, dimensions));
+                IMultiPolygon mp;
+                if (geometry is IPolygon)
+                    mp = GeometryFactory.Default.CreateMultiPolygon(new IPolygon[] { geometry as IPolygon });
+                else
+                    mp = geometry as IMultiPolygon;
+                return mp.Geometries.SelectMany(g => CreateRingLengths(g, GeometryType.Polygon, dimensions));
             }
             return null;
         }
@@ -153,10 +158,7 @@ namespace FlatGeobuf.NTS
                     var ringCount = ringCounts[i];
                     uint[] ringLengthSubset = null;
                     if (ringCount > 1)
-                    {
-                        var ringLengthsSegment = new ArraySegment<uint>(ringLengths).Skip((int) ringOffset).Take((int) ringCount).ToArray();
-                        ringLengthSubset = ringLengths;
-                    }
+                        ringLengthSubset = new ArraySegment<uint>(ringLengths).Skip((int) ringOffset).Take((int) ringCount).ToArray();
                     ringOffset += ringCount;
                         
                     var linearRingCoords = arraySegment.Skip((int) offset).Take((int) length).ToArray();
