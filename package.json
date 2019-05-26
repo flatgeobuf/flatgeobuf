@@ -24,21 +24,21 @@
     "flatbuffers": "1.11.0"
   },
   "devDependencies": {
-    "@babel/core": "7.4.4",
-    "@babel/preset-env": "7.4.4",
+    "@babel/core": "7.4.5",
+    "@babel/preset-env": "7.4.5",
     "@types/chai": "4.1.7",
     "@types/mocha": "5.2.6",
     "@types/node": "10.14.6",
     "chai": "4.2.0",
-    "esm": "3.2.22",
+    "esm": "3.2.25",
     "jsts": "2.0.4",
     "mocha": "6.1.4",
-    "rollup-plugin-terser": "4.0.4",
-    "ts-node": "8.1.0",
+    "rollup-plugin-terser": "5.0.0",
+    "ts-node": "8.2.0",
     "tslint": "5.16.0",
-    "rollup": "1.11.3",
+    "rollup": "1.12.3",
     "rollup-plugin-babel": "4.3.2",
-    "rollup-plugin-node-resolve": "4.2.3",
+    "rollup-plugin-node-resolve": "5.0.0",
     "typescript": "3.4.5"
   }
 }
