@@ -265,14 +265,7 @@ const feature_collection deserialize(const void* buf)
 {
     const uint8_t* bytes = static_cast<const uint8_t*>(buf);
 
-    if (bytes[0] != magicbytes[0] ||
-        bytes[1] != magicbytes[1] ||
-        bytes[2] != magicbytes[2] ||
-        bytes[3] != magicbytes[3] ||
-        bytes[4] != magicbytes[4] ||
-        bytes[5] != magicbytes[5] ||
-        bytes[6] != magicbytes[6] ||
-        bytes[7] != magicbytes[7])
+    if (memcmp(bytes, magicbytes, sizeof(magicbytes)))
         throw new std::invalid_argument("Not a FlatGeobuf file");
     uint64_t offset = sizeof(magicbytes);
     
