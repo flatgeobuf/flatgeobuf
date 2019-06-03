@@ -33,12 +33,13 @@
     "esm": "3.2.25",
     "jsts": "2.0.4",
     "mocha": "6.1.4",
-    "rollup-plugin-terser": "5.0.0",
-    "ts-node": "8.2.0",
-    "tslint": "5.17.0",
+    "ol": "5.3.3",
     "rollup": "1.13.0",
     "rollup-plugin-babel": "4.3.2",
     "rollup-plugin-node-resolve": "5.0.1",
+    "rollup-plugin-terser": "5.0.0",
+    "ts-node": "8.2.0",
+    "tslint": "5.17.0",
     "typescript": "3.5.1"
   }
 }
