@@ -2,10 +2,8 @@ package flatgeobuf.geotools;
 
 public class GeometryOffsets {
     int coordsOffset;
-    public int[] lengths = null;
-    public int[] ringLengths = null;
-    public int[] ringCounts = null;
-    public int lengthsOffset = 0;
-    public int ringLengthsOffset = 0;
-    public int ringCountsOffset = 0;
+    public int[] ends = null;
+    public int[] endss = null;
+    public int endsOffset = 0;
+    public int endssOffset = 0;
 }

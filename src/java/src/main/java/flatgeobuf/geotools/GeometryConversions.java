@@ -37,27 +37,27 @@ public class GeometryConversions {
         if (geometryType == GeometryType.MultiLineString) {
             MultiLineString mls = (MultiLineString) geometry;
             if (mls.getNumGeometries() > 1) {
-                go.lengths = new int[mls.getNumGeometries()];
+                go.ends = new int[mls.getNumGeometries()];
                 for (int i = 0; i < mls.getNumGeometries(); i++)
-                    go.lengths[i] = mls.getGeometryN(i).getNumPoints() * dimensions;
+                    go.ends[i] = mls.getGeometryN(i).getNumPoints() * dimensions;
             }
         } else if (geometryType == GeometryType.Polygon) {
             Polygon p = (Polygon) geometry;
-            go.ringLengths = new int[p.getNumInteriorRing() + 1];
-            go.ringLengths[0] = p.getExteriorRing().getNumPoints() * dimensions;
+            go.ends = new int[p.getNumInteriorRing() + 1];
+            go.ends[0] = p.getExteriorRing().getNumPoints() * dimensions;
             for (int i = 0; i < p.getNumInteriorRing(); i++)
-                go.ringLengths[i + 1] = p.getInteriorRingN(i).getNumPoints() * dimensions;
+                go.ends[i + 1] = p.getInteriorRingN(i).getNumPoints() * dimensions;
         } else if (geometryType == GeometryType.MultiPolygon) {
             MultiPolygon mp = (MultiPolygon) geometry;
             if (mp.getNumGeometries() == 1) {
                 Polygon p = (Polygon) mp.getGeometryN(0);
-                go.ringLengths = new int[p.getNumInteriorRing() + 1];
-                go.ringLengths[0] = p.getExteriorRing().getNumPoints() * dimensions;
+                go.ends = new int[p.getNumInteriorRing() + 1];
+                go.ends[0] = p.getExteriorRing().getNumPoints() * dimensions;
                 for (int i = 0; i < p.getNumInteriorRing(); i++)
-                    go.ringLengths[i + 1] = p.getInteriorRingN(i).getNumPoints() * dimensions;
+                    go.ends[i + 1] = p.getInteriorRingN(i).getNumPoints() * dimensions;
             } else {
-                go.lengths = new int[mp.getNumGeometries()];
-                go.ringCounts = new int[mp.getNumGeometries()];
+                go.ends = new int[mp.getNumGeometries()];
+                go.endss = new int[mp.getNumGeometries()];
                 int c = 0;
                 for (int j = 0; j < mp.getNumGeometries(); j++) {
                     Polygon p = (Polygon) mp.getGeometryN(j);
@@ -65,32 +65,27 @@ public class GeometryConversions {
                     for (int i = 0; i < p.getNumInteriorRing(); i++)
                         c++;
                 }
-                go.ringLengths = new int[c];
+                go.ends = new int[c];
                 c = 0;
                 for (int j = 0; j < mp.getNumGeometries(); j++) {
                     Polygon p = (Polygon) mp.getGeometryN(j);
                     int ringCount = 0;
                     int ringLength = p.getExteriorRing().getNumPoints() * dimensions;
-                    go.ringLengths[c++] = ringLength;
+                    go.ends[c++] = ringLength;
                     ringCount++;
-                    int length = ringLength;
                     for (int i = 0; i < p.getNumInteriorRing(); i++) {
                         ringLength = p.getInteriorRingN(i).getNumPoints() * dimensions;
-                        go.ringLengths[c++] = ringLength;
-                        length += ringLength;
+                        go.ends[c++] = ringLength;
                         ringCount++;
                     }
-                    go.lengths[j] = length;
-                    go.ringCounts[j] = ringCount;
+                    go.endss[j] = ringCount;
                 }
             }
         }
-        if (go.lengths != null)
-            go.lengthsOffset = Feature.createLengthsVector(builder, go.lengths);
-        if (go.ringLengths != null)
-            go.ringLengthsOffset = Feature.createRingLengthsVector(builder, go.ringLengths);
-        if (go.ringCounts != null)
-            go.ringCountsOffset = Feature.createRingCountsVector(builder, go.ringCounts);
+        if (go.ends != null)
+            go.endsOffset = Feature.createEndsVector(builder, go.ends);
+        if (go.endss != null)
+            go.endssOffset = Feature.createEndssVector(builder, go.endss);
 
         return go;
     }
@@ -104,24 +99,24 @@ public class GeometryConversions {
         for (int i = 0; i < coordsLength; i = i + dimensions)
             coordinates[c++] = new Coordinate(feature.coords(i), feature.coords(i + 1));
 
-        IntFunction<Polygon> makePolygonWithRings = (int ringLengthsLength) -> {
-            LinearRing[] lrs = new LinearRing[ringLengthsLength];
+        IntFunction<Polygon> makePolygonWithRings = (int endsLength) -> {
+            LinearRing[] lrs = new LinearRing[endsLength];
             int offset = 0;
-            for (int i = 0; i < ringLengthsLength; i++) {
-                int ringLength = (int) feature.ringLengths(i) / dimensions;
+            for (int i = 0; i < endsLength; i++) {
+                int ringLength = (int) feature.ends(i) / dimensions;
                 Coordinate[] cs = Arrays.copyOfRange(coordinates, offset, offset + ringLength);
                 lrs[i] = factory.createLinearRing(cs);
                 offset += ringLength;
             }
             LinearRing shell = lrs[0];
-            LinearRing holes[] = Arrays.copyOfRange(lrs, 1, ringLengthsLength);
+            LinearRing holes[] = Arrays.copyOfRange(lrs, 1, endsLength);
             return factory.createPolygon(shell, holes);
         };
 
         Supplier<Polygon> makePolygon = () -> {
-            int ringLengthsLength = feature.ringLengthsLength();
-            if (ringLengthsLength > 1) {
-                return makePolygonWithRings.apply(ringLengthsLength);
+            int endsLength = feature.endsLength();
+            if (endsLength > 1) {
+                return makePolygonWithRings.apply(endsLength);
             } else {
                 return factory.createPolygon(coordinates);
             }
@@ -135,11 +130,11 @@ public class GeometryConversions {
         case GeometryType.LineString:
             return factory.createLineString(coordinates);
         case GeometryType.MultiLineString: {
-            int lengthLengths = feature.lengthsLength();
+            int lengthLengths = feature.endsLength();
             LineString[] lss = new LineString[lengthLengths];
             int offset = 0;
             for (int i = 0; i < lengthLengths; i++) {
-                int length = (int) feature.lengths(i) / dimensions;
+                int length = (int) feature.ends(i) / dimensions;
                 Coordinate[] cs = Arrays.copyOfRange(coordinates, offset, offset + length);
                 lss[i] = factory.createLineString(cs);
                 offset += length;
@@ -149,16 +144,16 @@ public class GeometryConversions {
         case GeometryType.Polygon:
             return makePolygon.get();
         case GeometryType.MultiPolygon: {
-            int lengthLengths = feature.lengthsLength();
-            if (lengthLengths > 1) {
-                Polygon[] ps = new Polygon[lengthLengths];
+            int endssLength = feature.endssLength();
+            if (endssLength > 1) {
+                Polygon[] ps = new Polygon[endssLength];
                 int offset = 0;
                 int roffset = 0;
-                for (int j = 0; j < lengthLengths; j++) {
-                    int ringCount = (int) feature.ringCounts(j);
+                for (int j = 0; j < endssLength; j++) {
+                    int ringCount = (int) feature.endss(j);
                     LinearRing[] lrs = new LinearRing[ringCount];
                     for (int i = 0; i < ringCount; i++) {
-                        int ringLength = (int) feature.ringLengths(roffset + i) / dimensions;
+                        int ringLength = (int) feature.ends(roffset + i) / dimensions;
                         Coordinate[] cs = Arrays.copyOfRange(coordinates, offset, offset + ringLength);
                         lrs[i] = factory.createLinearRing(cs);
                         offset += ringLength;
