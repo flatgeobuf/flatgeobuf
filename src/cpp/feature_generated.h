@@ -13,23 +13,19 @@ struct Feature;
 struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FID = 4,
-    VT_RING_COUNTS = 6,
-    VT_RING_LENGTHS = 8,
-    VT_LENGTHS = 10,
-    VT_COORDS = 12,
-    VT_PROPERTIES = 14
+    VT_ENDS = 6,
+    VT_ENDSS = 8,
+    VT_COORDS = 10,
+    VT_PROPERTIES = 12
   };
   uint64_t fid() const {
     return GetField<uint64_t>(VT_FID, 0);
   }
-  const flatbuffers::Vector<uint32_t> *ring_counts() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_RING_COUNTS);
+  const flatbuffers::Vector<uint32_t> *ends() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_ENDS);
   }
-  const flatbuffers::Vector<uint32_t> *ring_lengths() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_RING_LENGTHS);
-  }
-  const flatbuffers::Vector<uint32_t> *lengths() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_LENGTHS);
+  const flatbuffers::Vector<uint32_t> *endss() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_ENDSS);
   }
   const flatbuffers::Vector<double> *coords() const {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_COORDS);
@@ -40,12 +36,10 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint64_t>(verifier, VT_FID) &&
-           VerifyOffset(verifier, VT_RING_COUNTS) &&
-           verifier.VerifyVector(ring_counts()) &&
-           VerifyOffset(verifier, VT_RING_LENGTHS) &&
-           verifier.VerifyVector(ring_lengths()) &&
-           VerifyOffset(verifier, VT_LENGTHS) &&
-           verifier.VerifyVector(lengths()) &&
+           VerifyOffset(verifier, VT_ENDS) &&
+           verifier.VerifyVector(ends()) &&
+           VerifyOffset(verifier, VT_ENDSS) &&
+           verifier.VerifyVector(endss()) &&
            VerifyOffset(verifier, VT_COORDS) &&
            verifier.VerifyVector(coords()) &&
            VerifyOffset(verifier, VT_PROPERTIES) &&
@@ -60,14 +54,11 @@ struct FeatureBuilder {
   void add_fid(uint64_t fid) {
     fbb_.AddElement<uint64_t>(Feature::VT_FID, fid, 0);
   }
-  void add_ring_counts(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts) {
-    fbb_.AddOffset(Feature::VT_RING_COUNTS, ring_counts);
+  void add_ends(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ends) {
+    fbb_.AddOffset(Feature::VT_ENDS, ends);
   }
-  void add_ring_lengths(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths) {
-    fbb_.AddOffset(Feature::VT_RING_LENGTHS, ring_lengths);
-  }
-  void add_lengths(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths) {
-    fbb_.AddOffset(Feature::VT_LENGTHS, lengths);
+  void add_endss(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> endss) {
+    fbb_.AddOffset(Feature::VT_ENDSS, endss);
   }
   void add_coords(flatbuffers::Offset<flatbuffers::Vector<double>> coords) {
     fbb_.AddOffset(Feature::VT_COORDS, coords);
@@ -90,40 +81,35 @@ struct FeatureBuilder {
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t fid = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_counts = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ring_lengths = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ends = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> endss = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> coords = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties = 0) {
   FeatureBuilder builder_(_fbb);
   builder_.add_fid(fid);
   builder_.add_properties(properties);
   builder_.add_coords(coords);
-  builder_.add_lengths(lengths);
-  builder_.add_ring_lengths(ring_lengths);
-  builder_.add_ring_counts(ring_counts);
+  builder_.add_endss(endss);
+  builder_.add_ends(ends);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t fid = 0,
-    const std::vector<uint32_t> *ring_counts = nullptr,
-    const std::vector<uint32_t> *ring_lengths = nullptr,
-    const std::vector<uint32_t> *lengths = nullptr,
+    const std::vector<uint32_t> *ends = nullptr,
+    const std::vector<uint32_t> *endss = nullptr,
     const std::vector<double> *coords = nullptr,
     const std::vector<uint8_t> *properties = nullptr) {
-  auto ring_counts__ = ring_counts ? _fbb.CreateVector<uint32_t>(*ring_counts) : 0;
-  auto ring_lengths__ = ring_lengths ? _fbb.CreateVector<uint32_t>(*ring_lengths) : 0;
-  auto lengths__ = lengths ? _fbb.CreateVector<uint32_t>(*lengths) : 0;
+  auto ends__ = ends ? _fbb.CreateVector<uint32_t>(*ends) : 0;
+  auto endss__ = endss ? _fbb.CreateVector<uint32_t>(*endss) : 0;
   auto coords__ = coords ? _fbb.CreateVector<double>(*coords) : 0;
   auto properties__ = properties ? _fbb.CreateVector<uint8_t>(*properties) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       fid,
-      ring_counts__,
-      ring_lengths__,
-      lengths__,
+      ends__,
+      endss__,
       coords__,
       properties__);
 }

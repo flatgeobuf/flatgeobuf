@@ -36,7 +36,7 @@ inline const GeometryType (&EnumValuesGeometryType())[6] {
 }
 
 inline const char * const *EnumNamesGeometryType() {
-  static const char * const names[7] = {
+  static const char * const names[] = {
     "Point",
     "MultiPoint",
     "LineString",
@@ -94,7 +94,7 @@ inline const ColumnType (&EnumValuesColumnType())[14] {
 }
 
 inline const char * const *EnumNamesColumnType() {
-  static const char * const names[15] = {
+  static const char * const names[] = {
     "Byte",
     "UByte",
     "Bool",
