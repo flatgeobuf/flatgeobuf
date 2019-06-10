@@ -122,7 +122,7 @@ function extractPartsParts(
 export function toSimpleGeometry(feature: Feature, type: GeometryType) {
     const coords = feature.coordsArray()
     const lengths = feature.lengthsArray()
-    const ringLenghts = feature.ringLengthsArray()
+    const ringLengths = feature.ringLengthsArray()
 
     let geometry
     switch (type) {
@@ -139,10 +139,18 @@ export function toSimpleGeometry(feature: Feature, type: GeometryType) {
             geometry = new MultiLineString(Array.from(coords), GeometryLayout.XY, Array.from(lengths))
             break
         case GeometryType.Polygon:
-            geometry = new Polygon(Array.from(coords), GeometryLayout.XY, ringLenghts)
+            geometry = new Polygon(Array.from(coords), GeometryLayout.XY, ringLengths)
             break
         case GeometryType.MultiPolygon:
-            geometry = new MultiPolygon(Array.from(coords), GeometryLayout.XY, ringLenghts)
+            let endss
+            if (lengths.length > 1) {
+                const ringCounts = feature.ringCountsArray()
+                let s = 0
+                endss = Array.from(ringCounts).map(e => ringLengths.slice(s, s = s + e))
+            } else {
+                endss = [ringLengths]
+            }
+            geometry = new MultiPolygon(Array.from(coords), GeometryLayout.XY, endss)
             break
     }
     return geometry
