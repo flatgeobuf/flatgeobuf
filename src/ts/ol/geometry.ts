@@ -47,17 +47,11 @@ function parseGeometry(geometry: SimpleGeometry, type: GeometryType) {
     let coords: number[] = geometry.getFlatCoordinates()
     let ends: number[] = null
     let endss: number[] = null
-    switch (type) {
-        case GeometryType.MultiLineString:
-        case GeometryType.Polygon:
-            ends = geometry.getEnds()
-            break
-        case GeometryType.MultiPolygon: {
-            const olEndss = geometry.getEndss()
-            ends = flat(olEndss)
-            endss = olEndss.map(ends => ends.length)
-            break
-        }
+    if (type === GeometryType.MultiLineString || type === GeometryType.Polygon)
+        ends = geometry.getEnds()
+    if (type === GeometryType.MultiPolygon) {
+        ends = flat(geometry.getEndss())
+        endss = geometry.getEndss().map(ends => ends.length)
     }
     return {
         coords,
@@ -74,30 +68,31 @@ function pairFlatCoordinates(coordinates: Float64Array) {
 }
 
 export function toSimpleGeometry(feature: Feature, type: GeometryType) {
-    const coords = feature.coordsArray()
+    const coords = Array.from(feature.coordsArray())
     const ends = feature.endsArray()
     let geometry
     switch (type) {
         case GeometryType.Point:
             return new Point(coords)
         case GeometryType.MultiPoint:
-            return new MultiPoint(Array.from(coords), GeometryLayout.XY)
+            return new MultiPoint(coords, GeometryLayout.XY)
         case GeometryType.LineString:
-            return new LineString(Array.from(coords), GeometryLayout.XY)
+            return new LineString(coords, GeometryLayout.XY)
         case GeometryType.MultiLineString:
-            return new MultiLineString(Array.from(coords), GeometryLayout.XY, Array.from(ends))
+            return new MultiLineString(coords, GeometryLayout.XY, ends)
         case GeometryType.Polygon:
-            return new Polygon(Array.from(coords), GeometryLayout.XY, ends)
+            return new Polygon(coords, GeometryLayout.XY, ends)
         case GeometryType.MultiPolygon:
-            let endss = Array.from(feature.endssArray())
-            let olEnds
-            if (endss) {
-                let s = 0
-                olEnds = Array.from(endss).map(e => ends.slice(s, s = s + e))
-            } else {
-                olEnds = [ends]
-            }
-            return new MultiPolygon(Array.from(coords), GeometryLayout.XY, olEnds)
+            let endss = feature.endssArray()
+            if (!endss)
+                return new MultiPolygon(coords, GeometryLayout.XY, [ends])
+            let s = 0
+            return new MultiPolygon(
+                coords,
+                GeometryLayout.XY,
+                Array.from(endss).map(e => ends.slice(s, s += e)))
+        default:
+            throw Error('Unknown type')
     }
     return geometry
 }
