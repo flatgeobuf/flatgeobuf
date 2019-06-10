@@ -13,35 +13,29 @@ import MultiPolygon from 'ol/geom/MultiPolygon'
 import GeometryLayout from 'ol/geom/GeometryLayout'
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: SimpleGeometry, type: GeometryType) {
-    const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry, type)
+    const { coords, ends, endss } = parseGeometry(geometry, type)
     const coordsOffset = Feature.createCoordsVector(builder, coords)
 
-    let lengthsOffset: number = null
-    let ringLengthsOffset: number = null
-    let ringCountsOffset: number = null
-    if (lengths)
-        lengthsOffset = Feature.createLengthsVector(builder, lengths)
-    if (ringLengths)
-        ringLengthsOffset = Feature.createRingLengthsVector(builder, ringLengths)
-    if (ringCounts)
-        ringCountsOffset = Feature.createRingCountsVector(builder, ringCounts)
+    let endsOffset: number = null
+    let endssOffset: number = null
+    if (ends)
+        endsOffset = Feature.createEndsVector(builder, ends)
+    if (endss)
+        endssOffset = Feature.createEndssVector(builder, endss)
 
     return function() {
-        if (lengthsOffset)
-            Feature.addLengths(builder, lengthsOffset)
-        if (ringLengths)
-            Feature.addRingLengths(builder, ringLengthsOffset)
-        if (ringCounts)
-            Feature.addRingCounts(builder, ringCountsOffset)
+        if (endsOffset)
+            Feature.addEnds(builder, endsOffset)
+        if (endssOffset)
+            Feature.addEndss(builder, endssOffset)
         Feature.addCoords(builder, coordsOffset)
     }
 }
 
 interface IParsedGeometry {
     coords: number[],
-    lengths: number[],
-    ringLengths: number[],
-    ringCounts: number[]
+    ends: number[],
+    endss: number[]
 }
 
 function flat(a: any[]): number[] {
@@ -51,29 +45,24 @@ function flat(a: any[]): number[] {
 
 function parseGeometry(geometry: SimpleGeometry, type: GeometryType) {
     let coords: number[] = geometry.getFlatCoordinates()
-    let lengths: number[] = null
-    let ringLengths: number[] = null
-    let ringCounts: number[] = null
+    let ends: number[] = null
+    let endss: number[] = null
     switch (type) {
         case GeometryType.MultiLineString:
-            lengths = geometry.getEnds()
-            break
         case GeometryType.Polygon:
-            ringLengths = geometry.getEnds()
+            ends = geometry.getEnds()
             break
         case GeometryType.MultiPolygon: {
-            const endss = geometry.getEndss()
-            lengths = endss.map(ends => ends.reduce((acc, c) => acc + c))
-            ringLengths = flat(endss)
-            ringCounts = endss.map(ends => ends.length)
+            const olEndss = geometry.getEndss()
+            ends = flat(olEndss)
+            endss = olEndss.map(ends => ends.length)
             break
         }
     }
     return {
         coords,
-        lengths,
-        ringLengths,
-        ringCounts,
+        ends,
+        endss
     } as IParsedGeometry
 }
 
@@ -84,74 +73,31 @@ function pairFlatCoordinates(coordinates: Float64Array) {
     return newArray
 }
 
-function extractParts(coords: Float64Array, lengths: Uint32Array) {
-    if (!lengths)
-        return [pairFlatCoordinates(coords)]
-    const parts = []
-    let offset = 0
-    for (const length of lengths) {
-        const slice = coords.slice(offset, offset + length)
-        parts.push(pairFlatCoordinates(slice))
-        offset += length
-    }
-    return parts
-}
-
-function extractPartsParts(
-        coords: Float64Array,
-        lengths: Uint32Array,
-        ringLengths: Uint32Array,
-        ringCounts: Uint32Array) {
-    if (!lengths)
-        return [extractParts(coords, ringLengths)]
-    const parts = []
-    let offset = 0
-    let ringLengthsOffset = 0
-    for (let i = 0; i < lengths.length; i++) {
-        const length = lengths[i]
-        const ringCount = ringCounts[i]
-        const slice = coords.slice(offset, offset + length)
-        const ringLengthsSlice = ringLengths.slice(ringLengthsOffset, ringLengthsOffset + ringCount)
-        parts.push(extractParts(slice, ringLengthsSlice))
-        offset += length
-        ringLengthsOffset += ringCount
-    }
-    return parts
-}
-
 export function toSimpleGeometry(feature: Feature, type: GeometryType) {
     const coords = feature.coordsArray()
-    const lengths = feature.lengthsArray()
-    const ringLengths = feature.ringLengthsArray()
-
+    const ends = feature.endsArray()
     let geometry
     switch (type) {
         case GeometryType.Point:
-            geometry = new Point(coords)
-            break
+            return new Point(coords)
         case GeometryType.MultiPoint:
-            geometry = new MultiPoint(Array.from(coords), GeometryLayout.XY)
-            break
+            return new MultiPoint(Array.from(coords), GeometryLayout.XY)
         case GeometryType.LineString:
-            geometry = new LineString(Array.from(coords), GeometryLayout.XY)
-            break
+            return new LineString(Array.from(coords), GeometryLayout.XY)
         case GeometryType.MultiLineString:
-            geometry = new MultiLineString(Array.from(coords), GeometryLayout.XY, Array.from(lengths))
-            break
+            return new MultiLineString(Array.from(coords), GeometryLayout.XY, Array.from(ends))
         case GeometryType.Polygon:
-            geometry = new Polygon(Array.from(coords), GeometryLayout.XY, ringLengths)
-            break
+            return new Polygon(Array.from(coords), GeometryLayout.XY, ends)
         case GeometryType.MultiPolygon:
-            let endss
-            if (lengths.length > 1) {
-                const ringCounts = feature.ringCountsArray()
+            let endss = Array.from(feature.endssArray())
+            let olEnds
+            if (endss) {
                 let s = 0
-                endss = Array.from(ringCounts).map(e => ringLengths.slice(s, s = s + e))
+                olEnds = Array.from(endss).map(e => ends.slice(s, s = s + e))
             } else {
-                endss = [ringLengths]
+                olEnds = [ends]
             }
-            geometry = new MultiPolygon(Array.from(coords), GeometryLayout.XY, endss)
-            break
+            return new MultiPolygon(Array.from(coords), GeometryLayout.XY, olEnds)
     }
     return geometry
 }

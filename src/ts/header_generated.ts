@@ -62,6 +62,15 @@ static getRoot(bb:flatbuffers.ByteBuffer, obj?:Column):Column {
 };
 
 /**
+ * @param flatbuffers.ByteBuffer bb
+ * @param Column= obj
+ * @returns Column
+ */
+static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Column):Column {
+  return (obj || new Column).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
  * @param flatbuffers.Encoding= optionalEncoding
  * @returns string|Uint8Array|null
  */
@@ -144,6 +153,15 @@ __init(i:number, bb:flatbuffers.ByteBuffer):Header {
  * @returns Header
  */
 static getRoot(bb:flatbuffers.ByteBuffer, obj?:Header):Header {
+  return (obj || new Header).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @param flatbuffers.ByteBuffer bb
+ * @param Header= obj
+ * @returns Header
+ */
+static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Header):Header {
   return (obj || new Header).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
@@ -404,6 +422,14 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
  */
 static finishBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
   builder.finish(offset);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset offset
+ */
+static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
+  builder.finish(offset, undefined, true);
 };
 
 static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, dimensions:number, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, fids:boolean, indexNodeSize:number, srsCode:number, srsOrgOffset:flatbuffers.Offset):flatbuffers.Offset {

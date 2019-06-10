@@ -9,35 +9,29 @@ export interface IGeoJsonGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
-    const { coords, lengths, ringLengths, ringCounts } = parseGeometry(geometry)
+    const { coords, ends, endss } = parseGeometry(geometry)
     const coordsOffset = Feature.createCoordsVector(builder, coords)
 
-    let lengthsOffset: number = null
-    let ringLengthsOffset: number = null
-    let ringCountsOffset: number = null
-    if (lengths)
-        lengthsOffset = Feature.createLengthsVector(builder, lengths)
-    if (ringLengths)
-        ringLengthsOffset = Feature.createRingLengthsVector(builder, ringLengths)
-    if (ringCounts)
-        ringCountsOffset = Feature.createRingCountsVector(builder, ringCounts)
+    let endsOffset: number = null
+    let endssOffset: number = null
+    if (ends)
+        endsOffset = Feature.createEndsVector(builder, ends)
+    if (endss)
+        endssOffset = Feature.createEndssVector(builder, endss)
 
     return function() {
-        if (lengthsOffset)
-            Feature.addLengths(builder, lengthsOffset)
-        if (ringLengths)
-            Feature.addRingLengths(builder, ringLengthsOffset)
-        if (ringCounts)
-            Feature.addRingCounts(builder, ringCountsOffset)
+        if (endsOffset)
+            Feature.addEnds(builder, endsOffset)
+        if (endssOffset)
+            Feature.addEndss(builder, endssOffset)
         Feature.addCoords(builder, coordsOffset)
     }
 }
 
 interface IParsedGeometry {
     coords: number[],
-    lengths: number[],
-    ringLengths: number[],
-    ringCounts: number[]
+    ends: number[],
+    endss: number[]
 }
 
 function flat(a: any[]): number[] {
@@ -48,9 +42,8 @@ function flat(a: any[]): number[] {
 function parseGeometry(geometry: IGeoJsonGeometry) {
     const cs = geometry.coordinates
     let coords: number[] = null
-    let lengths: number[] = null
-    let ringLengths: number[] = null
-    let ringCounts: number[] = null
+    let ends: number[] = null
+    let endss: number[] = null
     switch (geometry.type) {
         case 'Point': {
             coords = cs as number[]
@@ -65,34 +58,32 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
             const css = cs as number[][][]
             coords = flat(css)
             if (css.length > 1)
-                lengths = css.map(c => c.length * 2)
+                ends = css.map(c => c.length * 2)
             break
         }
         case 'Polygon': {
             const css = cs as number[][][]
             coords = flat(css)
             if (css.length > 1)
-                ringLengths = css.map(c => c.length * 2)
+                ends = css.map(c => c.length * 2)
             break
         }
         case 'MultiPolygon': {
             const csss = cs as number[][][][]
             coords = flat(csss)
             if (csss.length > 1) {
-                lengths = csss.map(cc => cc.map(c => c.length * 2).reduce((a, b) => a + b, 0))
-                ringCounts = csss.map(c => c.length)
-                ringLengths = flat(csss.map(cc => cc.map(c => c.length * 2)))
+                endss = csss.map(c => c.length)
+                ends = flat(csss.map(cc => cc.map(c => c.length * 2)))
             } else
                 if (csss[0].length > 1)
-                    ringLengths = csss[0].map(c => c.length * 2)
+                    ends = csss[0].map(c => c.length * 2)
             break
         }
     }
     return {
         coords,
-        lengths,
-        ringLengths,
-        ringCounts,
+        ends,
+        endss
     } as IParsedGeometry
 }
 
@@ -103,47 +94,32 @@ function pairFlatCoordinates(coordinates: Float64Array) {
     return newArray
 }
 
-function extractParts(coords: Float64Array, lengths: Uint32Array) {
-    if (!lengths)
+function extractParts(coords: Float64Array, ends: Uint32Array) {
+    if (!ends)
         return [pairFlatCoordinates(coords)]
-    const parts = []
-    let offset = 0
-    for (const length of lengths) {
-        const slice = coords.slice(offset, offset + length)
-        parts.push(pairFlatCoordinates(slice))
-        offset += length
-    }
-    return parts
+    let s = 0
+    let coordsSlices = Array.from(ends)
+        .map(e => coords.slice(s, s = s + e))
+    return coordsSlices
+        .map(cs => pairFlatCoordinates(cs))
 }
 
 function extractPartsParts(
         coords: Float64Array,
-        lengths: Uint32Array,
-        ringLengths: Uint32Array,
-        ringCounts: Uint32Array) {
-    if (!lengths)
-        return [extractParts(coords, ringLengths)]
-    const parts = []
-    let offset = 0
-    let ringLengthsOffset = 0
-    for (let i = 0; i < lengths.length; i++) {
-        const length = lengths[i]
-        const ringCount = ringCounts[i]
-        const slice = coords.slice(offset, offset + length)
-        const ringLengthsSlice = ringLengths.slice(ringLengthsOffset, ringLengthsOffset + ringCount)
-        parts.push(extractParts(slice, ringLengthsSlice))
-        offset += length
-        ringLengthsOffset += ringCount
-    }
-    return parts
+        ends: Uint32Array,
+        endss: Uint32Array) {
+    if (!endss)
+        return [extractParts(coords, ends)]
+    let s = 0
+    let coordsSlices = Array.from(ends)
+        .map(e => coords.slice(s, s = s + e))
+    s = 0
+    return Array.from(endss)
+        .map(e => coordsSlices.slice(s, s = s + e)
+        .map(cs => pairFlatCoordinates(cs)))
 }
 
 function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
-    // NOTE: workaround for alignment issues
-    /*const coordsLength = geometry.coordsLength()
-    const coords = new Float64Array(coordsLength)
-    for (let i = 0; i < coordsLength; i++)
-        coords[i] = geometry.coords(i)*/
     const coords = feature.coordsArray()
     switch (type) {
         case GeometryType.Point:
@@ -152,14 +128,13 @@ function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
         case GeometryType.LineString:
             return pairFlatCoordinates(coords)
         case GeometryType.MultiLineString:
-            return extractParts(coords, feature.lengthsArray())
+            return extractParts(coords, feature.endsArray())
         case GeometryType.Polygon:
-            return extractParts(coords, feature.ringLengthsArray())
+            return extractParts(coords, feature.endsArray())
         case GeometryType.MultiPolygon:
             return extractPartsParts(coords,
-                feature.lengthsArray(),
-                feature.ringLengthsArray(),
-                feature.ringCountsArray())
+                feature.endsArray(),
+                feature.endssArray())
     }
 }
 
