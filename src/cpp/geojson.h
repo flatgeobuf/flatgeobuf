@@ -137,7 +137,10 @@ const uint8_t* serialize(const feature_collection fc)
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
         auto pEndss = ends.size() == 0 ? nullptr : &endss;
         auto pEnds = ends.size() == 0 ? nullptr : &ends;
-        auto feature = CreateFeatureDirect(fbb, i, pEnds, pEndss, &coords, 0);
+        std::vector<uint8_t> properties;
+        parseProperties(f.properties, properties);
+        auto pProperties = properties.size() == 0 ? nullptr : &properties;
+        auto feature = CreateFeatureDirect(fbb, i, pEnds, pEndss, &coords, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
@@ -152,6 +155,32 @@ const uint8_t* serialize(const feature_collection fc)
     memcpy(buf, data.data(), data.size());
 
     return buf;
+}
+
+const void parseProperties(const mapbox::feature::property_map &property_map, const std::vector<uint8_t> &properties) {
+    uint8_t *propertiesBuffer = new uint8_t[1000000];
+    uint32_t propertiesOffset = 0;
+    for (const auto& kv : property_map) {
+        const std::string name = kv.first;
+        const mapbox::feature::value value = kv.second;
+        // TODO: find column_index from name
+        uint16_t column_index = 0;
+        memcpy(propertiesBuffer + propertiesOffset, &column_index, sizeof(uint16_t));
+        propertiesOffset += sizeof(uint16_t);
+
+        if (value.is<uint64_t>) {
+            memcpy(propertiesBuffer + propertiesOffset, value.get<std::uint64_t>(), sizeof(int64_t));
+            propertiesOffset += sizeof(int64_t);
+        } if (value.is<std::string>) {
+            uint32_t len = strlen(field->String);
+            memcpy(propertiesBuffer + propertiesOffset, &len, sizeof(uint32_t));
+            propertiesOffset += sizeof(len);
+            memcpy(propertiesBuffer + propertiesOffset, field->String, len);
+            propertiesOffset += len;
+        } else {
+            throw std::invalid_argument("Unknown property type");
+        }
+    }
 }
 
 const std::vector<point> extractPoints(const double* coords, uint32_t length, uint32_t offset = 0)
