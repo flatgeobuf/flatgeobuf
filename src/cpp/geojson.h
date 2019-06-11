@@ -20,6 +20,12 @@ using namespace FlatGeobuf;
 
 uint8_t magicbytes[] = { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
 
+struct ColumnMeta {
+    uint8_t type;
+    std::string name;
+    uint16_t index;
+};
+
 Rect toRect(geometry geometry)
 {
     auto box = envelope(geometry);
@@ -58,6 +64,39 @@ static const ColumnType toColumnType(value value)
     throw std::invalid_argument("Unknown column type");
 }
 
+const void parseProperties(
+        const mapbox::feature::property_map &property_map,
+        std::vector<uint8_t> &properties,
+        std::unordered_map<std::string, ColumnMeta> columnMetas) {
+    uint8_t *propertiesBuffer = new uint8_t[1000000];
+    uint32_t propertiesOffset = 0;
+    for (const auto& kv : property_map) {
+        const auto name = kv.first;
+        const auto value = kv.second;
+        const auto columnMeta = columnMetas.at(name);
+        const auto type = (ColumnType) columnMeta.type;
+        const auto column_index = columnMeta.index;
+        std::copy(&column_index, &column_index + sizeof(uint16_t), std::back_inserter(properties));
+
+        if (type == ColumnType::Long) {
+            auto val = value.get<std::int64_t>();
+            std::copy(&val, &val + sizeof(int64_t), std::back_inserter(properties));
+        } else if (type == ColumnType::ULong) {
+            auto val = value.get<std::uint64_t>();
+            std::copy(&val, &val + sizeof(uint64_t), std::back_inserter(properties));
+        } else if (type == ColumnType::String) {
+            const std::string str = value.get<std::string>();
+            uint32_t len = str.length();
+            std::copy(&len, &len + sizeof(uint32_t), std::back_inserter(properties));
+            memcpy(propertiesBuffer + propertiesOffset, str.c_str(), len);
+            propertiesOffset += len;
+            std::copy(str.data(), str.data() + len, std::back_inserter(properties));
+        } else {
+            throw std::invalid_argument("Unknown property type");
+        }
+    }
+}
+
 const uint8_t* serialize(const feature_collection fc)
 {
     const auto featuresCount = fc.size();
@@ -80,9 +119,19 @@ const uint8_t* serialize(const feature_collection fc)
 
     FlatBufferBuilder fbb;
     std::vector<flatbuffers::Offset<Column>> columns;
-    //auto propertiesSize = featureFirst.properties.size();
-    for (auto p : featureFirst.properties)
-        columns.push_back(CreateColumnDirect(fbb, p.first.c_str(), toColumnType(p.second)));
+
+    std::unordered_map<std::string, ColumnMeta> columnMetas;
+    uint16_t i = 0;
+    for (auto p : featureFirst.properties) {
+        auto name = p.first;
+        auto value = p.second;
+        auto type = toColumnType(value);
+        columnMetas.insert({
+            name,
+            ColumnMeta { (uint8_t) type, name, i++ }
+        });
+        columns.push_back(CreateColumnDirect(fbb, name.c_str(), type));
+    }
 
     auto header = CreateHeaderDirect(
         fbb, nullptr, &extentVector, geometryType, 2, &columns, featuresCount);
@@ -138,7 +187,7 @@ const uint8_t* serialize(const feature_collection fc)
         auto pEndss = ends.size() == 0 ? nullptr : &endss;
         auto pEnds = ends.size() == 0 ? nullptr : &ends;
         std::vector<uint8_t> properties;
-        parseProperties(f.properties, properties);
+        parseProperties(f.properties, properties, columnMetas);
         auto pProperties = properties.size() == 0 ? nullptr : &properties;
         auto feature = CreateFeatureDirect(fbb, i, pEnds, pEndss, &coords, pProperties);
         fbb.FinishSizePrefixed(feature);
@@ -155,32 +204,6 @@ const uint8_t* serialize(const feature_collection fc)
     memcpy(buf, data.data(), data.size());
 
     return buf;
-}
-
-const void parseProperties(const mapbox::feature::property_map &property_map, const std::vector<uint8_t> &properties) {
-    uint8_t *propertiesBuffer = new uint8_t[1000000];
-    uint32_t propertiesOffset = 0;
-    for (const auto& kv : property_map) {
-        const std::string name = kv.first;
-        const mapbox::feature::value value = kv.second;
-        // TODO: find column_index from name
-        uint16_t column_index = 0;
-        memcpy(propertiesBuffer + propertiesOffset, &column_index, sizeof(uint16_t));
-        propertiesOffset += sizeof(uint16_t);
-
-        if (value.is<uint64_t>) {
-            memcpy(propertiesBuffer + propertiesOffset, value.get<std::uint64_t>(), sizeof(int64_t));
-            propertiesOffset += sizeof(int64_t);
-        } if (value.is<std::string>) {
-            uint32_t len = strlen(field->String);
-            memcpy(propertiesBuffer + propertiesOffset, &len, sizeof(uint32_t));
-            propertiesOffset += sizeof(len);
-            memcpy(propertiesBuffer + propertiesOffset, field->String, len);
-            propertiesOffset += len;
-        } else {
-            throw std::invalid_argument("Unknown property type");
-        }
-    }
 }
 
 const std::vector<point> extractPoints(const double* coords, uint32_t length, uint32_t offset = 0)
@@ -280,9 +303,21 @@ const geometry fromGeometry(const Feature* feature, const GeometryType geometryT
     }
 }
 
-const mapbox::feature::feature<double> fromFeature(const Feature* feature, const GeometryType geometryType)
+mapbox::feature::property_map readGeoJsonProperties(const Feature* feature, std::unordered_map<std::string, ColumnMeta> columnMetas) {
+    feature->properties();
+    // TODO: find column
+    // TODO: parse out property
+    return mapbox::feature::property_map();
+}
+
+const mapbox::feature::feature<double> fromFeature(
+    const Feature* feature,
+    const GeometryType geometryType,
+    std::unordered_map<std::string, ColumnMeta> columnMetas)
 {
-    mapbox::feature::feature<double> f { fromGeometry(feature, geometryType) };
+    auto geometry = fromGeometry(feature, geometryType);
+    auto properties = readGeoJsonProperties(feature, columnMetas);
+    mapbox::feature::feature<double> f { geometry, properties };
     return f;
 }
 
@@ -299,6 +334,18 @@ const feature_collection deserialize(const void* buf)
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
 
+    const auto columns = header->columns();
+    std::unordered_map<std::string, ColumnMeta> columnMetas;
+
+    if (columns != nullptr) {
+        for (uint16_t i = 0; i < columns->Length(); i++) {
+            auto column = columns->Get(i);
+            auto name = column->name()->str();
+            auto type = (uint8_t) column->type();
+            columnMetas.insert({ name, ColumnMeta { type, name, i } });
+        }
+    }
+
     std::vector<Rect> rects;
     PackedRTree tree(bytes + offset, featuresCount);
     offset += tree.size();
@@ -310,7 +357,7 @@ const feature_collection deserialize(const void* buf)
     for (auto i = 0; i < featuresCount; i++) {
         const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + sizeof(uoffset_t);
         auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);
-        auto f = fromFeature(feature, geometryType);
+        auto f = fromFeature(feature, geometryType, columnMetas);
         fc.push_back(f);
         offset += featureSize;
     }
