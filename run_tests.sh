@@ -11,3 +11,6 @@ clang++ -std=c++14 -Wall -Wfloat-conversion -Wmissing-declarations -g -o ./testc
 
 echo -e '\033[1;33m--- Running C++ tests ---'
 ./testcpp -d yes
+
+echo -e '\033[1;33m--- Running Java tests ---'
+cd src/java && mvn test

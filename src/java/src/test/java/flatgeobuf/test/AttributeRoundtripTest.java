@@ -56,9 +56,8 @@ public class AttributeRoundtripTest {
     }
 
     @Test
-    public void point() throws IOException, URISyntaxException {
+    public void mixed() throws IOException, URISyntaxException {
         String expected = getResource("1.json");
-        System.out.println("IN: " + expected);
         assertEquals(expected, roundTrip(expected));
     }
 
