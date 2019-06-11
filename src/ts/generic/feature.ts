@@ -4,32 +4,36 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { buildGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
 import { TextDecoder, TextEncoder } from 'util'
 
-export interface IGeoJsonProperties {
-    [key: string]: boolean | number | string | object
+export interface IFeature {
+    getGeometry(): ISimpleGeometry
+    getProperties(): any
 }
 
-export interface IGeoJsonFeature {
-    type: string
-    geometry: IGeoJsonGeometry
-    properties?: IGeoJsonProperties
+export interface ICreateFeature {
+    (geometry: ISimpleGeometry, properties: any): IFeature;
 }
 
-export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
+export function fromFeature(feature: Feature, header: HeaderMeta, createGeometry: ICreateGeometry, createFeature: ICreateFeature) {
     const columns = header.columns
+    const geometry = createGeometry(feature, header.geometryType)
+    const properties = parseProperties(feature, columns)
+    return createFeature(geometry, properties)
+}
 
+export function buildFeature(feature: IFeature, header: HeaderMeta) {
+    const columns = header.columns
     const builder = new flatbuffers.Builder(0)
-
     const propertiesArray = new Uint8Array(100000)
     let offset = 0;
     if (columns) {
         const view = new DataView(propertiesArray.buffer)
         for (let i = 0; i < columns.length; i++) {
             const column = columns[i]
-            const value = feature.properties[column.name]
+            const value = feature.getProperties()[column.name]
             if (value === null)
                 continue
             view.setUint16(offset, i, true)
@@ -61,11 +65,12 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
             }
         }
     }
+
     let propertiesOffset = null
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
-    
-    const finalizeGeometry = buildGeometry(builder, feature.geometry)
+
+    const finalizeGeometry = buildGeometry(builder, feature.getGeometry(), header.geometryType)
     Feature.start(builder)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
@@ -75,57 +80,38 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
     return builder.asUint8Array()
 }
 
-export function fromFeature(feature: Feature, header: HeaderMeta) {
-    const columns = header.columns
-    const geometry = fromGeometry(feature, header.geometryType)
-    const properties = parseProperties(feature, columns)
-
-    const geoJsonfeature: IGeoJsonFeature = {
-        type: 'Feature',
-        geometry,
-    }
-    if (properties)
-        geoJsonfeature.properties = properties
-
-    return geoJsonfeature
-}
-
-function parseProperties(feature: Feature, columns: ColumnMeta[]) {
+export function parseProperties(feature: Feature, columns: ColumnMeta[]) {
     if (!columns || columns.length === 0)
         return
     const array = feature.propertiesArray()
     const view = new DataView(array.buffer, array.byteOffset)
     const length = feature.propertiesLength()
     let offset = 0
-    const properties: IGeoJsonProperties = {}
+    const properties: any = {}
     while (offset < length) {
         const i = view.getUint16(offset, true)
         offset += 2
         const column = columns[i]
         switch (column.type) {
-            case ColumnType.Bool: {
+            case ColumnType.Bool:
                 properties[column.name] = !!view.getUint8(offset)
                 offset += 1
                 break
-            }
-            case ColumnType.Int: {
+            case ColumnType.Int:
                 properties[column.name] = view.getInt32(offset, true)
                 offset += 4
                 break
-            }
-            case ColumnType.Double: {
+            case ColumnType.Double:
                 properties[column.name] = view.getFloat64(offset, true)
                 offset += 8
                 break
-            }
-            case ColumnType.String: {
+            case ColumnType.String:
                 const length = view.getUint32(offset, true)
                 offset += 4
                 const decoder = new TextDecoder()
                 properties[column.name] = decoder.decode(array.subarray(offset, offset + length))
                 offset += length
                 break
-            }
         }
     }
     return properties

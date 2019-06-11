@@ -2,6 +2,7 @@ import { flatbuffers } from 'flatbuffers'
 import { GeometryType } from '../header_generated'
 import { Feature  } from '../feature_generated'
 
+import { IParsedGeometry, flat, pairFlatCoordinates } from '../generic/geometry'
 
 export interface IGeoJsonGeometry {
     type: string
@@ -26,17 +27,6 @@ export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGe
             Feature.addEndss(builder, endssOffset)
         Feature.addCoords(builder, coordsOffset)
     }
-}
-
-interface IParsedGeometry {
-    coords: number[],
-    ends: number[],
-    endss: number[]
-}
-
-function flat(a: any[]): number[] {
-    return a.reduce((acc, val) =>
-        Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
 }
 
 function parseGeometry(geometry: IGeoJsonGeometry) {
@@ -85,13 +75,6 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
         ends,
         endss
     } as IParsedGeometry
-}
-
-function pairFlatCoordinates(coordinates: Float64Array) {
-    const newArray: number[][] = []
-    for (let i = 0; i < coordinates.length; i += 2)
-        newArray.push([coordinates[i], coordinates[i + 1]])
-    return newArray
 }
 
 function extractParts(coords: Float64Array, ends: Uint32Array) {
@@ -144,9 +127,4 @@ export function fromGeometry(feature: Feature, type: GeometryType) {
         type: GeometryType[type],
         coordinates,
     } as IGeoJsonGeometry
-}
-
-export function toGeometryType(name: string) {
-    const type: GeometryType = (GeometryType as any)[name]
-    return type
 }

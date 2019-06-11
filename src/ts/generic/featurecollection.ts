@@ -6,32 +6,27 @@ import { Header, Column } from '../header_generated'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 
-import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
-import { toGeometryType } from '../generic/geometry'
+import { buildFeature, fromFeature, ICreateFeature, IFeature } from './feature'
+import { toGeometryType, ICreateGeometry } from './geometry'
 import * as tree from '../packedrtree'
 
 const SIZE_PREFIX_LEN: number = 4
 const FEATURE_OFFSET_LEN: number = 8
 
-const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00]);
+const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00]);
 
-export interface IGeoJsonFeatureCollection {
-    type: string,
-    features?: IGeoJsonFeature[]
-}
-
-export function serialize(featurecollection: IGeoJsonFeatureCollection) {
-    const headerMeta = introspectHeaderMeta(featurecollection)
-    const header = buildHeader(featurecollection, headerMeta)
-    const features: Uint8Array[] = featurecollection.features
+export function serialize(features: IFeature[]) {
+    const headerMeta = introspectHeaderMeta(features)
+    const header = buildHeader(features, headerMeta)
+    const featureBuffers: Uint8Array[] = features
         .map(f => buildFeature(f, headerMeta))
-    const featuresLength = features
+    const featuresLength = featureBuffers
         .map(f => f.length)
         .reduce((a, b) => a + b)
     const uint8 = new Uint8Array(magicbytes.length + header.length + featuresLength)
     uint8.set(header, magicbytes.length)
     let offset = magicbytes.length + header.length
-    for (const feature of features) {
+    for (const feature of featureBuffers) {
         uint8.set(feature, offset)
         offset += feature.length
     }
@@ -39,7 +34,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array) {
+export function deserialize(bytes: Uint8Array, createGeometry: ICreateGeometry, createFeature: ICreateFeature): IFeature[] {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -58,7 +53,6 @@ export function deserialize(bytes: Uint8Array) {
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
 
-    
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0)
         offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
@@ -69,14 +63,11 @@ export function deserialize(bytes: Uint8Array) {
         const featureLength = bb.readUint32(offset)
         bb.setPosition(offset + SIZE_PREFIX_LEN)
         const feature = Feature.getRoot(bb)
-        features.push(fromFeature(feature, headerMeta))
+        features.push(fromFeature(feature, headerMeta, createGeometry, createFeature))
         offset += SIZE_PREFIX_LEN + featureLength
     }
 
-    return {
-        type: 'FeatureCollection',
-        features,
-    } as IGeoJsonFeatureCollection
+    return features
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
@@ -87,8 +78,8 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
     return Column.end(builder)
 }
 
-function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: HeaderMeta) {
-    const length = featurecollection.features.length
+function buildHeader(features: any, header: HeaderMeta) {
+    const length = features.length
     const builder = new flatbuffers.Builder(0)
 
     let columnOffsets = null
@@ -126,20 +117,22 @@ function valueToType(value: boolean | number | string | object): ColumnType {
         throw new Error(`Unknown type (value '${value}')`)
 }
 
-function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) {
-    const feature = featurecollection.features[0]
-    const properties = feature.properties
+function introspectHeaderMeta(features: any) {
+    const feature = features[0]
+    const geometry = feature.getGeometry()
+    const geometryType = geometry.getType()
+    const properties = feature.getProperties()
 
     let columns: ColumnMeta[] = null
     if (properties)
-        columns = Object.keys(properties)
+        columns = Object.keys(properties).filter(key => key !== 'geometry')
             .map(k => new ColumnMeta(k, valueToType(properties[k])))
 
     const geometryTypeNamesSet = new Set()
-    for (const f of featurecollection.features)
-        geometryTypeNamesSet.add(feature.geometry.type)
+    for (const f of features)
+        geometryTypeNamesSet.add(geometryType)
 
-    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns)
+    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns)
 
     return headerMeta
 }
