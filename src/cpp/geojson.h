@@ -95,13 +95,13 @@ const void parseProperties(
     }
 }
 
-const uint8_t* serialize(const feature_collection fc)
+const uint8_t *serialize(const feature_collection fc)
 {
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
 
-    uint8_t* buf;
+    uint8_t *buf;
     std::vector<uint8_t> data;
     std::copy(magicbytes, magicbytes + sizeof(magicbytes), std::back_inserter(data));
 
@@ -124,7 +124,7 @@ const uint8_t* serialize(const feature_collection fc)
         auto name = p.first;
         auto value = p.second;
         auto type = toColumnType(value);
-        columnMetas.insert({ name, ColumnMeta { (uint8_t) type, name, i++ } });
+        columnMetas.insert({ name, ColumnMeta { static_cast<uint8_t>(type), name, i++ } });
         columns.push_back(CreateColumnDirect(fbb, name.c_str(), type));
     }
 
@@ -201,11 +201,11 @@ const uint8_t* serialize(const feature_collection fc)
     return buf;
 }
 
-const std::vector<point> extractPoints(const double* coords, uint32_t length, uint32_t offset = 0)
+const std::vector<point> extractPoints(const double *coords, uint32_t length, uint32_t offset = 0)
 {
     std::vector<point> points;
     for (uint32_t i = offset; i < offset + length; i += 2)
-        points.push_back(point { coords[i], coords[i+1] });
+        points.push_back(point { coords[i], coords[i + 1] });
     return points;
 
     // Functional variant.. ?
@@ -265,18 +265,17 @@ const multi_polygon fromMultiPolygon(
         std::vector<linear_ring> linearRings;
         uint32_t ringCount = endss->Get(i);
         size_t roffset = 0;
-        for (size_t j=0; j < ringCount; j++) {
-            uint32_t ringLength = ends->Get(j+roffset);
+        for (size_t j = 0; j < ringCount; j++) {
+            uint32_t ringLength = ends->Get(j + roffset++);
             linearRings.push_back(linear_ring(extractPoints(coords, ringLength, offset)));
             offset += ringLength;
-            roffset++;
         }
         polygons.push_back(linearRings);
     }
     return multi_polygon(polygons);
 }
 
-const geometry fromGeometry(const Feature* feature, const GeometryType geometryType)
+const geometry fromGeometry(const Feature *feature, const GeometryType geometryType)
 {
     auto coords = feature->coords()->data();
     auto coordsLength = feature->coords()->Length();
@@ -298,7 +297,7 @@ const geometry fromGeometry(const Feature* feature, const GeometryType geometryT
     }
 }
 
-mapbox::feature::property_map readGeoJsonProperties(const Feature* feature, std::vector<ColumnMeta> columnMetas) {
+mapbox::feature::property_map readGeoJsonProperties(const Feature *feature, std::vector<ColumnMeta> columnMetas) {
     auto properties = feature->properties();
     auto property_map = mapbox::feature::property_map();
 
@@ -310,28 +309,28 @@ mapbox::feature::property_map readGeoJsonProperties(const Feature* feature, std:
 
     uoffset_t offset = 0;
     while (offset < (size-1)) {
-        uint16_t i = *((uint16_t *)(data + offset));
+        uint16_t i = *(reinterpret_cast<const uint16_t *>(data + offset));
         offset += sizeof(uint16_t);
         auto column = columnMetas[i];
-        auto type = (ColumnType) column.type;
+        auto type = static_cast<ColumnType>(column.type);
         mapbox::feature::value value;
         switch (type) {
             case ColumnType::Long:
-                value.set<int64_t>(*((int64_t *)(data + offset)));
+                value.set<int64_t>(*(reinterpret_cast<const int64_t *>(data + offset)));
                 offset += sizeof(int64_t);
                 break;
             case ColumnType::ULong:
-                value.set<uint64_t>(*((uint64_t *)(data + offset)));
+                value.set<uint64_t>(*(reinterpret_cast<const uint64_t *>(data + offset)));
                 offset += sizeof(uint64_t);
                 break;
             case ColumnType::Double:
-                value.set<double>(*((double *)(data + offset)));
+                value.set<double>(*(reinterpret_cast<const double *>(data + offset)));
                 offset += sizeof(double);
                 break;
             case ColumnType::String: {
-                uint32_t len = *((uint32_t *)(data + offset));
+                uint32_t len = *(reinterpret_cast<const uint32_t *>(data + offset));
                 offset += sizeof(uint32_t);
-                value.set<std::string>(std::string((char *) data + offset, len));
+                value.set<std::string>(std::string(reinterpret_cast<const char *>(data + offset), len));
                 offset += len;
                 break;
             }
@@ -344,7 +343,7 @@ mapbox::feature::property_map readGeoJsonProperties(const Feature* feature, std:
 }
 
 const mapbox::feature::feature<double> fromFeature(
-    const Feature* feature,
+    const Feature *feature,
     const GeometryType geometryType,
     std::vector<ColumnMeta> columnMetas)
 {
@@ -356,13 +355,13 @@ const mapbox::feature::feature<double> fromFeature(
 
 const feature_collection deserialize(const void* buf)
 {
-    const uint8_t* bytes = static_cast<const uint8_t*>(buf);
+    const uint8_t *bytes = static_cast<const uint8_t*>(buf);
 
     if (memcmp(bytes, magicbytes, sizeof(magicbytes)))
         throw new std::invalid_argument("Not a FlatGeobuf file");
     uint64_t offset = sizeof(magicbytes);
     
-    const uint32_t headerSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + sizeof(uoffset_t);
+    const uint32_t headerSize = *(bytes + offset) + sizeof(uoffset_t);
     auto header = GetSizePrefixedHeader(bytes + offset);
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
@@ -374,7 +373,7 @@ const feature_collection deserialize(const void* buf)
         for (uint16_t i = 0; i < columns->Length(); i++) {
             auto column = columns->Get(i);
             auto name = column->name()->str();
-            auto type = (uint8_t) column->type();
+            auto type = static_cast<uint8_t>(column->type());
             columnMetas.push_back(ColumnMeta { type, name, i });
         }
     }
@@ -388,7 +387,7 @@ const feature_collection deserialize(const void* buf)
     feature_collection fc {};
     offset += headerSize;
     for (auto i = 0; i < featuresCount; i++) {
-        const uint32_t featureSize = *reinterpret_cast<const uint8_t*>(bytes + offset) + sizeof(uoffset_t);
+        const uint32_t featureSize = *(bytes + offset) + sizeof(uoffset_t);
         auto feature = GetSizePrefixedRoot<Feature>(bytes + offset);
         auto f = fromFeature(feature, geometryType, columnMetas);
         fc.push_back(f);
