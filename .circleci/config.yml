@@ -1,16 +1,18 @@
-version: 2
-jobs:
-  build:
+version: 2.1
+
+executors:
+  node:
     docker:
       - image: circleci/node:10
+  java:
+    docker:
+      - image: circleci/openjdk:8-jdk
 
+jobs:
+  test-ts:
+    executor: node
     steps:
       - checkout
-      - run:
-          name: Install Debian dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install clang
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
@@ -20,5 +22,37 @@ jobs:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
+      - run:
+          name: Run tests
+          command: yarn test
+
+  test-cpp:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Install Debian dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install clang
       - run: ./getcppdeps.sh
-      - run: yarn test
+      - run:
+          name: Run tests 
+          command: |
+            clang++ -std=c++14 -Wall -Wfloat-conversion -Wmissing-declarations -g -o ./testcpp -Isrc/cpp/include src/cpp/packedrtree.cpp src/cpp/test/run_tests.cpp
+            ./testcpp -d yes
+
+  test-java:
+    executor: java
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "src/java/pom.xml" }}
+            - v1-dependencies-
+      - run: cd src/java && mvn dependency:go-offline
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "src/java/pom.xml" }}
+      - run: cd src/java && mvn test
