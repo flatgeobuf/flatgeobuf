@@ -56,3 +56,10 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "src/java/pom.xml" }}
       - run: cd src/java && mvn test
+
+workflows:
+  main:
+    jobs:
+      - test-ts
+      - test-cpp
+      - test-java
