@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "ES6",
+        "moduleResolution": "node",
         "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
         "outDir": "./lib",
         "sourceMap": true,
-        "target": "ES6"
+        "target": "ESNext"
     },
     "include": [
         "src/ts"

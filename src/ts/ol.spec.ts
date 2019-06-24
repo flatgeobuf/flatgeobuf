@@ -7,6 +7,11 @@ import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 
+import { TextDecoder, TextEncoder } from 'util'
+
+global['TextDecoder'] = TextDecoder
+global['TextEncoder'] = TextEncoder
+
 const format = new WKT()
 const geojson = new GeoJSON()
 

@@ -6,8 +6,6 @@ import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
-import { TextDecoder, TextEncoder } from 'util'
-
 export interface IFeature {
     getGeometry(): ISimpleGeometry
     getProperties(): any

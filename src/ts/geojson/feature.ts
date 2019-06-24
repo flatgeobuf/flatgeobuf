@@ -6,8 +6,6 @@ import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
 
-import { TextDecoder, TextEncoder } from 'util'
-
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | object
 }

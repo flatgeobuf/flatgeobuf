@@ -5,6 +5,11 @@ import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
 
+import { TextDecoder, TextEncoder } from 'util'
+
+global['TextDecoder'] = TextDecoder
+global['TextEncoder'] = TextEncoder
+
 import { deserialize, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 
