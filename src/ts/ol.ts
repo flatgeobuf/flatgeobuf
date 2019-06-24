@@ -1,5 +1,13 @@
 import { flatbuffers } from 'flatbuffers'
-import { deserialize as fcDeserialize, serialize as fcSerialize } from './ol/featurecollection'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+
+import { IFeature } from './generic/feature'
+
+import { 
+    deserialize as fcDeserialize,
+    deserializeStream as fcDeserializeStream,
+    serialize as fcSerialize
+} from './ol/featurecollection'
 
 // NOTE: monkey patch until https://github.com/google/flatbuffers/pull/5326 is mainlined
 flatbuffers.SIZE_PREFIX_LENGTH = 4;
@@ -28,9 +36,13 @@ flatbuffers.Builder.prototype.finishSizePrefixed = function (root_table: any, op
     this.finish(root_table, opt_file_identifier, true);
 };
 
-export function serialize(features: any) {
+export function serialize(features: IFeature[]) {
     const bytes = fcSerialize(features)
     return bytes
+}
+
+export function deserializeStream(stream: ReadableStream) {
+    return fcDeserializeStream(stream)
 }
 
 export function deserialize(bytes: Uint8Array) {

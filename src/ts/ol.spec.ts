@@ -1,7 +1,8 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { deserialize, serialize } from './ol'
+import { arrayToStream } from './streams/utils'
+import { deserialize, deserializeStream, serialize } from './ol'
 import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
@@ -30,6 +31,17 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
   return features
 }
 
+async function takeAsync(asyncIterable, count=Infinity) {
+  const result = [];
+  const iterator = asyncIterable[Symbol.asyncIterator]();
+  while (result.length < count) {
+      const {value,done} = await iterator.next();
+      if (done) break;
+      result.push(value);
+  }
+  return result;
+}
+
 describe('ol module', () => {
 
   describe('Geometry roundtrips', () => {
@@ -38,6 +50,14 @@ describe('ol module', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
       const actual = deserialize(s)
+      expect(g(actual)).to.equal(g(expected))
+    })
+
+    it('Point via stream', async () => {
+      const expected = makeFeatureCollection('POINT(1.2 -2.1)')
+      const s = serialize(expected)
+      const stream = arrayToStream(s)
+      const actual = await takeAsync(deserializeStream(stream))
       expect(g(actual)).to.equal(g(expected))
     })
 

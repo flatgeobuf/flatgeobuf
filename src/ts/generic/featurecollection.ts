@@ -1,4 +1,6 @@
 import { flatbuffers } from 'flatbuffers'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import slice from 'slice-source/index.js'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
@@ -34,7 +36,10 @@ export function serialize(features: IFeature[]) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array, createGeometry: ICreateGeometry, createFeature: ICreateFeature): IFeature[] {
+export function deserialize(
+        bytes: Uint8Array,
+        createGeometry: ICreateGeometry,
+        createFeature: ICreateFeature): IFeature[] {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -68,6 +73,48 @@ export function deserialize(bytes: Uint8Array, createGeometry: ICreateGeometry, 
     }
 
     return features
+}
+
+export async function* deserializeStream(
+        stream: ReadableStream,
+        createGeometry: ICreateGeometry,
+        createFeature: ICreateFeature) {
+    const reader = slice(stream)
+    let bytes = await reader.slice(8)
+    if (!bytes.every((v, i) => magicbytes[i] === v))
+        throw new Error('Not a FlatGeobuf file')
+    bytes = await reader.slice(4)
+    let bb = new flatbuffers.ByteBuffer(bytes)
+    const headerLength = bb.readUint32(0)
+    bytes = await reader.slice(headerLength)
+    bb = new flatbuffers.ByteBuffer(bytes)
+    const header = Header.getRoot(bb)
+    const count = header.featuresCount().toFloat64()
+
+    const columns: ColumnMeta[] = []
+    for (let j = 0; j < header.columnsLength(); j++) {
+        const column = header.columns(j)
+        columns.push(new ColumnMeta(column.name(), column.type()))
+    }
+    const headerMeta = new HeaderMeta(header.geometryType(), columns)
+
+    // TODO: skip index if exists
+    /*
+    let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
+    const indexNodeSize = header.indexNodeSize()
+    if (indexNodeSize > 0)
+        offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
+    */
+
+    for (let i = 0; i < count; i++) {
+        bytes = await reader.slice(4)
+        bb = new flatbuffers.ByteBuffer(bytes)
+        const featureLength = bb.readUint32(0)
+        bytes = await reader.slice(featureLength)
+        bb = new flatbuffers.ByteBuffer(bytes)
+        const feature = Feature.getRoot(bb)
+        yield fromFeature(feature, headerMeta, createGeometry, createFeature)
+    }
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
