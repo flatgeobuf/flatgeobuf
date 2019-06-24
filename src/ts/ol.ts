@@ -41,11 +41,11 @@ export function serialize(features: IFeature[]) {
     return bytes
 }
 
-export function deserializeStream(stream: ReadableStream) {
-    return fcDeserializeStream(stream)
+export function deserializeStream(stream: ReadableStream, ol: any) {
+    return fcDeserializeStream(stream, ol)
 }
 
-export function deserialize(bytes: Uint8Array) {
-    const features = fcDeserialize(bytes)
+export function deserialize(bytes: Uint8Array, ol: any) {
+    const features = fcDeserialize(bytes, ol)
     return features
 }
