@@ -9,5 +9,7 @@ export function size(numItems: number, nodeSize: number) {
         n = Math.ceil(n / nodeSize)
         numNodes += n
     } while (n !== 1)
-    return numNodes * NODE_RECT_LEN + (numNodes - numItems) * NODE_INDEX_LEN
+    const numNonLeafNodes = numNodes - numItems
+    const minAlign = numNonLeafNodes % 2
+    return numNodes * NODE_RECT_LEN + (numNonLeafNodes + minAlign) * NODE_INDEX_LEN
 }
