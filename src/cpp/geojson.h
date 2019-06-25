@@ -148,31 +148,30 @@ const uint8_t *serialize(const feature_collection fc)
         std::vector<uint32_t> ends;
         std::vector<uint32_t> endss;
         if (f.geometry.is<multi_line_string>()) {
+            uint32_t end = 0;
             auto mls = f.geometry.get<multi_line_string>();
             if (mls.size() > 1)
                 for (auto ls : mls)
-                    ends.push_back(ls.size() * 2);
+                    ends.push_back(end += ls.size() * 2);
         } else if (f.geometry.is<polygon>()) {
+            uint32_t end = 0;
             auto p = f.geometry.get<polygon>();
             if (p.size() > 1)
                 for (auto lr : p)
-                    ends.push_back(lr.size() * 2);
-        }
-        else if (f.geometry.is<multi_polygon>()) {
+                    ends.push_back(end += lr.size() * 2);
+        } else if (f.geometry.is<multi_polygon>()) {
+            uint32_t end = 0;
             auto mp = f.geometry.get<multi_polygon>();
             if (mp.size() == 1){
                 auto p = mp[0];
                 if (p.size() > 1)
                     for (auto lr : p)
-                        ends.push_back(lr.size() * 2);
+                        ends.push_back(end += lr.size() * 2);
             } else {
-                uint32_t length = 0;
                 for (auto p : mp) {
                     uint32_t ringCount = 0;
                     for (auto lr : p){
-                        uint32_t ringLength = lr.size() * 2;
-                        length += ringLength;
-                        ends.push_back(length);
+                        ends.push_back(end += lr.size() * 2);
                         ringCount++;
                     }
                     endss.push_back(ringCount);
@@ -230,8 +229,9 @@ const multi_line_string fromMultiLineString(
     std::vector<line_string> lineStrings;
     size_t offset = 0;
     for (size_t i = 0; i < ends->size(); i++) {
-        lineStrings.push_back(line_string(extractPoints(coords, ends->Get(i), offset)));
-        offset += ends->Get(i);
+        uint32_t end = ends->Get(i);
+        lineStrings.push_back(line_string(extractPoints(coords, end - offset, offset)));
+        offset = end;
     }
     return multi_line_string(lineStrings);
 }
@@ -246,8 +246,9 @@ const polygon fromPolygon(
     std::vector<linear_ring> linearRings;
     size_t offset = 0;
     for (size_t i = 0; i < ends->size(); i++) {
-        linearRings.push_back(linear_ring(extractPoints(coords, ends->Get(i), offset)));
-        offset += ends->Get(i);
+        uint32_t end = ends->Get(i);
+        linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
+        offset = end;
     }
     return polygon(linearRings);
 }
