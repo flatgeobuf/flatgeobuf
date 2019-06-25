@@ -8,7 +8,7 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
         Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, GeometryLayout
     } = ol.geom
     const coords = Array.from(feature.coordsArray())
-    const ends = feature.endsArray()
+    const ends = feature.endsArray() || new Uint32Array([coords.length])
     switch (type) {
         case GeometryType.Point:
             return new Point(coords)
