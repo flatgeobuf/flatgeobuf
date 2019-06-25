@@ -24,11 +24,11 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
             let endss = feature.endssArray()
             let olEnds
             let s = 0
-            if (endss)
+            if (endss) // multipart multipolygon
                 olEnds = Array.from(endss).map(e => ends.slice(s, s += e))
-            else if (ends)
+            else if (ends) // single part multipolygon with holes
                 olEnds = [Array.from(ends)]
-            else
+            else // single part multipolygon without holes
                 olEnds = [[coords.length * 2]]
             return new MultiPolygon(coords, GeometryLayout.XY, olEnds)
         default:
