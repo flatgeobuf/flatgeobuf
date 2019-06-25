@@ -162,16 +162,17 @@ const uint8_t *serialize(const feature_collection fc)
             auto mp = f.geometry.get<multi_polygon>();
             if (mp.size() == 1){
                 auto p = mp[0];
-                for (auto lr : p)
-                    ends.push_back(lr.size() * 2);
+                if (p.size() > 1)
+                    for (auto lr : p)
+                        ends.push_back(lr.size() * 2);
             } else {
+                uint32_t length = 0;
                 for (auto p : mp) {
-                    uint32_t length = 0;
                     uint32_t ringCount = 0;
                     for (auto lr : p){
                         uint32_t ringLength = lr.size() * 2;
                         length += ringLength;
-                        ends.push_back(ringLength);
+                        ends.push_back(length);
                         ringCount++;
                     }
                     endss.push_back(ringCount);
@@ -179,7 +180,7 @@ const uint8_t *serialize(const feature_collection fc)
             }
         }
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
-        auto pEndss = ends.size() == 0 ? nullptr : &endss;
+        auto pEndss = endss.size() == 0 ? nullptr : &endss;
         auto pEnds = ends.size() == 0 ? nullptr : &ends;
         std::vector<uint8_t> properties;
         parseProperties(f.properties, properties, columnMetas);
@@ -261,14 +262,14 @@ const multi_polygon fromMultiPolygon(
         return multi_polygon { fromPolygon(coords, coordsLength, ends) };
     std::vector<polygon> polygons;
     size_t offset = 0;
+    size_t roffset = 0;
     for (size_t i = 0; i < endss->size(); i++) {
         std::vector<linear_ring> linearRings;
         uint32_t ringCount = endss->Get(i);
-        size_t roffset = 0;
         for (size_t j = 0; j < ringCount; j++) {
-            uint32_t ringLength = ends->Get(j + roffset++);
-            linearRings.push_back(linear_ring(extractPoints(coords, ringLength, offset)));
-            offset += ringLength;
+            uint32_t end = ends->Get(roffset++);
+            linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
+            offset = end;
         }
         polygons.push_back(linearRings);
     }

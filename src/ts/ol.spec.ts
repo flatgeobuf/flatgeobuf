@@ -133,10 +133,18 @@ describe('ol module', () => {
       expect(g(actual)).to.equal(g(expected))
     })
 
+    it('PolygonWithTwoHoles', () => {
+      const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
+ (20 30, 35 35, 30 20, 20 30), (20 30, 35 35, 30 20, 20 30))`)
+      const actual = deserialize(serialize(expected), ol)
+      expect(g(actual)).to.equal(g(expected))
+    })
+
     it('MultiPolygon', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`)
       const actual = deserialize(serialize(expected), ol)
+      // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
       expect(g(actual)).to.equal(g(expected))
     })
 
@@ -158,6 +166,30 @@ describe('ol module', () => {
  (20 30, 35 35, 30 20, 20 30))))`)
       const actual = deserialize(serialize(expected), ol)
       expect(g(actual)).to.equal(g(expected))
+    })
+
+    it('MultiPolygon with two holes', () => {
+      const expected = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "properties":{ "test": 1 },
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [ [102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0] ]
+                    ],
+                    [
+                        [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ],
+                        [ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+                    ]
+                ]
+            }
+        }]
+      }
+      const actual = deserialize(serialize(geojson.readFeatures(expected)), ol)
+      expect(JSON.parse(g(actual))).to.deep.equal(expected)
     })
 
     it('Bahamas', () => {

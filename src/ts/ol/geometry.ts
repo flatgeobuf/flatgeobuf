@@ -8,7 +8,8 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
         Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, GeometryLayout
     } = ol.geom
     const coords = Array.from(feature.coordsArray())
-    const ends = feature.endsArray() || new Uint32Array([coords.length])
+    const ends = feature.endsArray()
+    let olEnds = ends ? Array.from(ends) : new Uint32Array([coords.length])
     switch (type) {
         case GeometryType.Point:
             return new Point(coords)
@@ -17,20 +18,20 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
         case GeometryType.LineString:
             return new LineString(coords, GeometryLayout.XY)
         case GeometryType.MultiLineString:
-            return new MultiLineString(coords, GeometryLayout.XY, ends)
+            return new MultiLineString(coords, GeometryLayout.XY, olEnds)
         case GeometryType.Polygon:
-            return new Polygon(coords, GeometryLayout.XY, ends)
+            return new Polygon(coords, GeometryLayout.XY, olEnds)
         case GeometryType.MultiPolygon:
             let endss = feature.endssArray()
-            let olEnds
+            let olEndss
             let s = 0
             if (endss) // multipart multipolygon
-                olEnds = Array.from(endss).map(e => ends.slice(s, s += e))
+                olEndss = Array.from(endss).map(e => olEnds.slice(s, s += e))
             else if (ends) // single part multipolygon with holes
-                olEnds = [Array.from(ends)]
+                olEndss = [Array.from(olEnds)]
             else // single part multipolygon without holes
-                olEnds = [[coords.length * 2]]
-            return new MultiPolygon(coords, GeometryLayout.XY, olEnds)
+                olEndss = [[coords.length]]
+            return new MultiPolygon(coords, GeometryLayout.XY, olEndss)
         default:
             throw Error('Unknown type')
     }

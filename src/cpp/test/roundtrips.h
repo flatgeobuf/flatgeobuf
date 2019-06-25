@@ -94,6 +94,7 @@ TEST_CASE("Geometry roundtrips")
     SECTION("MultiPolygon")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/multipolygon.geojson")).get<feature_collection>();
+        // Should serialize to 30 flat coords elements, ends [10, 20, 30] and endss [1, 2]
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
@@ -109,6 +110,7 @@ TEST_CASE("Geometry roundtrips")
     SECTION("Bahamas")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/bahamas.geojson")).get<feature_collection>();
+        // Should serialize to 42 flat coords elements, ends [16, 28, 42] and endss [1, 1, 1]
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
