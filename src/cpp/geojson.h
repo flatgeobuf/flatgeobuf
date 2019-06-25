@@ -162,7 +162,7 @@ const uint8_t *serialize(const feature_collection fc)
         } else if (f.geometry.is<multi_polygon>()) {
             uint32_t end = 0;
             auto mp = f.geometry.get<multi_polygon>();
-            if (mp.size() == 1){
+            if (mp.size() == 1) {
                 auto p = mp[0];
                 if (p.size() > 1)
                     for (auto lr : p)
