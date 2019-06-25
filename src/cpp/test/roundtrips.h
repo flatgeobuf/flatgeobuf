@@ -105,6 +105,14 @@ TEST_CASE("Geometry roundtrips")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
+
+    SECTION("Bahamas")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/bahamas.geojson")).get<feature_collection>();
+        auto flatgeobuf = serialize(expected);
+        auto actual = deserialize(flatgeobuf);
+        REQUIRE(expected == actual);
+    }
 }
 
 TEST_CASE("Attribute roundtrips")
