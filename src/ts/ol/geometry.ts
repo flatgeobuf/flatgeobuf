@@ -22,13 +22,15 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
             return new Polygon(coords, GeometryLayout.XY, ends)
         case GeometryType.MultiPolygon:
             let endss = feature.endssArray()
-            if (!endss)
-                return new MultiPolygon(coords, GeometryLayout.XY, [ends])
+            let olEnds
             let s = 0
-            return new MultiPolygon(
-                coords,
-                GeometryLayout.XY,
-                Array.from(endss).map(e => ends.slice(s, s += e)))
+            if (endss)
+                olEnds = Array.from(endss).map(e => ends.slice(s, s += e))
+            else if (ends)
+                olEnds = [Array.from(ends)]
+            else
+                olEnds = [[coords.length * 2]]
+            return new MultiPolygon(coords, GeometryLayout.XY, olEnds)
         default:
             throw Error('Unknown type')
     }
