@@ -98,16 +98,19 @@ export async function* deserializeStream(
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns)
 
-    const indexNodeSize = header.indexNodeSize();
+    const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0)
-        reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN));
+        await reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN))
 
     for (let i = 0; i < count; i++) {
         bytes = await reader.slice(4)
         bb = new flatbuffers.ByteBuffer(bytes)
         const featureLength = bb.readUint32(0)
         bytes = await reader.slice(featureLength)
-        bb = new flatbuffers.ByteBuffer(bytes)
+        const bytesAligned = new Uint8Array(featureLength + 4)
+        bytesAligned.set(bytes, 4)
+        bb = new flatbuffers.ByteBuffer(bytesAligned)
+        bb.setPosition(SIZE_PREFIX_LEN)
         const feature = Feature.getRoot(bb)
         yield fromFeature(feature, headerMeta, createGeometry, createFeature)
     }
