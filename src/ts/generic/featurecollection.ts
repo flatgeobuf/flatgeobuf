@@ -98,13 +98,9 @@ export async function* deserializeStream(
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns)
 
-    // TODO: skip index if exists
-    /*
-    let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
-    const indexNodeSize = header.indexNodeSize()
+    const indexNodeSize = header.indexNodeSize();
     if (indexNodeSize > 0)
-        offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
-    */
+        reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN));
 
     for (let i = 0; i < count; i++) {
         bytes = await reader.slice(4)
