@@ -1,4 +1,4 @@
-package flatgeobuf.geotools;
+package org.wololo.flatgeobuf.geotools;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -17,7 +17,7 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.MultiPolygon;
 
-import flatgeobuf.generated.*;
+import org.wololo.flatgeobuf.generated.*;
 
 public class GeometryConversions {
     public static GeometryOffsets serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,

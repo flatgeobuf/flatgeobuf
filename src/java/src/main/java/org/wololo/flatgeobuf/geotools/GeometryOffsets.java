@@ -1,4 +1,4 @@
-package flatgeobuf.geotools;
+package org.wololo.flatgeobuf.geotools;
 
 public class GeometryOffsets {
     int coordsOffset;

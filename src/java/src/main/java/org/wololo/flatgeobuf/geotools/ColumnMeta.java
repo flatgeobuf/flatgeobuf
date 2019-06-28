@@ -1,6 +1,6 @@
-package flatgeobuf.geotools;
+package org.wololo.flatgeobuf.geotools;
 
-import flatgeobuf.generated.ColumnType;
+import org.wololo.flatgeobuf.generated.ColumnType;
 
 public class ColumnMeta {
     public String name;

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.wololo</groupId>
   <artifactId>flatgeobuf</artifactId>
-  <version>0.2.5</version>
+  <version>0.4.1</version>
   <name>flatgeobuf</name>
   <description>A performant binary encoding for geographic data based on flatbuffers</description>
   <url>https://github.com/bjornharrtell/flatgeobuf</url>

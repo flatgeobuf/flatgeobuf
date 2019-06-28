@@ -1,4 +1,4 @@
-package flatgeobuf.geotools;
+package org.wololo.flatgeobuf.geotools;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import flatgeobuf.generated.*;
+import org.wololo.flatgeobuf.generated.*;
 
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;

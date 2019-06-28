@@ -1,4 +1,4 @@
-package flatgeobuf.geotools;
+package org.wololo.flatgeobuf.geotools;
 
 import java.util.List;
 

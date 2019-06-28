@@ -1,4 +1,4 @@
-package flatgeobuf.test;
+package org.wololo.flatgeobuf.test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -18,7 +18,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.junit.Test;
 
-import flatgeobuf.geotools.FeatureCollectionConversions;
+import org.wololo.flatgeobuf.geotools.FeatureCollectionConversions;
 
 public class AttributeRoundtripTest {
 

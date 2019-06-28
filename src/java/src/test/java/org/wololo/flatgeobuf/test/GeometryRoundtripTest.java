@@ -1,4 +1,4 @@
-package flatgeobuf.test;
+package org.wololo.flatgeobuf.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
@@ -25,7 +25,7 @@ import org.locationtech.jts.io.WKTWriter;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
-import flatgeobuf.geotools.FeatureCollectionConversions;
+import org.wololo.flatgeobuf.geotools.FeatureCollectionConversions;
 
 public class GeometryRoundtripTest {
 
