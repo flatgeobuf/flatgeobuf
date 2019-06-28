@@ -1,6 +1,8 @@
 # flatgeobuf
 
-[![CircleCI](https://circleci.com/gh/bjornharrtell/flatgeobuf.svg?style=svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
+[![CircleCI](https://img.shields.io/circleci/build/github/bjornharrtell/flatgeobuf.svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
+![npm](https://img.shields.io/npm/v/flatgeobuf.svg)
+![Maven Central](https://img.shields.io/maven-central/v/org.wololo/flatgeobuf.svg)
 
 A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features).
 
