@@ -8,6 +8,8 @@ Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://gi
 
 Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access.
 
+Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeobuf. (conceptual, not performance optimized)
+
 DISCLAIMER: Unfinished work in progress.
 
 ## Specification
@@ -19,9 +21,9 @@ DISCLAIMER: Unfinished work in progress.
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
-Any 64-bit type contained anywhere in the file (for example coordinate values) is to be aligned to 8 bytes to from the start of the file to allow for direct memory access.
+Any 64-bit type contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
 
-## WIP
+## Features
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
 * Efficient I/O (streaming and random access)
@@ -34,9 +36,8 @@ Any 64-bit type contained anywhere in the file (for example coordinate values) i
 ## TODO
 
 * Finalize 1.0 spec
-* Direct TS/JS OpenLayers geometry read/write
 * Java index support
-* C++ attribute roundtrip tests
-* C# support
+* C# support update
+* C API
 * Optimizations
 
