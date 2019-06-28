@@ -34,6 +34,8 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
     let coords: number[] = null
     let ends: number[] = null
     let endss: number[] = null
+    let end = 0
+    let endend = 0
     switch (geometry.type) {
         case 'Point': {
             coords = cs as number[]
@@ -48,25 +50,25 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
             const css = cs as number[][][]
             coords = flat(css)
             if (css.length > 1)
-                ends = css.map(c => c.length * 2)
+                ends = css.map(c => end += c.length * 2)
             break
         }
         case 'Polygon': {
             const css = cs as number[][][]
             coords = flat(css)
             if (css.length > 1)
-                ends = css.map(c => c.length * 2)
+                ends = css.map(c => end += c.length * 2)
             break
         }
         case 'MultiPolygon': {
             const csss = cs as number[][][][]
             coords = flat(csss)
             if (csss.length > 1) {
-                endss = csss.map(c => c.length)
-                ends = flat(csss.map(cc => cc.map(c => c.length * 2)))
+                endss = csss.map(c => endend += c.length)
+                ends = flat(csss.map(cc => cc.map(c => end += c.length * 2)))
             } else
                 if (csss[0].length > 1)
-                    ends = csss[0].map(c => c.length * 2)
+                    ends = csss[0].map(c => end += c.length * 2)
             break
         }
     }
@@ -82,7 +84,7 @@ function extractParts(coords: Float64Array, ends: Uint32Array) {
         return [pairFlatCoordinates(coords)]
     let s = 0
     let coordsSlices = Array.from(ends)
-        .map(e => coords.slice(s, s = s + e))
+        .map(e => coords.slice(s, s = e))
     return coordsSlices
         .map(cs => pairFlatCoordinates(cs))
 }
@@ -95,10 +97,10 @@ function extractPartsParts(
         return [extractParts(coords, ends)]
     let s = 0
     let coordsSlices = Array.from(ends)
-        .map(e => coords.slice(s, s = s + e))
+        .map(e => coords.slice(s, s = e))
     s = 0
     return Array.from(endss)
-        .map(e => coordsSlices.slice(s, s = s + e)
+        .map(e => coordsSlices.slice(s, s = e)
         .map(cs => pairFlatCoordinates(cs)))
 }
 

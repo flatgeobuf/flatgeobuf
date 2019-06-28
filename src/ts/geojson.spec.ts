@@ -89,6 +89,14 @@ describe('geojson module', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('Polygon via stream', async () => {
+      const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`)
+      const s = serialize(expected)
+      const stream = arrayToStream(s)
+      const actual = await takeAsync(deserializeStream(stream))
+      expect(actual).to.deep.equal(expected.features)
+    })
+
     it('PolygonWithHole', () => {
       const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`)
@@ -204,11 +212,18 @@ describe('geojson module', () => {
   })
 
   describe('Prepared buffers tests', () => {
-    it('Should parse a fgb produced from GDAL', () => {
+    it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes)
       expect(geojson.features.length).to.eq(179)
+    })
+
+    it('Should parse UScounties fgb produced from GDAL', () => {
+      const buffer = readFileSync('./test/data/UScounties.fgb')
+      const bytes = new Uint8Array(buffer)
+      const geojson = deserialize(bytes)
+      expect(geojson.features.length).to.eq(3221)
     })
   })
 
