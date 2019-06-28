@@ -1,4 +1,6 @@
 import { flatbuffers } from 'flatbuffers'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import slice from 'slice-source/index.js'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
@@ -77,6 +79,45 @@ export function deserialize(bytes: Uint8Array) {
         type: 'FeatureCollection',
         features,
     } as IGeoJsonFeatureCollection
+}
+
+export async function* deserializeStream(
+    stream: ReadableStream) {
+    const reader = slice(stream)
+    let bytes = await reader.slice(8)
+    if (!bytes.every((v, i) => magicbytes[i] === v))
+        throw new Error('Not a FlatGeobuf file')
+    bytes = await reader.slice(4)
+    let bb = new flatbuffers.ByteBuffer(bytes)
+    const headerLength = bb.readUint32(0)
+    bytes = await reader.slice(headerLength)
+    bb = new flatbuffers.ByteBuffer(bytes)
+    const header = Header.getRoot(bb)
+    const count = header.featuresCount().toFloat64()
+
+    const columns: ColumnMeta[] = []
+    for (let j = 0; j < header.columnsLength(); j++) {
+        const column = header.columns(j)
+        columns.push(new ColumnMeta(column.name(), column.type()))
+    }
+    const headerMeta = new HeaderMeta(header.geometryType(), columns)
+
+    const indexNodeSize = header.indexNodeSize()
+    if (indexNodeSize > 0)
+        await reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN))
+
+    for (let i = 0; i < count; i++) {
+        bytes = await reader.slice(4)
+        bb = new flatbuffers.ByteBuffer(bytes)
+        const featureLength = bb.readUint32(0)
+        bytes = await reader.slice(featureLength)
+        const bytesAligned = new Uint8Array(featureLength + 4)
+        bytesAligned.set(bytes, 4)
+        bb = new flatbuffers.ByteBuffer(bytesAligned)
+        bb.setPosition(SIZE_PREFIX_LEN)
+        const feature = Feature.getRoot(bb)
+        yield fromFeature(feature, headerMeta)
+    }
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {

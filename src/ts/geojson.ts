@@ -1,5 +1,10 @@
 import { flatbuffers } from 'flatbuffers'
-import { deserialize as fcDeserialize, serialize as fcSerialize } from './geojson/featurecollection'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+
+import {
+    deserialize as fcDeserialize,
+    deserializeStream as fcDeserializeStream,
+    serialize as fcSerialize } from './geojson/featurecollection'
 
 // NOTE: monkey patch until https://github.com/google/flatbuffers/pull/5326 is mainlined
 flatbuffers.SIZE_PREFIX_LENGTH = 4;
@@ -35,5 +40,10 @@ export function serialize(geojson: any) {
 
 export function deserialize(bytes: Uint8Array) {
     const geojson = fcDeserialize(bytes)
+    return geojson
+}
+
+export function deserializeStream(stream: ReadableStream) {
+    const geojson = fcDeserializeStream(stream)
     return geojson
 }

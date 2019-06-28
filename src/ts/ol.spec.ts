@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { arrayToStream } from './streams/utils'
+import { arrayToStream, takeAsync } from './streams/utils'
 import { deserialize, deserializeStream, serialize } from './ol'
 
 import { IFeature } from './generic/feature'
@@ -57,17 +57,6 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) : IFea
     features,
   }*/
   return features
-}
-
-async function takeAsync(asyncIterable, count = Infinity) {
-  const result = [];
-  const iterator = asyncIterable[Symbol.asyncIterator]();
-  while (result.length < count) {
-    const { value, done } = await iterator.next();
-    if (done) break;
-    result.push(value);
-  }
-  return result;
 }
 
 describe('ol module', () => {

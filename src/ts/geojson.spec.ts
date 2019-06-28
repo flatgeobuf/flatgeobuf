@@ -11,7 +11,9 @@ import { TextDecoder, TextEncoder } from 'util'
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
 
-import { deserialize, serialize } from './geojson'
+import { arrayToStream, takeAsync } from './streams/utils'
+
+import { deserialize, deserializeStream, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 
 function makeFeatureCollection(wkt: string, properties?: any) {
@@ -40,6 +42,14 @@ describe('geojson module', () => {
       const s = serialize(expected)
       const actual = deserialize(s)
       expect(actual).to.deep.equal(expected)
+    })
+
+    it('Point via stream', async () => {
+      const expected = makeFeatureCollection('POINT(1.2 -2.1)')
+      const s = serialize(expected)
+      const stream = arrayToStream(s)
+      const actual = await takeAsync(deserializeStream(stream))
+      expect(actual).to.deep.equal(expected.features)
     })
 
     it('Points', () => {

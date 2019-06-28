@@ -16,6 +16,17 @@ export function arrayToStream (array) {
     return webReader
 }
 
+export async function takeAsync(asyncIterable, count = Infinity) {
+  const result = [];
+  const iterator = asyncIterable[Symbol.asyncIterator]();
+  while (result.length < count) {
+    const { value, done } = await iterator.next();
+    if (done) break;
+    result.push(value);
+  }
+  return result;
+}
+
 function nodeToWeb (nodeStream) {
     var destroyed = false
     var listeners = {}
