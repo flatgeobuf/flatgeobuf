@@ -40,6 +40,7 @@ Any 64-bit type contained anywhere in the file (for example coordinate values) i
 ## TODO
 
 * Finalize 1.0 spec
+* Modern SRS meta
 * Java index support
 * C# support update
 * C API
