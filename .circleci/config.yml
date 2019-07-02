@@ -35,7 +35,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install clang
-      - run: ./getcppdeps.sh
+      - run: ./script/getcppdeps.sh
       - run:
           name: Run tests 
           command: |

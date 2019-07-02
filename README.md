@@ -18,7 +18,7 @@ DISCLAIMER: Unfinished work in progress.
 
 ## Specification
 
-![layout](layout.svg "FlatGeobuf file layout")
+![layout](doc/layout.svg "FlatGeobuf file layout")
 
 * MB: Magic bytes (0x6667620066676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
@@ -40,9 +40,7 @@ Any 64-bit type contained anywhere in the file (for example coordinate values) i
 ## TODO
 
 * Finalize 1.0 spec
-* Modern SRS meta
 * Java index support
 * C# support update
 * C API
 * Optimizations
-

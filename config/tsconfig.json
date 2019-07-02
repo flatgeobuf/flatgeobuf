@@ -5,15 +5,15 @@
         "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outDir": "./lib",
+        "outDir": "../lib",
         "sourceMap": true,
         "target": "ESNext"
     },
     "include": [
-        "src/ts"
+        "../src/ts"
     ],
     "exclude": [
-        "node_modules",
-        "**/*.spec.ts"
+        "../node_modules",
+        "../**/*.spec.ts"
     ]
 }

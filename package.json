@@ -3,8 +3,8 @@
   "version": "0.4.1",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
-    "build": "tsc && rollup -c",
-    "test": "TS_NODE_PROJECT=tsconfig.test.json mocha -r ts-node/register -r esm src/**/*.spec.ts"
+    "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
+    "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm src/**/*.spec.ts"
   },
   "files": [
     "lib/**/*",
