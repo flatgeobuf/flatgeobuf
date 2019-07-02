@@ -16,7 +16,7 @@ TEST_CASE("Header")
         auto columns = nullptr;
         int features_count = 0;
 
-        auto header = CreateHeaderDirect(fbb, "Test", envelope, GeometryType::Point, 2, columns, features_count);
+        auto header = CreateHeaderDirect(fbb, "Test", envelope, GeometryType::Point, false, false, false, columns, features_count);
 
         fbb.FinishSizePrefixed(header);
         // uint8_t *buf = fbb.GetBufferPointer();

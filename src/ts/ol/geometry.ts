@@ -9,7 +9,7 @@ export function createGeometryOl(feature: Feature, type: GeometryType, ol: any):
     } = ol.geom
     const coords = Array.from(feature.coordsArray())
     const ends = feature.endsArray()
-    let olEnds = ends ? Array.from(ends) : new Uint32Array([coords.length])
+    let olEnds = ends ? Array.from(ends.map(e => e << 1)) : new Uint32Array([coords.length])
     switch (type) {
         case GeometryType.Point:
             return new Point(coords)

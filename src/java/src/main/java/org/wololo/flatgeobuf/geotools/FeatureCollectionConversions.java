@@ -21,14 +21,14 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+//import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class FeatureCollectionConversions {
     static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
 
-    public static void serialize(SimpleFeatureCollection featureCollection, long featureCount,
+    public static void serialize(SimpleFeatureCollection featureCollection, long featuresCount,
             OutputStream outputStream) throws IOException {
-        if (featureCount == 0)
+        if (featuresCount == 0)
             return;
 
         SimpleFeatureType featureType = featureCollection.getSchema();
@@ -59,13 +59,18 @@ public class FeatureCollectionConversions {
             }
         }
 
-        CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
+        //CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
         byte geometryType = toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
+        //byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
 
         outputStream.write(magicbytes);
 
-        byte[] headerBuffer = buildHeader(geometryType, dimensions, featureCount, columns);
+        HeaderMeta headerMeta = new HeaderMeta();
+        headerMeta.featuresCount = featuresCount;
+        headerMeta.geometryType = geometryType;
+        headerMeta.columns = columns;
+
+        byte[] headerBuffer = buildHeader(headerMeta);
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
@@ -80,7 +85,7 @@ public class FeatureCollectionConversions {
 
                     }
                 }
-                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, geometryType, dimensions, columns);
+                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, headerMeta);
                 outputStream.write(featureBuffer);
                 fid++;
             }
@@ -99,7 +104,6 @@ public class FeatureCollectionConversions {
         Header header = Header.getRootAsHeader(bb);
         bb.position(offset += headerSize);
         int geometryType = header.geometryType();
-        int dimensions = header.dimensions();
         Class<?> geometryClass;
         switch (geometryType) {
         case GeometryType.Point:
@@ -125,19 +129,23 @@ public class FeatureCollectionConversions {
         }
 
         int columnsLength = header.columnsLength();
-        ColumnMeta[] columns = new ColumnMeta[columnsLength];
+        ArrayList<ColumnMeta> columnMetas = new ArrayList<ColumnMeta>();
         for (int i = 0; i < columnsLength; i++) {
             ColumnMeta columnMeta = new ColumnMeta();
             columnMeta.name = header.columns(i).name();
             columnMeta.type = (byte) header.columns(i).type();
-            columns[i] = columnMeta;
+            columnMetas.add(columnMeta);
         }
+
+        HeaderMeta headerMeta = new HeaderMeta();
+        headerMeta.columns = columnMetas;
+        headerMeta.geometryType = (byte) geometryType;
 
         SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
         ftb.setName("testType");
         ftb.add("geometryProperty", geometryClass);
-        for (ColumnMeta column : columns)
-            ftb.add(column.name, column.getBinding());
+        for (ColumnMeta columnMeta : columnMetas)
+            ftb.add(columnMeta.name, columnMeta.getBinding());
         SimpleFeatureType ft = ftb.buildFeatureType();
         SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
@@ -146,7 +154,7 @@ public class FeatureCollectionConversions {
             bb.position(offset += SIZE_PREFIX_LENGTH);
             Feature feature = Feature.getRootAsFeature(bb);
             bb.position(offset += featureSize);
-            SimpleFeature f = FeatureConversions.deserialize(feature, fb, geometryType, dimensions, columns);
+            SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta);
             fc.add(f);
         }
         return fc;
@@ -169,10 +177,10 @@ public class FeatureCollectionConversions {
             throw new RuntimeException("Unknown geometry type");
     }
 
-    private static byte[] buildHeader(int geometryType, byte dimensions, long featuresCount, List<ColumnMeta> columns) {
+    private static byte[] buildHeader(HeaderMeta headerMeta) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
 
-        int[] columnsArray = columns.stream().mapToInt(c -> {
+        int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
             return Column.createColumn(builder, nameOffset, type);
@@ -180,11 +188,11 @@ public class FeatureCollectionConversions {
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
         Header.startHeader(builder);
-        Header.addGeometryType(builder, geometryType);
-        Header.addDimensions(builder, dimensions);
+        Header.addGeometryType(builder, headerMeta.geometryType);
+        //Header.addDimensions(builder, dimensions);
         Header.addIndexNodeSize(builder, 0);
         Header.addColumns(builder, columnsOffset);
-        Header.addFeaturesCount(builder, featuresCount);
+        Header.addFeaturesCount(builder, headerMeta.featuresCount);
         int offset = Header.endHeader(builder);
 
         builder.finishSizePrefixed(offset);

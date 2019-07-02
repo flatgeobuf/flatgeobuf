@@ -1,3 +1,5 @@
+namespace FlatGeobuf;
+
 enum GeometryType:ubyte {
   Point,
   MultiPoint,
@@ -33,7 +35,9 @@ table Header {
   name: string;
   envelope: [double];
   geometry_type: GeometryType = Point;
-  dimensions: ubyte = 2; // must be > 1
+  hasZ: bool = false;
+  hasM: bool = false;
+  hasT: bool = false;
   columns: [Column];
   features_count: ulong;
   fids: bool = true;

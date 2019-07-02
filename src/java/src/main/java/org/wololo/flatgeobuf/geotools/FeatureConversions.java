@@ -22,15 +22,14 @@ public class FeatureConversions {
         bb.put(stringBytes);
     }
 
-    public static byte[] serialize(SimpleFeature feature, long fid, int geometryType, int dimensions,
-            List<ColumnMeta> columns) throws IOException {
+    public static byte[] serialize(SimpleFeature feature, long fid, HeaderMeta headerMeta) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
         ByteBuffer bb = ByteBuffer.allocate(1024 * 1024);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        for (short i = 0; i < columns.size(); i++) {
-            ColumnMeta column = columns.get(i);
+        for (short i = 0; i < headerMeta.columns.size(); i++) {
+            ColumnMeta column = headerMeta.columns.get(i);
             byte type = column.type;
             Object value = feature.getAttribute(column.name);
             bb.putShort(i);
@@ -53,8 +52,8 @@ public class FeatureConversions {
             byte[] data = Arrays.copyOfRange(bb.array(), 0, bb.position());
             propertiesOffset = Feature.createPropertiesVector(builder, data);
         }
-        GeometryOffsets go = GeometryConversions.serialize(builder, geometry, geometryType, dimensions);
-        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.endssOffset, go.coordsOffset, propertiesOffset);
+        GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta);
+        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.endssOffset, go.coordsOffset, 0, 0, 0, propertiesOffset);
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();
@@ -68,16 +67,15 @@ public class FeatureConversions {
         fb.set(name, value);
     }
 
-    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, int geometryType, int dimensions,
-            ColumnMeta[] columns) {
+    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta) {
         long fid = feature.fid();
-        fb.add(GeometryConversions.deserialize(feature, geometryType, dimensions));
+        fb.add(GeometryConversions.deserialize(feature, headerMeta));
         int propertiesLength = feature.propertiesLength();
         if (propertiesLength > 0) {
             ByteBuffer bb = feature.propertiesAsByteBuffer();
             while (bb.hasRemaining()) {
                 short i = bb.getShort();
-                ColumnMeta columnMeta = columns[i];
+                ColumnMeta columnMeta = headerMeta.columns.get(i);
                 String name = columnMeta.name;
                 byte type = columnMeta.type;
                 if (type == ColumnType.Bool)

@@ -129,7 +129,7 @@ const uint8_t *serialize(const feature_collection fc)
     }
 
     auto header = CreateHeaderDirect(
-        fbb, nullptr, &extentVector, geometryType, 2, &columns, featuresCount);
+        fbb, nullptr, &extentVector, geometryType, false, false, false, &columns, featuresCount);
     fbb.FinishSizePrefixed(header);
     auto hbuf = fbb.Release();
     std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
@@ -184,7 +184,7 @@ const uint8_t *serialize(const feature_collection fc)
         std::vector<uint8_t> properties;
         parseProperties(f.properties, properties, columnMetas);
         auto pProperties = properties.size() == 0 ? nullptr : &properties;
-        auto feature = CreateFeatureDirect(fbb, i, pEnds, pEndss, &coords, pProperties);
+        auto feature = CreateFeatureDirect(fbb, i, pEnds, pEndss, &coords, nullptr, nullptr, nullptr, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));

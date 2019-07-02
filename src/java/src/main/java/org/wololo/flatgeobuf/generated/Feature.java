@@ -26,27 +26,45 @@ public final class Feature extends Table {
   public int coordsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer coordsAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
   public ByteBuffer coordsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
-  public int properties(int j) { int o = __offset(12); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
-  public int propertiesLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer propertiesAsByteBuffer() { return __vector_as_bytebuffer(12, 1); }
-  public ByteBuffer propertiesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 1); }
+  public double z(int j) { int o = __offset(12); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
+  public int zLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer zAsByteBuffer() { return __vector_as_bytebuffer(12, 8); }
+  public ByteBuffer zInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 8); }
+  public double m(int j) { int o = __offset(14); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
+  public int mLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer mAsByteBuffer() { return __vector_as_bytebuffer(14, 8); }
+  public ByteBuffer mInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 8); }
+  public double t(int j) { int o = __offset(16); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
+  public int tLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer tAsByteBuffer() { return __vector_as_bytebuffer(16, 8); }
+  public ByteBuffer tInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 16, 8); }
+  public int properties(int j) { int o = __offset(18); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
+  public int propertiesLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer propertiesAsByteBuffer() { return __vector_as_bytebuffer(18, 1); }
+  public ByteBuffer propertiesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 18, 1); }
 
   public static int createFeature(FlatBufferBuilder builder,
       long fid,
       int endsOffset,
       int endssOffset,
       int coordsOffset,
+      int zOffset,
+      int mOffset,
+      int tOffset,
       int propertiesOffset) {
-    builder.startObject(5);
+    builder.startObject(8);
     Feature.addFid(builder, fid);
     Feature.addProperties(builder, propertiesOffset);
+    Feature.addT(builder, tOffset);
+    Feature.addM(builder, mOffset);
+    Feature.addZ(builder, zOffset);
     Feature.addCoords(builder, coordsOffset);
     Feature.addEndss(builder, endssOffset);
     Feature.addEnds(builder, endsOffset);
     return Feature.endFeature(builder);
   }
 
-  public static void startFeature(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startFeature(FlatBufferBuilder builder) { builder.startObject(8); }
   public static void addFid(FlatBufferBuilder builder, long fid) { builder.addLong(0, fid, 0L); }
   public static void addEnds(FlatBufferBuilder builder, int endsOffset) { builder.addOffset(1, endsOffset, 0); }
   public static int createEndsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
@@ -57,7 +75,16 @@ public final class Feature extends Table {
   public static void addCoords(FlatBufferBuilder builder, int coordsOffset) { builder.addOffset(3, coordsOffset, 0); }
   public static int createCoordsVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
   public static void startCoordsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addProperties(FlatBufferBuilder builder, int propertiesOffset) { builder.addOffset(4, propertiesOffset, 0); }
+  public static void addZ(FlatBufferBuilder builder, int zOffset) { builder.addOffset(4, zOffset, 0); }
+  public static int createZVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
+  public static void startZVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
+  public static void addM(FlatBufferBuilder builder, int mOffset) { builder.addOffset(5, mOffset, 0); }
+  public static int createMVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
+  public static void startMVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
+  public static void addT(FlatBufferBuilder builder, int tOffset) { builder.addOffset(6, tOffset, 0); }
+  public static int createTVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
+  public static void startTVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
+  public static void addProperties(FlatBufferBuilder builder, int propertiesOffset) { builder.addOffset(7, propertiesOffset, 0); }
   public static int createPropertiesVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
   public static void startPropertiesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
   public static int endFeature(FlatBufferBuilder builder) {

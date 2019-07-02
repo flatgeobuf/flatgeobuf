@@ -211,6 +211,7 @@ describe('geojson module', () => {
 
   })
 
+  /*
   describe('Prepared buffers tests', () => {
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
@@ -226,5 +227,6 @@ describe('geojson module', () => {
       expect(geojson.features.length).to.eq(3221)
     })
   })
+  */
 
 })

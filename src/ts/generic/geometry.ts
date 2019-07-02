@@ -60,15 +60,15 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
     if (type === GeometryType.MultiLineString) {
         const mlsEnds = (geometry as IMultiLineString).getEnds()
         if (mlsEnds.length > 1)
-            ends = mlsEnds
+            ends = mlsEnds.map(e => e >> 1)
     } else if (type === GeometryType.Polygon) {
         const pEnds = (geometry as IPolygon).getEnds()
         if (pEnds.length > 1)
-            ends = pEnds
+            ends = pEnds.map(e => e >> 1)
     } else if (type === GeometryType.MultiPolygon) {
         const nestedEnds = (geometry as IMultiPolygon).getEndss()
         if (nestedEnds.length > 1 || nestedEnds[0].length > 1)
-            ends = flat(nestedEnds)
+            ends = flat(nestedEnds).map(e => e >> 1)
         if (nestedEnds.length > 1)
             endss = nestedEnds.map(ends => ends.length)
     }
