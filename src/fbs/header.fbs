@@ -1,6 +1,4 @@
-namespace FlatGeobuf;
-
-enum GeometryType:ubyte {
+enum GeometryType: ubyte {
   Point,
   MultiPoint,
   LineString,
@@ -31,6 +29,12 @@ table Column {
   type: ColumnType;
 }
 
+table Crs {
+  code: int;
+  org: string; // assumed to be EPSG if not supplied
+  wkt: string;
+}
+
 table Header {
   name: string;
   envelope: [double];
@@ -39,11 +43,10 @@ table Header {
   hasM: bool = false;
   hasT: bool = false;
   columns: [Column];
-  features_count: ulong;
+  features_count: ulong; // 0 = unknown
   fids: bool = true;
   index_node_size: ushort = 16; // 0 = no index
-  srs_code: int;
-  srs_org: string; // assumed to be EPSG if not supplied
+  crs: Crs;
 }
 
 root_type Header;

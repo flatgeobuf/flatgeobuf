@@ -3,7 +3,7 @@ import { GeometryType } from '../header_generated'
 import { Feature } from '../feature_generated'
 
 export interface IParsedGeometry {
-    coords: number[],
+    xy: number[],
     ends: number[],
     endss: number[]
 }
@@ -29,8 +29,8 @@ export interface ICreateGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: ISimpleGeometry, type: GeometryType) {
-    const { coords, ends, endss } = parseGeometry(geometry, type)
-    const coordsOffset = Feature.createCoordsVector(builder, coords)
+    const { xy, ends, endss } = parseGeometry(geometry, type)
+    const xyOffset = Feature.createXyVector(builder, xy)
 
     let endsOffset: number = null
     let endssOffset: number = null
@@ -44,7 +44,7 @@ export function buildGeometry(builder: flatbuffers.Builder, geometry: ISimpleGeo
             Feature.addEnds(builder, endsOffset)
         if (endssOffset)
             Feature.addEndss(builder, endssOffset)
-        Feature.addCoords(builder, coordsOffset)
+        Feature.addXy(builder, xyOffset)
     }
 }
 
@@ -54,7 +54,7 @@ export function flat(a: any[]): number[] {
 }
 
 export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
-    let coords: number[] = geometry.getFlatCoordinates()
+    let xy: number[] = geometry.getFlatCoordinates()
     let ends: number[] = null
     let endss: number[] = null
     if (type === GeometryType.MultiLineString) {
@@ -73,7 +73,7 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
             endss = nestedEnds.map(ends => ends.length)
     }
     return {
-        coords,
+        xy,
         ends,
         endss
     } as IParsedGeometry

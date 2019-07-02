@@ -279,21 +279,21 @@ const multi_polygon fromMultiPolygon(
 
 const geometry fromGeometry(const Feature *feature, const GeometryType geometryType)
 {
-    auto coords = feature->coords()->data();
-    auto coordsLength = feature->coords()->Length();
+    auto xy = feature->xy()->data();
+    auto xyLength = feature->xy()->Length();
     switch (geometryType) {
         case GeometryType::Point:
-            return point { coords[0], coords[1] };
+            return point { xy[0], xy[1] };
         case GeometryType::MultiPoint:
-            return multi_point { extractPoints(coords, coordsLength) };
+            return multi_point { extractPoints(xy, xyLength) };
         case GeometryType::LineString:
-            return line_string(extractPoints(coords, coordsLength));
+            return line_string(extractPoints(xy, xyLength));
         case GeometryType::MultiLineString: 
-            return fromMultiLineString(coords, coordsLength, feature->ends());
+            return fromMultiLineString(xy, xyLength, feature->ends());
         case GeometryType::Polygon:
-            return fromPolygon(coords, coordsLength, feature->ends());
+            return fromPolygon(xy, xyLength, feature->ends());
         case GeometryType::MultiPolygon:
-            return fromMultiPolygon(coords, coordsLength, feature->ends(), feature->endss());
+            return fromMultiPolygon(xy, xyLength, feature->ends(), feature->endss());
         default:
             throw std::invalid_argument("Unknown geometry type");
     }

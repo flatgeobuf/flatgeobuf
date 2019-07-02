@@ -32,7 +32,7 @@ public class GeometryConversions {
         //    coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y, c.getZ())).toArray();
         //else
             coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y)).toArray();
-        go.coordsOffset = Feature.createCoordsVector(builder, coords);
+        go.coordsOffset = Feature.createXyVector(builder, coords);
 
         if (headerMeta.geometryType == GeometryType.MultiLineString) {
             MultiLineString mls = (MultiLineString) geometry;
@@ -92,12 +92,12 @@ public class GeometryConversions {
 
     public static org.locationtech.jts.geom.Geometry deserialize(Feature feature, HeaderMeta headerMeta) {
         GeometryFactory factory = new GeometryFactory();
-        int coordsLength = feature.coordsLength();
+        int xyLength = feature.xyLength();
         //int dimLengths = coordsLength >> 1;
-        Coordinate[] coordinates = new Coordinate[coordsLength >> 1];
+        Coordinate[] coordinates = new Coordinate[xyLength >> 1];
         int c = 0;
-        for (int i = 0; i < coordsLength; i = i + 2)
-            coordinates[c++] = new Coordinate(feature.coords(i), feature.coords(i + 1));
+        for (int i = 0; i < xyLength; i = i + 2)
+            coordinates[c++] = new Coordinate(feature.xy(i), feature.xy(i + 1));
 
         IntFunction<Polygon> makePolygonWithRings = (int endsLength) -> {
             LinearRing[] lrs = new LinearRing[endsLength];

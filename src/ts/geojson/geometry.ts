@@ -10,8 +10,8 @@ export interface IGeoJsonGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
-    const { coords, ends, endss } = parseGeometry(geometry)
-    const coordsOffset = Feature.createCoordsVector(builder, coords)
+    const { xy, ends, endss } = parseGeometry(geometry)
+    const coordsOffset = Feature.createXyVector(builder, xy)
 
     let endsOffset: number = null
     let endssOffset: number = null
@@ -25,99 +25,99 @@ export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGe
             Feature.addEnds(builder, endsOffset)
         if (endssOffset)
             Feature.addEndss(builder, endssOffset)
-        Feature.addCoords(builder, coordsOffset)
+        Feature.addXy(builder, coordsOffset)
     }
 }
 
 function parseGeometry(geometry: IGeoJsonGeometry) {
     const cs = geometry.coordinates
-    let coords: number[] = null
+    let xy: number[] = null
     let ends: number[] = null
     let endss: number[] = null
     let end = 0
     let endend = 0
     switch (geometry.type) {
         case 'Point': {
-            coords = cs as number[]
+            xy = cs as number[]
             break
         }
         case 'MultiPoint':
         case 'LineString': {
-            coords = flat(cs as number[][])
+            xy = flat(cs as number[][])
             break
         }
         case 'MultiLineString': {
             const css = cs as number[][][]
-            coords = flat(css)
+            xy = flat(css)
             if (css.length > 1)
-                ends = css.map(c => end += c.length * 2)
+                ends = css.map(c => end += c.length << 1)
             break
         }
         case 'Polygon': {
             const css = cs as number[][][]
-            coords = flat(css)
+            xy = flat(css)
             if (css.length > 1)
-                ends = css.map(c => end += c.length * 2)
+                ends = css.map(c => end += c.length << 1)
             break
         }
         case 'MultiPolygon': {
             const csss = cs as number[][][][]
-            coords = flat(csss)
+            xy = flat(csss)
             if (csss.length > 1) {
                 endss = csss.map(c => endend += c.length)
-                ends = flat(csss.map(cc => cc.map(c => end += c.length * 2)))
+                ends = flat(csss.map(cc => cc.map(c => end += c.length << 1)))
             } else
                 if (csss[0].length > 1)
-                    ends = csss[0].map(c => end += c.length * 2)
+                    ends = csss[0].map(c => end += c.length << 1)
             break
         }
     }
     return {
-        coords,
+        xy,
         ends,
         endss
     } as IParsedGeometry
 }
 
-function extractParts(coords: Float64Array, ends: Uint32Array) {
+function extractParts(xy: Float64Array, ends: Uint32Array) {
     if (!ends)
-        return [pairFlatCoordinates(coords)]
+        return [pairFlatCoordinates(xy)]
     let s = 0
-    let coordsSlices = Array.from(ends)
-        .map(e => coords.slice(s, s = e))
-    return coordsSlices
+    let xySlices = Array.from(ends)
+        .map(e => xy.slice(s, s = e))
+    return xySlices
         .map(cs => pairFlatCoordinates(cs))
 }
 
 function extractPartsParts(
-        coords: Float64Array,
+    xy: Float64Array,
         ends: Uint32Array,
         endss: Uint32Array) {
     if (!endss)
-        return [extractParts(coords, ends)]
+        return [extractParts(xy, ends)]
     let s = 0
-    let coordsSlices = Array.from(ends)
-        .map(e => coords.slice(s, s = e))
+    let xySlices = Array.from(ends)
+        .map(e => xy.slice(s, s = e))
     s = 0
     return Array.from(endss)
-        .map(e => coordsSlices.slice(s, s = e)
+        .map(e => xySlices.slice(s, s = e)
         .map(cs => pairFlatCoordinates(cs)))
 }
 
 function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
-    const coords = feature.coordsArray()
+    const xy = feature.xyArray()
     switch (type) {
         case GeometryType.Point:
-            return Array.from(coords)
+            return Array.from(xy)
         case GeometryType.MultiPoint:
         case GeometryType.LineString:
-            return pairFlatCoordinates(coords)
+            return pairFlatCoordinates(xy)
         case GeometryType.MultiLineString:
-            return extractParts(coords, feature.endsArray())
+            return extractParts(xy, feature.endsArray())
         case GeometryType.Polygon:
-            return extractParts(coords, feature.endsArray())
+            return extractParts(xy, feature.endsArray())
         case GeometryType.MultiPolygon:
-            return extractPartsParts(coords,
+            return extractPartsParts(xy,
                 feature.endsArray(),
                 feature.endssArray())
     }

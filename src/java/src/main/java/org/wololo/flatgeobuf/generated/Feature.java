@@ -22,10 +22,10 @@ public final class Feature extends Table {
   public int endssLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer endssAsByteBuffer() { return __vector_as_bytebuffer(8, 4); }
   public ByteBuffer endssInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 4); }
-  public double coords(int j) { int o = __offset(10); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
-  public int coordsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer coordsAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
-  public ByteBuffer coordsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
+  public double xy(int j) { int o = __offset(10); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
+  public int xyLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer xyAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
+  public ByteBuffer xyInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
   public double z(int j) { int o = __offset(12); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
   public int zLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer zAsByteBuffer() { return __vector_as_bytebuffer(12, 8); }
@@ -47,7 +47,7 @@ public final class Feature extends Table {
       long fid,
       int endsOffset,
       int endssOffset,
-      int coordsOffset,
+      int xyOffset,
       int zOffset,
       int mOffset,
       int tOffset,
@@ -58,7 +58,7 @@ public final class Feature extends Table {
     Feature.addT(builder, tOffset);
     Feature.addM(builder, mOffset);
     Feature.addZ(builder, zOffset);
-    Feature.addCoords(builder, coordsOffset);
+    Feature.addXy(builder, xyOffset);
     Feature.addEndss(builder, endssOffset);
     Feature.addEnds(builder, endsOffset);
     return Feature.endFeature(builder);
@@ -72,9 +72,9 @@ public final class Feature extends Table {
   public static void addEndss(FlatBufferBuilder builder, int endssOffset) { builder.addOffset(2, endssOffset, 0); }
   public static int createEndssVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startEndssVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addCoords(FlatBufferBuilder builder, int coordsOffset) { builder.addOffset(3, coordsOffset, 0); }
-  public static int createCoordsVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
-  public static void startCoordsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
+  public static void addXy(FlatBufferBuilder builder, int xyOffset) { builder.addOffset(3, xyOffset, 0); }
+  public static int createXyVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
+  public static void startXyVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addZ(FlatBufferBuilder builder, int zOffset) { builder.addOffset(4, zOffset, 0); }
   public static int createZVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
   public static void startZVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }

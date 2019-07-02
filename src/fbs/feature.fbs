@@ -1,10 +1,8 @@
-namespace FlatGeobuf;
-
 table Feature {
   fid: ulong;
   ends: [uint]; // coordinate part or subpart ends
   endss: [uint]; // subpart ends (multipolygon rings)
-  coords: [double];
+  xy: [double];
   z: [double];
   m: [double];
   t: [double];
