@@ -1,4 +1,4 @@
-# flatgeobuf
+# FlatGeobuf
 
 [![CircleCI](https://img.shields.io/circleci/build/github/bjornharrtell/flatgeobuf.svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
@@ -26,6 +26,19 @@ DISCLAIMER: Unfinished work in progress.
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 Any 64-bit type contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
+
+## Performance
+
+Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 812547 LineString features with a set of attributes.
+
+|                       | Shapefile | GeoPackage | FlatGeobuf | GeoJSON | GML |
+|-----------------------|-----------|------------|------------|---------|-----|
+| Read full dataset     | 1         | 0.9        | 0.5        | 15      | 7.7 |
+| Read w/spatial filter | 1         | 0.15       | 0.12       | 100     | 60  |
+
+The test was done using the GDAL fork (linked below) implementing FlatGeobuf as a driver and measurements of repeated reads using loops of `ogrinfo -qq` runs.
+
+Note that for the test with spatial filter a small bounding box was chosen resulting in only 9 features. The reason for this is to test mainly the spatial index search performance for that case.
 
 ## Features
 
