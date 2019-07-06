@@ -11,7 +11,7 @@ const plugins = [
     presets: [['@babel/env', {
       modules: false,
       targets: {
-        browsers: ['>1%', 'not dead', 'not ie 11']
+        browsers: ['>2%', 'not dead', 'not ie 11']
       }
     }]],
     babelrc: false
