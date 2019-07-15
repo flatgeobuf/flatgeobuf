@@ -14,7 +14,7 @@ The site http://switchfromshapefile.org has more in depth information about the 
 
 Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeobuf. (conceptual, not performance optimized)
 
-DISCLAIMER: Unfinished work in progress.
+DISCLAIMER: Implementation is now in a more or less finished state but specification remains non-final for now.
 
 ## Specification
 
