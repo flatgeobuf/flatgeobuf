@@ -37,9 +37,29 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
                     view.setUint8(offset, value as number)
                     offset += 1
                     break
+                case ColumnType.Short:
+                    view.setInt16(offset, value as number, true)
+                    offset += 2
+                    break
+                case ColumnType.UShort:
+                    view.setUint16(offset, value as number, true)
+                    offset += 2
+                    break
                 case ColumnType.Int:
                     view.setInt32(offset, value as number, true)
                     offset += 4
+                    break
+                case ColumnType.UInt:
+                    view.setUint32(offset, value as number, true)
+                    offset += 4
+                    break
+                case ColumnType.Long:
+                    view.setBigInt64(offset, BigInt(value), true)
+                    offset += 8
+                    break
+                case ColumnType.Long:
+                    view.setBigUint64(offset, BigInt(value), true)
+                    offset += 8
                     break
                 case ColumnType.Double:
                     view.setFloat64(offset, value as number, true)
@@ -47,10 +67,10 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
                     break
                 case ColumnType.String:
                     const str = value as string
-                    view.setUint32(offset, str.length, true)
-                    offset += 4
                     const encoder = new TextEncoder()
                     const stringArray = encoder.encode(str)
+                    view.setUint32(offset, stringArray.length, true)
+                    offset += 4
                     propertiesArray.set(stringArray, offset)
                     offset += stringArray.length
                     break
@@ -106,9 +126,44 @@ function parseProperties(feature: Feature, columns: ColumnMeta[]) {
                 offset += 1
                 break
             }
+            case ColumnType.Byte: {
+                properties[column.name] = view.getInt8(offset)
+                offset += 1
+                break
+            }
+            case ColumnType.UByte: {
+                properties[column.name] = view.getUint8(offset)
+                offset += 1
+                break
+            }
+            case ColumnType.Short: {
+                properties[column.name] = view.getInt16(offset, true)
+                offset += 2
+                break
+            }
+            case ColumnType.UShort: {
+                properties[column.name] = view.getUint16(offset, true)
+                offset += 2
+                break
+            }
             case ColumnType.Int: {
                 properties[column.name] = view.getInt32(offset, true)
                 offset += 4
+                break
+            }
+            case ColumnType.UInt: {
+                properties[column.name] = view.getUint32(offset, true)
+                offset += 4
+                break
+            }
+            case ColumnType.Long: {
+                properties[column.name] = Number(view.getBigInt64(offset, true))
+                offset += 8
+                break
+            }
+            case ColumnType.ULong: {
+                properties[column.name] = Number(view.getBigUint64(offset, true))
+                offset += 8
                 break
             }
             case ColumnType.Double: {
@@ -124,6 +179,8 @@ function parseProperties(feature: Feature, columns: ColumnMeta[]) {
                 offset += length
                 break
             }
+            default:
+                throw new Error('Unknown type')
         }
     }
     return properties
