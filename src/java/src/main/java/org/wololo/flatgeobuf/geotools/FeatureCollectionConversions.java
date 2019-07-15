@@ -55,6 +55,8 @@ public class FeatureCollectionConversions {
                     column.type = ColumnType.Double;
                 else if (binding.isAssignableFrom(String.class))
                     column.type = ColumnType.String;
+                else
+                    throw new RuntimeException("Unknown type");
                 columns.add(column);
             }
         }

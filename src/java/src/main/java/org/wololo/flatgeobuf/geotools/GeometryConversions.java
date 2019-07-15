@@ -43,10 +43,10 @@ public class GeometryConversions {
                     go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
             }
         } else if (headerMeta.geometryType == GeometryType.Polygon) {
-            int end = 0;
             Polygon p = (Polygon) geometry;
             go.ends = new int[p.getNumInteriorRing() + 1];
-            go.ends[0] = p.getExteriorRing().getNumPoints();
+            int end = p.getExteriorRing().getNumPoints();
+            go.ends[0] = end;
             for (int i = 0; i < p.getNumInteriorRing(); i++)
                 go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
         } else if (headerMeta.geometryType == GeometryType.MultiPolygon) {
@@ -55,33 +55,25 @@ public class GeometryConversions {
             if (mp.getNumGeometries() == 1) {
                 Polygon p = (Polygon) mp.getGeometryN(0);
                 go.ends = new int[p.getNumInteriorRing() + 1];
-                go.ends[0] = end += p.getExteriorRing().getNumPoints();
+                end = p.getExteriorRing().getNumPoints();
+                go.ends[0] = end;
                 for (int i = 0; i < p.getNumInteriorRing(); i++)
                     go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
             } else {
-                go.ends = new int[mp.getNumGeometries()];
                 go.lengths = new int[mp.getNumGeometries()];
                 int c = 0;
                 for (int j = 0; j < mp.getNumGeometries(); j++) {
                     Polygon p = (Polygon) mp.getGeometryN(j);
-                    c++;
-                    for (int i = 0; i < p.getNumInteriorRing(); i++)
-                        c++;
+                    c += p.getNumInteriorRing() + 1;
                 }
                 go.ends = new int[c];
                 c = 0;
                 for (int j = 0; j < mp.getNumGeometries(); j++) {
                     Polygon p = (Polygon) mp.getGeometryN(j);
-                    int ringCount = 0;
-                    int ringLength = p.getExteriorRing().getNumPoints();
-                    go.ends[c++] = end += ringLength;
-                    ringCount++;
-                    for (int i = 0; i < p.getNumInteriorRing(); i++) {
-                        ringLength = p.getInteriorRingN(i).getNumPoints();
-                        go.ends[c++] = end += ringLength;
-                        ringCount++;
-                    }
-                    go.lengths[j] = ringCount;
+                    go.ends[c++] = end += p.getExteriorRing().getNumPoints();
+                    for (int i = 0; i < p.getNumInteriorRing(); i++)
+                        go.ends[c++] = end += p.getInteriorRingN(i).getNumPoints();
+                    go.lengths[j] = p.getNumInteriorRing() + 1;
                 }
             }
         }
@@ -103,12 +95,12 @@ public class GeometryConversions {
 
         IntFunction<Polygon> makePolygonWithRings = (int endsLength) -> {
             LinearRing[] lrs = new LinearRing[endsLength];
-            int offset = 0;
+            int s = 0;
             for (int i = 0; i < endsLength; i++) {
-                int ringLength = (int) feature.ends(i);
-                Coordinate[] cs = Arrays.copyOfRange(coordinates, offset, offset + ringLength);
+                int e = (int) feature.ends(i);
+                Coordinate[] cs = Arrays.copyOfRange(coordinates, s, e);
                 lrs[i] = factory.createLinearRing(cs);
-                offset += ringLength;
+                s = e;
             }
             LinearRing shell = lrs[0];
             LinearRing holes[] = Arrays.copyOfRange(lrs, 1, endsLength);
@@ -117,11 +109,10 @@ public class GeometryConversions {
 
         Supplier<Polygon> makePolygon = () -> {
             int endsLength = feature.endsLength();
-            if (endsLength > 1) {
+            if (endsLength > 1)
                 return makePolygonWithRings.apply(endsLength);
-            } else {
+            else
                 return factory.createPolygon(coordinates);
-            }
         };
 
         switch (headerMeta.geometryType) {
