@@ -323,7 +323,7 @@ mapbox::feature::property_map readGeoJsonProperties(const Feature *feature, std:
     auto size = properties->size();
 
     uoffset_t offset = 0;
-    while (offset <= size) {
+    while (offset < size) {
         uint16_t i = *(reinterpret_cast<const uint16_t *>(data + offset));
         offset += sizeof(uint16_t);
         auto column = columnMetas[i];
