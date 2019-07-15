@@ -18,10 +18,10 @@ public final class Feature extends Table {
   public int endsLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer endsAsByteBuffer() { return __vector_as_bytebuffer(6, 4); }
   public ByteBuffer endsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 4); }
-  public long endss(int j) { int o = __offset(8); return o != 0 ? (long)bb.getInt(__vector(o) + j * 4) & 0xFFFFFFFFL : 0; }
-  public int endssLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer endssAsByteBuffer() { return __vector_as_bytebuffer(8, 4); }
-  public ByteBuffer endssInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 4); }
+  public long lengths(int j) { int o = __offset(8); return o != 0 ? (long)bb.getInt(__vector(o) + j * 4) & 0xFFFFFFFFL : 0; }
+  public int lengthsLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer lengthsAsByteBuffer() { return __vector_as_bytebuffer(8, 4); }
+  public ByteBuffer lengthsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 4); }
   public double xy(int j) { int o = __offset(10); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
   public int xyLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer xyAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
@@ -46,7 +46,7 @@ public final class Feature extends Table {
   public static int createFeature(FlatBufferBuilder builder,
       long fid,
       int endsOffset,
-      int endssOffset,
+      int lengthsOffset,
       int xyOffset,
       int zOffset,
       int mOffset,
@@ -59,7 +59,7 @@ public final class Feature extends Table {
     Feature.addM(builder, mOffset);
     Feature.addZ(builder, zOffset);
     Feature.addXy(builder, xyOffset);
-    Feature.addEndss(builder, endssOffset);
+    Feature.addLengths(builder, lengthsOffset);
     Feature.addEnds(builder, endsOffset);
     return Feature.endFeature(builder);
   }
@@ -69,9 +69,9 @@ public final class Feature extends Table {
   public static void addEnds(FlatBufferBuilder builder, int endsOffset) { builder.addOffset(1, endsOffset, 0); }
   public static int createEndsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startEndsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addEndss(FlatBufferBuilder builder, int endssOffset) { builder.addOffset(2, endssOffset, 0); }
-  public static int createEndssVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
-  public static void startEndssVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addLengths(FlatBufferBuilder builder, int lengthsOffset) { builder.addOffset(2, lengthsOffset, 0); }
+  public static int createLengthsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
+  public static void startLengthsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addXy(FlatBufferBuilder builder, int xyOffset) { builder.addOffset(3, xyOffset, 0); }
   public static int createXyVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
   public static void startXyVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }

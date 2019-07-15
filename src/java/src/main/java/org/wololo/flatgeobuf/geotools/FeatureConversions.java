@@ -31,6 +31,8 @@ public class FeatureConversions {
             ColumnMeta column = headerMeta.columns.get(i);
             byte type = column.type;
             Object value = feature.getAttribute(column.name);
+            if (value == null)
+                continue;
             bb.putShort(i);
             if (type == ColumnType.Bool)
                 bb.put((byte) ((boolean)value ? 1 : 0));
@@ -52,7 +54,7 @@ public class FeatureConversions {
             propertiesOffset = Feature.createPropertiesVector(builder, data);
         }
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta);
-        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.endssOffset, go.coordsOffset, 0, 0, 0, propertiesOffset);
+        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.lengthsOffset, go.coordsOffset, 0, 0, 0, propertiesOffset);
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();

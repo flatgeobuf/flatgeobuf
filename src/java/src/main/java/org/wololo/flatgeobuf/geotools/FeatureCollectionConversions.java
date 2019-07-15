@@ -188,8 +188,7 @@ public class FeatureCollectionConversions {
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
         Header.startHeader(builder);
-        Header.addGeometryType(builder, headerMeta.geometryType);
-        //Header.addDimensions(builder, dimensions);
+        Header.addGeometryType(builder, headerMeta.geometryType);        
         Header.addIndexNodeSize(builder, 0);
         Header.addColumns(builder, columnsOffset);
         Header.addFeaturesCount(builder, headerMeta.featuresCount);
