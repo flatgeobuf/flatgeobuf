@@ -115,6 +115,7 @@ describe('geojson module', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`)
       const actual = deserialize(serialize(expected))
+      // NOTE: 28 flat coords, ends = [8, 20, 28], endss = [1, 3]
       expect(actual).to.deep.equal(expected)
     })
 
@@ -128,6 +129,7 @@ describe('geojson module', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`)
       const actual = deserialize(serialize(expected))
+      // NOTE: 18 flat coords, ends = [10, 18], endss = null
       expect(actual).to.deep.equal(expected)
     })
 
