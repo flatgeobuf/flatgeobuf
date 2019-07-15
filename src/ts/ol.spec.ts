@@ -141,6 +141,7 @@ describe('ol module', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`)
       const actual = deserialize(serialize(expected), ol)
+      // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
       expect(g(actual)).to.equal(g(expected))
     })
 

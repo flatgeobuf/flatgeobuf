@@ -74,7 +74,7 @@ endsArray():Uint32Array|null {
  * @param number index
  * @returns number
  */
-endss(index: number):number|null {
+lengths(index: number):number|null {
   var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.readUint32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
 };
@@ -82,7 +82,7 @@ endss(index: number):number|null {
 /**
  * @returns number
  */
-endssLength():number {
+lengthsLength():number {
   var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
@@ -90,7 +90,7 @@ endssLength():number {
 /**
  * @returns Uint32Array
  */
-endssArray():Uint32Array|null {
+lengthsArray():Uint32Array|null {
   var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? new Uint32Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
@@ -266,10 +266,10 @@ static startEndsVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset endssOffset
+ * @param flatbuffers.Offset lengthsOffset
  */
-static addEndss(builder:flatbuffers.Builder, endssOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, endssOffset, 0);
+static addLengths(builder:flatbuffers.Builder, lengthsOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, lengthsOffset, 0);
 };
 
 /**
@@ -277,7 +277,7 @@ static addEndss(builder:flatbuffers.Builder, endssOffset:flatbuffers.Offset) {
  * @param Array.<number> data
  * @returns flatbuffers.Offset
  */
-static createEndssVector(builder:flatbuffers.Builder, data:number[] | Uint8Array):flatbuffers.Offset {
+static createLengthsVector(builder:flatbuffers.Builder, data:number[] | Uint8Array):flatbuffers.Offset {
   builder.startVector(4, data.length, 4);
   for (var i = data.length - 1; i >= 0; i--) {
     builder.addInt32(data[i]);
@@ -289,7 +289,7 @@ static createEndssVector(builder:flatbuffers.Builder, data:number[] | Uint8Array
  * @param flatbuffers.Builder builder
  * @param number numElems
  */
-static startEndssVector(builder:flatbuffers.Builder, numElems:number) {
+static startLengthsVector(builder:flatbuffers.Builder, numElems:number) {
   builder.startVector(4, numElems, 4);
 };
 
@@ -463,11 +463,11 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, fid:flatbuffers.Long, endsOffset:flatbuffers.Offset, endssOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, fid:flatbuffers.Long, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
   Feature.start(builder);
   Feature.addFid(builder, fid);
   Feature.addEnds(builder, endsOffset);
-  Feature.addEndss(builder, endssOffset);
+  Feature.addLengths(builder, lengthsOffset);
   Feature.addXy(builder, xyOffset);
   Feature.addZ(builder, zOffset);
   Feature.addM(builder, mOffset);

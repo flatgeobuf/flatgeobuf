@@ -5,7 +5,7 @@ import { Feature } from '../feature_generated'
 export interface IParsedGeometry {
     xy: number[],
     ends: number[],
-    endss: number[]
+    lengths: number[]
 }
 
 export interface ISimpleGeometry {
@@ -29,21 +29,21 @@ export interface ICreateGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: ISimpleGeometry, type: GeometryType) {
-    const { xy, ends, endss } = parseGeometry(geometry, type)
+    const { xy, ends, lengths } = parseGeometry(geometry, type)
     const xyOffset = Feature.createXyVector(builder, xy)
 
     let endsOffset: number = null
-    let endssOffset: number = null
+    let lengthsOffset: number = null
     if (ends)
         endsOffset = Feature.createEndsVector(builder, ends)
-    if (endss)
-        endssOffset = Feature.createEndssVector(builder, endss)
+    if (lengths)
+        lengthsOffset = Feature.createLengthsVector(builder, lengths)
 
     return function () {
         if (endsOffset)
             Feature.addEnds(builder, endsOffset)
-        if (endssOffset)
-            Feature.addEndss(builder, endssOffset)
+        if (lengthsOffset)
+            Feature.addLengths(builder, lengthsOffset)
         Feature.addXy(builder, xyOffset)
     }
 }
@@ -56,7 +56,7 @@ export function flat(a: any[]): number[] {
 export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
     let xy: number[] = geometry.getFlatCoordinates()
     let ends: number[] = null
-    let endss: number[] = null
+    let lengths: number[] = null
     if (type === GeometryType.MultiLineString) {
         const mlsEnds = (geometry as IMultiLineString).getEnds()
         if (mlsEnds.length > 1)
@@ -70,12 +70,12 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
         if (nestedEnds.length > 1 || nestedEnds[0].length > 1)
             ends = flat(nestedEnds).map(e => e >> 1)
         if (nestedEnds.length > 1)
-            endss = nestedEnds.map(ends => ends.length)
+            lengths = nestedEnds.map(ends => ends.length)
     }
     return {
         xy,
         ends,
-        endss
+        lengths
     } as IParsedGeometry
 }
 

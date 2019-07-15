@@ -10,21 +10,21 @@ export interface IGeoJsonGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
-    const { xy, ends, endss } = parseGeometry(geometry)
+    const { xy, ends, lengths } = parseGeometry(geometry)
     const coordsOffset = Feature.createXyVector(builder, xy)
 
     let endsOffset: number = null
-    let endssOffset: number = null
+    let lengthsOffset: number = null
     if (ends)
         endsOffset = Feature.createEndsVector(builder, ends)
-    if (endss)
-        endssOffset = Feature.createEndssVector(builder, endss)
+    if (lengths)
+        lengthsOffset = Feature.createLengthsVector(builder, lengths)
 
     return function() {
         if (endsOffset)
             Feature.addEnds(builder, endsOffset)
-        if (endssOffset)
-            Feature.addEndss(builder, endssOffset)
+        if (lengthsOffset)
+            Feature.addLengths(builder, lengthsOffset)
         Feature.addXy(builder, coordsOffset)
     }
 }
@@ -33,49 +33,38 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
     const cs = geometry.coordinates
     let xy: number[] = null
     let ends: number[] = null
-    let endss: number[] = null
+    let lengths: number[] = null
     let end = 0
-    let endend = 0
     switch (geometry.type) {
-        case 'Point': {
+        case 'Point':
             xy = cs as number[]
             break
-        }
         case 'MultiPoint':
-        case 'LineString': {
+        case 'LineString':
             xy = flat(cs as number[][])
             break
-        }
-        case 'MultiLineString': {
+        case 'MultiLineString':
+        case 'Polygon':
             const css = cs as number[][][]
             xy = flat(css)
             if (css.length > 1)
-                ends = css.map(c => end += c.length << 1)
+                ends = css.map(c => end += c.length)
             break
-        }
-        case 'Polygon': {
-            const css = cs as number[][][]
-            xy = flat(css)
-            if (css.length > 1)
-                ends = css.map(c => end += c.length << 1)
-            break
-        }
-        case 'MultiPolygon': {
+        case 'MultiPolygon':
             const csss = cs as number[][][][]
             xy = flat(csss)
             if (csss.length > 1) {
-                endss = csss.map(c => endend += c.length)
-                ends = flat(csss.map(cc => cc.map(c => end += c.length << 1)))
+                lengths = csss.map(c => c.length)
+                ends = flat(csss.map(cc => cc.map(c => end += c.length)))
             } else
                 if (csss[0].length > 1)
-                    ends = csss[0].map(c => end += c.length << 1)
+                    ends = csss[0].map(c => end += c.length)
             break
-        }
     }
     return {
         xy,
         ends,
-        endss
+        lengths
     } as IParsedGeometry
 }
 
@@ -84,7 +73,7 @@ function extractParts(xy: Float64Array, ends: Uint32Array) {
         return [pairFlatCoordinates(xy)]
     let s = 0
     let xySlices = Array.from(ends)
-        .map(e => xy.slice(s, s = e))
+        .map(e => xy.slice(s, s = e << 1))
     return xySlices
         .map(cs => pairFlatCoordinates(cs))
 }
@@ -92,15 +81,15 @@ function extractParts(xy: Float64Array, ends: Uint32Array) {
 function extractPartsParts(
     xy: Float64Array,
         ends: Uint32Array,
-        endss: Uint32Array) {
-    if (!endss)
+        lengths: Uint32Array) {
+    if (!lengths)
         return [extractParts(xy, ends)]
     let s = 0
     let xySlices = Array.from(ends)
-        .map(e => xy.slice(s, s = e))
+        .map(e => xy.slice(s, s = e << 1))
     s = 0
-    return Array.from(endss)
-        .map(e => xySlices.slice(s, s = e)
+    return Array.from(lengths)
+        .map(e => xySlices.slice(s, s += e)
         .map(cs => pairFlatCoordinates(cs)))
 }
 
@@ -119,7 +108,7 @@ function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
         case GeometryType.MultiPolygon:
             return extractPartsParts(xy,
                 feature.endsArray(),
-                feature.endssArray())
+                feature.lengthsArray())
     }
 }
 
