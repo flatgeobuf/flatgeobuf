@@ -106,7 +106,7 @@ export function parseProperties(feature: Feature, columns: ColumnMeta[]) {
     const length = feature.propertiesLength()
     let offset = 0
     const properties: any = {}
-    while (offset < length) {
+    while (offset <= length) {
         const i = view.getUint16(offset, true)
         offset += 2
         const column = columns[i]
