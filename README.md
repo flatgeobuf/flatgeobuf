@@ -57,3 +57,8 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 * C# support update
 * C API
 * Optimizations
+
+## FAQ
+
+Q: Why not use WKB geometry encoding?
+A: It does not align on 8 bytes so it not always possible to consume it without copying first.
