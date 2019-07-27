@@ -8,7 +8,7 @@ A performant binary encoding for geographic data based on [flatbuffers](http://g
 
 Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity and to be able to cluster the data on a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) enabling fast bounding box spatial filtering.
 
-Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access.
+Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access. Spatial index is optional to allow the format to be used as a pure intermediate serialization format with efficient streamable write and read performance for a full dataset.
 
 The site http://switchfromshapefile.org has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
 
@@ -55,7 +55,9 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 * Finalize 1.0 spec
 * Java index support
 * C# support update
-* C API
+* C langauge support
+* Go langauge support
+* Rust language support
 * Optimizations
 
 ## FAQ
