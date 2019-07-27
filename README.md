@@ -62,3 +62,6 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 
 Q: Why not use WKB geometry encoding?
 A: It does not align on 8 bytes so it not always possible to consume it without copying first.
+
+Q: Why not use Protobuf?
+A: Performance reasons (protobuf is not zero copy) and to allow streaming/random access
