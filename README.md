@@ -25,7 +25,7 @@ DISCLAIMER: Implementation is now in a more or less finished state but specifica
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
-Any 64-bit type contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
+Any 64-bit flatbuffer value contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
 
 ## Performance
 
@@ -35,8 +35,10 @@ Preliminary performance tests has been done using road data from OSM for Denmark
 |-----------------------|-----------|------------|------------|---------|-----|
 | Read full dataset     | 1         | 0.9        | 0.5        | 15      | 7.7 |
 | Read w/spatial filter | 1         | 0.15       | 0.12       | 100     | 60  |
+| Write full dataset    | 1         | 0.62       | 0.37       | 2.5     | 2   |
+| Write w/spatial index | 1         | 1.3        | 0.45       | -       | -   |
 
-The test was done using the GDAL fork (linked below) implementing FlatGeobuf as a driver and measurements of repeated reads using loops of `ogrinfo -qq` runs.
+The test was done using the GDAL fork (linked below) implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file.
 
 Note that for the test with spatial filter a small bounding box was chosen resulting in only 9 features. The reason for this is to test mainly the spatial index search performance for that case.
 
@@ -58,7 +60,7 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 * C langauge support
 * Go langauge support
 * Rust language support
-* Optimizations
+* Further optimizations
 
 ## FAQ
 
