@@ -197,10 +197,27 @@ tArray():Float64Array|null {
 
 /**
  * @param number index
+ * @returns flatbuffers.Long
+ */
+tm(index: number):flatbuffers.Long|null {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? this.bb!.readUint64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : this.bb!.createLong(0, 0);
+};
+
+/**
+ * @returns number
+ */
+tmLength():number {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param number index
  * @returns number
  */
 properties(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? this.bb!.readUint8(this.bb!.__vector(this.bb_pos + offset) + index) : 0;
 };
 
@@ -208,7 +225,7 @@ properties(index: number):number|null {
  * @returns number
  */
 propertiesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -216,7 +233,7 @@ propertiesLength():number {
  * @returns Uint8Array
  */
 propertiesArray():Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? new Uint8Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -224,7 +241,7 @@ propertiesArray():Uint8Array|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(8);
+  builder.startObject(9);
 };
 
 /**
@@ -411,10 +428,39 @@ static startTVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset tmOffset
+ */
+static addTm(builder:flatbuffers.Builder, tmOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(7, tmOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param Array.<flatbuffers.Long> data
+ * @returns flatbuffers.Offset
+ */
+static createTmVector(builder:flatbuffers.Builder, data:flatbuffers.Long[]):flatbuffers.Offset {
+  builder.startVector(8, data.length, 8);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addInt64(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number numElems
+ */
+static startTmVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(8, numElems, 8);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @param flatbuffers.Offset propertiesOffset
  */
 static addProperties(builder:flatbuffers.Builder, propertiesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(7, propertiesOffset, 0);
+  builder.addFieldOffset(8, propertiesOffset, 0);
 };
 
 /**
@@ -463,7 +509,7 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, fid:flatbuffers.Long, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, fid:flatbuffers.Long, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, tmOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
   Feature.start(builder);
   Feature.addFid(builder, fid);
   Feature.addEnds(builder, endsOffset);
@@ -472,6 +518,7 @@ static create(builder:flatbuffers.Builder, fid:flatbuffers.Long, endsOffset:flat
   Feature.addZ(builder, zOffset);
   Feature.addM(builder, mOffset);
   Feature.addT(builder, tOffset);
+  Feature.addTm(builder, tmOffset);
   Feature.addProperties(builder, propertiesOffset);
   return Feature.end(builder);
 }

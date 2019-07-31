@@ -194,8 +194,34 @@ func (rcv *Feature) MutateT(j int, n float64) bool {
 	return false
 }
 
-func (rcv *Feature) Properties(j int) byte {
+func (rcv *Feature) Tm(j int) uint64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	if o != 0 {
+		a := rcv._tab.Vector(o)
+		return rcv._tab.GetUint64(a + flatbuffers.UOffsetT(j*8))
+	}
+	return 0
+}
+
+func (rcv *Feature) TmLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
+}
+
+func (rcv *Feature) MutateTm(j int, n uint64) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	if o != 0 {
+		a := rcv._tab.Vector(o)
+		return rcv._tab.MutateUint64(a+flatbuffers.UOffsetT(j*8), n)
+	}
+	return false
+}
+
+func (rcv *Feature) Properties(j int) byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -204,7 +230,7 @@ func (rcv *Feature) Properties(j int) byte {
 }
 
 func (rcv *Feature) PropertiesLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -212,7 +238,7 @@ func (rcv *Feature) PropertiesLength() int {
 }
 
 func (rcv *Feature) PropertiesBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -220,7 +246,7 @@ func (rcv *Feature) PropertiesBytes() []byte {
 }
 
 func (rcv *Feature) MutateProperties(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -229,7 +255,7 @@ func (rcv *Feature) MutateProperties(j int, n byte) bool {
 }
 
 func FeatureStart(builder *flatbuffers.Builder) {
-	builder.StartObject(8)
+	builder.StartObject(9)
 }
 func FeatureAddFid(builder *flatbuffers.Builder, fid uint64) {
 	builder.PrependUint64Slot(0, fid, 0)
@@ -270,8 +296,14 @@ func FeatureAddT(builder *flatbuffers.Builder, t flatbuffers.UOffsetT) {
 func FeatureStartTVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(8, numElems, 8)
 }
+func FeatureAddTm(builder *flatbuffers.Builder, tm flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(tm), 0)
+}
+func FeatureStartTmVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(8, numElems, 8)
+}
 func FeatureAddProperties(builder *flatbuffers.Builder, properties flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(properties), 0)
+	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(properties), 0)
 }
 func FeatureStartPropertiesVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)

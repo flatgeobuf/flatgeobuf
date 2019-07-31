@@ -9,5 +9,6 @@ public class HeaderMeta {
     public boolean hasZ = false;
     public boolean hasM = false;
     public boolean hasT = false;
+    public boolean hasTM = false;
     public List<ColumnMeta> columns;
 }

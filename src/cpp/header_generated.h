@@ -193,26 +193,44 @@ inline flatbuffers::Offset<Column> CreateColumnDirect(
 
 struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_CODE = 4,
-    VT_ORG = 6,
-    VT_WKT = 8
+    VT_ORG = 4,
+    VT_CODE = 6,
+    VT_NAME = 8,
+    VT_DESCRIPTION = 10,
+    VT_DEFINITION = 12,
+    VT_DEFINITION_12_063 = 14
   };
-  int32_t code() const {
-    return GetField<int32_t>(VT_CODE, 0);
-  }
   const flatbuffers::String *org() const {
     return GetPointer<const flatbuffers::String *>(VT_ORG);
   }
-  const flatbuffers::String *wkt() const {
-    return GetPointer<const flatbuffers::String *>(VT_WKT);
+  int32_t code() const {
+    return GetField<int32_t>(VT_CODE, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  const flatbuffers::String *description() const {
+    return GetPointer<const flatbuffers::String *>(VT_DESCRIPTION);
+  }
+  const flatbuffers::String *definition() const {
+    return GetPointer<const flatbuffers::String *>(VT_DEFINITION);
+  }
+  const flatbuffers::String *definition_12_063() const {
+    return GetPointer<const flatbuffers::String *>(VT_DEFINITION_12_063);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_CODE) &&
            VerifyOffset(verifier, VT_ORG) &&
            verifier.VerifyString(org()) &&
-           VerifyOffset(verifier, VT_WKT) &&
-           verifier.VerifyString(wkt()) &&
+           VerifyField<int32_t>(verifier, VT_CODE) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyOffset(verifier, VT_DESCRIPTION) &&
+           verifier.VerifyString(description()) &&
+           VerifyOffset(verifier, VT_DEFINITION) &&
+           verifier.VerifyString(definition()) &&
+           VerifyOffset(verifier, VT_DEFINITION_12_063) &&
+           verifier.VerifyString(definition_12_063()) &&
            verifier.EndTable();
   }
 };
@@ -220,14 +238,23 @@ struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct CrsBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_code(int32_t code) {
-    fbb_.AddElement<int32_t>(Crs::VT_CODE, code, 0);
-  }
   void add_org(flatbuffers::Offset<flatbuffers::String> org) {
     fbb_.AddOffset(Crs::VT_ORG, org);
   }
-  void add_wkt(flatbuffers::Offset<flatbuffers::String> wkt) {
-    fbb_.AddOffset(Crs::VT_WKT, wkt);
+  void add_code(int32_t code) {
+    fbb_.AddElement<int32_t>(Crs::VT_CODE, code, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(Crs::VT_NAME, name);
+  }
+  void add_description(flatbuffers::Offset<flatbuffers::String> description) {
+    fbb_.AddOffset(Crs::VT_DESCRIPTION, description);
+  }
+  void add_definition(flatbuffers::Offset<flatbuffers::String> definition) {
+    fbb_.AddOffset(Crs::VT_DEFINITION, definition);
+  }
+  void add_definition_12_063(flatbuffers::Offset<flatbuffers::String> definition_12_063) {
+    fbb_.AddOffset(Crs::VT_DEFINITION_12_063, definition_12_063);
   }
   explicit CrsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -243,28 +270,43 @@ struct CrsBuilder {
 
 inline flatbuffers::Offset<Crs> CreateCrs(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t code = 0,
     flatbuffers::Offset<flatbuffers::String> org = 0,
-    flatbuffers::Offset<flatbuffers::String> wkt = 0) {
+    int32_t code = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    flatbuffers::Offset<flatbuffers::String> description = 0,
+    flatbuffers::Offset<flatbuffers::String> definition = 0,
+    flatbuffers::Offset<flatbuffers::String> definition_12_063 = 0) {
   CrsBuilder builder_(_fbb);
-  builder_.add_wkt(wkt);
-  builder_.add_org(org);
+  builder_.add_definition_12_063(definition_12_063);
+  builder_.add_definition(definition);
+  builder_.add_description(description);
+  builder_.add_name(name);
   builder_.add_code(code);
+  builder_.add_org(org);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Crs> CreateCrsDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t code = 0,
     const char *org = nullptr,
-    const char *wkt = nullptr) {
+    int32_t code = 0,
+    const char *name = nullptr,
+    const char *description = nullptr,
+    const char *definition = nullptr,
+    const char *definition_12_063 = nullptr) {
   auto org__ = org ? _fbb.CreateString(org) : 0;
-  auto wkt__ = wkt ? _fbb.CreateString(wkt) : 0;
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto description__ = description ? _fbb.CreateString(description) : 0;
+  auto definition__ = definition ? _fbb.CreateString(definition) : 0;
+  auto definition_12_063__ = definition_12_063 ? _fbb.CreateString(definition_12_063) : 0;
   return FlatGeobuf::CreateCrs(
       _fbb,
-      code,
       org__,
-      wkt__);
+      code,
+      name__,
+      description__,
+      definition__,
+      definition_12_063__);
 }
 
 struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -275,11 +317,12 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_HASZ = 10,
     VT_HASM = 12,
     VT_HAST = 14,
-    VT_COLUMNS = 16,
-    VT_FEATURES_COUNT = 18,
-    VT_FIDS = 20,
-    VT_INDEX_NODE_SIZE = 22,
-    VT_CRS = 24
+    VT_HASTM = 16,
+    VT_COLUMNS = 18,
+    VT_FEATURES_COUNT = 20,
+    VT_FIDS = 22,
+    VT_INDEX_NODE_SIZE = 24,
+    VT_CRS = 26
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -299,6 +342,9 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool hasT() const {
     return GetField<uint8_t>(VT_HAST, 0) != 0;
   }
+  bool hasTM() const {
+    return GetField<uint8_t>(VT_HASTM, 0) != 0;
+  }
   const flatbuffers::Vector<flatbuffers::Offset<Column>> *columns() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Column>> *>(VT_COLUMNS);
   }
@@ -306,7 +352,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
   }
   bool fids() const {
-    return GetField<uint8_t>(VT_FIDS, 1) != 0;
+    return GetField<uint8_t>(VT_FIDS, 0) != 0;
   }
   uint16_t index_node_size() const {
     return GetField<uint16_t>(VT_INDEX_NODE_SIZE, 16);
@@ -324,6 +370,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_HASZ) &&
            VerifyField<uint8_t>(verifier, VT_HASM) &&
            VerifyField<uint8_t>(verifier, VT_HAST) &&
+           VerifyField<uint8_t>(verifier, VT_HASTM) &&
            VerifyOffset(verifier, VT_COLUMNS) &&
            verifier.VerifyVector(columns()) &&
            verifier.VerifyVectorOfTables(columns()) &&
@@ -357,6 +404,9 @@ struct HeaderBuilder {
   void add_hasT(bool hasT) {
     fbb_.AddElement<uint8_t>(Header::VT_HAST, static_cast<uint8_t>(hasT), 0);
   }
+  void add_hasTM(bool hasTM) {
+    fbb_.AddElement<uint8_t>(Header::VT_HASTM, static_cast<uint8_t>(hasTM), 0);
+  }
   void add_columns(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns) {
     fbb_.AddOffset(Header::VT_COLUMNS, columns);
   }
@@ -364,7 +414,7 @@ struct HeaderBuilder {
     fbb_.AddElement<uint64_t>(Header::VT_FEATURES_COUNT, features_count, 0);
   }
   void add_fids(bool fids) {
-    fbb_.AddElement<uint8_t>(Header::VT_FIDS, static_cast<uint8_t>(fids), 1);
+    fbb_.AddElement<uint8_t>(Header::VT_FIDS, static_cast<uint8_t>(fids), 0);
   }
   void add_index_node_size(uint16_t index_node_size) {
     fbb_.AddElement<uint16_t>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
@@ -392,9 +442,10 @@ inline flatbuffers::Offset<Header> CreateHeader(
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
+    bool hasTM = false,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
     uint64_t features_count = 0,
-    bool fids = true,
+    bool fids = false,
     uint16_t index_node_size = 16,
     flatbuffers::Offset<Crs> crs = 0) {
   HeaderBuilder builder_(_fbb);
@@ -405,6 +456,7 @@ inline flatbuffers::Offset<Header> CreateHeader(
   builder_.add_name(name);
   builder_.add_index_node_size(index_node_size);
   builder_.add_fids(fids);
+  builder_.add_hasTM(hasTM);
   builder_.add_hasT(hasT);
   builder_.add_hasM(hasM);
   builder_.add_hasZ(hasZ);
@@ -420,9 +472,10 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
+    bool hasTM = false,
     const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
     uint64_t features_count = 0,
-    bool fids = true,
+    bool fids = false,
     uint16_t index_node_size = 16,
     flatbuffers::Offset<Crs> crs = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
@@ -436,6 +489,7 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       hasZ,
       hasM,
       hasT,
+      hasTM,
       columns__,
       features_count,
       fids,
