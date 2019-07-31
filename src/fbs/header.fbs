@@ -1,3 +1,5 @@
+namespace FlatGeobuf;
+
 enum GeometryType: ubyte {
   Point,
   MultiPoint,
@@ -25,28 +27,32 @@ enum ColumnType: ubyte {
 }
 
 table Column {
-  name: string (key, required);
-  type: ColumnType;
+  name: string (key, required); // Column name
+  type: ColumnType;             // Column type
 }
 
 table Crs {
-  code: int;
-  org: string; // assumed to be EPSG if not supplied
-  wkt: string;
+  org: string;                  // Case-insensitive name of the defining organization e.g. EPSG or epsg (NULL = EPSG)
+  code: int;                    // Numeric ID of the Spatial Reference System assigned by the organization (0 = unknown)
+  name: string;                 // Human readable name of this SRS (optional)
+  description: string;          // Human readable description of this SRS (optional)
+  definition: string;           // Well-known Text Representation of the Spatial Reference System (OpenGIS® 01-009 Implementation Specification: Coordinate Transformation Services Revision 1.0)
+  definition_12_063: string;    // Well-known Text Representation of the Spatial Reference System (OGC® 12-063r5 Geographic information - Well-known text representation of coordinate reference systems)
 }
 
 table Header {
-  name: string;
-  envelope: [double];
+  name: string;                 // Dataset name (optional)
+  envelope: [double];           // Bounds (optional)
   geometry_type: GeometryType = Point;
-  hasZ: bool = false;
-  hasM: bool = false;
-  hasT: bool = false;
-  columns: [Column];
-  features_count: ulong; // 0 = unknown
-  fids: bool = true;
-  index_node_size: ushort = 16; // 0 = no index
-  crs: Crs;
+  hasZ: bool = false;           // Does geometry have Z dimension?
+  hasM: bool = false;           // Does geometry have M dimension?
+  hasT: bool = false;           // Does geometry have T dimension?
+  hasTM: bool = false;          // Does geometry have TM dimension?
+  columns: [Column];            // Attribute columns schema (optional)
+  features_count: ulong;        // Number of features in the dataset (0 = unknown)
+  fids: bool = false;           // Does features have ids?
+  index_node_size: ushort = 16; // Index node size (0 = no index)
+  crs: Crs;                     // Spatial Reference System (optional)
 }
 
 root_type Header;

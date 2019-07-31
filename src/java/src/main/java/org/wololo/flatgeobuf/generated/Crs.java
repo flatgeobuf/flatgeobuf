@@ -13,29 +13,47 @@ public final class Crs extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
   public Crs __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int code() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public String org() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer orgAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public ByteBuffer orgInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
-  public String wkt() { int o = __offset(8); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer wktAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
-  public ByteBuffer wktInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
+  public String org() { int o = __offset(4); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer orgAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
+  public ByteBuffer orgInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 1); }
+  public int code() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public String name() { int o = __offset(8); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
+  public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
+  public String description() { int o = __offset(10); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer descriptionAsByteBuffer() { return __vector_as_bytebuffer(10, 1); }
+  public ByteBuffer descriptionInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 1); }
+  public String definition() { int o = __offset(12); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer definitionAsByteBuffer() { return __vector_as_bytebuffer(12, 1); }
+  public ByteBuffer definitionInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 1); }
+  public String definition12063() { int o = __offset(14); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer definition12063AsByteBuffer() { return __vector_as_bytebuffer(14, 1); }
+  public ByteBuffer definition12063InByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
 
   public static int createCrs(FlatBufferBuilder builder,
-      int code,
       int orgOffset,
-      int wktOffset) {
-    builder.startObject(3);
-    Crs.addWkt(builder, wktOffset);
-    Crs.addOrg(builder, orgOffset);
+      int code,
+      int nameOffset,
+      int descriptionOffset,
+      int definitionOffset,
+      int definition_12_063Offset) {
+    builder.startObject(6);
+    Crs.addDefinition12063(builder, definition_12_063Offset);
+    Crs.addDefinition(builder, definitionOffset);
+    Crs.addDescription(builder, descriptionOffset);
+    Crs.addName(builder, nameOffset);
     Crs.addCode(builder, code);
+    Crs.addOrg(builder, orgOffset);
     return Crs.endCrs(builder);
   }
 
-  public static void startCrs(FlatBufferBuilder builder) { builder.startObject(3); }
-  public static void addCode(FlatBufferBuilder builder, int code) { builder.addInt(0, code, 0); }
-  public static void addOrg(FlatBufferBuilder builder, int orgOffset) { builder.addOffset(1, orgOffset, 0); }
-  public static void addWkt(FlatBufferBuilder builder, int wktOffset) { builder.addOffset(2, wktOffset, 0); }
+  public static void startCrs(FlatBufferBuilder builder) { builder.startObject(6); }
+  public static void addOrg(FlatBufferBuilder builder, int orgOffset) { builder.addOffset(0, orgOffset, 0); }
+  public static void addCode(FlatBufferBuilder builder, int code) { builder.addInt(1, code, 0); }
+  public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(2, nameOffset, 0); }
+  public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(3, descriptionOffset, 0); }
+  public static void addDefinition(FlatBufferBuilder builder, int definitionOffset) { builder.addOffset(4, definitionOffset, 0); }
+  public static void addDefinition12063(FlatBufferBuilder builder, int definition12063Offset) { builder.addOffset(5, definition12063Offset, 0); }
   public static int endCrs(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

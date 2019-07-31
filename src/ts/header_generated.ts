@@ -165,10 +165,21 @@ static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Crs):Crs {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+org():string|null
+org(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+org(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @returns number
  */
 code():number {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.readInt32(this.bb_pos + offset) : 0;
 };
 
@@ -176,10 +187,10 @@ code():number {
  * @param flatbuffers.Encoding= optionalEncoding
  * @returns string|Uint8Array|null
  */
-org():string|null
-org(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-org(optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+name():string|null
+name(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+name(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -187,10 +198,32 @@ org(optionalEncoding?:any):string|Uint8Array|null {
  * @param flatbuffers.Encoding= optionalEncoding
  * @returns string|Uint8Array|null
  */
-wkt():string|null
-wkt(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-wkt(optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+description():string|null
+description(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+description(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 10);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+definition():string|null
+definition(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+definition(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 12);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+definition12063():string|null
+definition12063(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+definition12063(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 14);
   return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -198,15 +231,7 @@ wkt(optionalEncoding?:any):string|Uint8Array|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(3);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number code
- */
-static addCode(builder:flatbuffers.Builder, code:number) {
-  builder.addFieldInt32(0, code, 0);
+  builder.startObject(6);
 };
 
 /**
@@ -214,15 +239,47 @@ static addCode(builder:flatbuffers.Builder, code:number) {
  * @param flatbuffers.Offset orgOffset
  */
 static addOrg(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(1, orgOffset, 0);
+  builder.addFieldOffset(0, orgOffset, 0);
 };
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset wktOffset
+ * @param number code
  */
-static addWkt(builder:flatbuffers.Builder, wktOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, wktOffset, 0);
+static addCode(builder:flatbuffers.Builder, code:number) {
+  builder.addFieldInt32(1, code, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset nameOffset
+ */
+static addName(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, nameOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset descriptionOffset
+ */
+static addDescription(builder:flatbuffers.Builder, descriptionOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(3, descriptionOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset definitionOffset
+ */
+static addDefinition(builder:flatbuffers.Builder, definitionOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(4, definitionOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset definition12063Offset
+ */
+static addDefinition12063(builder:flatbuffers.Builder, definition12063Offset:flatbuffers.Offset) {
+  builder.addFieldOffset(5, definition12063Offset, 0);
 };
 
 /**
@@ -234,11 +291,14 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, code:number, orgOffset:flatbuffers.Offset, wktOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset, code:number, nameOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, definitionOffset:flatbuffers.Offset, definition12063Offset:flatbuffers.Offset):flatbuffers.Offset {
   Crs.start(builder);
-  Crs.addCode(builder, code);
   Crs.addOrg(builder, orgOffset);
-  Crs.addWkt(builder, wktOffset);
+  Crs.addCode(builder, code);
+  Crs.addName(builder, nameOffset);
+  Crs.addDescription(builder, descriptionOffset);
+  Crs.addDefinition(builder, definitionOffset);
+  Crs.addDefinition12063(builder, definition12063Offset);
   return Crs.end(builder);
 }
 }
@@ -347,12 +407,20 @@ hasT():boolean {
 };
 
 /**
+ * @returns boolean
+ */
+hasTM():boolean {
+  var offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
+};
+
+/**
  * @param number index
  * @param Column= obj
  * @returns Column
  */
 columns(index: number, obj?:Column):Column|null {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
+  var offset = this.bb!.__offset(this.bb_pos, 18);
   return offset ? (obj || new Column).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
@@ -360,7 +428,7 @@ columns(index: number, obj?:Column):Column|null {
  * @returns number
  */
 columnsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
+  var offset = this.bb!.__offset(this.bb_pos, 18);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -368,7 +436,7 @@ columnsLength():number {
  * @returns flatbuffers.Long
  */
 featuresCount():flatbuffers.Long {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
 };
 
@@ -376,15 +444,15 @@ featuresCount():flatbuffers.Long {
  * @returns boolean
  */
 fids():boolean {
-  var offset = this.bb!.__offset(this.bb_pos, 20);
-  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : true;
+  var offset = this.bb!.__offset(this.bb_pos, 22);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
 };
 
 /**
  * @returns number
  */
 indexNodeSize():number {
-  var offset = this.bb!.__offset(this.bb_pos, 22);
+  var offset = this.bb!.__offset(this.bb_pos, 24);
   return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
 };
 
@@ -393,7 +461,7 @@ indexNodeSize():number {
  * @returns Crs|null
  */
 crs(obj?:Crs):Crs|null {
-  var offset = this.bb!.__offset(this.bb_pos, 24);
+  var offset = this.bb!.__offset(this.bb_pos, 26);
   return offset ? (obj || new Crs).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
@@ -401,7 +469,7 @@ crs(obj?:Crs):Crs|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(11);
+  builder.startObject(12);
 };
 
 /**
@@ -475,10 +543,18 @@ static addHasT(builder:flatbuffers.Builder, hasT:boolean) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param boolean hasTM
+ */
+static addHasTM(builder:flatbuffers.Builder, hasTM:boolean) {
+  builder.addFieldInt8(6, +hasTM, +false);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @param flatbuffers.Offset columnsOffset
  */
 static addColumns(builder:flatbuffers.Builder, columnsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(6, columnsOffset, 0);
+  builder.addFieldOffset(7, columnsOffset, 0);
 };
 
 /**
@@ -507,7 +583,7 @@ static startColumnsVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Long featuresCount
  */
 static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.Long) {
-  builder.addFieldInt64(7, featuresCount, builder.createLong(0, 0));
+  builder.addFieldInt64(8, featuresCount, builder.createLong(0, 0));
 };
 
 /**
@@ -515,7 +591,7 @@ static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.L
  * @param boolean fids
  */
 static addFids(builder:flatbuffers.Builder, fids:boolean) {
-  builder.addFieldInt8(8, +fids, +true);
+  builder.addFieldInt8(9, +fids, +false);
 };
 
 /**
@@ -523,7 +599,7 @@ static addFids(builder:flatbuffers.Builder, fids:boolean) {
  * @param number indexNodeSize
  */
 static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
-  builder.addFieldInt16(9, indexNodeSize, 16);
+  builder.addFieldInt16(10, indexNodeSize, 16);
 };
 
 /**
@@ -531,7 +607,7 @@ static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
  * @param flatbuffers.Offset crsOffset
  */
 static addCrs(builder:flatbuffers.Builder, crsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(10, crsOffset, 0);
+  builder.addFieldOffset(11, crsOffset, 0);
 };
 
 /**
@@ -559,7 +635,7 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, fids:boolean, indexNodeSize:number, crsOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, hasTM:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, fids:boolean, indexNodeSize:number, crsOffset:flatbuffers.Offset):flatbuffers.Offset {
   Header.start(builder);
   Header.addName(builder, nameOffset);
   Header.addEnvelope(builder, envelopeOffset);
@@ -567,6 +643,7 @@ static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelo
   Header.addHasZ(builder, hasZ);
   Header.addHasM(builder, hasM);
   Header.addHasT(builder, hasT);
+  Header.addHasTM(builder, hasTM);
   Header.addColumns(builder, columnsOffset);
   Header.addFeaturesCount(builder, featuresCount);
   Header.addFids(builder, fids);

@@ -108,8 +108,20 @@ func (rcv *Header) MutateHasT(n bool) bool {
 	return rcv._tab.MutateBoolSlot(14, n)
 }
 
-func (rcv *Header) Columns(obj *Column, j int) bool {
+func (rcv *Header) HasTM() bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	if o != 0 {
+		return rcv._tab.GetBool(o + rcv._tab.Pos)
+	}
+	return false
+}
+
+func (rcv *Header) MutateHasTM(n bool) bool {
+	return rcv._tab.MutateBoolSlot(16, n)
+}
+
+func (rcv *Header) Columns(obj *Column, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		x := rcv._tab.Vector(o)
 		x += flatbuffers.UOffsetT(j) * 4
@@ -121,7 +133,7 @@ func (rcv *Header) Columns(obj *Column, j int) bool {
 }
 
 func (rcv *Header) ColumnsLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -129,7 +141,7 @@ func (rcv *Header) ColumnsLength() int {
 }
 
 func (rcv *Header) FeaturesCount() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		return rcv._tab.GetUint64(o + rcv._tab.Pos)
 	}
@@ -137,23 +149,23 @@ func (rcv *Header) FeaturesCount() uint64 {
 }
 
 func (rcv *Header) MutateFeaturesCount(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(18, n)
+	return rcv._tab.MutateUint64Slot(20, n)
 }
 
 func (rcv *Header) Fids() bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
 	if o != 0 {
 		return rcv._tab.GetBool(o + rcv._tab.Pos)
 	}
-	return true
+	return false
 }
 
 func (rcv *Header) MutateFids(n bool) bool {
-	return rcv._tab.MutateBoolSlot(20, n)
+	return rcv._tab.MutateBoolSlot(22, n)
 }
 
 func (rcv *Header) IndexNodeSize() uint16 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(24))
 	if o != 0 {
 		return rcv._tab.GetUint16(o + rcv._tab.Pos)
 	}
@@ -161,11 +173,11 @@ func (rcv *Header) IndexNodeSize() uint16 {
 }
 
 func (rcv *Header) MutateIndexNodeSize(n uint16) bool {
-	return rcv._tab.MutateUint16Slot(22, n)
+	return rcv._tab.MutateUint16Slot(24, n)
 }
 
 func (rcv *Header) Crs(obj *Crs) *Crs {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(24))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(26))
 	if o != 0 {
 		x := rcv._tab.Indirect(o + rcv._tab.Pos)
 		if obj == nil {
@@ -178,7 +190,7 @@ func (rcv *Header) Crs(obj *Crs) *Crs {
 }
 
 func HeaderStart(builder *flatbuffers.Builder) {
-	builder.StartObject(11)
+	builder.StartObject(12)
 }
 func HeaderAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -201,23 +213,26 @@ func HeaderAddHasM(builder *flatbuffers.Builder, hasM bool) {
 func HeaderAddHasT(builder *flatbuffers.Builder, hasT bool) {
 	builder.PrependBoolSlot(5, hasT, false)
 }
+func HeaderAddHasTM(builder *flatbuffers.Builder, hasTM bool) {
+	builder.PrependBoolSlot(6, hasTM, false)
+}
 func HeaderAddColumns(builder *flatbuffers.Builder, columns flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(6, flatbuffers.UOffsetT(columns), 0)
+	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(columns), 0)
 }
 func HeaderStartColumnsVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(4, numElems, 4)
 }
 func HeaderAddFeaturesCount(builder *flatbuffers.Builder, featuresCount uint64) {
-	builder.PrependUint64Slot(7, featuresCount, 0)
+	builder.PrependUint64Slot(8, featuresCount, 0)
 }
 func HeaderAddFids(builder *flatbuffers.Builder, fids bool) {
-	builder.PrependBoolSlot(8, fids, true)
+	builder.PrependBoolSlot(9, fids, false)
 }
 func HeaderAddIndexNodeSize(builder *flatbuffers.Builder, indexNodeSize uint16) {
-	builder.PrependUint16Slot(9, indexNodeSize, 16)
+	builder.PrependUint16Slot(10, indexNodeSize, 16)
 }
 func HeaderAddCrs(builder *flatbuffers.Builder, crs flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(10, flatbuffers.UOffsetT(crs), 0)
+	builder.PrependUOffsetTSlot(11, flatbuffers.UOffsetT(crs), 0)
 }
 func HeaderEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

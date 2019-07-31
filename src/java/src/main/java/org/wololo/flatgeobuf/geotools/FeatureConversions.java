@@ -54,7 +54,7 @@ public class FeatureConversions {
             propertiesOffset = Feature.createPropertiesVector(builder, data);
         }
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta);
-        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.lengthsOffset, go.coordsOffset, 0, 0, 0, propertiesOffset);
+        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.lengthsOffset, go.coordsOffset, 0, 0, 0, 0, propertiesOffset);
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();
