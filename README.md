@@ -70,7 +70,7 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 - Q: Why not use Protobuf?
 - A: Performance reasons and to allow streaming/random access.
 
-- Q: Why static schema?
+- Q: Why static per file schema?
 - A: In my view allowing per feature schema breaks the simple in simple features.
 
 - Q: Why no geometrycollection or geometry type per feature?
