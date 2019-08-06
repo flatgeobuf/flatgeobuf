@@ -44,6 +44,7 @@ std::ostream& operator << ( std::ostream& os, Rect const& value )
     return os;
 }
 
+// Based on public domain code at https://github.com/rawrunprotected/hilbert_curves
 uint32_t hilbert(uint32_t x, uint32_t y)
 {
     uint32_t a = x ^ y;
