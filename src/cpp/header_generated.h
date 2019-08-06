@@ -197,8 +197,7 @@ struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_CODE = 6,
     VT_NAME = 8,
     VT_DESCRIPTION = 10,
-    VT_DEFINITION = 12,
-    VT_DEFINITION_12_063 = 14
+    VT_WKT = 12
   };
   const flatbuffers::String *org() const {
     return GetPointer<const flatbuffers::String *>(VT_ORG);
@@ -212,11 +211,8 @@ struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *description() const {
     return GetPointer<const flatbuffers::String *>(VT_DESCRIPTION);
   }
-  const flatbuffers::String *definition() const {
-    return GetPointer<const flatbuffers::String *>(VT_DEFINITION);
-  }
-  const flatbuffers::String *definition_12_063() const {
-    return GetPointer<const flatbuffers::String *>(VT_DEFINITION_12_063);
+  const flatbuffers::String *wkt() const {
+    return GetPointer<const flatbuffers::String *>(VT_WKT);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -227,10 +223,8 @@ struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(name()) &&
            VerifyOffset(verifier, VT_DESCRIPTION) &&
            verifier.VerifyString(description()) &&
-           VerifyOffset(verifier, VT_DEFINITION) &&
-           verifier.VerifyString(definition()) &&
-           VerifyOffset(verifier, VT_DEFINITION_12_063) &&
-           verifier.VerifyString(definition_12_063()) &&
+           VerifyOffset(verifier, VT_WKT) &&
+           verifier.VerifyString(wkt()) &&
            verifier.EndTable();
   }
 };
@@ -250,11 +244,8 @@ struct CrsBuilder {
   void add_description(flatbuffers::Offset<flatbuffers::String> description) {
     fbb_.AddOffset(Crs::VT_DESCRIPTION, description);
   }
-  void add_definition(flatbuffers::Offset<flatbuffers::String> definition) {
-    fbb_.AddOffset(Crs::VT_DEFINITION, definition);
-  }
-  void add_definition_12_063(flatbuffers::Offset<flatbuffers::String> definition_12_063) {
-    fbb_.AddOffset(Crs::VT_DEFINITION_12_063, definition_12_063);
+  void add_wkt(flatbuffers::Offset<flatbuffers::String> wkt) {
+    fbb_.AddOffset(Crs::VT_WKT, wkt);
   }
   explicit CrsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -274,11 +265,9 @@ inline flatbuffers::Offset<Crs> CreateCrs(
     int32_t code = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::String> description = 0,
-    flatbuffers::Offset<flatbuffers::String> definition = 0,
-    flatbuffers::Offset<flatbuffers::String> definition_12_063 = 0) {
+    flatbuffers::Offset<flatbuffers::String> wkt = 0) {
   CrsBuilder builder_(_fbb);
-  builder_.add_definition_12_063(definition_12_063);
-  builder_.add_definition(definition);
+  builder_.add_wkt(wkt);
   builder_.add_description(description);
   builder_.add_name(name);
   builder_.add_code(code);
@@ -292,21 +281,18 @@ inline flatbuffers::Offset<Crs> CreateCrsDirect(
     int32_t code = 0,
     const char *name = nullptr,
     const char *description = nullptr,
-    const char *definition = nullptr,
-    const char *definition_12_063 = nullptr) {
+    const char *wkt = nullptr) {
   auto org__ = org ? _fbb.CreateString(org) : 0;
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto description__ = description ? _fbb.CreateString(description) : 0;
-  auto definition__ = definition ? _fbb.CreateString(definition) : 0;
-  auto definition_12_063__ = definition_12_063 ? _fbb.CreateString(definition_12_063) : 0;
+  auto wkt__ = wkt ? _fbb.CreateString(wkt) : 0;
   return FlatGeobuf::CreateCrs(
       _fbb,
       org__,
       code,
       name__,
       description__,
-      definition__,
-      definition_12_063__);
+      wkt__);
 }
 
 struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

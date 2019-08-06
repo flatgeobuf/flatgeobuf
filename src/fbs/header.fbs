@@ -36,8 +36,7 @@ table Crs {
   code: int;                    // Numeric ID of the Spatial Reference System assigned by the organization (0 = unknown)
   name: string;                 // Human readable name of this SRS (optional)
   description: string;          // Human readable description of this SRS (optional)
-  definition: string;           // Well-known Text Representation of the Spatial Reference System (OpenGIS® 01-009 Implementation Specification: Coordinate Transformation Services Revision 1.0)
-  definition_12_063: string;    // Well-known Text Representation of the Spatial Reference System (OGC® 12-063r5 Geographic information - Well-known text representation of coordinate reference systems)
+  wkt: string;                  // Well-known Text Representation of the Spatial Reference System (optional)
 }
 
 table Header {

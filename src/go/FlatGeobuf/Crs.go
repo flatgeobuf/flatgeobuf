@@ -62,7 +62,7 @@ func (rcv *Crs) Description() []byte {
 	return nil
 }
 
-func (rcv *Crs) Definition() []byte {
+func (rcv *Crs) Wkt() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
@@ -70,16 +70,8 @@ func (rcv *Crs) Definition() []byte {
 	return nil
 }
 
-func (rcv *Crs) Definition12063() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
-	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
-	}
-	return nil
-}
-
 func CrsStart(builder *flatbuffers.Builder) {
-	builder.StartObject(6)
+	builder.StartObject(5)
 }
 func CrsAddOrg(builder *flatbuffers.Builder, org flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(org), 0)
@@ -93,11 +85,8 @@ func CrsAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 func CrsAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(description), 0)
 }
-func CrsAddDefinition(builder *flatbuffers.Builder, definition flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(definition), 0)
-}
-func CrsAddDefinition12063(builder *flatbuffers.Builder, definition12063 flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(definition12063), 0)
+func CrsAddWkt(builder *flatbuffers.Builder, wkt flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(wkt), 0)
 }
 func CrsEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

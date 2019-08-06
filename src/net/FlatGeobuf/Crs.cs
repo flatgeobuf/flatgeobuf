@@ -36,31 +36,22 @@ public struct Crs : IFlatbufferObject
   public ArraySegment<byte>? GetDescriptionBytes() { return __p.__vector_as_arraysegment(10); }
 #endif
   public byte[] GetDescriptionArray() { return __p.__vector_as_array<byte>(10); }
-  public string Definition { get { int o = __p.__offset(12); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public string Wkt { get { int o = __p.__offset(12); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetDefinitionBytes() { return __p.__vector_as_span(12); }
+  public Span<byte> GetWktBytes() { return __p.__vector_as_span(12); }
 #else
-  public ArraySegment<byte>? GetDefinitionBytes() { return __p.__vector_as_arraysegment(12); }
+  public ArraySegment<byte>? GetWktBytes() { return __p.__vector_as_arraysegment(12); }
 #endif
-  public byte[] GetDefinitionArray() { return __p.__vector_as_array<byte>(12); }
-  public string Definition12063 { get { int o = __p.__offset(14); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
-#if ENABLE_SPAN_T
-  public Span<byte> GetDefinition12063Bytes() { return __p.__vector_as_span(14); }
-#else
-  public ArraySegment<byte>? GetDefinition12063Bytes() { return __p.__vector_as_arraysegment(14); }
-#endif
-  public byte[] GetDefinition12063Array() { return __p.__vector_as_array<byte>(14); }
+  public byte[] GetWktArray() { return __p.__vector_as_array<byte>(12); }
 
   public static Offset<Crs> CreateCrs(FlatBufferBuilder builder,
       StringOffset orgOffset = default(StringOffset),
       int code = 0,
       StringOffset nameOffset = default(StringOffset),
       StringOffset descriptionOffset = default(StringOffset),
-      StringOffset definitionOffset = default(StringOffset),
-      StringOffset definition_12_063Offset = default(StringOffset)) {
-    builder.StartObject(6);
-    Crs.AddDefinition12063(builder, definition_12_063Offset);
-    Crs.AddDefinition(builder, definitionOffset);
+      StringOffset wktOffset = default(StringOffset)) {
+    builder.StartObject(5);
+    Crs.AddWkt(builder, wktOffset);
     Crs.AddDescription(builder, descriptionOffset);
     Crs.AddName(builder, nameOffset);
     Crs.AddCode(builder, code);
@@ -68,13 +59,12 @@ public struct Crs : IFlatbufferObject
     return Crs.EndCrs(builder);
   }
 
-  public static void StartCrs(FlatBufferBuilder builder) { builder.StartObject(6); }
+  public static void StartCrs(FlatBufferBuilder builder) { builder.StartObject(5); }
   public static void AddOrg(FlatBufferBuilder builder, StringOffset orgOffset) { builder.AddOffset(0, orgOffset.Value, 0); }
   public static void AddCode(FlatBufferBuilder builder, int code) { builder.AddInt(1, code, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(2, nameOffset.Value, 0); }
   public static void AddDescription(FlatBufferBuilder builder, StringOffset descriptionOffset) { builder.AddOffset(3, descriptionOffset.Value, 0); }
-  public static void AddDefinition(FlatBufferBuilder builder, StringOffset definitionOffset) { builder.AddOffset(4, definitionOffset.Value, 0); }
-  public static void AddDefinition12063(FlatBufferBuilder builder, StringOffset definition12063Offset) { builder.AddOffset(5, definition12063Offset.Value, 0); }
+  public static void AddWkt(FlatBufferBuilder builder, StringOffset wktOffset) { builder.AddOffset(4, wktOffset.Value, 0); }
   public static Offset<Crs> EndCrs(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Crs>(o);

@@ -209,21 +209,10 @@ description(optionalEncoding?:any):string|Uint8Array|null {
  * @param flatbuffers.Encoding= optionalEncoding
  * @returns string|Uint8Array|null
  */
-definition():string|null
-definition(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-definition(optionalEncoding?:any):string|Uint8Array|null {
+wkt():string|null
+wkt(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+wkt(optionalEncoding?:any):string|Uint8Array|null {
   var offset = this.bb!.__offset(this.bb_pos, 12);
-  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
-};
-
-/**
- * @param flatbuffers.Encoding= optionalEncoding
- * @returns string|Uint8Array|null
- */
-definition12063():string|null
-definition12063(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
-definition12063(optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
   return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -231,7 +220,7 @@ definition12063(optionalEncoding?:any):string|Uint8Array|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(6);
+  builder.startObject(5);
 };
 
 /**
@@ -268,18 +257,10 @@ static addDescription(builder:flatbuffers.Builder, descriptionOffset:flatbuffers
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset definitionOffset
+ * @param flatbuffers.Offset wktOffset
  */
-static addDefinition(builder:flatbuffers.Builder, definitionOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(4, definitionOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset definition12063Offset
- */
-static addDefinition12063(builder:flatbuffers.Builder, definition12063Offset:flatbuffers.Offset) {
-  builder.addFieldOffset(5, definition12063Offset, 0);
+static addWkt(builder:flatbuffers.Builder, wktOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(4, wktOffset, 0);
 };
 
 /**
@@ -291,14 +272,13 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset, code:number, nameOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, definitionOffset:flatbuffers.Offset, definition12063Offset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset, code:number, nameOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, wktOffset:flatbuffers.Offset):flatbuffers.Offset {
   Crs.start(builder);
   Crs.addOrg(builder, orgOffset);
   Crs.addCode(builder, code);
   Crs.addName(builder, nameOffset);
   Crs.addDescription(builder, descriptionOffset);
-  Crs.addDefinition(builder, definitionOffset);
-  Crs.addDefinition12063(builder, definition12063Offset);
+  Crs.addWkt(builder, wktOffset);
   return Crs.end(builder);
 }
 }
