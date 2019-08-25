@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.wololo</groupId>
   <artifactId>flatgeobuf</artifactId>
-  <version>0.5.4</version>
+  <version>1.0.0</version>
   <name>flatgeobuf</name>
   <description>A performant binary encoding for geographic data based on flatbuffers</description>
   <url>https://github.com/bjornharrtell/flatgeobuf</url>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>com.google.flatbuffers</groupId>
       <artifactId>flatbuffers-java</artifactId>
-      <version>1.11.0</version>
+      <version>1.11.1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
