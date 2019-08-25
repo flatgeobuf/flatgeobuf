@@ -94,35 +94,10 @@ public class GeometryRoundtripTest {
         return writer.write(geometry).replace('−', '-');
     }
 
-    String[] roundTrip(String[] wkts, Class<?> geometryClass) throws IOException {
-        String[] newWkts = new String[wkts.length];
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkts, geometryClass), newWkts.length, os);
-        ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-        SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
-        WKTWriter writer = new WKTWriter();
-        int c = 0;
-        try (FeatureIterator<SimpleFeature> iterator = fc.features()) {
-            while (iterator.hasNext()) {
-                SimpleFeature feature = iterator.next();
-                Geometry geometry = (Geometry) feature.getDefaultGeometry();
-                newWkts[c++] = writer.write(geometry).replace('−', '-');
-            }
-        }
-        return newWkts;
-    }
-
     @Test
     public void point() throws IOException {
         String expected = "POINT (1.2 -2.1)";
         assertEquals(expected, roundTrip(expected));
-    }
-
-    @Test
-    public void points() throws IOException {
-        String[] expected = new String[] { "POINT (1.2 -2.1)", "POINT (10.2 -20.1)" };
-        assertArrayEquals(expected, roundTrip(expected, Point.class));
     }
 
     @Test

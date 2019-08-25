@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.junit.Test;
+import org.json.*;
 
 import org.wololo.flatgeobuf.geotools.FeatureCollectionConversions;
 
@@ -55,10 +56,24 @@ public class AttributeRoundtripTest {
         return os.toString(StandardCharsets.UTF_8.name());
     }
 
+    String removeId(String json) {
+        JSONObject jsonObject = new JSONObject(json);
+        for (Object feature : jsonObject.getJSONArray("features"))
+            ((JSONObject)feature).remove("id");
+        return jsonObject.toString(1);
+    }
+
     @Test
     public void mixed() throws IOException, URISyntaxException {
-        String expected = getResource("1.json");
-        assertEquals(expected, roundTrip(expected));
+        String expected = removeId(getResource("1.json"));
+        String actual = removeId(roundTrip(expected));
+        assertEquals(expected, actual);
+    }
+
+    public void mixed() throws IOException, URISyntaxException {
+        String expected = removeId(getResource("2.json"));
+        String actual = removeId(roundTrip(expected));
+        assertEquals(expected, actual);
     }
 
 }

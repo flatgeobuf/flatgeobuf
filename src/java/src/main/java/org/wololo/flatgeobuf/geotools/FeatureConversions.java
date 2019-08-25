@@ -21,7 +21,7 @@ public class FeatureConversions {
         bb.put(stringBytes);
     }
 
-    public static byte[] serialize(SimpleFeature feature, long fid, HeaderMeta headerMeta) throws IOException {
+    public static byte[] serialize(SimpleFeature feature, HeaderMeta headerMeta) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
@@ -54,7 +54,7 @@ public class FeatureConversions {
             propertiesOffset = Feature.createPropertiesVector(builder, data);
         }
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta);
-        int featureOffset = Feature.createFeature(builder, fid, go.endsOffset, go.lengthsOffset, go.coordsOffset, 0, 0, 0, 0, propertiesOffset);
+        int featureOffset = Feature.createFeature(builder, go.endsOffset, go.lengthsOffset, go.coordsOffset, 0, 0, 0, 0, propertiesOffset);
         builder.finishSizePrefixed(featureOffset);
 
         return builder.sizedByteArray();
@@ -69,7 +69,6 @@ public class FeatureConversions {
     }
 
     public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta) {
-        long fid = feature.fid();
         fb.add(GeometryConversions.deserialize(feature, headerMeta));
         int propertiesLength = feature.propertiesLength();
         if (propertiesLength > 0) {
@@ -93,7 +92,7 @@ public class FeatureConversions {
                     throw new RuntimeException("Unknown type");
             }
         }
-        SimpleFeature f = fb.buildFeature(Long.toString(fid));
+        SimpleFeature f = fb.buildFeature(null);
         return f;
     }
 }

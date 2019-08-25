@@ -38,9 +38,8 @@ public struct Header : IFlatbufferObject
   public int ColumnsLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
   public Column? ColumnsByKey(string key) { int o = __p.__offset(18); return o != 0 ? Column.__lookup_by_key(__p.__vector(o), key, __p.bb) : null; }
   public ulong FeaturesCount { get { int o = __p.__offset(20); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
-  public bool Fids { get { int o = __p.__offset(22); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
-  public ushort IndexNodeSize { get { int o = __p.__offset(24); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)16; } }
-  public Crs? Crs { get { int o = __p.__offset(26); return o != 0 ? (Crs?)(new Crs()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public ushort IndexNodeSize { get { int o = __p.__offset(22); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)16; } }
+  public Crs? Crs { get { int o = __p.__offset(24); return o != 0 ? (Crs?)(new Crs()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<Header> CreateHeader(FlatBufferBuilder builder,
       StringOffset nameOffset = default(StringOffset),
@@ -52,17 +51,15 @@ public struct Header : IFlatbufferObject
       bool hasTM = false,
       VectorOffset columnsOffset = default(VectorOffset),
       ulong features_count = 0,
-      bool fids = false,
       ushort index_node_size = 16,
       Offset<Crs> crsOffset = default(Offset<Crs>)) {
-    builder.StartObject(12);
+    builder.StartObject(11);
     Header.AddFeaturesCount(builder, features_count);
     Header.AddCrs(builder, crsOffset);
     Header.AddColumns(builder, columnsOffset);
     Header.AddEnvelope(builder, envelopeOffset);
     Header.AddName(builder, nameOffset);
     Header.AddIndexNodeSize(builder, index_node_size);
-    Header.AddFids(builder, fids);
     Header.AddHasTM(builder, hasTM);
     Header.AddHasT(builder, hasT);
     Header.AddHasM(builder, hasM);
@@ -71,7 +68,7 @@ public struct Header : IFlatbufferObject
     return Header.EndHeader(builder);
   }
 
-  public static void StartHeader(FlatBufferBuilder builder) { builder.StartObject(12); }
+  public static void StartHeader(FlatBufferBuilder builder) { builder.StartObject(11); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(0, nameOffset.Value, 0); }
   public static void AddEnvelope(FlatBufferBuilder builder, VectorOffset envelopeOffset) { builder.AddOffset(1, envelopeOffset.Value, 0); }
   public static VectorOffset CreateEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
@@ -87,9 +84,8 @@ public struct Header : IFlatbufferObject
   public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartColumnsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddFeaturesCount(FlatBufferBuilder builder, ulong featuresCount) { builder.AddUlong(8, featuresCount, 0); }
-  public static void AddFids(FlatBufferBuilder builder, bool fids) { builder.AddBool(9, fids, false); }
-  public static void AddIndexNodeSize(FlatBufferBuilder builder, ushort indexNodeSize) { builder.AddUshort(10, indexNodeSize, 16); }
-  public static void AddCrs(FlatBufferBuilder builder, Offset<Crs> crsOffset) { builder.AddOffset(11, crsOffset.Value, 0); }
+  public static void AddIndexNodeSize(FlatBufferBuilder builder, ushort indexNodeSize) { builder.AddUshort(9, indexNodeSize, 16); }
+  public static void AddCrs(FlatBufferBuilder builder, Offset<Crs> crsOffset) { builder.AddOffset(10, crsOffset.Value, 0); }
   public static Offset<Header> EndHeader(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Header>(o);

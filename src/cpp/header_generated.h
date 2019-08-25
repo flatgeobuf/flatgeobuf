@@ -306,9 +306,8 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_HASTM = 16,
     VT_COLUMNS = 18,
     VT_FEATURES_COUNT = 20,
-    VT_FIDS = 22,
-    VT_INDEX_NODE_SIZE = 24,
-    VT_CRS = 26
+    VT_INDEX_NODE_SIZE = 22,
+    VT_CRS = 24
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -337,9 +336,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint64_t features_count() const {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
   }
-  bool fids() const {
-    return GetField<uint8_t>(VT_FIDS, 0) != 0;
-  }
   uint16_t index_node_size() const {
     return GetField<uint16_t>(VT_INDEX_NODE_SIZE, 16);
   }
@@ -361,7 +357,6 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(columns()) &&
            verifier.VerifyVectorOfTables(columns()) &&
            VerifyField<uint64_t>(verifier, VT_FEATURES_COUNT) &&
-           VerifyField<uint8_t>(verifier, VT_FIDS) &&
            VerifyField<uint16_t>(verifier, VT_INDEX_NODE_SIZE) &&
            VerifyOffset(verifier, VT_CRS) &&
            verifier.VerifyTable(crs()) &&
@@ -399,9 +394,6 @@ struct HeaderBuilder {
   void add_features_count(uint64_t features_count) {
     fbb_.AddElement<uint64_t>(Header::VT_FEATURES_COUNT, features_count, 0);
   }
-  void add_fids(bool fids) {
-    fbb_.AddElement<uint8_t>(Header::VT_FIDS, static_cast<uint8_t>(fids), 0);
-  }
   void add_index_node_size(uint16_t index_node_size) {
     fbb_.AddElement<uint16_t>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
   }
@@ -431,7 +423,6 @@ inline flatbuffers::Offset<Header> CreateHeader(
     bool hasTM = false,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
     uint64_t features_count = 0,
-    bool fids = false,
     uint16_t index_node_size = 16,
     flatbuffers::Offset<Crs> crs = 0) {
   HeaderBuilder builder_(_fbb);
@@ -441,7 +432,6 @@ inline flatbuffers::Offset<Header> CreateHeader(
   builder_.add_envelope(envelope);
   builder_.add_name(name);
   builder_.add_index_node_size(index_node_size);
-  builder_.add_fids(fids);
   builder_.add_hasTM(hasTM);
   builder_.add_hasT(hasT);
   builder_.add_hasM(hasM);
@@ -461,7 +451,6 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     bool hasTM = false,
     const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
     uint64_t features_count = 0,
-    bool fids = false,
     uint16_t index_node_size = 16,
     flatbuffers::Offset<Crs> crs = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
@@ -478,7 +467,6 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
       hasTM,
       columns__,
       features_count,
-      fids,
       index_node_size,
       crs);
 }

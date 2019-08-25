@@ -1,15 +1,14 @@
 namespace FlatGeobuf;
 
 table Feature {
-  fid: ulong;           // Dataset unique numeric ID (optional)
-  ends: [uint];         // Array of end index in flat coordinates per geometry part (only relevar for geometries with multiple parts)
-  lengths: [uint];      // Array of number of parts per geom (only relevant for multipolygon)
-  xy: [double];         // Flat x and y coordinate array (flat pairs)
-  z: [double];          // Flat z height array (optional)
-  m: [double];          // Flat m measurement array (optional)
-  t: [double];          // Flat t geodetic decimal year time array (optional)
-  tm: [ulong];          // Flat tm time nanosecond measurement array (optional)
-  properties: [ubyte];  // Custom buffer, array of key/value pairs (key=ushort) (optional)
+  ends: [uint];        // Array of end index in flat coordinates per geometry part (only relevar for geometries with multiple parts)
+  lengths: [uint];     // Array of number of parts per geom (only relevant for multipolygon)
+  xy: [double];        // Flat x and y coordinate array (flat pairs)
+  z: [double];         // Flat z height array
+  m: [double];         // Flat m measurement array
+  t: [double];         // Flat t geodetic decimal year time array
+  tm: [ulong];         // Flat tm time nanosecond measurement array
+  properties: [ubyte]; // Custom buffer, array of key/value pairs (key=ushort)
 }
 
 root_type Feature;

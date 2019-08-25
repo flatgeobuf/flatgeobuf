@@ -421,18 +421,10 @@ featuresCount():flatbuffers.Long {
 };
 
 /**
- * @returns boolean
- */
-fids():boolean {
-  var offset = this.bb!.__offset(this.bb_pos, 22);
-  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
-};
-
-/**
  * @returns number
  */
 indexNodeSize():number {
-  var offset = this.bb!.__offset(this.bb_pos, 24);
+  var offset = this.bb!.__offset(this.bb_pos, 22);
   return offset ? this.bb!.readUint16(this.bb_pos + offset) : 16;
 };
 
@@ -441,7 +433,7 @@ indexNodeSize():number {
  * @returns Crs|null
  */
 crs(obj?:Crs):Crs|null {
-  var offset = this.bb!.__offset(this.bb_pos, 26);
+  var offset = this.bb!.__offset(this.bb_pos, 24);
   return offset ? (obj || new Crs).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
@@ -449,7 +441,7 @@ crs(obj?:Crs):Crs|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(12);
+  builder.startObject(11);
 };
 
 /**
@@ -568,18 +560,10 @@ static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.L
 
 /**
  * @param flatbuffers.Builder builder
- * @param boolean fids
- */
-static addFids(builder:flatbuffers.Builder, fids:boolean) {
-  builder.addFieldInt8(9, +fids, +false);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @param number indexNodeSize
  */
 static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
-  builder.addFieldInt16(10, indexNodeSize, 16);
+  builder.addFieldInt16(9, indexNodeSize, 16);
 };
 
 /**
@@ -587,7 +571,7 @@ static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {
  * @param flatbuffers.Offset crsOffset
  */
 static addCrs(builder:flatbuffers.Builder, crsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(11, crsOffset, 0);
+  builder.addFieldOffset(10, crsOffset, 0);
 };
 
 /**
@@ -615,7 +599,7 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, hasTM:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, fids:boolean, indexNodeSize:number, crsOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, hasTM:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, indexNodeSize:number, crsOffset:flatbuffers.Offset):flatbuffers.Offset {
   Header.start(builder);
   Header.addName(builder, nameOffset);
   Header.addEnvelope(builder, envelopeOffset);
@@ -626,7 +610,6 @@ static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelo
   Header.addHasTM(builder, hasTM);
   Header.addColumns(builder, columnsOffset);
   Header.addFeaturesCount(builder, featuresCount);
-  Header.addFids(builder, fids);
   Header.addIndexNodeSize(builder, indexNodeSize);
   Header.addCrs(builder, crsOffset);
   return Header.end(builder);

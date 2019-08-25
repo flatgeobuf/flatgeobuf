@@ -14,74 +14,72 @@ public struct Feature : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public Feature __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public ulong Fid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
-  public uint Ends(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
-  public int EndsLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public uint Ends(int j) { int o = __p.__offset(4); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
+  public int EndsLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetEndsBytes() { return __p.__vector_as_span(6); }
+  public Span<byte> GetEndsBytes() { return __p.__vector_as_span(4); }
 #else
-  public ArraySegment<byte>? GetEndsBytes() { return __p.__vector_as_arraysegment(6); }
+  public ArraySegment<byte>? GetEndsBytes() { return __p.__vector_as_arraysegment(4); }
 #endif
-  public uint[] GetEndsArray() { return __p.__vector_as_array<uint>(6); }
-  public uint Lengths(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
-  public int LengthsLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public uint[] GetEndsArray() { return __p.__vector_as_array<uint>(4); }
+  public uint Lengths(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
+  public int LengthsLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetLengthsBytes() { return __p.__vector_as_span(8); }
+  public Span<byte> GetLengthsBytes() { return __p.__vector_as_span(6); }
 #else
-  public ArraySegment<byte>? GetLengthsBytes() { return __p.__vector_as_arraysegment(8); }
+  public ArraySegment<byte>? GetLengthsBytes() { return __p.__vector_as_arraysegment(6); }
 #endif
-  public uint[] GetLengthsArray() { return __p.__vector_as_array<uint>(8); }
-  public double Xy(int j) { int o = __p.__offset(10); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int XyLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public uint[] GetLengthsArray() { return __p.__vector_as_array<uint>(6); }
+  public double Xy(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int XyLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetXyBytes() { return __p.__vector_as_span(10); }
+  public Span<byte> GetXyBytes() { return __p.__vector_as_span(8); }
 #else
-  public ArraySegment<byte>? GetXyBytes() { return __p.__vector_as_arraysegment(10); }
+  public ArraySegment<byte>? GetXyBytes() { return __p.__vector_as_arraysegment(8); }
 #endif
-  public double[] GetXyArray() { return __p.__vector_as_array<double>(10); }
-  public double Z(int j) { int o = __p.__offset(12); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int ZLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double[] GetXyArray() { return __p.__vector_as_array<double>(8); }
+  public double Z(int j) { int o = __p.__offset(10); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int ZLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetZBytes() { return __p.__vector_as_span(12); }
+  public Span<byte> GetZBytes() { return __p.__vector_as_span(10); }
 #else
-  public ArraySegment<byte>? GetZBytes() { return __p.__vector_as_arraysegment(12); }
+  public ArraySegment<byte>? GetZBytes() { return __p.__vector_as_arraysegment(10); }
 #endif
-  public double[] GetZArray() { return __p.__vector_as_array<double>(12); }
-  public double M(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int MLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double[] GetZArray() { return __p.__vector_as_array<double>(10); }
+  public double M(int j) { int o = __p.__offset(12); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int MLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetMBytes() { return __p.__vector_as_span(14); }
+  public Span<byte> GetMBytes() { return __p.__vector_as_span(12); }
 #else
-  public ArraySegment<byte>? GetMBytes() { return __p.__vector_as_arraysegment(14); }
+  public ArraySegment<byte>? GetMBytes() { return __p.__vector_as_arraysegment(12); }
 #endif
-  public double[] GetMArray() { return __p.__vector_as_array<double>(14); }
-  public double T(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
-  public int TLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double[] GetMArray() { return __p.__vector_as_array<double>(12); }
+  public double T(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
+  public int TLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetTBytes() { return __p.__vector_as_span(16); }
+  public Span<byte> GetTBytes() { return __p.__vector_as_span(14); }
 #else
-  public ArraySegment<byte>? GetTBytes() { return __p.__vector_as_arraysegment(16); }
+  public ArraySegment<byte>? GetTBytes() { return __p.__vector_as_arraysegment(14); }
 #endif
-  public double[] GetTArray() { return __p.__vector_as_array<double>(16); }
-  public ulong Tm(int j) { int o = __p.__offset(18); return o != 0 ? __p.bb.GetUlong(__p.__vector(o) + j * 8) : (ulong)0; }
-  public int TmLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public double[] GetTArray() { return __p.__vector_as_array<double>(14); }
+  public ulong Tm(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetUlong(__p.__vector(o) + j * 8) : (ulong)0; }
+  public int TmLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetTmBytes() { return __p.__vector_as_span(18); }
+  public Span<byte> GetTmBytes() { return __p.__vector_as_span(16); }
 #else
-  public ArraySegment<byte>? GetTmBytes() { return __p.__vector_as_arraysegment(18); }
+  public ArraySegment<byte>? GetTmBytes() { return __p.__vector_as_arraysegment(16); }
 #endif
-  public ulong[] GetTmArray() { return __p.__vector_as_array<ulong>(18); }
-  public byte Properties(int j) { int o = __p.__offset(20); return o != 0 ? __p.bb.Get(__p.__vector(o) + j * 1) : (byte)0; }
-  public int PropertiesLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public ulong[] GetTmArray() { return __p.__vector_as_array<ulong>(16); }
+  public byte Properties(int j) { int o = __p.__offset(18); return o != 0 ? __p.bb.Get(__p.__vector(o) + j * 1) : (byte)0; }
+  public int PropertiesLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetPropertiesBytes() { return __p.__vector_as_span(20); }
+  public Span<byte> GetPropertiesBytes() { return __p.__vector_as_span(18); }
 #else
-  public ArraySegment<byte>? GetPropertiesBytes() { return __p.__vector_as_arraysegment(20); }
+  public ArraySegment<byte>? GetPropertiesBytes() { return __p.__vector_as_arraysegment(18); }
 #endif
-  public byte[] GetPropertiesArray() { return __p.__vector_as_array<byte>(20); }
+  public byte[] GetPropertiesArray() { return __p.__vector_as_array<byte>(18); }
 
   public static Offset<Feature> CreateFeature(FlatBufferBuilder builder,
-      ulong fid = 0,
       VectorOffset endsOffset = default(VectorOffset),
       VectorOffset lengthsOffset = default(VectorOffset),
       VectorOffset xyOffset = default(VectorOffset),
@@ -90,8 +88,7 @@ public struct Feature : IFlatbufferObject
       VectorOffset tOffset = default(VectorOffset),
       VectorOffset tmOffset = default(VectorOffset),
       VectorOffset propertiesOffset = default(VectorOffset)) {
-    builder.StartObject(9);
-    Feature.AddFid(builder, fid);
+    builder.StartObject(8);
     Feature.AddProperties(builder, propertiesOffset);
     Feature.AddTm(builder, tmOffset);
     Feature.AddT(builder, tOffset);
@@ -103,37 +100,36 @@ public struct Feature : IFlatbufferObject
     return Feature.EndFeature(builder);
   }
 
-  public static void StartFeature(FlatBufferBuilder builder) { builder.StartObject(9); }
-  public static void AddFid(FlatBufferBuilder builder, ulong fid) { builder.AddUlong(0, fid, 0); }
-  public static void AddEnds(FlatBufferBuilder builder, VectorOffset endsOffset) { builder.AddOffset(1, endsOffset.Value, 0); }
+  public static void StartFeature(FlatBufferBuilder builder) { builder.StartObject(8); }
+  public static void AddEnds(FlatBufferBuilder builder, VectorOffset endsOffset) { builder.AddOffset(0, endsOffset.Value, 0); }
   public static VectorOffset CreateEndsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateEndsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartEndsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddLengths(FlatBufferBuilder builder, VectorOffset lengthsOffset) { builder.AddOffset(2, lengthsOffset.Value, 0); }
+  public static void AddLengths(FlatBufferBuilder builder, VectorOffset lengthsOffset) { builder.AddOffset(1, lengthsOffset.Value, 0); }
   public static VectorOffset CreateLengthsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateLengthsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartLengthsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddXy(FlatBufferBuilder builder, VectorOffset xyOffset) { builder.AddOffset(3, xyOffset.Value, 0); }
+  public static void AddXy(FlatBufferBuilder builder, VectorOffset xyOffset) { builder.AddOffset(2, xyOffset.Value, 0); }
   public static VectorOffset CreateXyVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateXyVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartXyVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddZ(FlatBufferBuilder builder, VectorOffset zOffset) { builder.AddOffset(4, zOffset.Value, 0); }
+  public static void AddZ(FlatBufferBuilder builder, VectorOffset zOffset) { builder.AddOffset(3, zOffset.Value, 0); }
   public static VectorOffset CreateZVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateZVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartZVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddM(FlatBufferBuilder builder, VectorOffset mOffset) { builder.AddOffset(5, mOffset.Value, 0); }
+  public static void AddM(FlatBufferBuilder builder, VectorOffset mOffset) { builder.AddOffset(4, mOffset.Value, 0); }
   public static VectorOffset CreateMVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateMVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartMVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddT(FlatBufferBuilder builder, VectorOffset tOffset) { builder.AddOffset(6, tOffset.Value, 0); }
+  public static void AddT(FlatBufferBuilder builder, VectorOffset tOffset) { builder.AddOffset(5, tOffset.Value, 0); }
   public static VectorOffset CreateTVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateTVectorBlock(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartTVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddTm(FlatBufferBuilder builder, VectorOffset tmOffset) { builder.AddOffset(7, tmOffset.Value, 0); }
+  public static void AddTm(FlatBufferBuilder builder, VectorOffset tmOffset) { builder.AddOffset(6, tmOffset.Value, 0); }
   public static VectorOffset CreateTmVector(FlatBufferBuilder builder, ulong[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddUlong(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateTmVectorBlock(FlatBufferBuilder builder, ulong[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartTmVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddProperties(FlatBufferBuilder builder, VectorOffset propertiesOffset) { builder.AddOffset(8, propertiesOffset.Value, 0); }
+  public static void AddProperties(FlatBufferBuilder builder, VectorOffset propertiesOffset) { builder.AddOffset(7, propertiesOffset.Value, 0); }
   public static VectorOffset CreatePropertiesVector(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte(data[i]); return builder.EndVector(); }
   public static VectorOffset CreatePropertiesVectorBlock(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
   public static void StartPropertiesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }

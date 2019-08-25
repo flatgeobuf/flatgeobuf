@@ -12,19 +12,15 @@ struct Feature;
 
 struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_FID = 4,
-    VT_ENDS = 6,
-    VT_LENGTHS = 8,
-    VT_XY = 10,
-    VT_Z = 12,
-    VT_M = 14,
-    VT_T = 16,
-    VT_TM = 18,
-    VT_PROPERTIES = 20
+    VT_ENDS = 4,
+    VT_LENGTHS = 6,
+    VT_XY = 8,
+    VT_Z = 10,
+    VT_M = 12,
+    VT_T = 14,
+    VT_TM = 16,
+    VT_PROPERTIES = 18
   };
-  uint64_t fid() const {
-    return GetField<uint64_t>(VT_FID, 0);
-  }
   const flatbuffers::Vector<uint32_t> *ends() const {
     return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_ENDS);
   }
@@ -51,7 +47,6 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint64_t>(verifier, VT_FID) &&
            VerifyOffset(verifier, VT_ENDS) &&
            verifier.VerifyVector(ends()) &&
            VerifyOffset(verifier, VT_LENGTHS) &&
@@ -75,9 +70,6 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct FeatureBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_fid(uint64_t fid) {
-    fbb_.AddElement<uint64_t>(Feature::VT_FID, fid, 0);
-  }
   void add_ends(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ends) {
     fbb_.AddOffset(Feature::VT_ENDS, ends);
   }
@@ -116,7 +108,6 @@ struct FeatureBuilder {
 
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint64_t fid = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> ends = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> lengths = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> xy = 0,
@@ -126,7 +117,6 @@ inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::Offset<flatbuffers::Vector<uint64_t>> tm = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties = 0) {
   FeatureBuilder builder_(_fbb);
-  builder_.add_fid(fid);
   builder_.add_properties(properties);
   builder_.add_tm(tm);
   builder_.add_t(t);
@@ -140,7 +130,6 @@ inline flatbuffers::Offset<Feature> CreateFeature(
 
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint64_t fid = 0,
     const std::vector<uint32_t> *ends = nullptr,
     const std::vector<uint32_t> *lengths = nullptr,
     const std::vector<double> *xy = nullptr,
@@ -159,7 +148,6 @@ inline flatbuffers::Offset<Feature> CreateFeatureDirect(
   auto properties__ = properties ? _fbb.CreateVector<uint8_t>(*properties) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
-      fid,
       ends__,
       lengths__,
       xy__,

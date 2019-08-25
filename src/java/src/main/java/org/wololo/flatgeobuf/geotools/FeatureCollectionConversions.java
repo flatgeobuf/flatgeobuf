@@ -76,20 +76,10 @@ public class FeatureCollectionConversions {
         outputStream.write(headerBuffer);
 
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
-            long fid = 0;
             while (iterator.hasNext()) {
                 SimpleFeature feature = iterator.next();
-                String id = feature.getID();
-                if (id != null) {
-                    try {
-                        fid = Long.parseLong(id);
-                    } catch (NumberFormatException e) {
-
-                    }
-                }
-                byte[] featureBuffer = FeatureConversions.serialize(feature, fid, headerMeta);
+                byte[] featureBuffer = FeatureConversions.serialize(feature, headerMeta);
                 outputStream.write(featureBuffer);
-                fid++;
             }
         }
     }

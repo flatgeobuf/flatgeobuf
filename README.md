@@ -14,15 +14,14 @@ The site http://switchfromshapefile.org has more in depth information about the 
 
 Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeobuf. (conceptual, not performance optimized)
 
-DISCLAIMER: Implementation is now in a more or less finished state but specification remains non-final for now.
-
 ## Specification
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
 * MB: Magic bytes (0x6667620066676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
-* I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and feature offsets index (static size custom buffer, feature count * 8 bytes)
+* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h))
+* O: Feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
@@ -54,7 +53,6 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 
 ## TODO
 
-* Finalize 1.0 spec
 * Java index support
 * C# support update
 * C langauge support

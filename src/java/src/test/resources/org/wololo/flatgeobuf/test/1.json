@@ -2,38 +2,21 @@
     "type": "FeatureCollection",
     "features": [
         {
-            "id": "0",
             "type": "Feature",
             "properties": {
                 "test1": "test1",
                 "test2": "test2",
                 "test3": 1,
                 "test4": 1.5,
-                "test5": true
+                "test5": -1.234,
+                "test6": true,
+                "test7": false
             },
             "geometry": {
                 "type": "Point",
                 "coordinates": [
                     1,
                     1
-                ]
-            }
-        },
-        {
-            "id": "0",
-            "type": "Feature",
-            "properties": {
-                "test1": "test1sfsefsdfs sfdfds dsf sf",
-                "test2": null,
-                "test3": 1,
-                "test4": 1.533332324,
-                "test5": false
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    1,
-                    2
                 ]
             }
         }
