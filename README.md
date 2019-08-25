@@ -64,14 +64,18 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 
 ## FAQ
 
-- Q: Why not use WKB geometry encoding?
-- A: It does not align on 8 bytes so it not always possible to consume it without copying first.
+### Why not use WKB geometry encoding?
 
-- Q: Why not use Protobuf?
-- A: Performance reasons and to allow streaming/random access.
+It does not align on 8 bytes so it not always possible to consume it without copying first.
 
-- Q: Why static per file schema?
-- A: In my view allowing per feature schema breaks the simple in simple features.
+### Why not use Protobuf?
 
-- Q: Why no geometrycollection or geometry type per feature?
-- A: Same reason why I prefer the static schema requirement.
+Performance reasons and to allow streaming/random access.
+
+### Why static per file schema?
+
+Allowing per feature schema breaks the simple in simple features, in my opinion.
+
+### Why no geometrycollection or geometry type per feature?
+
+Same reason as to why I prefer the static schema requirement.
