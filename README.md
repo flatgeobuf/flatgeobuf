@@ -1,4 +1,4 @@
-# FlatGeobuf
+# ![layout](logo.svg) FlatGeobuf
 
 [![CircleCI](https://img.shields.io/circleci/build/github/bjornharrtell/flatgeobuf.svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
