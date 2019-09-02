@@ -152,7 +152,7 @@ void PackedRTree::init(const uint16_t nodeSize)
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
     _numNodes = _levelBounds.back();
-    _numNonLeafNodes = _numNodes - _numItems;
+    _numNonLeafNodes = static_cast<uint32_t>(_numNodes - _numItems);
     _minAlign = _numNonLeafNodes % 2;
     _rects.reserve(_numNodes);
     _indices.reserve(_numNonLeafNodes);
@@ -173,12 +173,12 @@ std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, 
 
 void PackedRTree::generateNodes()
 {
-    for (uint64_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
-        uint64_t end = _levelBounds[i];
+    for (uint32_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
+        uint32_t end = static_cast<uint32_t>(_levelBounds[i]);
         while (pos < end) {
             Rect nodeRect = Rect::createInvertedInfiniteRect();
-            uint64_t nodeIndex = pos;
-            for (uint64_t j = 0; j < _nodeSize && pos < end; j++)
+            uint32_t nodeIndex = pos;
+            for (uint32_t j = 0; j < _nodeSize && pos < end; j++)
                 nodeRect.expand(_rects[pos++]);
             _rects.push_back(nodeRect);
             _indices.push_back(nodeIndex);
@@ -189,14 +189,14 @@ void PackedRTree::generateNodes()
 void PackedRTree::fromData(const void *data)
 {
     auto buf = reinterpret_cast<const uint8_t *>(data);
-    const Rect *pr = reinterpret_cast<const Rect*>(buf);
+    const Rect *pr = reinterpret_cast<const Rect *>(buf);
     for (uint64_t i = 0; i < _numNodes; i++) {
         Rect r = *pr++;
         _rects.push_back(r);
         _extent.expand(r);
     }
     uint64_t rectsSize = _numNodes * sizeof(Rect);
-    const uint32_t *pi = reinterpret_cast<const uint32_t*>(buf + rectsSize);
+    const uint32_t *pi = reinterpret_cast<const uint32_t *>(buf + rectsSize);
     for (uint32_t i = 0; i < _numNonLeafNodes; i++)
         _indices[i] = *pi++;
 }
@@ -266,7 +266,7 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
 
 std::vector<uint64_t> PackedRTree::streamSearch(
     const uint64_t numItems, const uint16_t nodeSize, Rect r,
-    const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNode)
+    const std::function<void(uint8_t *, uint64_t, uint64_t)> &readNode)
 {
     auto levelBounds = generateLevelBounds(numItems, nodeSize);
     uint64_t numNodes = levelBounds.back();

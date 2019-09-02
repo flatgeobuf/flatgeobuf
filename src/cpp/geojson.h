@@ -86,7 +86,9 @@ const void parseProperties(
             std::copy(reinterpret_cast<const uint8_t *>(&val), reinterpret_cast<const uint8_t *>(&val + 1), std::back_inserter(properties));
         } else if (type == ColumnType::String) {
             const std::string str = value.get<std::string>();
-            uint32_t len = str.length();
+            if (str.length() >= std::numeric_limits<uint32_t>::max())
+                throw std::invalid_argument("String too long");
+            uint32_t len = static_cast<uint32_t>(str.length());
             std::copy(reinterpret_cast<const uint8_t *>(&len), reinterpret_cast<const uint8_t *>(&len + 1), std::back_inserter(properties));
             std::copy(str.begin(), str.end(), std::back_inserter(properties));
         } else {
@@ -221,14 +223,14 @@ const std::vector<point> extractPoints(const double *coords, uint32_t length, ui
 
 const multi_line_string fromMultiLineString(
     const double *coords,
-    const size_t coordsLength,
+    const uint32_t coordsLength,
     const Vector<uint32_t> *ends)
 {
     if (ends == nullptr || ends->size() < 2)
         return multi_line_string { line_string(extractPoints(coords, coordsLength)) };
     std::vector<line_string> lineStrings;
-    size_t offset = 0;
-    for (size_t i = 0; i < ends->size(); i++) {
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < ends->size(); i++) {
         uint32_t end = ends->Get(i) << 1;
         lineStrings.push_back(line_string(extractPoints(coords, end - offset, offset)));
         offset = end;
@@ -238,14 +240,14 @@ const multi_line_string fromMultiLineString(
 
 const polygon fromPolygon(
     const double *coords,
-    const size_t coordsLength,
+    const uint32_t coordsLength,
     const Vector<uint32_t> *ends)
 {
     if (ends == nullptr || ends->size() < 2)
         return polygon { extractPoints(coords, coordsLength) };
     std::vector<linear_ring> linearRings;
-    size_t offset = 0;
-    for (size_t i = 0; i < ends->size(); i++) {
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < ends->size(); i++) {
         uint32_t end = ends->Get(i) << 1;
         linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
         offset = end;
@@ -255,7 +257,7 @@ const polygon fromPolygon(
 
 const multi_polygon fromMultiPolygon(
     const double *coords,
-    const size_t coordsLength,
+    const uint32_t coordsLength,
     const Vector<uint32_t> *ends,
     const Vector<uint32_t> *lengths)
 {
@@ -275,12 +277,12 @@ const multi_polygon fromMultiPolygon(
     if (lengths == nullptr || lengths->size() < 2)
         return multi_polygon { fromPolygon(coords, coordsLength, ends) };
     std::vector<polygon> polygons;
-    size_t offset = 0;
-    size_t roffset = 0;
-    for (size_t i = 0; i < lengths->size(); i++) {
+    uint32_t offset = 0;
+    uint32_t roffset = 0;
+    for (uint32_t i = 0; i < lengths->size(); i++) {
         std::vector<linear_ring> linearRings;
         uint32_t ringCount = lengths->Get(i);
-        for (size_t j = 0; j < ringCount; j++) {
+        for (uint32_t j = 0; j < ringCount; j++) {
             uint32_t end = ends->Get(roffset++) << 1;
             linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
             offset = end;

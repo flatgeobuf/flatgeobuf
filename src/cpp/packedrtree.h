@@ -48,7 +48,7 @@ class PackedRTree {
     std::vector<uint32_t> _indices;
     uint64_t _numItems;
     uint64_t _numNodes;
-    uint64_t _numNonLeafNodes;
+    uint32_t _numNonLeafNodes;
     uint32_t _minAlign;
     uint16_t _nodeSize;
     std::vector<uint64_t> _levelBounds;
@@ -63,7 +63,7 @@ public:
     std::vector<uint64_t> search(double minX, double minY, double maxX, double maxY) const;
     static std::vector<uint64_t> streamSearch(
         const uint64_t numItems, const uint16_t nodeSize, Rect r,
-        const std::function<void(uint8_t *, uint32_t, uint32_t)> &readNode);
+        const std::function<void(uint8_t *, uint64_t, uint64_t)> &readNode);
     uint64_t size() const;
     static uint64_t size(const uint64_t numItems, const uint16_t nodeSize = 16);
     uint8_t *toData() const;
