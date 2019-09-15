@@ -135,11 +135,9 @@ const uint8_t *serialize(const feature_collection fc)
     fbb.FinishSizePrefixed(header);
     auto hbuf = fbb.Release();
     std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
-    
-    buf = tree.toData();
-    auto size = tree.size();
-    std::copy(buf, buf+size, std::back_inserter(data));
-    
+
+    tree.streamWrite([&data] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(data)); });
+
     std::vector<uint8_t> featureData;
     std::vector<uint64_t> featureOffsets;
     uint64_t featureOffset = 0;

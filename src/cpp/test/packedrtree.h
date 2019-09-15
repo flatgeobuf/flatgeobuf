@@ -6,10 +6,6 @@
 
 using namespace FlatGeobuf;
 
-struct FeatureItem : Item {
-    FeatureItem(Rect r) { rect = r; };
-};
-
 TEST_CASE("PackedRTree")
 {
     SECTION("PackedRTree 2 items 2")
@@ -31,9 +27,13 @@ TEST_CASE("PackedRTree")
 
     SECTION("PackedRTree 2 rectitems 2")
     {
-        std::vector<Item *> items;
-        items.push_back(new FeatureItem({0, 0, 1, 1}) );
-        items.push_back(new FeatureItem({2, 2, 3, 3}) );
+        std::vector<std::shared_ptr<Item>> items;
+        auto r1 = std::make_shared<Item>();
+        auto r2 = std::make_shared<Item>();
+        r1->rect = {0, 0, 1, 1};
+        r2->rect = {2, 2, 3, 3};
+        items.push_back(r1);
+        items.push_back(r2);
         Rect extent = calcExtent(items);
         REQUIRE(items[0]->rect.intersects({0, 0, 1, 1}) == true);
         REQUIRE(items[1]->rect.intersects({2, 2, 3, 3}) == true);
@@ -208,7 +208,10 @@ TEST_CASE("PackedRTree")
             auto rect = rects[list[i]];
             REQUIRE(rect.intersects({102, 102, 103, 103}) == true);
         }
-        auto data = tree.toData();
+        std::vector<uint8_t> treeData;
+        tree.streamWrite([&treeData] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(treeData)); });
+        auto data = treeData.data();
+
         PackedRTree tree2(data, rects.size());
         auto list2 = tree2.search(102, 102, 103, 103);
         REQUIRE(list2.size() == 4);

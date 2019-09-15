@@ -33,9 +33,9 @@ std::ostream& operator << (std::ostream& os, Rect const& value);
 
 uint32_t hilbert(uint32_t x, uint32_t y);
 uint32_t hilbert(Rect r, uint32_t hilbertMax, Rect extent);
-void hilbertSort(std::vector<Item *> &items);
+void hilbertSort(std::vector<std::shared_ptr<Item>> &items);
 void hilbertSort(std::vector<Rect> &items);
-Rect calcExtent(std::vector<Item *> &rectitems);
+Rect calcExtent(std::vector<std::shared_ptr<Item>> &rectitems);
 Rect calcExtent(std::vector<Rect> &rects);
 
 /**
@@ -57,17 +57,17 @@ class PackedRTree {
     void generateNodes();
     void fromData(const void *data);
 public:
-    PackedRTree(std::vector<Item *> &items, Rect extent, const uint16_t nodeSize = 16);
+    PackedRTree(std::vector<std::shared_ptr<Item>> &items, Rect extent, const uint16_t nodeSize = 16);
     PackedRTree(std::vector<Rect> &rects, Rect extent, const uint16_t nodeSize = 16);
     PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize = 16);
     std::vector<uint64_t> search(double minX, double minY, double maxX, double maxY) const;
     static std::vector<uint64_t> streamSearch(
         const uint64_t numItems, const uint16_t nodeSize, Rect r,
-        const std::function<void(uint8_t *, uint64_t, uint64_t)> &readNode);
+        const std::function<void(uint8_t *, size_t, size_t)> &readNode);
     uint64_t size() const;
     static uint64_t size(const uint64_t numItems, const uint16_t nodeSize = 16);
-    uint8_t *toData() const;
     Rect getExtent() const;
+    void streamWrite(const std::function<void(uint8_t *, size_t)> &writeData);
 };
 
 }
