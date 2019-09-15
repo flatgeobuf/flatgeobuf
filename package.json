@@ -25,11 +25,11 @@
     "slice-source": "0.4.1"
   },
   "devDependencies": {
-    "@babel/core": "7.5.5",
-    "@babel/preset-env": "7.5.5",
-    "@types/chai": "4.2.0",
+    "@babel/core": "7.6.0",
+    "@babel/preset-env": "7.6.0",
+    "@types/chai": "4.2.2",
     "@types/mocha": "5.2.7",
-    "@types/node": "10.14.6",
+    "@types/node": "10.14.18",
     "stream-buffers": "3.0.2",
     "web-streams-polyfill": "2.0.4",
     "chai": "4.2.0",
@@ -37,12 +37,12 @@
     "jsts": "2.0.8",
     "mocha": "6.2.0",
     "ol": "5.3.3",
-    "rollup": "1.20.2",
+    "rollup": "1.21.3",
     "rollup-plugin-babel": "4.3.3",
     "rollup-plugin-node-resolve": "5.2.0",
-    "rollup-plugin-terser": "5.1.1",
+    "rollup-plugin-terser": "5.1.2",
     "ts-node": "8.3.0",
-    "tslint": "5.19.0",
-    "typescript": "3.5.3"
+    "tslint": "5.20.0",
+    "typescript": "3.6.3"
   }
 }
