@@ -37,7 +37,7 @@ Preliminary performance tests has been done using road data from OSM for Denmark
 | Write full dataset    | 1         | 0.62       | 0.37       | 2.5     | 2   |
 | Write w/spatial index | 1         | 1.3        | 0.45       | -       | -   |
 
-The test was done using the GDAL fork (linked below) implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
+The test was done using the GDAL fork (linked below) implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr -oo VERIFY_BUFFERS=NO` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
 
 Note that for the test with spatial filter a small bounding box was chosen resulting in only 9 features. The reason for this is to test mainly the spatial index search performance for that case.
 
@@ -45,7 +45,7 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
 * Efficient I/O (streaming and random access)
-* GDAL/OGR format (WIP @ https://github.com/bjornharrtell/gdal/tree/flatgeobuf)
+* [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * QGIS provider (WIP @ https://github.com/bjornharrtell/QGIS/tree/fgb)
 * OpenLayers example (WIP @ https://github.com/bjornharrtell/ol3/tree/flatgeobuf)
 * GeoServer WFS output format (WIP @ https://github.com/bjornharrtell/geoserver/tree/flatgeobuf-output)
@@ -77,3 +77,7 @@ Allowing per feature schema breaks the simple in simple features, in my opinion.
 ### Why no geometrycollection or geometry type per feature?
 
 Same reason as to why I prefer the static schema requirement.
+
+### Why am I not getting expected performance in GDAL?
+
+Default behaviour is to assume untrusted data and verify buffer integrity for safety. If you have trusted data and want maximum performance make sure to set the open option VERIFY_BUFFERS to NO.
