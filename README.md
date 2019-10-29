@@ -20,8 +20,7 @@ Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeob
 
 * MB: Magic bytes (0x6667620066676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
-* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h))
-* O: Feature offsets index (static size custom buffer, feature count * 8 bytes)
+* I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and Feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinate values) is aligned to 8 bytes to from the start of the file to allow for direct memory access.
