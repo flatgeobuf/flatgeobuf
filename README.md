@@ -27,18 +27,19 @@ Any 64-bit flatbuffer value contained anywhere in the file (for example coordina
 
 ## Performance
 
-Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 812547 LineString features with a set of attributes.
+Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 884594 LineString features with a set of attributes.
 
 |                       | Shapefile | GeoPackage | FlatGeobuf | GeoJSON | GML |
 |-----------------------|-----------|------------|------------|---------|-----|
-| Read full dataset     | 1         | 0.9        | 0.5        | 15      | 7.7 |
-| Read w/spatial filter | 1         | 0.15       | 0.12       | 100     | 60  |
-| Write full dataset    | 1         | 0.62       | 0.37       | 2.5     | 2   |
-| Write w/spatial index | 1         | 1.3        | 0.45       | -       | -   |
+| Read full dataset     | 1         | 0.94       | 0.47       | 14      | 7.9 |
+| Read w/spatial filter | 1         | 0.14       | 0.13       | 102     | 53  |
+| Write full dataset    | 1         | 0.78       | 0.40       | 3.1     | 3.2 |
+| Write w/spatial index | 1         | 1.6        | 0.65       | -       | -   |
+| Size                  | 1         | 0.72       | 0.76       | 1.2     | 2.1 |
 
-The test was done using GDAL implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr -oo VERIFY_BUFFERS=NO` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
+The test was done using GDAL implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
 
-Note that for the test with spatial filter a small bounding box was chosen resulting in only 9 features. The reason for this is to test mainly the spatial index search performance for that case.
+Note that for the test with spatial filter a small bounding box was chosen resulting in only 16 features. The reason for this is to test mainly the spatial index search performance for that case.
 
 ## Features
 
