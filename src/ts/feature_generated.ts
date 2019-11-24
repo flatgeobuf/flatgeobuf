@@ -5,6 +5,7 @@ import { flatbuffers } from 'flatbuffers'
  * @enum {number}
  */
 export enum GeometryType{
+  Unknown= 0,
   Point= 1,
   LineString= 2,
   Polygon= 3,
@@ -17,6 +18,8 @@ export enum GeometryType{
   CurvePolygon= 10,
   MultiCurve= 11,
   MultiSurface= 12,
+  Curve= 13,
+  Surface= 14,
   PolyhedralSurface= 15,
   TIN= 16,
   Triangle= 17

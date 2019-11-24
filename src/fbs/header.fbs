@@ -3,6 +3,7 @@ namespace FlatGeobuf;
 // Geometry type enumeration 
 // NOTE: Same as WKB 2D geometry type enumeration
 enum GeometryType: ubyte {
+  Unknown = 0,
   Point = 1,
   LineString = 2,
   Polygon = 3,
@@ -15,6 +16,8 @@ enum GeometryType: ubyte {
   CurvePolygon = 10,
   MultiCurve = 11,
   MultiSurface = 12,
+  Curve = 13,
+  Surface = 14,
   PolyhedralSurface = 15,
   TIN = 16,
   Triangle = 17

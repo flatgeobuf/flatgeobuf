@@ -15,6 +15,7 @@ struct Crs;
 struct Header;
 
 enum class GeometryType : uint8_t {
+  Unknown = 0,
   Point = 1,
   LineString = 2,
   Polygon = 3,
@@ -27,15 +28,18 @@ enum class GeometryType : uint8_t {
   CurvePolygon = 10,
   MultiCurve = 11,
   MultiSurface = 12,
+  Curve = 13,
+  Surface = 14,
   PolyhedralSurface = 15,
   TIN = 16,
   Triangle = 17,
-  MIN = Point,
+  MIN = Unknown,
   MAX = Triangle
 };
 
-inline const GeometryType (&EnumValuesGeometryType())[15] {
+inline const GeometryType (&EnumValuesGeometryType())[18] {
   static const GeometryType values[] = {
+    GeometryType::Unknown,
     GeometryType::Point,
     GeometryType::LineString,
     GeometryType::Polygon,
@@ -48,6 +52,8 @@ inline const GeometryType (&EnumValuesGeometryType())[15] {
     GeometryType::CurvePolygon,
     GeometryType::MultiCurve,
     GeometryType::MultiSurface,
+    GeometryType::Curve,
+    GeometryType::Surface,
     GeometryType::PolyhedralSurface,
     GeometryType::TIN,
     GeometryType::Triangle
@@ -57,6 +63,7 @@ inline const GeometryType (&EnumValuesGeometryType())[15] {
 
 inline const char * const *EnumNamesGeometryType() {
   static const char * const names[] = {
+    "Unknown",
     "Point",
     "LineString",
     "Polygon",
@@ -69,8 +76,8 @@ inline const char * const *EnumNamesGeometryType() {
     "CurvePolygon",
     "MultiCurve",
     "MultiSurface",
-    "",
-    "",
+    "Curve",
+    "Surface",
     "PolyhedralSurface",
     "TIN",
     "Triangle",
@@ -80,8 +87,8 @@ inline const char * const *EnumNamesGeometryType() {
 }
 
 inline const char *EnumNameGeometryType(GeometryType e) {
-  if (e < GeometryType::Point || e > GeometryType::Triangle) return "";
-  const size_t index = static_cast<size_t>(e) - static_cast<size_t>(GeometryType::Point);
+  if (e < GeometryType::Unknown || e > GeometryType::Triangle) return "";
+  const size_t index = static_cast<size_t>(e);
   return EnumNamesGeometryType()[index];
 }
 

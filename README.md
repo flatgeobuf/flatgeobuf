@@ -18,7 +18,7 @@ Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeob
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
-* MB: Magic bytes (0x6667620066676200)
+* MB: Magic bytes (0x6667620266676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and Feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
@@ -74,7 +74,7 @@ Performance reasons and to allow streaming/random access.
 
 Allowing per feature schema breaks the simple in simple features, in my opinion.
 
-### Why no geometrycollection or geometry type per feature?
+### Why no geometry type per feature?
 
 Same reason as to why I prefer the static schema requirement.
 
