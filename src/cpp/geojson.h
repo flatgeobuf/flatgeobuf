@@ -179,12 +179,11 @@ const uint8_t *serialize(const feature_collection fc)
             }
         }
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
-        auto pEndss = endss.size() == 0 ? nullptr : &endss;
         auto pEnds = ends.size() == 0 ? nullptr : &ends;
         std::vector<uint8_t> properties;
         parseProperties(f.properties, properties, columnMetas);
         auto pProperties = properties.size() == 0 ? nullptr : &properties;
-        auto geometry = CreateGeometryDirect(fbb, pEnds, pEndss, &coords, nullptr, nullptr, nullptr, nullptr);
+        auto geometry = CreateGeometryDirect(fbb, pEnds, &coords, nullptr, nullptr, nullptr, nullptr);
         auto feature = CreateFeatureDirect(fbb, geometry, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
@@ -306,8 +305,8 @@ const geometry fromGeometry(const Geometry *geometry, const GeometryType geometr
             return fromMultiLineString(xy, xyLength, geometry->ends());
         case GeometryType::Polygon:
             return fromPolygon(xy, xyLength, geometry->ends());
-        case GeometryType::MultiPolygon:
-            return fromMultiPolygon(xy, xyLength, geometry->ends(), geometry->lengths());
+        //case GeometryType::MultiPolygon:
+            //return fromMultiPolygon(xy, xyLength, geometry->ends(), geometry->lengths());
         default:
             throw std::invalid_argument("Unknown geometry type");
     }

@@ -355,7 +355,7 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_ENVELOPE);
   }
   GeometryType geometry_type() const {
-    return static_cast<GeometryType>(GetField<uint8_t>(VT_GEOMETRY_TYPE, 1));
+    return static_cast<GeometryType>(GetField<uint8_t>(VT_GEOMETRY_TYPE, 0));
   }
   bool hasZ() const {
     return GetField<uint8_t>(VT_HASZ, 0) != 0;
@@ -413,7 +413,7 @@ struct HeaderBuilder {
     fbb_.AddOffset(Header::VT_ENVELOPE, envelope);
   }
   void add_geometry_type(GeometryType geometry_type) {
-    fbb_.AddElement<uint8_t>(Header::VT_GEOMETRY_TYPE, static_cast<uint8_t>(geometry_type), 1);
+    fbb_.AddElement<uint8_t>(Header::VT_GEOMETRY_TYPE, static_cast<uint8_t>(geometry_type), 0);
   }
   void add_hasZ(bool hasZ) {
     fbb_.AddElement<uint8_t>(Header::VT_HASZ, static_cast<uint8_t>(hasZ), 0);
@@ -455,7 +455,7 @@ inline flatbuffers::Offset<Header> CreateHeader(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> envelope = 0,
-    GeometryType geometry_type = GeometryType::Point,
+    GeometryType geometry_type = GeometryType::Unknown,
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
@@ -483,7 +483,7 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<double> *envelope = nullptr,
-    GeometryType geometry_type = GeometryType::Point,
+    GeometryType geometry_type = GeometryType::Unknown,
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
