@@ -17,7 +17,7 @@ export interface ICreateFeature {
 
 export function fromFeature(feature: Feature, header: HeaderMeta, createGeometry: ICreateGeometry, createFeature: ICreateFeature) {
     const columns = header.columns
-    const geometry = feature.geometries(0)
+    const geometry = feature.geometry()
     const simpleGeometry = createGeometry(geometry, header.geometryType)
     const properties = parseProperties(feature, columns)
     return createFeature(simpleGeometry, properties)
@@ -93,10 +93,9 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
     Geometry.start(builder)
     finalizeGeometry()
     const geometryOffset = Geometry.end(builder)
-    const geometries = Feature.createGeometriesVector(builder, [geometryOffset])
 
     Feature.start(builder)
-    Feature.addGeometries(builder, geometries)
+    Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
     const featureOffset = Feature.end(builder)

@@ -817,26 +817,44 @@ tmLength():number {
 
 /**
  * @param number index
+ * @param Geometry= obj
+ * @returns Geometry
+ */
+parts(index: number, obj?:Geometry):Geometry|null {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? (obj || new Geometry).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+};
+
+/**
+ * @returns number
+ */
+partsLength():number {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param number index
  * @returns GeometryType
  */
-geometryTypes(index: number):GeometryType|null {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+types(index: number):GeometryType|null {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? /**  */ (this.bb!.readUint8(this.bb!.__vector(this.bb_pos + offset) + index)) : /**  */ (0);
 };
 
 /**
  * @returns number
  */
-geometryTypesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+typesLength():number {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
 /**
  * @returns Uint8Array
  */
-geometryTypesArray():Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 18);
+typesArray():Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? new Uint8Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -844,7 +862,7 @@ geometryTypesArray():Uint8Array|null {
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(8);
+  builder.startObject(9);
 };
 
 /**
@@ -1052,10 +1070,39 @@ static startTmVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset geometryTypesOffset
+ * @param flatbuffers.Offset partsOffset
  */
-static addGeometryTypes(builder:flatbuffers.Builder, geometryTypesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(7, geometryTypesOffset, 0);
+static addParts(builder:flatbuffers.Builder, partsOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(7, partsOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param Array.<flatbuffers.Offset> data
+ * @returns flatbuffers.Offset
+ */
+static createPartsVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number numElems
+ */
+static startPartsVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset typesOffset
+ */
+static addTypes(builder:flatbuffers.Builder, typesOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(8, typesOffset, 0);
 };
 
 /**
@@ -1063,7 +1110,7 @@ static addGeometryTypes(builder:flatbuffers.Builder, geometryTypesOffset:flatbuf
  * @param Array.<GeometryType> data
  * @returns flatbuffers.Offset
  */
-static createGeometryTypesVector(builder:flatbuffers.Builder, data:GeometryType[]):flatbuffers.Offset {
+static createTypesVector(builder:flatbuffers.Builder, data:GeometryType[]):flatbuffers.Offset {
   builder.startVector(1, data.length, 1);
   for (var i = data.length - 1; i >= 0; i--) {
     builder.addInt8(data[i]);
@@ -1075,7 +1122,7 @@ static createGeometryTypesVector(builder:flatbuffers.Builder, data:GeometryType[
  * @param flatbuffers.Builder builder
  * @param number numElems
  */
-static startGeometryTypesVector(builder:flatbuffers.Builder, numElems:number) {
+static startTypesVector(builder:flatbuffers.Builder, numElems:number) {
   builder.startVector(1, numElems, 1);
 };
 
@@ -1088,7 +1135,7 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, tmOffset:flatbuffers.Offset, geometryTypesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, tmOffset:flatbuffers.Offset, partsOffset:flatbuffers.Offset, typesOffset:flatbuffers.Offset):flatbuffers.Offset {
   Geometry.start(builder);
   Geometry.addEnds(builder, endsOffset);
   Geometry.addLengths(builder, lengthsOffset);
@@ -1097,7 +1144,8 @@ static create(builder:flatbuffers.Builder, endsOffset:flatbuffers.Offset, length
   Geometry.addM(builder, mOffset);
   Geometry.addT(builder, tOffset);
   Geometry.addTm(builder, tmOffset);
-  Geometry.addGeometryTypes(builder, geometryTypesOffset);
+  Geometry.addParts(builder, partsOffset);
+  Geometry.addTypes(builder, typesOffset);
   return Geometry.end(builder);
 }
 }
@@ -1138,21 +1186,12 @@ static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Feature):Feature {
 };
 
 /**
- * @param number index
  * @param Geometry= obj
- * @returns Geometry
+ * @returns Geometry|null
  */
-geometries(index: number, obj?:Geometry):Geometry|null {
+geometry(obj?:Geometry):Geometry|null {
   var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? (obj || new Geometry).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
-};
-
-/**
- * @returns number
- */
-geometriesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+  return offset ? (obj || new Geometry).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
 /**
@@ -1181,64 +1220,18 @@ propertiesArray():Uint8Array|null {
 };
 
 /**
- * @param number index
- * @returns GeometryType
- */
-geometryTypes(index: number):GeometryType|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb!.__vector(this.bb_pos + offset) + index)) : /**  */ (0);
-};
-
-/**
- * @returns number
- */
-geometryTypesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns Uint8Array
- */
-geometryTypesArray():Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? new Uint8Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
-};
-
-/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(3);
+  builder.startObject(2);
 };
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset geometriesOffset
+ * @param flatbuffers.Offset geometryOffset
  */
-static addGeometries(builder:flatbuffers.Builder, geometriesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(0, geometriesOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<flatbuffers.Offset> data
- * @returns flatbuffers.Offset
- */
-static createGeometriesVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
-  builder.startVector(4, data.length, 4);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startGeometriesVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(4, numElems, 4);
+static addGeometry(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(0, geometryOffset, 0);
 };
 
 /**
@@ -1272,35 +1265,6 @@ static startPropertiesVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset geometryTypesOffset
- */
-static addGeometryTypes(builder:flatbuffers.Builder, geometryTypesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, geometryTypesOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<GeometryType> data
- * @returns flatbuffers.Offset
- */
-static createGeometryTypesVector(builder:flatbuffers.Builder, data:GeometryType[]):flatbuffers.Offset {
-  builder.startVector(1, data.length, 1);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addInt8(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startGeometryTypesVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(1, numElems, 1);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -1324,11 +1288,10 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, geometriesOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset, geometryTypesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
   Feature.start(builder);
-  Feature.addGeometries(builder, geometriesOffset);
+  Feature.addGeometry(builder, geometryOffset);
   Feature.addProperties(builder, propertiesOffset);
-  Feature.addGeometryTypes(builder, geometryTypesOffset);
   return Feature.end(builder);
 }
 }

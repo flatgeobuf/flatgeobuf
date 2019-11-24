@@ -3,20 +3,20 @@ include "header.fbs";
 namespace FlatGeobuf;
 
 table Geometry {
-  ends: [uint];        // Array of end index in flat coordinates per geometry part
-  lengths: [uint];     // Array of number of parts per geom
-  xy: [double];        // Flat x and y coordinate array (flat pairs)
-  z: [double];         // Flat z height array
-  m: [double];         // Flat m measurement array
-  t: [double];         // Flat t geodetic decimal year time array
-  tm: [ulong];         // Flat tm time nanosecond measurement array
-  geometry_types: [GeometryType]; // Array of geometry types for geometry with heterogeneous parts
+  ends: [uint];          // Array of end index in flat coordinates per geometry part
+  lengths: [uint];       // Array of number of parts per geom
+  xy: [double];          // Flat x and y coordinate array (flat pairs)
+  z: [double];           // Flat z height array
+  m: [double];           // Flat m measurement array
+  t: [double];           // Flat t geodetic decimal year time array
+  tm: [ulong];           // Flat tm time nanosecond measurement array
+  parts: [Geometry];     // Array of parts (for heterogeneous collection types)
+  types: [GeometryType]; // Array of geometry types (for heterogeneous collection types)
 }
 
 table Feature {
-  geometries: [Geometry];         // Array of geometries
-  properties: [ubyte];            // Custom buffer, variable length collection of key/value pairs (key=ushort)
-  geometry_types: [GeometryType]; // Array of geometry types for heterogeneous collections
+  geometry: Geometry;  // Geometry
+  properties: [ubyte]; // Custom buffer, variable length collection of key/value pairs (key=ushort)
 }
 
 root_type Feature;

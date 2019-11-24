@@ -185,10 +185,7 @@ const uint8_t *serialize(const feature_collection fc)
         parseProperties(f.properties, properties, columnMetas);
         auto pProperties = properties.size() == 0 ? nullptr : &properties;
         auto geometry = CreateGeometryDirect(fbb, pEnds, pEndss, &coords, nullptr, nullptr, nullptr, nullptr);
-        std::vector<flatbuffers::Offset<Geometry>> geometries;
-        geometries.push_back(geometry);
-        auto pGeometries = geometries.size() == 0 ? nullptr : &geometries;
-        auto feature = CreateFeatureDirect(fbb, pGeometries, pProperties);
+        auto feature = CreateFeatureDirect(fbb, geometry, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
@@ -366,7 +363,7 @@ const mapbox::feature::feature<double> fromFeature(
     const GeometryType geometryType,
     std::vector<ColumnMeta> columnMetas)
 {
-    auto geometry = feature->geometries()->Get(0);
+    auto geometry = feature->geometry();
     auto mapboxGeometry = fromGeometry(geometry, geometryType);
     auto mapboxProperties = readGeoJsonProperties(feature, columnMetas);
     mapbox::feature::feature<double> f { mapboxGeometry, mapboxProperties };

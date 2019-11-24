@@ -5,7 +5,9 @@ import { Geometry } from '../feature_generated'
 export interface IParsedGeometry {
     xy: number[],
     ends: number[],
-    lengths: number[]
+    lengths: number[],
+    parts: IParsedGeometry[],
+    types: GeometryType[]
 }
 
 export interface ISimpleGeometry {

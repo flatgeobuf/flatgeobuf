@@ -2,7 +2,7 @@ import { flatbuffers } from 'flatbuffers'
 import { GeometryType } from '../header_generated'
 import { Feature, Geometry } from '../feature_generated'
 
-import { IParsedGeometry, flat, pairFlatCoordinates } from '../generic/geometry'
+import { IParsedGeometry, flat, pairFlatCoordinates, toGeometryType } from '../generic/geometry'
 
 export interface IGeoJsonGeometry {
     type: string
@@ -11,7 +11,22 @@ export interface IGeoJsonGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
-    const { xy, ends, lengths } = parseGeometry(geometry)
+    return buildGeometry2(builder, parseGeometry(geometry))
+}
+
+export function buildGeometry2(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry) {
+    const { xy, ends, lengths, parts, types } = parsedGeometry
+
+    if (parts) {
+        const partOffsets = parts.map(part => buildGeometry2(builder, part))
+        const partsOffset = Geometry.createPartsVector(builder, partOffsets)
+        const typesOffset = Geometry.createTypesVector(builder, types)
+        Geometry.start(builder)
+        Geometry.addParts(builder, partsOffset)
+        Geometry.addTypes(builder, typesOffset)
+        return Geometry.end(builder)
+    }
+
     const coordsOffset = Geometry.createXyVector(builder, xy)
 
     let endsOffset: number = null
@@ -35,6 +50,8 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
     let xy: number[] = null
     let ends: number[] = null
     let lengths: number[] = null
+    let parts: IParsedGeometry[] = null
+    let types: GeometryType[] = null
     let end = 0
     switch (geometry.type) {
         case 'Point':
@@ -61,11 +78,16 @@ function parseGeometry(geometry: IGeoJsonGeometry) {
                 if (csss[0].length > 1)
                     ends = csss[0].map(c => end += c.length)
             break
+        case 'GeometryCollection':
+            parts = geometry.geometries.map(parseGeometry)
+            types = geometry.geometries.map(g => toGeometryType(g.type))
     }
     return {
         xy,
         ends,
-        lengths
+        lengths,
+        parts,
+        types
     } as IParsedGeometry
 }
 
@@ -114,6 +136,15 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
 }
 
 export function fromGeometry(geometry: Geometry, type: GeometryType) {
+    if (type == GeometryType.GeometryCollection) {
+        const geometries = []
+        for (let i = 0; i < geometry.partsLength(); i++)
+            geometries.push(fromGeometry(geometry.parts(i), geometry.types(i)))
+        return {
+            type: GeometryType[type],
+            geometries
+        }
+    }
     const coordinates = toGeoJsonCoordinates(geometry, type)
     return {
         type: GeometryType[type],
