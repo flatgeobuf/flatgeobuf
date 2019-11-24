@@ -22,6 +22,8 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType, ol: any
         case GeometryType.Polygon:
             return new Polygon(xy, GeometryLayout.XY, olEnds)
         case GeometryType.MultiPolygon:
+            // TODO: need rework!
+            /*
             let lengths = geometry.lengthsArray()
             let olEndss
             let s = 0
@@ -32,6 +34,7 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType, ol: any
             else // single part multipolygon without holes
                 olEndss = [[xy.length]]
             return new MultiPolygon(xy, GeometryLayout.XY, olEndss)
+            */
         default:
             throw Error('Unknown type')
     }

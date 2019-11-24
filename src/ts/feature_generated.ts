@@ -372,7 +372,7 @@ envelopeArray():Float64Array|null {
  */
 geometryType():GeometryType {
   var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Point;
+  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Unknown;
 };
 
 /**
@@ -499,7 +499,7 @@ static startEnvelopeVector(builder:flatbuffers.Builder, numElems:number) {
  * @param GeometryType geometryType
  */
 static addGeometryType(builder:flatbuffers.Builder, geometryType:GeometryType) {
-  builder.addFieldInt8(2, geometryType, GeometryType.Point);
+  builder.addFieldInt8(2, geometryType, GeometryType.Unknown);
 };
 
 /**
@@ -677,33 +677,8 @@ endsArray():Uint32Array|null {
  * @param number index
  * @returns number
  */
-lengths(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.readUint32(this.bb!.__vector(this.bb_pos + offset) + index * 4) : 0;
-};
-
-/**
- * @returns number
- */
-lengthsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns Uint32Array
- */
-lengthsArray():Uint32Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? new Uint32Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
-};
-
-/**
- * @param number index
- * @returns number
- */
 xy(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
 };
 
@@ -711,7 +686,7 @@ xy(index: number):number|null {
  * @returns number
  */
 xyLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -719,7 +694,7 @@ xyLength():number {
  * @returns Float64Array
  */
 xyArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 8);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -728,7 +703,7 @@ xyArray():Float64Array|null {
  * @returns number
  */
 z(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
 };
 
@@ -736,7 +711,7 @@ z(index: number):number|null {
  * @returns number
  */
 zLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -744,7 +719,7 @@ zLength():number {
  * @returns Float64Array
  */
 zArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -753,7 +728,7 @@ zArray():Float64Array|null {
  * @returns number
  */
 m(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
 };
 
@@ -761,7 +736,7 @@ m(index: number):number|null {
  * @returns number
  */
 mLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -769,7 +744,7 @@ mLength():number {
  * @returns Float64Array
  */
 mArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 12);
+  var offset = this.bb!.__offset(this.bb_pos, 10);
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -778,7 +753,7 @@ mArray():Float64Array|null {
  * @returns number
  */
 t(index: number):number|null {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
+  var offset = this.bb!.__offset(this.bb_pos, 12);
   return offset ? this.bb!.readFloat64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : 0;
 };
 
@@ -786,7 +761,7 @@ t(index: number):number|null {
  * @returns number
  */
 tLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
+  var offset = this.bb!.__offset(this.bb_pos, 12);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -794,7 +769,7 @@ tLength():number {
  * @returns Float64Array
  */
 tArray():Float64Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 14);
+  var offset = this.bb!.__offset(this.bb_pos, 12);
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -803,7 +778,7 @@ tArray():Float64Array|null {
  * @returns flatbuffers.Long
  */
 tm(index: number):flatbuffers.Long|null {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
+  var offset = this.bb!.__offset(this.bb_pos, 14);
   return offset ? this.bb!.readUint64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : this.bb!.createLong(0, 0);
 };
 
@@ -811,8 +786,16 @@ tm(index: number):flatbuffers.Long|null {
  * @returns number
  */
 tmLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 16);
+  var offset = this.bb!.__offset(this.bb_pos, 14);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @returns GeometryType
+ */
+type():GeometryType {
+  var offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Unknown;
 };
 
 /**
@@ -834,35 +817,10 @@ partsLength():number {
 };
 
 /**
- * @param number index
- * @returns GeometryType
- */
-types(index: number):GeometryType|null {
-  var offset = this.bb!.__offset(this.bb_pos, 20);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb!.__vector(this.bb_pos + offset) + index)) : /**  */ (0);
-};
-
-/**
- * @returns number
- */
-typesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 20);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns Uint8Array
- */
-typesArray():Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 20);
-  return offset ? new Uint8Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
-};
-
-/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(9);
+  builder.startObject(8);
 };
 
 /**
@@ -896,39 +854,10 @@ static startEndsVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset lengthsOffset
- */
-static addLengths(builder:flatbuffers.Builder, lengthsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(1, lengthsOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<number> data
- * @returns flatbuffers.Offset
- */
-static createLengthsVector(builder:flatbuffers.Builder, data:number[] | Uint8Array):flatbuffers.Offset {
-  builder.startVector(4, data.length, 4);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addInt32(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startLengthsVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(4, numElems, 4);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @param flatbuffers.Offset xyOffset
  */
 static addXy(builder:flatbuffers.Builder, xyOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(2, xyOffset, 0);
+  builder.addFieldOffset(1, xyOffset, 0);
 };
 
 /**
@@ -957,7 +886,7 @@ static startXyVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset zOffset
  */
 static addZ(builder:flatbuffers.Builder, zOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(3, zOffset, 0);
+  builder.addFieldOffset(2, zOffset, 0);
 };
 
 /**
@@ -986,7 +915,7 @@ static startZVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset mOffset
  */
 static addM(builder:flatbuffers.Builder, mOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(4, mOffset, 0);
+  builder.addFieldOffset(3, mOffset, 0);
 };
 
 /**
@@ -1015,7 +944,7 @@ static startMVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset tOffset
  */
 static addT(builder:flatbuffers.Builder, tOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(5, tOffset, 0);
+  builder.addFieldOffset(4, tOffset, 0);
 };
 
 /**
@@ -1044,7 +973,7 @@ static startTVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset tmOffset
  */
 static addTm(builder:flatbuffers.Builder, tmOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(6, tmOffset, 0);
+  builder.addFieldOffset(5, tmOffset, 0);
 };
 
 /**
@@ -1066,6 +995,14 @@ static createTmVector(builder:flatbuffers.Builder, data:flatbuffers.Long[]):flat
  */
 static startTmVector(builder:flatbuffers.Builder, numElems:number) {
   builder.startVector(8, numElems, 8);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param GeometryType type
+ */
+static addType(builder:flatbuffers.Builder, type:GeometryType) {
+  builder.addFieldInt8(6, type, GeometryType.Unknown);
 };
 
 /**
@@ -1099,35 +1036,6 @@ static startPartsVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
- * @param flatbuffers.Offset typesOffset
- */
-static addTypes(builder:flatbuffers.Builder, typesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(8, typesOffset, 0);
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param Array.<GeometryType> data
- * @returns flatbuffers.Offset
- */
-static createTypesVector(builder:flatbuffers.Builder, data:GeometryType[]):flatbuffers.Offset {
-  builder.startVector(1, data.length, 1);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addInt8(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startTypesVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(1, numElems, 1);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -1135,17 +1043,16 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, endsOffset:flatbuffers.Offset, lengthsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, tmOffset:flatbuffers.Offset, partsOffset:flatbuffers.Offset, typesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, endsOffset:flatbuffers.Offset, xyOffset:flatbuffers.Offset, zOffset:flatbuffers.Offset, mOffset:flatbuffers.Offset, tOffset:flatbuffers.Offset, tmOffset:flatbuffers.Offset, type:GeometryType, partsOffset:flatbuffers.Offset):flatbuffers.Offset {
   Geometry.start(builder);
   Geometry.addEnds(builder, endsOffset);
-  Geometry.addLengths(builder, lengthsOffset);
   Geometry.addXy(builder, xyOffset);
   Geometry.addZ(builder, zOffset);
   Geometry.addM(builder, mOffset);
   Geometry.addT(builder, tOffset);
   Geometry.addTm(builder, tmOffset);
+  Geometry.addType(builder, type);
   Geometry.addParts(builder, partsOffset);
-  Geometry.addTypes(builder, typesOffset);
   return Geometry.end(builder);
 }
 }

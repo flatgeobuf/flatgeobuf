@@ -4,7 +4,7 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { buildGeometry, parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
 import { toGeometryType } from '../generic/geometry'
 import { GeometryType } from '../header_generated'
 
@@ -85,8 +85,7 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
 
-    const geometryOffset = buildGeometry(builder, feature.geometry)
-
+    const geometryOffset = buildGeometry(builder, parseGeometry(feature.geometry))
     Feature.start(builder)
     Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)

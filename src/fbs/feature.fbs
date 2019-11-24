@@ -4,14 +4,13 @@ namespace FlatGeobuf;
 
 table Geometry {
   ends: [uint];          // Array of end index in flat coordinates per geometry part
-  lengths: [uint];       // Array of number of parts per geom
   xy: [double];          // Flat x and y coordinate array (flat pairs)
   z: [double];           // Flat z height array
   m: [double];           // Flat m measurement array
   t: [double];           // Flat t geodetic decimal year time array
   tm: [ulong];           // Flat tm time nanosecond measurement array
+  type: GeometryType;    // Type of geometry (only relevant for elements in heterogeneous collection types)
   parts: [Geometry];     // Array of parts (for heterogeneous collection types)
-  types: [GeometryType]; // Array of geometry types (for heterogeneous collection types)
 }
 
 table Feature {

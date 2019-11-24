@@ -372,7 +372,7 @@ envelopeArray():Float64Array|null {
  */
 geometryType():GeometryType {
   var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Point;
+  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Unknown;
 };
 
 /**
@@ -499,7 +499,7 @@ static startEnvelopeVector(builder:flatbuffers.Builder, numElems:number) {
  * @param GeometryType geometryType
  */
 static addGeometryType(builder:flatbuffers.Builder, geometryType:GeometryType) {
-  builder.addFieldInt8(2, geometryType, GeometryType.Point);
+  builder.addFieldInt8(2, geometryType, GeometryType.Unknown);
 };
 
 /**

@@ -5,9 +5,8 @@ import { Geometry } from '../feature_generated'
 export interface IParsedGeometry {
     xy: number[],
     ends: number[],
-    lengths: number[],
     parts: IParsedGeometry[],
-    types: GeometryType[]
+    type: GeometryType
 }
 
 export interface ISimpleGeometry {
@@ -31,21 +30,16 @@ export interface ICreateGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: ISimpleGeometry, type: GeometryType) {
-    const { xy, ends, lengths } = parseGeometry(geometry, type)
+    const { xy, ends } = parseGeometry(geometry, type)
     const xyOffset = Geometry.createXyVector(builder, xy)
 
     let endsOffset: number = null
-    let lengthsOffset: number = null
     if (ends)
         endsOffset = Geometry.createEndsVector(builder, ends)
-    if (lengths)
-        lengthsOffset = Geometry.createLengthsVector(builder, lengths)
 
     return function () {
         if (endsOffset)
             Geometry.addEnds(builder, endsOffset)
-        if (lengthsOffset)
-            Geometry.addLengths(builder, lengthsOffset)
         Geometry.addXy(builder, xyOffset)
     }
 }
@@ -68,16 +62,16 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
         if (pEnds.length > 1)
             ends = pEnds.map(e => e >> 1)
     } else if (type === GeometryType.MultiPolygon) {
-        const nestedEnds = (geometry as IMultiPolygon).getEndss()
+        // TODO: needs rework
+        /*const nestedEnds = (geometry as IMultiPolygon).getEndss()
         if (nestedEnds.length > 1 || nestedEnds[0].length > 1)
             ends = flat(nestedEnds).map(e => e >> 1)
         if (nestedEnds.length > 1)
-            lengths = nestedEnds.map(ends => ends.length)
+            lengths = nestedEnds.map(ends => ends.length)*/
     }
     return {
         xy,
-        ends,
-        lengths
+        ends
     } as IParsedGeometry
 }
 

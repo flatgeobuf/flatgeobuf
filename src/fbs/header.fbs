@@ -57,7 +57,7 @@ table Crs {
 table Header {
   name: string;                 // Dataset name
   envelope: [double];           // Bounds
-  geometry_type: GeometryType = Point;
+  geometry_type: GeometryType;  // Geometry type
   hasZ: bool = false;           // Does geometry have Z dimension?
   hasM: bool = false;           // Does geometry have M dimension?
   hasT: bool = false;           // Does geometry have T dimension?
