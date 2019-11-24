@@ -2,7 +2,7 @@ import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { Feature } from '../feature_generated'
+import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
@@ -17,9 +17,10 @@ export interface ICreateFeature {
 
 export function fromFeature(feature: Feature, header: HeaderMeta, createGeometry: ICreateGeometry, createFeature: ICreateFeature) {
     const columns = header.columns
-    const geometry = createGeometry(feature, header.geometryType)
+    const geometry = feature.geometries(0)
+    const simpleGeometry = createGeometry(geometry, header.geometryType)
     const properties = parseProperties(feature, columns)
-    return createFeature(geometry, properties)
+    return createFeature(simpleGeometry, properties)
 }
 
 export function buildFeature(feature: IFeature, header: HeaderMeta) {
@@ -89,10 +90,15 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
 
     const finalizeGeometry = buildGeometry(builder, feature.getGeometry(), header.geometryType)
+    Geometry.start(builder)
+    finalizeGeometry()
+    const geometryOffset = Geometry.end(builder)
+    const geometries = Feature.createGeometriesVector(builder, [geometryOffset])
+
     Feature.start(builder)
+    Feature.addGeometries(builder, geometries)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
-    finalizeGeometry()
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array()

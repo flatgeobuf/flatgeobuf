@@ -1,5 +1,5 @@
 import { GeometryType } from '../header_generated'
-import { Feature } from '../feature_generated'
+import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { createGeometryOl } from './geometry'
 import { fromFeature as genericFromFeature, IFeature } from '../generic/feature'
@@ -16,8 +16,8 @@ export function fromFeature(feature: Feature, header: HeaderMeta, ol: any): IFea
     function createFeature(geometry: ISimpleGeometry, properties: any) {
         return createFeatureOl(geometry, properties, ol)
     }
-    function createGeometry(feature: Feature, type: GeometryType) {
-        return createGeometryOl(feature, type, ol)
+    function createGeometry(geometry: Geometry, type: GeometryType) {
+        return createGeometryOl(geometry, type, ol)
     }
     return genericFromFeature(feature, header, createGeometry, createFeature)
 }

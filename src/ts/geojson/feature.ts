@@ -2,9 +2,11 @@ import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { Feature } from '../feature_generated'
+import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { toGeometryType } from '../generic/geometry'
+import { GeometryType } from '../header_generated'
 
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | object
@@ -82,12 +84,29 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
     let propertiesOffset = null
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
-    
-    const finalizeGeometry = buildGeometry(builder, feature.geometry)
+
+    let geometryOffsets = []
+    let geometryTypes = []
+    if (feature.geometry.type === 'GeometryCollection') {
+        for (let geometry of feature.geometry.geometries) {
+            const geometryOffset = buildGeometry(builder, geometry)
+            geometryOffsets.push(geometryOffset)
+            geometryTypes.push(toGeometryType(geometry.type))
+        }
+    } else {
+        const geometryOffset = buildGeometry(builder, feature.geometry)
+        geometryOffsets.push(geometryOffset)
+    }
+
+    const geometriesOffset = Feature.createGeometriesVector(builder, geometryOffsets)
+    const geometryTypesOffset = Feature.createGeometryTypesVector(builder, geometryTypes)
+
     Feature.start(builder)
+    Feature.addGeometries(builder, geometriesOffset)
+    if (geometryOffsets)
+        Feature.addGeometryTypes(builder, geometryTypesOffset)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
-    finalizeGeometry()
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array()
@@ -95,15 +114,28 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
 
 export function fromFeature(feature: Feature, header: HeaderMeta) {
     const columns = header.columns
-    const geometry = fromGeometry(feature, header.geometryType)
-    const properties = parseProperties(feature, columns)
-
+    let geojsonGeometry
+    if (header.geometryType === GeometryType.GeometryCollection) {
+        geojsonGeometry = {}
+        let geometries = []
+        for (let i = 0; i < feature.geometriesLength(); i++) {
+            const geometry = feature.geometries(i)
+            const geometryType = feature.geometryTypes(i)
+            geometries.push(fromGeometry(geometry, geometryType))
+        }
+        geojsonGeometry.type = GeometryType[GeometryType.GeometryCollection]
+        geojsonGeometry.geometries = geometries
+    } else {
+        const geometry = feature.geometries(0)
+        geojsonGeometry = fromGeometry(geometry, header.geometryType)
+    }
+    const geojsonProperties = parseProperties(feature, columns)
     const geoJsonfeature: IGeoJsonFeature = {
         type: 'Feature',
-        geometry,
+        geometry: geojsonGeometry,
     }
-    if (properties)
-        geoJsonfeature.properties = properties
+    if (geojsonProperties)
+        geoJsonfeature.properties = geojsonProperties
 
     return geoJsonfeature
 }

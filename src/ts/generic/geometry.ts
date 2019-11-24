@@ -1,6 +1,6 @@
 import { flatbuffers } from 'flatbuffers'
 import { GeometryType } from '../header_generated'
-import { Feature } from '../feature_generated'
+import { Geometry } from '../feature_generated'
 
 export interface IParsedGeometry {
     xy: number[],
@@ -25,26 +25,26 @@ export interface IMultiPolygon extends ISimpleGeometry {
 }
 
 export interface ICreateGeometry {
-    (feature: Feature, type: GeometryType): ISimpleGeometry;
+    (geometry: Geometry, type: GeometryType): ISimpleGeometry;
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: ISimpleGeometry, type: GeometryType) {
     const { xy, ends, lengths } = parseGeometry(geometry, type)
-    const xyOffset = Feature.createXyVector(builder, xy)
+    const xyOffset = Geometry.createXyVector(builder, xy)
 
     let endsOffset: number = null
     let lengthsOffset: number = null
     if (ends)
-        endsOffset = Feature.createEndsVector(builder, ends)
+        endsOffset = Geometry.createEndsVector(builder, ends)
     if (lengths)
-        lengthsOffset = Feature.createLengthsVector(builder, lengths)
+        lengthsOffset = Geometry.createLengthsVector(builder, lengths)
 
     return function () {
         if (endsOffset)
-            Feature.addEnds(builder, endsOffset)
+            Geometry.addEnds(builder, endsOffset)
         if (lengthsOffset)
-            Feature.addLengths(builder, lengthsOffset)
-        Feature.addXy(builder, xyOffset)
+            Geometry.addLengths(builder, lengthsOffset)
+        Geometry.addXy(builder, xyOffset)
     }
 }
 

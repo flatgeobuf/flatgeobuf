@@ -1,32 +1,33 @@
 import { flatbuffers } from 'flatbuffers'
 import { GeometryType } from '../header_generated'
-import { Feature  } from '../feature_generated'
+import { Feature, Geometry } from '../feature_generated'
 
 import { IParsedGeometry, flat, pairFlatCoordinates } from '../generic/geometry'
 
 export interface IGeoJsonGeometry {
     type: string
     coordinates: number[] | number[][] | number[][][] | number[][][][]
+    geometries: IGeoJsonGeometry[]
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, geometry: IGeoJsonGeometry) {
     const { xy, ends, lengths } = parseGeometry(geometry)
-    const coordsOffset = Feature.createXyVector(builder, xy)
+    const coordsOffset = Geometry.createXyVector(builder, xy)
 
     let endsOffset: number = null
     let lengthsOffset: number = null
     if (ends)
-        endsOffset = Feature.createEndsVector(builder, ends)
+        endsOffset = Geometry.createEndsVector(builder, ends)
     if (lengths)
-        lengthsOffset = Feature.createLengthsVector(builder, lengths)
+        lengthsOffset = Geometry.createLengthsVector(builder, lengths)
 
-    return function() {
-        if (endsOffset)
-            Feature.addEnds(builder, endsOffset)
-        if (lengthsOffset)
-            Feature.addLengths(builder, lengthsOffset)
-        Feature.addXy(builder, coordsOffset)
-    }
+    Geometry.start(builder)
+    if (endsOffset)
+        Geometry.addEnds(builder, endsOffset)
+    if (lengthsOffset)
+        Geometry.addLengths(builder, lengthsOffset)
+    Geometry.addXy(builder, coordsOffset)
+    return Geometry.end(builder)
 }
 
 function parseGeometry(geometry: IGeoJsonGeometry) {
@@ -79,7 +80,7 @@ function extractParts(xy: Float64Array, ends: Uint32Array) {
 }
 
 function extractPartsParts(
-    xy: Float64Array,
+        xy: Float64Array,
         ends: Uint32Array,
         lengths: Uint32Array) {
     if (!lengths)
@@ -93,8 +94,8 @@ function extractPartsParts(
         .map(cs => pairFlatCoordinates(cs)))
 }
 
-function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
-    const xy = feature.xyArray()
+function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
+    const xy = geometry.xyArray()
     switch (type) {
         case GeometryType.Point:
             return Array.from(xy)
@@ -102,18 +103,18 @@ function toGeoJsonCoordinates(feature: Feature, type: GeometryType) {
         case GeometryType.LineString:
             return pairFlatCoordinates(xy)
         case GeometryType.MultiLineString:
-            return extractParts(xy, feature.endsArray())
+            return extractParts(xy, geometry.endsArray())
         case GeometryType.Polygon:
-            return extractParts(xy, feature.endsArray())
+            return extractParts(xy, geometry.endsArray())
         case GeometryType.MultiPolygon:
             return extractPartsParts(xy,
-                feature.endsArray(),
-                feature.lengthsArray())
+                geometry.endsArray(),
+                geometry.lengthsArray())
     }
 }
 
-export function fromGeometry(feature: Feature, type: GeometryType) {
-    const coordinates = toGeoJsonCoordinates(feature, type)
+export function fromGeometry(geometry: Geometry, type: GeometryType) {
+    const coordinates = toGeoJsonCoordinates(geometry, type)
     return {
         type: GeometryType[type],
         coordinates,

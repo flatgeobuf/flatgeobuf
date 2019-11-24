@@ -5,12 +5,21 @@ import { flatbuffers } from 'flatbuffers'
  * @enum {number}
  */
 export enum GeometryType{
-  Point= 0,
-  MultiPoint= 1,
+  Point= 1,
   LineString= 2,
-  MultiLineString= 3,
-  Polygon= 4,
-  MultiPolygon= 5
+  Polygon= 3,
+  MultiPoint= 4,
+  MultiLineString= 5,
+  MultiPolygon= 6,
+  GeometryCollection= 7,
+  CircularString= 8,
+  CompoundCurve= 9,
+  CurvePolygon= 10,
+  MultiCurve= 11,
+  MultiSurface= 12,
+  PolyhedralSurface= 15,
+  TIN= 16,
+  Triangle= 17
 };
 
 /**
@@ -30,7 +39,8 @@ export enum ColumnType{
   Double= 10,
   String= 11,
   Json= 12,
-  DateTime= 13
+  DateTime= 13,
+  Binary= 14
 };
 
 /**

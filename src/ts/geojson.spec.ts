@@ -133,6 +133,12 @@ describe('geojson module', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('GeometryCollection', () => {
+      const expected = makeFeatureCollection(`GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`)
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
     it('Bahamas', () => {
       const expected = {
           "type": "FeatureCollection",
@@ -213,6 +219,7 @@ describe('geojson module', () => {
 
   })
 
+  /*
   describe('Prepared buffers tests', () => {
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
@@ -228,5 +235,6 @@ describe('geojson module', () => {
       expect(geojson.features.length).to.eq(3221)
     })
   })
+  */
 
 })

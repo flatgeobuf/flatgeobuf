@@ -184,7 +184,11 @@ const uint8_t *serialize(const feature_collection fc)
         std::vector<uint8_t> properties;
         parseProperties(f.properties, properties, columnMetas);
         auto pProperties = properties.size() == 0 ? nullptr : &properties;
-        auto feature = CreateFeatureDirect(fbb, pEnds, pEndss, &coords, nullptr, nullptr, nullptr, nullptr, pProperties);
+        auto geometry = CreateGeometryDirect(fbb, pEnds, pEndss, &coords, nullptr, nullptr, nullptr, nullptr);
+        std::vector<flatbuffers::Offset<Geometry>> geometries;
+        geometries.push_back(geometry);
+        auto pGeometries = geometries.size() == 0 ? nullptr : &geometries;
+        auto feature = CreateFeatureDirect(fbb, pGeometries, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
         std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
@@ -290,10 +294,10 @@ const multi_polygon fromMultiPolygon(
     return multi_polygon(polygons);
 }
 
-const geometry fromGeometry(const Feature *feature, const GeometryType geometryType)
+const geometry fromGeometry(const Geometry *geometry, const GeometryType geometryType)
 {
-    auto xy = feature->xy()->data();
-    auto xyLength = feature->xy()->Length();
+    auto xy = geometry->xy()->data();
+    auto xyLength = geometry->xy()->Length();
     switch (geometryType) {
         case GeometryType::Point:
             return point { xy[0], xy[1] };
@@ -302,11 +306,11 @@ const geometry fromGeometry(const Feature *feature, const GeometryType geometryT
         case GeometryType::LineString:
             return line_string(extractPoints(xy, xyLength));
         case GeometryType::MultiLineString: 
-            return fromMultiLineString(xy, xyLength, feature->ends());
+            return fromMultiLineString(xy, xyLength, geometry->ends());
         case GeometryType::Polygon:
-            return fromPolygon(xy, xyLength, feature->ends());
+            return fromPolygon(xy, xyLength, geometry->ends());
         case GeometryType::MultiPolygon:
-            return fromMultiPolygon(xy, xyLength, feature->ends(), feature->lengths());
+            return fromMultiPolygon(xy, xyLength, geometry->ends(), geometry->lengths());
         default:
             throw std::invalid_argument("Unknown geometry type");
     }
@@ -362,9 +366,10 @@ const mapbox::feature::feature<double> fromFeature(
     const GeometryType geometryType,
     std::vector<ColumnMeta> columnMetas)
 {
-    auto geometry = fromGeometry(feature, geometryType);
-    auto properties = readGeoJsonProperties(feature, columnMetas);
-    mapbox::feature::feature<double> f { geometry, properties };
+    auto geometry = feature->geometries()->Get(0);
+    auto mapboxGeometry = fromGeometry(geometry, geometryType);
+    auto mapboxProperties = readGeoJsonProperties(feature, columnMetas);
+    mapbox::feature::feature<double> f { mapboxGeometry, mapboxProperties };
     return f;
 }
 
