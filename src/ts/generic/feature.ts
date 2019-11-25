@@ -4,7 +4,7 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
+import { buildGeometry, parseGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
 export interface IFeature {
     getGeometry(): ISimpleGeometry
@@ -89,11 +89,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
 
-    const finalizeGeometry = buildGeometry(builder, feature.getGeometry(), header.geometryType)
-    Geometry.start(builder)
-    finalizeGeometry()
-    const geometryOffset = Geometry.end(builder)
-
+    const geometryOffset = buildGeometry(builder, parseGeometry(feature.getGeometry(), header.geometryType))
     Feature.start(builder)
     Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)

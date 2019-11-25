@@ -7,9 +7,11 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType, ol: any
     const {
         Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, GeometryLayout
     } = ol.geom
-    const xy = Array.from(geometry.xyArray())
+    const xy = geometry.xyArray() ? Array.from(geometry.xyArray()) : undefined
     const ends = geometry.endsArray()
-    let olEnds = ends ? Array.from(ends.map(e => e << 1)) : new Uint32Array([xy.length])
+    let olEnds: number[] | Uint32Array = undefined
+    if (xy)
+        olEnds = ends ? Array.from(ends.map(e => e << 1)) : new Uint32Array([xy.length])
     switch (type) {
         case GeometryType.Point:
             return new Point(xy)
@@ -22,19 +24,10 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType, ol: any
         case GeometryType.Polygon:
             return new Polygon(xy, GeometryLayout.XY, olEnds)
         case GeometryType.MultiPolygon:
-            // TODO: need rework!
-            /*
-            let lengths = geometry.lengthsArray()
-            let olEndss
-            let s = 0
-            if (lengths) // multipart multipolygon
-                olEndss = Array.from(lengths).map(e => olEnds.slice(s, s += e))
-            else if (ends) // single part multipolygon with holes
-                olEndss = [Array.from(olEnds)]
-            else // single part multipolygon without holes
-                olEndss = [[xy.length]]
-            return new MultiPolygon(xy, GeometryLayout.XY, olEndss)
-            */
+            const mp = new MultiPolygon([])
+            for (let i = 0; i < geometry.partsLength(); i++)
+                mp.appendPolygon(createGeometryOl(geometry.parts(i), GeometryType.Polygon, ol))
+            return mp
         default:
             throw Error('Unknown type')
     }
