@@ -16,6 +16,7 @@ table Geometry {
 table Feature {
   geometry: Geometry;  // Geometry
   properties: [ubyte]; // Custom buffer, variable length collection of key/value pairs (key=ushort)
+  columns: [Column];   // Attribute columns schema (optional)
 }
 
 root_type Feature;

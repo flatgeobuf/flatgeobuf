@@ -57,12 +57,12 @@ table Crs {
 table Header {
   name: string;                 // Dataset name
   envelope: [double];           // Bounds
-  geometry_type: GeometryType;  // Geometry type
+  geometry_type: GeometryType;  // Geometry type (should be set to Unknown if per feature geometry type)
   hasZ: bool = false;           // Does geometry have Z dimension?
   hasM: bool = false;           // Does geometry have M dimension?
   hasT: bool = false;           // Does geometry have T dimension?
   hasTM: bool = false;          // Does geometry have TM dimension?
-  columns: [Column];            // Attribute columns schema
+  columns: [Column];            // Attribute columns schema (can be omitted if per feature schema)
   features_count: ulong;        // Number of features in the dataset (0 = unknown)
   index_node_size: ushort = 16; // Index node size (0 = no index)
   crs: Crs;                     // Spatial Reference System

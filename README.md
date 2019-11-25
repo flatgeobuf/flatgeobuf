@@ -70,14 +70,6 @@ It does not align on 8 bytes so it not always possible to consume it without cop
 
 Performance reasons and to allow streaming/random access.
 
-### Why static per file schema?
-
-Allowing per feature schema breaks the simple in simple features, in my opinion.
-
-### Why no geometry type per feature?
-
-Same reason as to why I prefer the static schema requirement.
-
 ### Why am I not getting expected performance in GDAL?
 
 Default behaviour is to assume untrusted data and verify buffer integrity for safety. If you have trusted data and want maximum performance make sure to set the open option VERIFY_BUFFERS to NO.

@@ -1127,10 +1127,28 @@ propertiesArray():Uint8Array|null {
 };
 
 /**
+ * @param number index
+ * @param Column= obj
+ * @returns Column
+ */
+columns(index: number, obj?:Column):Column|null {
+  var offset = this.bb!.__offset(this.bb_pos, 8);
+  return offset ? (obj || new Column).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+};
+
+/**
+ * @returns number
+ */
+columnsLength():number {
+  var offset = this.bb!.__offset(this.bb_pos, 8);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(2);
+  builder.startObject(3);
 };
 
 /**
@@ -1172,6 +1190,35 @@ static startPropertiesVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset columnsOffset
+ */
+static addColumns(builder:flatbuffers.Builder, columnsOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, columnsOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param Array.<flatbuffers.Offset> data
+ * @returns flatbuffers.Offset
+ */
+static createColumnsVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number numElems
+ */
+static startColumnsVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -1195,10 +1242,11 @@ static finishSizePrefixedBuffer(builder:flatbuffers.Builder, offset:flatbuffers.
   builder.finish(offset, undefined, true);
 };
 
-static create(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, geometryOffset:flatbuffers.Offset, propertiesOffset:flatbuffers.Offset, columnsOffset:flatbuffers.Offset):flatbuffers.Offset {
   Feature.start(builder);
   Feature.addGeometry(builder, geometryOffset);
   Feature.addProperties(builder, propertiesOffset);
+  Feature.addColumns(builder, columnsOffset);
   return Feature.end(builder);
 }
 }

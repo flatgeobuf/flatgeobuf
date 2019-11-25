@@ -164,7 +164,8 @@ inline flatbuffers::Offset<Geometry> CreateGeometryDirect(
 struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_GEOMETRY = 4,
-    VT_PROPERTIES = 6
+    VT_PROPERTIES = 6,
+    VT_COLUMNS = 8
   };
   const Geometry *geometry() const {
     return GetPointer<const Geometry *>(VT_GEOMETRY);
@@ -172,12 +173,18 @@ struct Feature FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<uint8_t> *properties() const {
     return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_PROPERTIES);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<Column>> *columns() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Column>> *>(VT_COLUMNS);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_GEOMETRY) &&
            verifier.VerifyTable(geometry()) &&
            VerifyOffset(verifier, VT_PROPERTIES) &&
            verifier.VerifyVector(properties()) &&
+           VerifyOffset(verifier, VT_COLUMNS) &&
+           verifier.VerifyVector(columns()) &&
+           verifier.VerifyVectorOfTables(columns()) &&
            verifier.EndTable();
   }
 };
@@ -190,6 +197,9 @@ struct FeatureBuilder {
   }
   void add_properties(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties) {
     fbb_.AddOffset(Feature::VT_PROPERTIES, properties);
+  }
+  void add_columns(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns) {
+    fbb_.AddOffset(Feature::VT_COLUMNS, columns);
   }
   explicit FeatureBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -206,8 +216,10 @@ struct FeatureBuilder {
 inline flatbuffers::Offset<Feature> CreateFeature(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<Geometry> geometry = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> properties = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0) {
   FeatureBuilder builder_(_fbb);
+  builder_.add_columns(columns);
   builder_.add_properties(properties);
   builder_.add_geometry(geometry);
   return builder_.Finish();
@@ -216,12 +228,15 @@ inline flatbuffers::Offset<Feature> CreateFeature(
 inline flatbuffers::Offset<Feature> CreateFeatureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<Geometry> geometry = 0,
-    const std::vector<uint8_t> *properties = nullptr) {
+    const std::vector<uint8_t> *properties = nullptr,
+    const std::vector<flatbuffers::Offset<Column>> *columns = nullptr) {
   auto properties__ = properties ? _fbb.CreateVector<uint8_t>(*properties) : 0;
+  auto columns__ = columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0;
   return FlatGeobuf::CreateFeature(
       _fbb,
       geometry,
-      properties__);
+      properties__,
+      columns__);
 }
 
 inline const FlatGeobuf::Feature *GetFeature(const void *buf) {
