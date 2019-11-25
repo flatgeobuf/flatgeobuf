@@ -46,7 +46,7 @@ GeometryType toGeometryType(geometry geometry)
         return GeometryType::Polygon;
     if (geometry.is<multi_polygon>())
         return GeometryType::MultiPolygon;
-    throw std::invalid_argument("Unknown geometry type");
+    throw std::invalid_argument("toGeometryType: Unknown geometry type");
 }
 
 static const ColumnType toColumnType(value value)
@@ -61,7 +61,7 @@ static const ColumnType toColumnType(value value)
         return ColumnType::Double;
     if (value.is<std::string>())
         return ColumnType::String;
-    throw std::invalid_argument("Unknown column type");
+    throw std::invalid_argument("toColumnType: Unknown column type");
 }
 
 const void parseProperties(
@@ -92,7 +92,7 @@ const void parseProperties(
             std::copy(reinterpret_cast<const uint8_t *>(&len), reinterpret_cast<const uint8_t *>(&len + 1), std::back_inserter(properties));
             std::copy(str.begin(), str.end(), std::back_inserter(properties));
         } else {
-            throw std::invalid_argument("Unknown property type");
+            throw std::invalid_argument("parseProperties: Unknown property type");
         }
     }
 }
@@ -160,6 +160,8 @@ const uint8_t *serialize(const feature_collection fc)
                 for (auto lr : p)
                     ends.push_back(end += lr.size());
         } else if (f.geometry.is<multi_polygon>()) {
+            // TODO: need rework!
+            /*
             uint32_t end = 0;
             auto mp = f.geometry.get<multi_polygon>();
             if (mp.size() == 1) {
@@ -176,7 +178,7 @@ const uint8_t *serialize(const feature_collection fc)
                     }
                     endss.push_back(ringCount);
                 }
-            }
+            }*/
         }
         for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
         auto pEnds = ends.size() == 0 ? nullptr : &ends;
@@ -253,62 +255,62 @@ const polygon fromPolygon(
     return polygon(linearRings);
 }
 
-const multi_polygon fromMultiPolygon(
-    const double *coords,
-    const uint32_t coordsLength,
-    const Vector<uint32_t> *ends,
-    const Vector<uint32_t> *lengths)
-{
-    /*
-    std::cout << "fromMultiPolygon" << std::endl;
-    std::cout << "ends" << std::endl;
-    if (ends != nullptr) {
-        for (auto e : *ends)
-            std::cout << e << std::endl;
-    }
-    std::cout << "lengths" << std::endl;
-    if (lengths != nullptr) {
-        for (auto l : *lengths)
-            std::cout << l << std::endl;
-    }
-    */
-    if (lengths == nullptr || lengths->size() < 2)
-        return multi_polygon { fromPolygon(coords, coordsLength, ends) };
+const geometry fromGeometry(const Geometry *geometry, const GeometryType geometryType);
+
+const multi_polygon fromMultiPolygon(const Geometry *geometry) {
+    auto parts = geometry->parts();
+    auto partsLength = parts->Length();
     std::vector<polygon> polygons;
-    uint32_t offset = 0;
-    uint32_t roffset = 0;
-    for (uint32_t i = 0; i < lengths->size(); i++) {
-        std::vector<linear_ring> linearRings;
-        uint32_t ringCount = lengths->Get(i);
-        for (uint32_t j = 0; j < ringCount; j++) {
-            uint32_t end = ends->Get(roffset++) << 1;
-            linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
-            offset = end;
-        }
-        polygons.push_back(linearRings);
+    for (auto i = 0; i < partsLength; i++) {
+        auto part = parts->Get(i);
+        auto p = fromGeometry(part, GeometryType::Polygon).get<polygon>();
+        polygons.push_back(p);
     }
     return multi_polygon(polygons);
 }
 
-const geometry fromGeometry(const Geometry *geometry, const GeometryType geometryType)
-{
-    auto xy = geometry->xy()->data();
-    auto xyLength = geometry->xy()->Length();
+static bool isCollection(const GeometryType geometryType) {
     switch (geometryType) {
         case GeometryType::Point:
-            return point { xy[0], xy[1] };
         case GeometryType::MultiPoint:
-            return multi_point { extractPoints(xy, xyLength) };
         case GeometryType::LineString:
-            return line_string(extractPoints(xy, xyLength));
         case GeometryType::MultiLineString: 
-            return fromMultiLineString(xy, xyLength, geometry->ends());
         case GeometryType::Polygon:
-            return fromPolygon(xy, xyLength, geometry->ends());
-        //case GeometryType::MultiPolygon:
-            //return fromMultiPolygon(xy, xyLength, geometry->ends(), geometry->lengths());
+            return false;
+        case GeometryType::MultiPolygon:
+        case GeometryType::GeometryCollection:
+            return true;
         default:
-            throw std::invalid_argument("Unknown geometry type");
+            throw std::invalid_argument("isCollection: Unknown geometry type");
+    }
+}
+
+const geometry fromGeometry(const Geometry *geometry, const GeometryType geometryType)
+{
+    if (!isCollection(geometryType)) {
+        auto xy = geometry->xy()->data();
+        auto xyLength = geometry->xy()->Length();
+        switch (geometryType) {
+            case GeometryType::Point:
+                return point { xy[0], xy[1] };
+            case GeometryType::MultiPoint:
+                return multi_point { extractPoints(xy, xyLength) };
+            case GeometryType::LineString:
+                return line_string(extractPoints(xy, xyLength));
+            case GeometryType::MultiLineString: 
+                return fromMultiLineString(xy, xyLength, geometry->ends());
+            case GeometryType::Polygon:
+                return fromPolygon(xy, xyLength, geometry->ends());
+            default:
+                throw std::invalid_argument("fromGeometry: Unknown geometry type");
+        }
+    }
+
+    switch (geometryType) {
+        case GeometryType::MultiPolygon:
+            return fromMultiPolygon(geometry);
+        default:
+            throw std::invalid_argument("fromGeometry: Unknown geometry type");
     }
 }
 
