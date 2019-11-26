@@ -15,7 +15,7 @@ import * as tree from '../packedrtree'
 const SIZE_PREFIX_LEN: number = 4
 const FEATURE_OFFSET_LEN: number = 8
 
-const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00]);
+const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00]);
 
 export function serialize(features: IFeature[]) {
     const headerMeta = introspectHeaderMeta(features)
