@@ -169,14 +169,8 @@ struct Column FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
-  bool KeyCompareLessThan(const Column *o) const {
-    return *name() < *o->name();
-  }
-  int KeyCompareWithValue(const char *val) const {
-    return strcmp(name()->c_str(), val);
-  }
-  ColumnType type() const {
-    return static_cast<ColumnType>(GetField<uint8_t>(VT_TYPE, 0));
+  FlatGeobuf::ColumnType type() const {
+    return static_cast<FlatGeobuf::ColumnType>(GetField<uint8_t>(VT_TYPE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -193,7 +187,7 @@ struct ColumnBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(Column::VT_NAME, name);
   }
-  void add_type(ColumnType type) {
+  void add_type(FlatGeobuf::ColumnType type) {
     fbb_.AddElement<uint8_t>(Column::VT_TYPE, static_cast<uint8_t>(type), 0);
   }
   explicit ColumnBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -212,7 +206,7 @@ struct ColumnBuilder {
 inline flatbuffers::Offset<Column> CreateColumn(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    ColumnType type = ColumnType::Byte) {
+    FlatGeobuf::ColumnType type = FlatGeobuf::ColumnType::Byte) {
   ColumnBuilder builder_(_fbb);
   builder_.add_name(name);
   builder_.add_type(type);
@@ -222,7 +216,7 @@ inline flatbuffers::Offset<Column> CreateColumn(
 inline flatbuffers::Offset<Column> CreateColumnDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
-    ColumnType type = ColumnType::Byte) {
+    FlatGeobuf::ColumnType type = FlatGeobuf::ColumnType::Byte) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   return FlatGeobuf::CreateColumn(
       _fbb,
@@ -354,8 +348,8 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<double> *envelope() const {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_ENVELOPE);
   }
-  GeometryType geometry_type() const {
-    return static_cast<GeometryType>(GetField<uint8_t>(VT_GEOMETRY_TYPE, 0));
+  FlatGeobuf::GeometryType geometry_type() const {
+    return static_cast<FlatGeobuf::GeometryType>(GetField<uint8_t>(VT_GEOMETRY_TYPE, 0));
   }
   bool hasZ() const {
     return GetField<uint8_t>(VT_HASZ, 0) != 0;
@@ -369,8 +363,8 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool hasTM() const {
     return GetField<uint8_t>(VT_HASTM, 0) != 0;
   }
-  const flatbuffers::Vector<flatbuffers::Offset<Column>> *columns() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Column>> *>(VT_COLUMNS);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatGeobuf::Column>> *columns() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatGeobuf::Column>> *>(VT_COLUMNS);
   }
   uint64_t features_count() const {
     return GetField<uint64_t>(VT_FEATURES_COUNT, 0);
@@ -378,8 +372,8 @@ struct Header FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t index_node_size() const {
     return GetField<uint16_t>(VT_INDEX_NODE_SIZE, 16);
   }
-  const Crs *crs() const {
-    return GetPointer<const Crs *>(VT_CRS);
+  const FlatGeobuf::Crs *crs() const {
+    return GetPointer<const FlatGeobuf::Crs *>(VT_CRS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -412,7 +406,7 @@ struct HeaderBuilder {
   void add_envelope(flatbuffers::Offset<flatbuffers::Vector<double>> envelope) {
     fbb_.AddOffset(Header::VT_ENVELOPE, envelope);
   }
-  void add_geometry_type(GeometryType geometry_type) {
+  void add_geometry_type(FlatGeobuf::GeometryType geometry_type) {
     fbb_.AddElement<uint8_t>(Header::VT_GEOMETRY_TYPE, static_cast<uint8_t>(geometry_type), 0);
   }
   void add_hasZ(bool hasZ) {
@@ -427,7 +421,7 @@ struct HeaderBuilder {
   void add_hasTM(bool hasTM) {
     fbb_.AddElement<uint8_t>(Header::VT_HASTM, static_cast<uint8_t>(hasTM), 0);
   }
-  void add_columns(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns) {
+  void add_columns(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatGeobuf::Column>>> columns) {
     fbb_.AddOffset(Header::VT_COLUMNS, columns);
   }
   void add_features_count(uint64_t features_count) {
@@ -436,7 +430,7 @@ struct HeaderBuilder {
   void add_index_node_size(uint16_t index_node_size) {
     fbb_.AddElement<uint16_t>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
   }
-  void add_crs(flatbuffers::Offset<Crs> crs) {
+  void add_crs(flatbuffers::Offset<FlatGeobuf::Crs> crs) {
     fbb_.AddOffset(Header::VT_CRS, crs);
   }
   explicit HeaderBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -455,15 +449,15 @@ inline flatbuffers::Offset<Header> CreateHeader(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> envelope = 0,
-    GeometryType geometry_type = GeometryType::Unknown,
+    FlatGeobuf::GeometryType geometry_type = FlatGeobuf::GeometryType::Unknown,
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
     bool hasTM = false,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Column>>> columns = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatGeobuf::Column>>> columns = 0,
     uint64_t features_count = 0,
     uint16_t index_node_size = 16,
-    flatbuffers::Offset<Crs> crs = 0) {
+    flatbuffers::Offset<FlatGeobuf::Crs> crs = 0) {
   HeaderBuilder builder_(_fbb);
   builder_.add_features_count(features_count);
   builder_.add_crs(crs);
@@ -483,18 +477,18 @@ inline flatbuffers::Offset<Header> CreateHeaderDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<double> *envelope = nullptr,
-    GeometryType geometry_type = GeometryType::Unknown,
+    FlatGeobuf::GeometryType geometry_type = FlatGeobuf::GeometryType::Unknown,
     bool hasZ = false,
     bool hasM = false,
     bool hasT = false,
     bool hasTM = false,
-    const std::vector<flatbuffers::Offset<Column>> *columns = nullptr,
+    const std::vector<flatbuffers::Offset<FlatGeobuf::Column>> *columns = nullptr,
     uint64_t features_count = 0,
     uint16_t index_node_size = 16,
-    flatbuffers::Offset<Crs> crs = 0) {
+    flatbuffers::Offset<FlatGeobuf::Crs> crs = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto envelope__ = envelope ? _fbb.CreateVector<double>(*envelope) : 0;
-  auto columns__ = columns ? _fbb.CreateVector<flatbuffers::Offset<Column>>(*columns) : 0;
+  auto columns__ = columns ? _fbb.CreateVector<flatbuffers::Offset<FlatGeobuf::Column>>(*columns) : 0;
   return FlatGeobuf::CreateHeader(
       _fbb,
       name__,
