@@ -24,7 +24,7 @@ import org.opengis.feature.type.GeometryDescriptor;
 //import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class FeatureCollectionConversions {
-    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x00, 0x66, 0x67, 0x62, 0x00 };
+    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00 };
 
     public static void serialize(SimpleFeatureCollection featureCollection, long featuresCount,
             OutputStream outputStream) throws IOException {

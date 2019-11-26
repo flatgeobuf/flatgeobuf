@@ -6,4 +6,5 @@ public class GeometryOffsets {
     public int[] lengths = null;
     public int endsOffset = 0;
     public int lengthsOffset = 0;
+    public GeometryOffsets[] gos = null;
 }

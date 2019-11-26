@@ -28,8 +28,6 @@ public final class Header extends Table {
   public Column columns(int j) { return columns(new Column(), j); }
   public Column columns(Column obj, int j) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int columnsLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
-  public Column columnsByKey(String key) { int o = __offset(18); return o != 0 ? Column.__lookup_by_key(null, __vector(o), key, bb) : null; }
-  public Column columnsByKey(Column obj, String key) { int o = __offset(18); return o != 0 ? Column.__lookup_by_key(obj, __vector(o), key, bb) : null; }
   public long featuresCount() { int o = __offset(20); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
   public int indexNodeSize() { int o = __offset(22); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 16; }
   public Crs crs() { return crs(new Crs()); }
