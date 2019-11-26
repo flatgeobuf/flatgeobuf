@@ -60,7 +60,6 @@ export function deserialize(bytes: Uint8Array) {
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
 
-    
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0)
         offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)

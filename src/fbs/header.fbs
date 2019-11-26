@@ -1,12 +1,26 @@
 namespace FlatGeobuf;
 
+// Geometry type enumeration 
+// NOTE: Same as WKB 2D geometry type enumeration
 enum GeometryType: ubyte {
-  Point,
-  MultiPoint,
-  LineString,
-  MultiLineString,
-  Polygon,
-  MultiPolygon
+  Unknown = 0,
+  Point = 1,
+  LineString = 2,
+  Polygon = 3,
+  MultiPoint = 4,
+  MultiLineString = 5,
+  MultiPolygon = 6,
+  GeometryCollection = 7, 
+  CircularString = 8,
+  CompoundCurve = 9,
+  CurvePolygon = 10,
+  MultiCurve = 11,
+  MultiSurface = 12,
+  Curve = 13,
+  Surface = 14,
+  PolyhedralSurface = 15,
+  TIN = 16,
+  Triangle = 17
 }
 
 enum ColumnType: ubyte {
@@ -23,11 +37,12 @@ enum ColumnType: ubyte {
   Double,
   String,
   Json,
-  DateTime
+  DateTime,
+  Binary
 }
 
 table Column {
-  name: string (key, required); // Column name
+  name: string (required);      // Column name
   type: ColumnType;             // Column type
 }
 
@@ -42,12 +57,12 @@ table Crs {
 table Header {
   name: string;                 // Dataset name
   envelope: [double];           // Bounds
-  geometry_type: GeometryType = Point;
+  geometry_type: GeometryType;  // Geometry type (should be set to Unknown if per feature geometry type)
   hasZ: bool = false;           // Does geometry have Z dimension?
   hasM: bool = false;           // Does geometry have M dimension?
   hasT: bool = false;           // Does geometry have T dimension?
   hasTM: bool = false;          // Does geometry have TM dimension?
-  columns: [Column];            // Attribute columns schema
+  columns: [Column];            // Attribute columns schema (can be omitted if per feature schema)
   features_count: ulong;        // Number of features in the dataset (0 = unknown)
   index_node_size: ushort = 16; // Index node size (0 = no index)
   crs: Crs;                     // Spatial Reference System

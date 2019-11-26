@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
@@ -25,8 +25,8 @@
     "slice-source": "0.4.1"
   },
   "devDependencies": {
-    "@babel/core": "7.7.2",
-    "@babel/preset-env": "7.7.1",
+    "@babel/core": "7.7.4",
+    "@babel/preset-env": "7.7.4",
     "@types/chai": "4.2.5",
     "@types/mocha": "5.2.7",
     "@types/node": "10.14.18",
@@ -37,7 +37,7 @@
     "jsts": "2.1.0",
     "mocha": "6.2.2",
     "ol": "6.1.1",
-    "rollup": "1.27.2",
+    "rollup": "1.27.5",
     "rollup-plugin-babel": "4.3.3",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-terser": "5.1.2",

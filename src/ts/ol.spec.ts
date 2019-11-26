@@ -203,7 +203,7 @@ describe('ol module', () => {
       const actual = deserialize(serialize(geojson.readFeatures(expected)), ol)
       expect(JSON.parse(g(actual))).to.deep.equal(expected)
     })
-
+    
   })
 
 })

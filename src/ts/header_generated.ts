@@ -5,12 +5,24 @@ import { flatbuffers } from 'flatbuffers'
  * @enum {number}
  */
 export enum GeometryType{
-  Point= 0,
-  MultiPoint= 1,
+  Unknown= 0,
+  Point= 1,
   LineString= 2,
-  MultiLineString= 3,
-  Polygon= 4,
-  MultiPolygon= 5
+  Polygon= 3,
+  MultiPoint= 4,
+  MultiLineString= 5,
+  MultiPolygon= 6,
+  GeometryCollection= 7,
+  CircularString= 8,
+  CompoundCurve= 9,
+  CurvePolygon= 10,
+  MultiCurve= 11,
+  MultiSurface= 12,
+  Curve= 13,
+  Surface= 14,
+  PolyhedralSurface= 15,
+  TIN= 16,
+  Triangle= 17
 };
 
 /**
@@ -30,7 +42,8 @@ export enum ColumnType{
   Double= 10,
   String= 11,
   Json= 12,
-  DateTime= 13
+  DateTime= 13,
+  Binary= 14
 };
 
 /**
@@ -359,7 +372,7 @@ envelopeArray():Float64Array|null {
  */
 geometryType():GeometryType {
   var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Point;
+  return offset ? /**  */ (this.bb!.readUint8(this.bb_pos + offset)) : GeometryType.Unknown;
 };
 
 /**
@@ -486,7 +499,7 @@ static startEnvelopeVector(builder:flatbuffers.Builder, numElems:number) {
  * @param GeometryType geometryType
  */
 static addGeometryType(builder:flatbuffers.Builder, geometryType:GeometryType) {
-  builder.addFieldInt8(2, geometryType, GeometryType.Point);
+  builder.addFieldInt8(2, geometryType, GeometryType.Unknown);
 };
 
 /**

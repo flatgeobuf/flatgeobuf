@@ -35,29 +35,5 @@ public final class Column extends Table {
     builder.required(o, 4);  // name
     return o;
   }
-
-  @Override
-  protected int keysCompare(Integer o1, Integer o2, ByteBuffer _bb) { return compareStrings(__offset(4, o1, _bb), __offset(4, o2, _bb), _bb); }
-
-  public static Column __lookup_by_key(Column obj, int vectorLocation, String key, ByteBuffer bb) {
-    byte[] byteKey = key.getBytes(Table.UTF8_CHARSET.get());
-    int span = bb.getInt(vectorLocation - 4);
-    int start = 0;
-    while (span != 0) {
-      int middle = span / 2;
-      int tableOffset = __indirect(vectorLocation + 4 * (start + middle), bb);
-      int comp = compareStrings(__offset(4, bb.capacity() - tableOffset, bb), byteKey, bb);
-      if (comp > 0) {
-        span = middle;
-      } else if (comp < 0) {
-        middle++;
-        start += middle;
-        span -= middle;
-      } else {
-        return (obj == null ? new Column() : obj).__assign(tableOffset, bb);
-      }
-    }
-    return null;
-  }
 }
 

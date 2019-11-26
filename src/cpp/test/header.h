@@ -22,6 +22,6 @@ TEST_CASE("Header")
         // uint8_t *buf = fbb.GetBufferPointer();
         int size = fbb.GetSize();
 
-        REQUIRE(size == 36);
+        REQUIRE(size == 44);
     }
 }

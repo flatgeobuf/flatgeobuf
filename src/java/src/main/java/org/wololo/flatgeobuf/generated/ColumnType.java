@@ -17,8 +17,9 @@ public final class ColumnType {
   public static final byte String = 11;
   public static final byte Json = 12;
   public static final byte DateTime = 13;
+  public static final byte Binary = 14;
 
-  public static final String[] names = { "Byte", "UByte", "Bool", "Short", "UShort", "Int", "UInt", "Long", "ULong", "Float", "Double", "String", "Json", "DateTime", };
+  public static final String[] names = { "Byte", "UByte", "Bool", "Short", "UShort", "Int", "UInt", "Long", "ULong", "Float", "Double", "String", "Json", "DateTime", "Binary", };
 
   public static String name(int e) { return names[e]; }
 }

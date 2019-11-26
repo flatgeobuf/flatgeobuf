@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
 [![Maven Central](https://img.shields.io/maven-central/v/org.wololo/flatgeobuf.svg)](https://search.maven.org/artifact/org.wololo/flatgeobuf)
 
-A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features).
+A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including circular interpolations as defined by SQL-MM Part 3.
 
 Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://github.com/mourner/flatbush). Deliberately does not support random writes for simplicity and to be able to cluster the data on a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) enabling fast bounding box spatial filtering. The spatial index is however optional to allow the format to be efficiently written as a stream.
 
@@ -18,7 +18,7 @@ Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeob
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
-* MB: Magic bytes (0x6667620066676200)
+* MB: Magic bytes (0x6667620266676200)
 * H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
 * I+O (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)) and Feature offsets index (static size custom buffer, feature count * 8 bytes)
 * DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
@@ -69,14 +69,6 @@ It does not align on 8 bytes so it not always possible to consume it without cop
 ### Why not use Protobuf?
 
 Performance reasons and to allow streaming/random access.
-
-### Why static per file schema?
-
-Allowing per feature schema breaks the simple in simple features, in my opinion.
-
-### Why no geometrycollection or geometry type per feature?
-
-Same reason as to why I prefer the static schema requirement.
 
 ### Why am I not getting expected performance in GDAL?
 

@@ -2,9 +2,11 @@ import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { Feature } from '../feature_generated'
+import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { buildGeometry, parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { toGeometryType } from '../generic/geometry'
+import { GeometryType } from '../header_generated'
 
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | object
@@ -82,12 +84,12 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
     let propertiesOffset = null
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
-    
-    const finalizeGeometry = buildGeometry(builder, feature.geometry)
+
+    const geometryOffset = buildGeometry(builder, parseGeometry(feature.geometry))
     Feature.start(builder)
+    Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
-    finalizeGeometry()
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array()
@@ -95,15 +97,16 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
 
 export function fromFeature(feature: Feature, header: HeaderMeta) {
     const columns = header.columns
-    const geometry = fromGeometry(feature, header.geometryType)
-    const properties = parseProperties(feature, columns)
-
+    let geojsonGeometry
+    const geometry = feature.geometry()
+    geojsonGeometry = fromGeometry(geometry, header.geometryType)
+    const geojsonProperties = parseProperties(feature, columns)
     const geoJsonfeature: IGeoJsonFeature = {
         type: 'Feature',
-        geometry,
+        geometry: geojsonGeometry,
     }
-    if (properties)
-        geoJsonfeature.properties = properties
+    if (geojsonProperties)
+        geoJsonfeature.properties = geojsonProperties
 
     return geoJsonfeature
 }

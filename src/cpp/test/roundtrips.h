@@ -91,7 +91,7 @@ TEST_CASE("Geometry roundtrips")
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
     }
-    SECTION("MultiPolygon")
+    /*SECTION("MultiPolygon")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/multipolygon.geojson")).get<feature_collection>();
         // Should serialize to 30 flat coords elements, ends [10, 20, 30] and endss [1, 2]
@@ -114,7 +114,7 @@ TEST_CASE("Geometry roundtrips")
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
-    }
+    }*/
 }
 
 TEST_CASE("Attribute roundtrips")

@@ -3,14 +3,26 @@ package org.wololo.flatgeobuf.generated;
 
 public final class GeometryType {
   private GeometryType() { }
-  public static final byte Point = 0;
-  public static final byte MultiPoint = 1;
+  public static final byte Unknown = 0;
+  public static final byte Point = 1;
   public static final byte LineString = 2;
-  public static final byte MultiLineString = 3;
-  public static final byte Polygon = 4;
-  public static final byte MultiPolygon = 5;
+  public static final byte Polygon = 3;
+  public static final byte MultiPoint = 4;
+  public static final byte MultiLineString = 5;
+  public static final byte MultiPolygon = 6;
+  public static final byte GeometryCollection = 7;
+  public static final byte CircularString = 8;
+  public static final byte CompoundCurve = 9;
+  public static final byte CurvePolygon = 10;
+  public static final byte MultiCurve = 11;
+  public static final byte MultiSurface = 12;
+  public static final byte Curve = 13;
+  public static final byte Surface = 14;
+  public static final byte PolyhedralSurface = 15;
+  public static final byte TIN = 16;
+  public static final byte Triangle = 17;
 
-  public static final String[] names = { "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", };
+  public static final String[] names = { "Unknown", "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", "GeometryCollection", "CircularString", "CompoundCurve", "CurvePolygon", "MultiCurve", "MultiSurface", "Curve", "Surface", "PolyhedralSurface", "TIN", "Triangle", };
 
   public static String name(int e) { return names[e]; }
 }
