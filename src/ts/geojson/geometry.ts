@@ -75,7 +75,7 @@ export function parseGeometry(geometry: IGeoJsonGeometry) {
 }
 
 function extractParts(xy: Float64Array, ends: Uint32Array) {
-    if (!ends)
+    if (!ends || ends.length === 0)
         return [pairFlatCoordinates(xy)]
     let s = 0
     let xySlices = Array.from(ends)
