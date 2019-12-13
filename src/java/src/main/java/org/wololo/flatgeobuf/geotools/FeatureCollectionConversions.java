@@ -9,6 +9,7 @@ import com.google.flatbuffers.ByteBufferUtil;
 import com.google.flatbuffers.FlatBufferBuilder;
 import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
+import static org.wololo.flatgeobuf.Constants.MAGIC_BYTES;
 import org.wololo.flatgeobuf.generated.*;
 
 import org.geotools.data.memory.MemoryFeatureCollection;
@@ -24,8 +25,6 @@ import org.opengis.feature.type.GeometryDescriptor;
 //import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class FeatureCollectionConversions {
-    static byte[] magicbytes = new byte[] { 0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00 };
-
     public static void serialize(SimpleFeatureCollection featureCollection, long featuresCount,
             OutputStream outputStream) throws IOException {
         if (featuresCount == 0)
@@ -65,7 +64,7 @@ public class FeatureCollectionConversions {
         byte geometryType = toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
         //byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
 
-        outputStream.write(magicbytes);
+        outputStream.write(MAGIC_BYTES);
 
         HeaderMeta headerMeta = new HeaderMeta();
         headerMeta.featuresCount = featuresCount;
@@ -86,11 +85,16 @@ public class FeatureCollectionConversions {
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb) {
         int offset = 0;
-        if (bb.get() != magicbytes[0] || bb.get() != magicbytes[1] || bb.get() != magicbytes[2]
-                || bb.get() != magicbytes[3] || bb.get() != magicbytes[4] || bb.get() != magicbytes[5]
-                || bb.get() != magicbytes[6] || bb.get() != magicbytes[7])
+        if (bb.get() != MAGIC_BYTES[0] ||
+            bb.get() != MAGIC_BYTES[1] ||
+            bb.get() != MAGIC_BYTES[2] ||
+            bb.get() != MAGIC_BYTES[3] ||
+            bb.get() != MAGIC_BYTES[4] ||
+            bb.get() != MAGIC_BYTES[5] ||
+            bb.get() != MAGIC_BYTES[6] ||
+            bb.get() != MAGIC_BYTES[7])
             throw new RuntimeException("Not a FlatGeobuf file");
-        bb.position(offset += magicbytes.length);
+        bb.position(offset += MAGIC_BYTES.length);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
         bb.position(offset += SIZE_PREFIX_LENGTH);
         Header header = Header.getRootAsHeader(bb);
@@ -169,7 +173,7 @@ public class FeatureCollectionConversions {
             throw new RuntimeException("Unknown geometry type");
     }
 
-    private static byte[] buildHeader(HeaderMeta headerMeta) {
+    public static byte[] buildHeader(HeaderMeta headerMeta) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
 
         int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
