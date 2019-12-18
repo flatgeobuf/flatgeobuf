@@ -27,11 +27,10 @@
   "devDependencies": {
     "@babel/core": "7.7.5",
     "@babel/preset-env": "7.7.6",
+    "@rollup/plugin-node-resolve": "6.0.0",
     "@types/chai": "4.2.7",
     "@types/mocha": "5.2.7",
     "@types/node": "12.12.21",
-    "stream-buffers": "3.0.2",
-    "web-streams-polyfill": "2.0.6",
     "chai": "4.2.0",
     "esm": "3.2.25",
     "jsts": "2.1.0",
@@ -39,10 +38,11 @@
     "ol": "6.1.1",
     "rollup": "1.27.13",
     "rollup-plugin-babel": "4.3.3",
-    "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-terser": "5.1.3",
+    "stream-buffers": "3.0.2",
     "ts-node": "8.5.4",
     "tslint": "5.20.1",
-    "typescript": "3.7.3"
+    "typescript": "3.7.3",
+    "web-streams-polyfill": "2.0.6"
   }
 }
