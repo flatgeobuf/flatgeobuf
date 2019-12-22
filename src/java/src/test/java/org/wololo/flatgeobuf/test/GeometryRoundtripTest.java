@@ -101,8 +101,20 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void pointEmpty() throws IOException {
+        String expected = "POINT EMPTY";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void multipoint() throws IOException {
         String expected = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void multipointEmpty() throws IOException {
+        String expected = "MULTIPOINT EMPTY";
         assertEquals(expected, roundTrip(expected));
     }
 
@@ -113,8 +125,20 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void linestringEmpty() throws IOException {
+        String expected = "LINESTRING EMPTY";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void multilinestring() throws IOException {
         String expected = "MULTILINESTRING ((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void multilinestringEmpty() throws IOException {
+        String expected = "MULTILINESTRING EMPTY";
         assertEquals(expected, roundTrip(expected));
     }
 
@@ -131,6 +155,12 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void polygonEmpty() throws IOException {
+        String expected = "POLYGON EMPTY";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void multipolygon_single() throws IOException {
         String expected = "MULTIPOLYGON (((30 10, 40 40, 20 40, 10 20, 30 10)))";
         assertEquals(expected, roundTrip(expected));
@@ -139,6 +169,12 @@ public class GeometryRoundtripTest {
     @Test
     public void multipolygon() throws IOException {
         String expected = "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void multipolygonEmpty() throws IOException {
+        String expected = "MULTIPOLYGON EMPTY";
         assertEquals(expected, roundTrip(expected));
     }
 }
