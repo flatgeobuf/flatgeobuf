@@ -111,7 +111,11 @@ public class GeometryConversions {
 
         switch (geometryType) {
         case GeometryType.Point:
-            return factory.createPoint(coordinates[0]);
+            if (coordinates.length > 0) {
+                return factory.createPoint(coordinates[0]);
+            } else {
+                return factory.createPoint();
+            }
         case GeometryType.MultiPoint:
             return factory.createMultiPointFromCoords(coordinates);
         case GeometryType.LineString:
