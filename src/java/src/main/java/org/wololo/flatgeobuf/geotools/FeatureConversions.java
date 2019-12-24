@@ -8,7 +8,9 @@ import java.util.Arrays;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import org.wololo.flatgeobuf.generated.*;
+import org.wololo.flatgeobuf.generated.ColumnType;
+import org.wololo.flatgeobuf.generated.Feature;
+import org.wololo.flatgeobuf.generated.Geometry;
 
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;

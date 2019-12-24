@@ -9,15 +9,18 @@ import java.util.stream.DoubleStream;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.MultiLineString;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import org.wololo.flatgeobuf.generated.*;
+import org.wololo.flatgeobuf.generated.Geometry;
 
 public class GeometryConversions {
     public static GeometryOffsets serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
@@ -139,5 +142,22 @@ public class GeometryConversions {
         default:
             throw new RuntimeException("Unknown geometry type");
         }
+    }
+
+    public static byte toGeometryType(Class<?> geometryClass) {
+        if (geometryClass.isAssignableFrom(MultiPoint.class))
+            return GeometryType.MultiPoint;
+        else if (geometryClass.isAssignableFrom(Point.class))
+            return GeometryType.Point;
+        else if (geometryClass.isAssignableFrom(MultiLineString.class))
+            return GeometryType.MultiLineString;
+        else if (geometryClass.isAssignableFrom(LineString.class))
+            return GeometryType.LineString;
+        else if (geometryClass.isAssignableFrom(MultiPolygon.class))
+            return GeometryType.MultiPolygon;
+        else if (geometryClass.isAssignableFrom(Polygon.class))
+            return GeometryType.Polygon;
+        else
+            throw new RuntimeException("Unknown geometry type");
     }
 }

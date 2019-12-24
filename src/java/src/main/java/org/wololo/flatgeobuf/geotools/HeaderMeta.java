@@ -1,5 +1,7 @@
 package org.wololo.flatgeobuf.geotools;
 
+import org.opengis.feature.simple.SimpleFeatureType;
+
 import java.util.List;
 
 public class HeaderMeta {
@@ -11,4 +13,6 @@ public class HeaderMeta {
     public boolean hasT = false;
     public boolean hasTM = false;
     public List<ColumnMeta> columns;
+    public SimpleFeatureType featureType;
+    public int offset;
 }
