@@ -19,9 +19,9 @@ TEST_CASE("Point")
         xy.push_back(0);
 
         auto g = CreateGeometryDirect(fbb, nullptr, &xy);
-        fbb.FinishSizePrefixed(g);
+        fbb.Finish(g);
         int size = fbb.GetSize();
-        REQUIRE(size == 48);
+        REQUIRE(size == 40);
 
         auto g2 = CreateGeometryDirect(fbb2, nullptr, &xy);
         auto f = CreateFeatureDirect(fbb2, g2);
