@@ -11,22 +11,30 @@ TEST_CASE("Point")
 {
     SECTION("Verify size of feature/geometry with point")
     {
-        FlatBufferBuilder fbb;
+        int size;
+
+        FlatBufferBuilder fbb1;
         FlatBufferBuilder fbb2;
+        FlatBufferBuilder fbb3;
 
         std::vector<double> xy;
         xy.push_back(0);
         xy.push_back(0);
 
-        auto g = CreateGeometryDirect(fbb, nullptr, &xy);
-        fbb.Finish(g);
-        int size = fbb.GetSize();
-        REQUIRE(size == 40);
+        auto g1 = CreateGeometryDirect(fbb1, nullptr, nullptr);
+        fbb1.Finish(g1);
+        size = fbb1.GetSize();
+        REQUIRE(size == 12);
 
         auto g2 = CreateGeometryDirect(fbb2, nullptr, &xy);
-        auto f = CreateFeatureDirect(fbb2, g2);
-        fbb.FinishSizePrefixed(f);
+        fbb2.Finish(g2);
         size = fbb2.GetSize();
-        REQUIRE(size == 50);
+        REQUIRE(size == 40);
+
+        auto g3 = CreateGeometryDirect(fbb3, nullptr, &xy);
+        auto f = CreateFeatureDirect(fbb3, g3);
+        fbb3.Finish(f);
+        size = fbb3.GetSize();
+        REQUIRE(size == 56);
     }
 }
