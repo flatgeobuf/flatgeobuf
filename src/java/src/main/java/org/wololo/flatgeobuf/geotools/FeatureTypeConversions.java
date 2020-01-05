@@ -61,12 +61,10 @@ public class FeatureTypeConversions {
             }
         }
 
-        // CoordinateReferenceSystem crs =
-        // featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
+        // CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
         byte geometryType = GeometryConversions
                 .toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        // byte dimensions = (byte) (crs == null ? 2 :
-        // crs.getCoordinateSystem().getDimension());
+        // byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
 
         outputStream.write(Constants.MAGIC_BYTES);
 
