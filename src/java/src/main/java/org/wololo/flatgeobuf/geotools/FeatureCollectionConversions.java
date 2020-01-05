@@ -24,11 +24,12 @@ public class FeatureCollectionConversions {
             return;
 
         SimpleFeatureType featureType = featureCollection.getSchema();
-        HeaderMeta headerMeta = FeatureTypeConversions.serialize(featureType, featuresCount, outputStream);
-
+        HeaderMeta headerMeta = null;
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
             while (iterator.hasNext()) {
                 SimpleFeature feature = iterator.next();
+                if (headerMeta == null)
+                    headerMeta = FeatureTypeConversions.serialize(featureType, feature, featuresCount, outputStream);
                 byte[] featureBuffer = FeatureConversions.serialize(feature, headerMeta);
                 outputStream.write(featureBuffer);
             }

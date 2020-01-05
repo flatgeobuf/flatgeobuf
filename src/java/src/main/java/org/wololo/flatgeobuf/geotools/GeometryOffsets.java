@@ -1,10 +1,10 @@
 package org.wololo.flatgeobuf.geotools;
 
 public class GeometryOffsets {
-    int coordsOffset;
+    int xyOffset;
+    int zOffset;
+    int mOffset;
     public int[] ends = null;
-    public int[] lengths = null;
     public int endsOffset = 0;
-    public int lengthsOffset = 0;
     public GeometryOffsets[] gos = null;
 }

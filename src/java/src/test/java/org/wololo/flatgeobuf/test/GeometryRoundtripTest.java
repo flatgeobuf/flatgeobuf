@@ -101,6 +101,12 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void pointZ() throws IOException {
+        String expected = "POINT Z (1.2 -2.1 1)";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void pointEmpty() throws IOException {
         String expected = "POINT EMPTY";
         assertEquals(expected, roundTrip(expected));

@@ -5,10 +5,12 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.MultiPolygon;
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
@@ -28,8 +30,8 @@ import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
 public class FeatureTypeConversions {
 
-
-    public static HeaderMeta serialize(SimpleFeatureType featureType, long featuresCount, OutputStream outputStream) throws IOException {
+    public static HeaderMeta serialize(SimpleFeatureType featureType, SimpleFeature feature, long featuresCount,
+            OutputStream outputStream) throws IOException {
 
         List<AttributeDescriptor> types = featureType.getAttributeDescriptors();
         List<ColumnMeta> columns = new ArrayList<ColumnMeta>();
@@ -59,9 +61,12 @@ public class FeatureTypeConversions {
             }
         }
 
-        //CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
-        byte geometryType = GeometryConversions.toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        //byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
+        // CoordinateReferenceSystem crs =
+        // featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
+        byte geometryType = GeometryConversions
+                .toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
+        // byte dimensions = (byte) (crs == null ? 2 :
+        // crs.getCoordinateSystem().getDimension());
 
         outputStream.write(Constants.MAGIC_BYTES);
 
@@ -69,6 +74,15 @@ public class FeatureTypeConversions {
         headerMeta.featuresCount = featuresCount;
         headerMeta.geometryType = geometryType;
         headerMeta.columns = columns;
+
+        org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
+        if (!geometry.isEmpty()) {
+            Coordinate coord = geometry.getCoordinate();
+            if (!Double.isNaN(coord.getZ()))
+                headerMeta.hasZ = true;
+            if (!Double.isNaN(coord.getM()))
+                headerMeta.hasM = true;
+        }
 
         byte[] headerBuffer = buildHeader(headerMeta);
         outputStream.write(headerBuffer);
@@ -88,6 +102,8 @@ public class FeatureTypeConversions {
 
         Header.startHeader(builder);
         Header.addGeometryType(builder, headerMeta.geometryType);
+        Header.addHasZ(builder, headerMeta.hasZ);
+        Header.addHasM(builder, headerMeta.hasM);
         Header.addIndexNodeSize(builder, 0);
         Header.addColumns(builder, columnsOffset);
         Header.addFeaturesCount(builder, headerMeta.featuresCount);
@@ -153,6 +169,8 @@ public class FeatureTypeConversions {
         HeaderMeta headerMeta = new HeaderMeta();
         headerMeta.columns = columnMetas;
         headerMeta.geometryType = (byte) geometryType;
+        headerMeta.hasZ = header.hasZ();
+        headerMeta.hasT = header.hasT();
         headerMeta.offset = offset;
         headerMeta.featureType = ft;
 
