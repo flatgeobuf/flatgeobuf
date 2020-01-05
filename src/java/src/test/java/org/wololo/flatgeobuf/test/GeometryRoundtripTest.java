@@ -90,7 +90,7 @@ public class GeometryRoundtripTest {
         bb.order(ByteOrder.LITTLE_ENDIAN);
         SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
         Geometry geometry = (Geometry) fc.features().next().getDefaultGeometry();
-        WKTWriter writer = new WKTWriter();
+        WKTWriter writer = new WKTWriter(4);
         return writer.write(geometry).replace('−', '-');
     }
 
@@ -102,7 +102,7 @@ public class GeometryRoundtripTest {
 
     @Test
     public void pointZ() throws IOException {
-        String expected = "POINT Z (1.2 -2.1 1)";
+        String expected = "POINT Z(1.2 -2.1 1)";
         assertEquals(expected, roundTrip(expected));
     }
 
@@ -131,6 +131,12 @@ public class GeometryRoundtripTest {
     }
 
     @Test
+    public void linestringZ() throws IOException {
+        String expected = "LINESTRING Z(1.2 -2.1 1, 2.4 -4.8 2)";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
     public void linestringEmpty() throws IOException {
         String expected = "LINESTRING EMPTY";
         assertEquals(expected, roundTrip(expected));
@@ -151,6 +157,12 @@ public class GeometryRoundtripTest {
     @Test
     public void polygon() throws IOException {
         String expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
+        assertEquals(expected, roundTrip(expected));
+    }
+
+    @Test
+    public void polygonZ() throws IOException {
+        String expected = "POLYGON Z((30 10 1, 40 40 1, 20 40 1, 10 20 1, 30 10 1))";
         assertEquals(expected, roundTrip(expected));
     }
 
