@@ -119,15 +119,12 @@ TEST_CASE("Geometry roundtrips")
     }*/
 }
 
-/*
 TEST_CASE("Attribute roundtrips")
 {
     SECTION("Point with properties")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/properties.geojson")).get<feature_collection>();
-        auto flatgeobuf = serialize(expected);
-        auto actual = deserialize(flatgeobuf);
+        auto actual = roundtrip(expected);
         REQUIRE(expected == actual);
     }
 }
-*/
