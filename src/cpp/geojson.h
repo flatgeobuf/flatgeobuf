@@ -97,23 +97,28 @@ const void parseProperties(
     }
 }
 
-const uint8_t *serialize(const feature_collection fc)
+const void serialize(
+    const feature_collection fc,
+    const std::function<void(uint8_t *, size_t)> &writeData,
+    const bool createIndex = false)
 {
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
 
-    uint8_t *buf;
     std::vector<uint8_t> data;
-    std::copy(magicbytes, magicbytes + sizeof(magicbytes), std::back_inserter(data));
+    writeData(magicbytes, sizeof(magicbytes));
 
+    std::vector<double> envelope;
     std::vector<Rect> rects;
-    for (auto f : fc)
-        rects.push_back(toRect(f.geometry));
-    Rect extent = calcExtent(rects);
-    PackedRTree tree(rects, extent);
-
-    const auto extentVector = extent.toVector();
+    Rect extent;
+    if (createIndex) {
+        for (auto f : fc)
+            rects.push_back(toRect(f.geometry));
+        extent = calcExtent(rects);
+        envelope = extent.toVector();
+    }
+    
     const auto featureFirst = fc.at(0);
     const auto geometryType = toGeometryType(featureFirst.geometry);
 
@@ -130,17 +135,23 @@ const uint8_t *serialize(const feature_collection fc)
         columns.push_back(CreateColumnDirect(fbb, name.c_str(), type));
     }
 
+    auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
+    auto indexNodeSize = createIndex ? 16 : 0;
+    auto crs = 0;
     auto header = CreateHeaderDirect(
-        fbb, nullptr, &extentVector, geometryType, false, false, false, false, &columns, featuresCount);
+        fbb, nullptr, pEnvelope, geometryType, false, false, false, false, &columns, featuresCount, indexNodeSize, crs);
     fbb.FinishSizePrefixed(header);
     auto hbuf = fbb.Release();
-    std::copy(hbuf.data(), hbuf.data()+hbuf.size(), std::back_inserter(data));
+    writeData(hbuf.data(), hbuf.size());
 
-    tree.streamWrite([&data] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(data)); });
+    if (createIndex) {
+        PackedRTree tree(rects, extent);
+        tree.streamWrite(writeData);
+    }
 
     std::vector<uint8_t> featureData;
     std::vector<uint64_t> featureOffsets;
-    uint64_t featureOffset = 0;
+    //uint64_t featureOffset = 0;
     for (uint32_t i = 0; i < featuresCount; i++) {
         auto f = fc[i];
         FlatBufferBuilder fbb;
@@ -189,18 +200,12 @@ const uint8_t *serialize(const feature_collection fc)
         auto feature = CreateFeatureDirect(fbb, geometry, pProperties);
         fbb.FinishSizePrefixed(feature);
         auto dbuf = fbb.Release();
-        std::copy(dbuf.data(), dbuf.data() + dbuf.size(), std::back_inserter(featureData));
-        featureOffsets.push_back(featureOffset);
-        featureOffset += dbuf.size();
+        writeData(dbuf.data(), dbuf.size());
+        //featureOffsets.push_back(featureOffset);
+        //featureOffset += dbuf.size();
     }
 
-    std::copy(featureOffsets.data(), featureOffsets.data() + featureOffsets.size() * 8, std::back_inserter(data));
-    std::copy(featureData.data(), featureData.data() + featureData.size(), std::back_inserter(data));
-    
-    buf = new uint8_t[data.size()];
-    memcpy(buf, data.data(), data.size());
-
-    return buf;
+    //std::copy(featureOffsets.data(), featureOffsets.data() + featureOffsets.size() * 8, std::back_inserter(data));
 }
 
 const std::vector<point> extractPoints(const double *coords, uint32_t length, uint32_t offset = 0)
@@ -396,11 +401,10 @@ const feature_collection deserialize(const void* buf)
         }
     }
 
-    std::vector<Rect> rects;
-    PackedRTree tree(bytes + offset, featuresCount);
-    offset += tree.size();
-
-    offset += featuresCount * 8;
+    //std::vector<Rect> rects;
+    //PackedRTree tree(bytes + offset, featuresCount);
+    //offset += tree.size();
+    //offset += featuresCount * 8;
 
     feature_collection fc {};
     offset += headerSize;
