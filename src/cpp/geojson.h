@@ -97,6 +97,53 @@ const void parseProperties(
     }
 }
 
+// deserialize (full dataset)
+const void deserialize(
+    const std::function<uint8_t *(size_t)> &readData,
+    const std::function<feature&> &writeFeature)
+{
+    // TODO: read header
+    // TODO: read features
+}
+
+// deserialize (spatial filter)
+const void deserialize(
+    const std::function<uint8_t *(size_t)> &readData,
+    const std::function<void(size_t)> &seekData,
+    const Rect rect,
+    const std::function<feature&> &writeFeature)
+{
+    // TODO: read header
+    // TODO: bail if no index
+    // TODO: read index
+    // TODO: query index
+    // TODO: read features
+}
+
+// serialize (no index)
+const void serialize(
+    const std::function<void(feature&)> readFeature,
+    const std::function<void(uint8_t *, size_t)> &writeData)
+{
+    // TODO: read features
+    // TODO: write data
+}
+
+// serialize with index, requires two passes
+const void serialize(
+    const std::function<void(feature&)> &readFeature,
+    const std::function<void(uint8_t *, size_t)> &writeData1,
+    const std::function<uint8_t *(size_t)> &readData1,
+    const std::function<void(uint8_t *, size_t)> &writeData2)
+{
+    // TODO: read features and extract rects
+    // TODO: write data and store offsets
+    // TODO: hilbert sort rects and offsets
+    // TODO: write header
+    // TODO: write index
+    // TODO: rewrite data in sorted order
+}
+
 const void serialize(
     const feature_collection fc,
     const std::function<void(uint8_t *, size_t)> &writeData,
