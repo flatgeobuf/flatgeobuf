@@ -3,10 +3,12 @@
 #include <mapbox/geojson/rapidjson.hpp>
 #include <mapbox/geometry.hpp>
 #include <mapbox/geometry/envelope.hpp>
+#include <mapbox/feature.hpp>
 
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <functional>
 
 #include "flatbuffers/flatbuffers.h"
 #include "header_generated.h"
@@ -97,6 +99,62 @@ const void parseProperties(
     }
 }
 
+
+const uoffset_t writeFeature(
+    const feature &f,
+    std::unordered_map<std::string, ColumnMeta> &columnMetas,
+    const std::function<void(uint8_t *, size_t)> &writeData)
+{
+    FlatBufferBuilder fbb;
+    std::vector<double> coords;
+    std::vector<uint32_t> ends;
+    std::vector<uint32_t> endss;
+    if (f.geometry.is<multi_line_string>()) {
+        uint32_t end = 0;
+        auto mls = f.geometry.get<multi_line_string>();
+        if (mls.size() > 1)
+            for (auto ls : mls)
+                ends.push_back(end += ls.size());
+    } else if (f.geometry.is<polygon>()) {
+        uint32_t end = 0;
+        auto p = f.geometry.get<polygon>();
+        if (p.size() > 1)
+            for (auto lr : p)
+                ends.push_back(end += lr.size());
+    } else if (f.geometry.is<multi_polygon>()) {
+        // TODO: need rework!
+        /*
+        uint32_t end = 0;
+        auto mp = f.geometry.get<multi_polygon>();
+        if (mp.size() == 1) {
+            auto p = mp[0];
+            if (p.size() > 1)
+                for (auto lr : p)
+                    ends.push_back(end += lr.size());
+        } else {
+            for (auto p : mp) {
+                uint32_t ringCount = 0;
+                for (auto lr : p){
+                    ends.push_back(end += lr.size());
+                    ringCount++;
+                }
+                endss.push_back(ringCount);
+            }
+        }*/
+    }
+    for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
+    auto pEnds = ends.size() == 0 ? nullptr : &ends;
+    std::vector<uint8_t> properties;
+    parseProperties(f.properties, properties, columnMetas);
+    auto pProperties = properties.size() == 0 ? nullptr : &properties;
+    auto geometry = CreateGeometryDirect(fbb, pEnds, &coords, nullptr, nullptr, nullptr, nullptr);
+    auto feature = CreateFeatureDirect(fbb, geometry, pProperties);
+    fbb.FinishSizePrefixed(feature);
+    auto size = fbb.GetSize();
+    writeData(fbb.GetBufferPointer(), size);
+    return size;
+}
+
 // deserialize (full dataset)
 const void deserialize(
     const std::function<uint8_t *(size_t)> &readData,
@@ -120,18 +178,78 @@ const void deserialize(
     // TODO: read features
 }
 
-// serialize (no index)
-const void serialize(
-    const std::function<void(feature&)> readFeature,
+const void introspectColumnMetas(const feature &f, std::unordered_map<std::string, ColumnMeta> &columnMetas) {
+    uint16_t i = 0;
+    for (auto p : f.properties) {
+        auto name = p.first;
+        auto value = p.second;
+        auto type = toColumnType(value);
+        columnMetas.insert({ name, ColumnMeta { static_cast<uint8_t>(type), name, i++ } });
+    }
+}
+
+const void writeHeader(
+    const char *name,
+    std::vector<double> *envelope,
+    uint16_t indexNodeSize,
+    GeometryType geometryType,
+    std::unordered_map<std::string, ColumnMeta> &columnMetas,
+    uint64_t featuresCount,
     const std::function<void(uint8_t *, size_t)> &writeData)
 {
-    // TODO: read features
-    // TODO: write data
+    FlatBufferBuilder fbb;
+    auto crs = 0;
+    std::vector<flatbuffers::Offset<Column>> columns;
+    for (auto columnMeta : columnMetas) {
+        columns.push_back(CreateColumnDirect(fbb, columnMeta.first.c_str(), (ColumnType) columnMeta.second.type));
+    }
+    auto pColumns = columns.size() > 0 ? &columns : nullptr;
+    auto header = CreateHeaderDirect(
+        fbb, nullptr, envelope, geometryType, false, false, false, false, pColumns, featuresCount, indexNodeSize, crs);
+    fbb.FinishSizePrefixed(header);
+    writeData(fbb.GetBufferPointer(), fbb.GetSize());
+}
+
+const void serialize(
+    const std::function<const feature *()> &readFeature,
+    const std::function<void(uint8_t *, size_t)> &writeData,
+    uint64_t featuresCount = 0,
+    const bool createIndex = false)
+{
+    auto f = readFeature();
+    if (f == nullptr)
+      throw std::runtime_error("Unable to read a feature (need at least one)");
+
+    const auto geometryType = toGeometryType(f->geometry);
+    std::unordered_map<std::string, ColumnMeta> columnMetas;
+    introspectColumnMetas(*f, columnMetas);
+
+    // no index is requested write in single pass and return
+    if (!createIndex) {
+        writeData(magicbytes, sizeof(magicbytes));
+        writeHeader(nullptr, nullptr, 0, geometryType, columnMetas, featuresCount, writeData);
+        while (f != nullptr) {
+            writeFeature(*f, columnMetas, writeData);
+            //throw new std::runtime_error("write ");
+            f = readFeature();
+        }
+        return;
+    }
+
+    // index requested need to write in two passes
+    auto tmpfile = std::tmpfile();
+    auto writeTmpData = [&tmpfile] (uint8_t *data, size_t size) {
+        fwrite(data, size, 1, tmpfile);
+    };
+    while (f != nullptr) {
+        writeFeature(*f, columnMetas, writeTmpData);
+        f = readFeature();
+    }
 }
 
 // serialize with index, requires two passes
 const void serialize(
-    const std::function<void(feature&)> &readFeature,
+    const std::function<feature&> &readFeature,
     const std::function<void(uint8_t *, size_t)> &writeData1,
     const std::function<uint8_t *(size_t)> &readData1,
     const std::function<void(uint8_t *, size_t)> &writeData2)
@@ -149,6 +267,14 @@ const void serialize(
     const std::function<void(uint8_t *, size_t)> &writeData,
     const bool createIndex = false)
 {
+    size_t ii = 0;
+    const std::function<const feature *()> readFeature = [&fc, &ii] () {
+        const feature *f = ii < fc.size() ? &(fc.at(ii++)) : nullptr;
+        return f;
+    };
+    serialize(readFeature, writeData, fc.size(), false);
+    return;
+
     const auto featuresCount = fc.size();
     if (featuresCount == 0)
         throw std::invalid_argument("Cannot serialize empty feature collection");
@@ -200,54 +326,8 @@ const void serialize(
     std::vector<uint64_t> featureOffsets;
     //uint64_t featureOffset = 0;
     for (uint32_t i = 0; i < featuresCount; i++) {
-        auto f = fc[i];
-        FlatBufferBuilder fbb;
-        std::vector<double> coords;
-        std::vector<uint32_t> ends;
-        std::vector<uint32_t> endss;
-        if (f.geometry.is<multi_line_string>()) {
-            uint32_t end = 0;
-            auto mls = f.geometry.get<multi_line_string>();
-            if (mls.size() > 1)
-                for (auto ls : mls)
-                    ends.push_back(end += ls.size());
-        } else if (f.geometry.is<polygon>()) {
-            uint32_t end = 0;
-            auto p = f.geometry.get<polygon>();
-            if (p.size() > 1)
-                for (auto lr : p)
-                    ends.push_back(end += lr.size());
-        } else if (f.geometry.is<multi_polygon>()) {
-            // TODO: need rework!
-            /*
-            uint32_t end = 0;
-            auto mp = f.geometry.get<multi_polygon>();
-            if (mp.size() == 1) {
-                auto p = mp[0];
-                if (p.size() > 1)
-                    for (auto lr : p)
-                        ends.push_back(end += lr.size());
-            } else {
-                for (auto p : mp) {
-                    uint32_t ringCount = 0;
-                    for (auto lr : p){
-                        ends.push_back(end += lr.size());
-                        ringCount++;
-                    }
-                    endss.push_back(ringCount);
-                }
-            }*/
-        }
-        for_each_point(f.geometry, [&coords] (auto p) { coords.push_back(p.x); coords.push_back(p.y); });
-        auto pEnds = ends.size() == 0 ? nullptr : &ends;
-        std::vector<uint8_t> properties;
-        parseProperties(f.properties, properties, columnMetas);
-        auto pProperties = properties.size() == 0 ? nullptr : &properties;
-        auto geometry = CreateGeometryDirect(fbb, pEnds, &coords, nullptr, nullptr, nullptr, nullptr);
-        auto feature = CreateFeatureDirect(fbb, geometry, pProperties);
-        fbb.FinishSizePrefixed(feature);
-        auto dbuf = fbb.Release();
-        writeData(dbuf.data(), dbuf.size());
+        const auto f = fc[i];
+        writeFeature(f, columnMetas, writeData);
         //featureOffsets.push_back(featureOffset);
         //featureOffset += dbuf.size();
     }

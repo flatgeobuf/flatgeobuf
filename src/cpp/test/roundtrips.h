@@ -119,7 +119,7 @@ TEST_CASE("Geometry roundtrips")
     }*/
 }
 
-TEST_CASE("Attribute roundtrips")
+/*TEST_CASE("Attribute roundtrips")
 {
     SECTION("Point with properties")
     {
@@ -127,4 +127,4 @@ TEST_CASE("Attribute roundtrips")
         auto actual = roundtrip(expected);
         REQUIRE(expected == actual);
     }
-}
+}*/
