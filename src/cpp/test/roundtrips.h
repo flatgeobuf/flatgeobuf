@@ -31,12 +31,10 @@ struct StringMaker<feature_collection> {
 };
 }
 
-feature_collection roundtrip(feature_collection input) {
+feature_collection roundtrip(feature_collection input, bool createIndex = false) {
     std::vector<uint8_t> flatgeobuf;
-    serialize(input, [&flatgeobuf] (uint8_t *data, size_t size) {
-        std::copy(data, data + size, std::back_inserter(flatgeobuf));
-    });
-    auto output = deserialize(flatgeobuf.data());
+    serialize(flatgeobuf, input, createIndex);
+    const auto output = deserialize(flatgeobuf.data());
     return output;
 }
 
@@ -62,6 +60,20 @@ TEST_CASE("Geometry roundtrips")
         auto actual = roundtrip(expected);
         REQUIRE(expected.size() == actual.size());
     }
+
+    SECTION("Points spatial query")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/points.geojson")).get<feature_collection>();
+        std::vector<uint8_t> flatgeobuf;
+        serialize(flatgeobuf, expected, true);
+        const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1000, 1000 });
+        REQUIRE(4 == fc1.size());
+        const auto fc2 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
+        REQUIRE(1 == fc2.size());
+        const auto fc3 = deserialize(flatgeobuf.data(), Rect { 10, 10, 100, 100 });
+        REQUIRE(2 == fc3.size());
+    }
+
     SECTION("LineString")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/linestring.geojson")).get<feature_collection>();
@@ -107,19 +119,40 @@ TEST_CASE("Geometry roundtrips")
         auto flatgeobuf = serialize(expected);
         auto actual = deserialize(flatgeobuf);
         REQUIRE(expected == actual);
-    }
+    }*/
 
-    SECTION("Bahamas")
+    /*SECTION("Bahamas")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/bahamas.geojson")).get<feature_collection>();
         // Should serialize to 42 flat coords elements, ends [16, 28, 42] and endss [1, 1, 1]
-        auto flatgeobuf = serialize(expected);
-        auto actual = deserialize(flatgeobuf);
+        auto actual = roundtrip(expected);
         REQUIRE(expected == actual);
+    }*/
+
+    SECTION("poly_landmarks")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/poly_landmarks.geojson")).get<feature_collection>();
+        auto actual = roundtrip(expected);
+        REQUIRE(expected == actual);
+    }
+
+    /*SECTION("poly_landmarks spatial query")
+    {
+        auto expected = parse(getFixture("src/cpp/test/fixtures/poly_landmarks.geojson")).get<feature_collection>();
+        std::vector<uint8_t> flatgeobuf;
+        serialize(flatgeobuf, expected, true);
+        //auto file = fopen("/tmp/poly.fgb", "wb");
+        //fwrite(flatgeobuf.data(), 1, flatgeobuf.size(), file);
+        //fclose(file);
+        //const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
+        //REQUIRE(0 == fc1.size());
+        const auto fc2 = deserialize(flatgeobuf.data(), Rect { -73.996035, 40.730647, -73.987054,40.738246 });
+        //const auto fc2 = deserialize(flatgeobuf.data(), Rect { 40.730647, -73.996035, 40.738246, -73.987054 });
+        REQUIRE(0 == fc2.size());
     }*/
 }
 
-/*TEST_CASE("Attribute roundtrips")
+TEST_CASE("Attribute roundtrips")
 {
     SECTION("Point with properties")
     {
@@ -127,4 +160,4 @@ TEST_CASE("Geometry roundtrips")
         auto actual = roundtrip(expected);
         REQUIRE(expected == actual);
     }
-}*/
+}
