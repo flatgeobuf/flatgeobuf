@@ -242,7 +242,6 @@ const void serialize(
     fflush(tmpfile);
     std::vector<double> envelope;
     Rect extent = calcExtent(items);
-    //printf("xmin: %f ymin: %f xmax: %f ymax: %f\n", extent.minX, extent.minY, extent.maxX, extent.maxY);
     envelope = extent.toVector();
     const auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
 
@@ -253,9 +252,11 @@ const void serialize(
     PackedRTree tree(items, extent, 16);
     tree.streamWrite(writeData);
 
+    featureOffset = 0;
     for (auto item : items) {
         auto featureItem = std::static_pointer_cast<FeatureItem>(item);
-        writeData(&featureItem->offset, sizeof(uint64_t));
+        writeData(&featureOffset, sizeof(uint64_t));
+        featureOffset += featureItem->size;
     }
 
     std::vector<uint8_t> buf;
@@ -472,7 +473,7 @@ const uoffset_t readFeature(
     const std::vector<ColumnMeta> &columnMetas) 
 {
     std::vector<uint8_t> buf;
-    buf.reserve(4);
+    buf.reserve(sizeof(uoffset_t));
     readData(buf.data(), sizeof(uoffset_t));
     const auto featureSize = *reinterpret_cast<const uoffset_t*>(buf.data());
     buf.reserve(featureSize);
@@ -498,12 +499,12 @@ const void deserialize(
 
     uint64_t offset = sizeof(magicbytes);
     readData(buf.data(), sizeof(uoffset_t));
+    offset += sizeof(uoffset_t);
     const auto headerSize = *reinterpret_cast<const uoffset_t*>(buf.data());
     buf.reserve(headerSize);
     readData(buf.data(), headerSize);
-    offset += 4;
-    auto header = GetHeader(buf.data());
     offset += headerSize;
+    auto header = GetHeader(buf.data());
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
     const auto indexNodeSize = header->index_node_size();
@@ -530,7 +531,6 @@ const void deserialize(
                 readData(buf, s);
             };
             const auto foundIndices = PackedRTree::streamSearch(featuresCount, indexNodeSize, *rect, readNode);
-            printf("foundIndices size: %zu\n", foundIndices.size());
             offset += PackedRTree::size(featuresCount, indexNodeSize);
 
             // TODO: read feature offset on demand
@@ -540,8 +540,6 @@ const void deserialize(
             readData(featureOffsets.data(), featuresCount * sizeof(uint64_t));
             offset += featuresCount * sizeof(uint64_t);
             for (auto index : foundIndices) {
-                printf("index: %zu\n", index);
-                printf("featureOffset: %zu\n", offset + featureOffsets[index]);
                 seekData(offset + featureOffsets[index]);
                 readFeature(readData, writeFeature, geometryType, columnMetas);
             }
@@ -549,7 +547,7 @@ const void deserialize(
         } else {
             // ignore index as no filter was requested
             offset += PackedRTree::size(featuresCount, indexNodeSize);
-            offset += featuresCount * 8;
+            offset += featuresCount * sizeof(uint64_t);
         }   
     }
 

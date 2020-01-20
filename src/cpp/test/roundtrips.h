@@ -136,20 +136,16 @@ TEST_CASE("Geometry roundtrips")
         REQUIRE(expected == actual);
     }
 
-    /*SECTION("poly_landmarks spatial query")
+    SECTION("poly_landmarks spatial query")
     {
         auto expected = parse(getFixture("src/cpp/test/fixtures/poly_landmarks.geojson")).get<feature_collection>();
         std::vector<uint8_t> flatgeobuf;
         serialize(flatgeobuf, expected, true);
-        //auto file = fopen("/tmp/poly.fgb", "wb");
-        //fwrite(flatgeobuf.data(), 1, flatgeobuf.size(), file);
-        //fclose(file);
-        //const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
-        //REQUIRE(0 == fc1.size());
+        const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
+        REQUIRE(0 == fc1.size());
         const auto fc2 = deserialize(flatgeobuf.data(), Rect { -73.996035, 40.730647, -73.987054,40.738246 });
-        //const auto fc2 = deserialize(flatgeobuf.data(), Rect { 40.730647, -73.996035, 40.738246, -73.987054 });
-        REQUIRE(0 == fc2.size());
-    }*/
+        REQUIRE(4 == fc2.size());
+    }
 }
 
 TEST_CASE("Attribute roundtrips")
