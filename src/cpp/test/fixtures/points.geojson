@@ -12,5 +12,17 @@
             "type": "Point",
             "coordinates": [2,2]
         }
+    }, {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [10,10]
+        }
+    }, {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [100,100]
+        }
     }]
 }
