@@ -20,6 +20,8 @@ using namespace mapbox::geojson;
 using namespace flatbuffers;
 using namespace FlatGeobuf;
 
+namespace {
+
 uint8_t magicbytes[] = { 0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00 };
 
 struct ColumnMeta {
@@ -56,7 +58,7 @@ GeometryType toGeometryType(geometry geometry)
     throw std::invalid_argument("toGeometryType: Unknown geometry type");
 }
 
-static const ColumnType toColumnType(value value)
+const ColumnType toColumnType(value value)
 {
     if (value.is<bool>())
         return ColumnType::Bool;
@@ -193,105 +195,6 @@ const void writeHeader(
     writeData(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
-const void serialize(
-    const std::function<const feature *()> &readFeature,
-    const std::function<const void(void *, const size_t)> &writeData,
-    const uint64_t featuresCount = 0,
-    const bool createIndex = false)
-{
-    auto f = readFeature();
-    if (f == nullptr)
-      throw std::runtime_error("Unable to read a feature (need at least one)");
-
-    const auto geometryType = toGeometryType(f->geometry);
-    std::vector<ColumnMeta> columnMetas;
-    introspectColumnMetas(*f, columnMetas);
-    std::unordered_map<std::string, ColumnMeta> columMetasMap;
-    for (auto const &columnMeta : columnMetas)
-        columMetasMap[columnMeta.name] = columnMeta;
-
-    // no index is requested write in single pass and return
-    if (!createIndex) {
-        writeData(magicbytes, sizeof(magicbytes));
-        writeHeader(nullptr, nullptr, 0, geometryType, columnMetas, featuresCount, writeData);
-        while (f != nullptr) {
-            writeFeature(*f, columMetasMap, writeData);
-            f = readFeature();
-        }
-        return;
-    }
-
-    // index requested need to write in two passes
-    const auto tmpfile = std::tmpfile();
-    const auto writeTmpData = [&tmpfile] (const void *data, const size_t size) {
-        fwrite(data, size, 1, tmpfile);
-    };
-    std::vector<std::shared_ptr<Item>> items;
-    uint64_t featureOffset = 0;
-    while (f != nullptr) {
-        auto feature = *f;
-        auto size = writeFeature(feature, columMetasMap, writeTmpData);
-        const auto item = std::make_shared<FeatureItem>();
-        item->rect = toRect(feature.geometry);
-        item->size = size;
-        item->offset = featureOffset;
-        featureOffset += size;
-        items.push_back(item);
-        f = readFeature();
-    }
-    fflush(tmpfile);
-    std::vector<double> envelope;
-    Rect extent = calcExtent(items);
-    envelope = extent.toVector();
-    const auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
-
-    writeData(magicbytes, sizeof(magicbytes));
-    writeHeader(nullptr, pEnvelope, 16, geometryType, columnMetas, items.size(), writeData);
-
-    hilbertSort(items);
-    PackedRTree tree(items, extent, 16);
-    tree.streamWrite(writeData);
-
-    featureOffset = 0;
-    for (auto item : items) {
-        auto featureItem = std::static_pointer_cast<FeatureItem>(item);
-        writeData(&featureOffset, sizeof(uint64_t));
-        featureOffset += featureItem->size;
-    }
-
-    std::vector<uint8_t> buf;
-    for (auto item : items) {
-        auto featureItem = std::static_pointer_cast<FeatureItem>(item);
-        buf.reserve(featureItem->size);
-        if (fseek(tmpfile, featureItem->offset, SEEK_SET) != 0)
-            throw std::runtime_error("Failed to seek in file");
-        if (fread(buf.data(), featureItem->size, 1, tmpfile) != 1)
-            throw std::runtime_error("Failed to read data");
-        writeData(buf.data(), featureItem->size);
-    }
-}
-
-const void serialize(
-    const feature_collection &fc,
-    const std::function<void(void *, size_t)> &writeData,
-    const bool createIndex = false)
-{
-    size_t i = 0;
-    size_t size = fc.size();
-    const std::function<const feature *()> readFeature = [&fc, &i, &size] () {
-        return i < size ? &(fc[i++]) : nullptr;
-    };
-    serialize(readFeature, writeData, fc.size(), createIndex);
-}
-
-const void serialize(std::vector<uint8_t> &flatgeobuf, const feature_collection &fc, const bool createIndex = false)
-{
-    const auto writeData = [&flatgeobuf] (const void *data, const size_t size) {
-        const auto buf = static_cast<const uint8_t *>(data);
-        std::copy(buf, buf + size, std::back_inserter(flatgeobuf));
-    };
-    serialize(fc, writeData, createIndex);
-}
 
 const std::vector<point> extractPoints(const double *coords, uint32_t length, uint32_t offset = 0)
 {
@@ -484,6 +387,110 @@ const uoffset_t readFeature(
     return featureSize;
 }
 
+}
+
+namespace FlatGeobuf {
+
+const void serialize(
+    const std::function<const feature *()> &readFeature,
+    const std::function<const void(void *, const size_t)> &writeData,
+    const uint64_t featuresCount = 0,
+    const bool createIndex = false)
+{
+    auto f = readFeature();
+    if (f == nullptr)
+      throw std::runtime_error("Unable to read a feature (need at least one)");
+
+    const auto geometryType = toGeometryType(f->geometry);
+    std::vector<ColumnMeta> columnMetas;
+    introspectColumnMetas(*f, columnMetas);
+    std::unordered_map<std::string, ColumnMeta> columMetasMap;
+    for (auto const &columnMeta : columnMetas)
+        columMetasMap[columnMeta.name] = columnMeta;
+
+    // no index is requested write in single pass and return
+    if (!createIndex) {
+        writeData(magicbytes, sizeof(magicbytes));
+        writeHeader(nullptr, nullptr, 0, geometryType, columnMetas, featuresCount, writeData);
+        while (f != nullptr) {
+            writeFeature(*f, columMetasMap, writeData);
+            f = readFeature();
+        }
+        return;
+    }
+
+    // index requested need to write in two passes
+    const auto tmpfile = std::tmpfile();
+    const auto writeTmpData = [&tmpfile] (const void *data, const size_t size) {
+        fwrite(data, size, 1, tmpfile);
+    };
+    std::vector<std::shared_ptr<Item>> items;
+    uint64_t featureOffset = 0;
+    while (f != nullptr) {
+        auto feature = *f;
+        auto size = writeFeature(feature, columMetasMap, writeTmpData);
+        const auto item = std::make_shared<FeatureItem>();
+        item->rect = toRect(feature.geometry);
+        item->size = size;
+        item->offset = featureOffset;
+        featureOffset += size;
+        items.push_back(item);
+        f = readFeature();
+    }
+    fflush(tmpfile);
+    std::vector<double> envelope;
+    Rect extent = calcExtent(items);
+    envelope = extent.toVector();
+    const auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
+
+    writeData(magicbytes, sizeof(magicbytes));
+    writeHeader(nullptr, pEnvelope, 16, geometryType, columnMetas, items.size(), writeData);
+
+    hilbertSort(items);
+    PackedRTree tree(items, extent, 16);
+    tree.streamWrite(writeData);
+
+    featureOffset = 0;
+    for (auto item : items) {
+        auto featureItem = std::static_pointer_cast<FeatureItem>(item);
+        writeData(&featureOffset, sizeof(uint64_t));
+        featureOffset += featureItem->size;
+    }
+
+    std::vector<uint8_t> buf;
+    for (auto item : items) {
+        auto featureItem = std::static_pointer_cast<FeatureItem>(item);
+        buf.reserve(featureItem->size);
+        if (fseek(tmpfile, featureItem->offset, SEEK_SET) != 0)
+            throw std::runtime_error("Failed to seek in file");
+        if (fread(buf.data(), featureItem->size, 1, tmpfile) != 1)
+            throw std::runtime_error("Failed to read data");
+        writeData(buf.data(), featureItem->size);
+    }
+}
+
+const void serialize(
+    const feature_collection &fc,
+    const std::function<void(void *, size_t)> &writeData,
+    const bool createIndex = false)
+{
+    size_t i = 0;
+    size_t size = fc.size();
+    const std::function<const feature *()> readFeature = [&fc, &i, &size] () {
+        return i < size ? &(fc[i++]) : nullptr;
+    };
+    serialize(readFeature, writeData, fc.size(), createIndex);
+}
+
+const void serialize(std::vector<uint8_t> &flatgeobuf, const feature_collection &fc, const bool createIndex = false)
+{
+    const auto writeData = [&flatgeobuf] (const void *data, const size_t size) {
+        const auto buf = static_cast<const uint8_t *>(data);
+        std::copy(buf, buf + size, std::back_inserter(flatgeobuf));
+    };
+    serialize(fc, writeData, createIndex);
+}
+
 const void deserialize(
     const std::function<void(const void *, const size_t)> &readData,
     const std::function<void(const feature&)> &writeFeature,
@@ -589,4 +596,6 @@ const feature_collection deserialize(const void *buf, const Rect rect)
     };
     deserialize(readData, writeFeature, seekData, &rect);
     return fc;
+}
+
 }
