@@ -1,9 +1,16 @@
 package org.wololo.flatgeobuf.geotools;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.Arrays;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -38,12 +45,42 @@ public class FeatureConversions {
             bb.putShort(i);
             if (type == ColumnType.Bool)
                 bb.put((byte) ((boolean)value ? 1 : 0));
+            else if (type == ColumnType.Byte)
+                bb.put((byte) value);
+            else if (type == ColumnType.Short)
+                bb.putShort((short) value);
             else if (type == ColumnType.Int)
                 bb.putInt((int) value);
             else if (type == ColumnType.Long)
-                bb.putLong((long) value);
+                if (value instanceof Long)
+                    bb.putLong((long) value);
+                else if (value instanceof BigInteger)
+                    bb.putLong(((BigInteger) value).longValue());
+                else
+                    bb.putLong((long) value);
             else if (type == ColumnType.Double)
-                bb.putDouble((double) value);
+                if (value instanceof Double)
+                    bb.putDouble((double) value);
+                else if (value instanceof BigDecimal)
+                    bb.putDouble(((BigDecimal) value).doubleValue());
+                else
+                    bb.putDouble((double) value);
+            else if (type == ColumnType.DateTime) {
+                String isoDateTime = "";
+                if (value instanceof LocalDateTime)
+                    isoDateTime = ((LocalDateTime) value).toString();
+                else if (value instanceof LocalDate)
+                    isoDateTime = ((LocalDate) value).toString();
+                else if (value instanceof LocalTime)
+                    isoDateTime = ((LocalTime) value).toString();
+                else if (value instanceof OffsetDateTime)
+                    isoDateTime = ((OffsetDateTime) value).toString();
+                else if (value instanceof OffsetTime)
+                    isoDateTime = ((OffsetTime) value).toString();
+                else
+                    throw new RuntimeException("Unknown date/time type " + type);
+                writeString(bb, isoDateTime);
+            }
             else if (type == ColumnType.String)
                 writeString(bb, (String) value);
             else
@@ -56,8 +93,8 @@ public class FeatureConversions {
             propertiesOffset = Feature.createPropertiesVector(builder, data);
         }
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
-        int geometryOffset;
-        if (go.gos != null) {
+        int geometryOffset = 0;
+        if (go.gos != null && go.gos.length > 0) {
         	int[] partOffsets = new int[go.gos.length];
         	for (int i = 0; i < go.gos.length; i++) {
         		GeometryOffsets goPart = go.gos[i];
@@ -75,17 +112,21 @@ public class FeatureConversions {
         return builder.sizedByteArray();
     }
 
-    private static void readString(ByteBuffer bb, SimpleFeatureBuilder fb, String name) {
+    private static String readString(ByteBuffer bb, String name) {
         int length = bb.getInt();
         byte[] stringBytes = new byte[length];
         bb.get(stringBytes, 0, length);
         String value = new String(stringBytes, StandardCharsets.UTF_8);
-        fb.set(name, value);
+        return value;
     }
 
-    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta) {
-    	Geometry geometry = feature.geometry();
-        fb.add(GeometryConversions.deserialize(geometry, headerMeta.geometryType));
+    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta, String fid) {
+        Geometry geometry = feature.geometry();
+        if (geometry == null)
+            return null;
+        org.locationtech.jts.geom.Geometry jtsGeometry = GeometryConversions.deserialize(geometry, headerMeta.geometryType);
+        if (jtsGeometry != null)
+            fb.add(GeometryConversions.deserialize(geometry, headerMeta.geometryType));
         int propertiesLength = feature.propertiesLength();
         if (propertiesLength > 0) {
             ByteBuffer bb = feature.propertiesAsByteBuffer();
@@ -96,19 +137,25 @@ public class FeatureConversions {
                 byte type = columnMeta.type;
                 if (type == ColumnType.Bool)
                     fb.set(name, bb.get() > 0 ? true : false);
+                else if (type == ColumnType.Byte)
+                    fb.set(name, bb.get());
+                else if (type == ColumnType.Short)
+                    fb.set(name, bb.getShort());
                 else if (type == ColumnType.Int)
                     fb.set(name, bb.getInt());
                 else if (type == ColumnType.Long)
                     fb.set(name, bb.getLong());
                 else if (type == ColumnType.Double)
                     fb.set(name, bb.getDouble());
+                else if (type == ColumnType.DateTime)
+                    fb.set(name, readString(bb, name));
                 else if (type == ColumnType.String)
-                    readString(bb, fb, name);
+                    fb.set(name, readString(bb, name));
                 else
                     throw new RuntimeException("Unknown type");
             }
         }
-        SimpleFeature f = fb.buildFeature(null);
+        SimpleFeature f = fb.buildFeature(fid);
         return f;
     }
 }

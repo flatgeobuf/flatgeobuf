@@ -20,8 +20,6 @@ public class FeatureCollectionConversions {
 
     public static void serialize(SimpleFeatureCollection featureCollection, long featuresCount,
             OutputStream outputStream) throws IOException {
-        if (featuresCount == 0)
-            return;
 
         SimpleFeatureType featureType = featureCollection.getSchema();
         HeaderMeta headerMeta = FeatureTypeConversions.serialize(featureType, featuresCount, outputStream);
@@ -41,12 +39,13 @@ public class FeatureCollectionConversions {
         SimpleFeatureType ft = headerMeta.featureType;
         SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
+        long count = 0;
         while (bb.hasRemaining()) {
             int featureSize = ByteBufferUtil.getSizePrefix(bb);
             bb.position(offset += SIZE_PREFIX_LENGTH);
             Feature feature = Feature.getRootAsFeature(bb);
             bb.position(offset += featureSize);
-            SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta);
+            SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, Long.toString(count++));
             fc.add(f);
         }
         return fc;

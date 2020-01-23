@@ -5,6 +5,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
@@ -20,7 +21,14 @@ import org.wololo.flatgeobuf.generated.Header;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,12 +53,26 @@ public class FeatureTypeConversions {
                 column.name = key;
                 if (binding.isAssignableFrom(Boolean.class))
                     column.type = ColumnType.Bool;
+                else if (binding.isAssignableFrom(Byte.class))
+                    column.type = ColumnType.Byte;
+                else if (binding.isAssignableFrom(Short.class))
+                    column.type = ColumnType.Short;
                 else if (binding.isAssignableFrom(Integer.class))
                     column.type = ColumnType.Int;
+                else if (binding.isAssignableFrom(BigInteger.class))
+                    column.type = ColumnType.Long;
+                    else if (binding.isAssignableFrom(BigDecimal.class))
+                    column.type = ColumnType.Double;
                 else if (binding.isAssignableFrom(Long.class))
                     column.type = ColumnType.Long;
                 else if (binding.isAssignableFrom(Double.class))
                     column.type = ColumnType.Double;
+                else if (binding.isAssignableFrom(LocalDateTime.class) ||
+                         binding.isAssignableFrom(LocalDate.class) ||
+                         binding.isAssignableFrom(LocalTime.class) ||
+                         binding.isAssignableFrom(OffsetDateTime.class) ||
+                         binding.isAssignableFrom(OffsetTime.class))
+                    column.type = ColumnType.DateTime;
                 else if (binding.isAssignableFrom(String.class))
                     column.type = ColumnType.String;
                 else
@@ -60,7 +82,10 @@ public class FeatureTypeConversions {
         }
 
         //CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
-        byte geometryType = GeometryConversions.toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
+        byte geometryType = GeometryType.Unknown;
+        GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
+        if (geometryDescriptor != null)
+            geometryType = GeometryConversions.toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
         //byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
 
         outputStream.write(Constants.MAGIC_BYTES);
@@ -111,6 +136,9 @@ public class FeatureTypeConversions {
         int geometryType = header.geometryType();
         Class<?> geometryClass;
         switch (geometryType) {
+            case GeometryType.Unknown:
+                geometryClass = Geometry.class;
+                break;
             case GeometryType.Point:
                 geometryClass = Point.class;
                 break;
