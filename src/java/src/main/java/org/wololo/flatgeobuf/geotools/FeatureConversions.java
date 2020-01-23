@@ -44,7 +44,7 @@ public class FeatureConversions {
                 continue;
             bb.putShort(i);
             if (type == ColumnType.Bool)
-                bb.put((byte) ((boolean)value ? 1 : 0));
+                bb.put((byte) ((boolean) value ? 1 : 0));
             else if (type == ColumnType.Byte)
                 bb.put((byte) value);
             else if (type == ColumnType.Short)
@@ -80,8 +80,7 @@ public class FeatureConversions {
                 else
                     throw new RuntimeException("Unknown date/time type " + type);
                 writeString(bb, isoDateTime);
-            }
-            else if (type == ColumnType.String)
+            } else if (type == ColumnType.String)
                 writeString(bb, (String) value);
             else
                 throw new RuntimeException("Unknown type " + type);
@@ -95,16 +94,17 @@ public class FeatureConversions {
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
         int geometryOffset = 0;
         if (go.gos != null && go.gos.length > 0) {
-        	int[] partOffsets = new int[go.gos.length];
-        	for (int i = 0; i < go.gos.length; i++) {
-        		GeometryOffsets goPart = go.gos[i];
-        		int partOffset = Geometry.createGeometry(builder, goPart.endsOffset,goPart.coordsOffset, 0, 0, 0, 0, 0, 0);
-        		partOffsets[i] = partOffset;
-        	}
-        	int partsOffset = Geometry.createPartsVector(builder, partOffsets);
-        	geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
+            int[] partOffsets = new int[go.gos.length];
+            for (int i = 0; i < go.gos.length; i++) {
+                GeometryOffsets goPart = go.gos[i];
+                int partOffset = Geometry.createGeometry(builder, goPart.endsOffset, goPart.coordsOffset, 0, 0, 0, 0, 0,
+                        0);
+                partOffsets[i] = partOffset;
+            }
+            int partsOffset = Geometry.createPartsVector(builder, partOffsets);
+            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
         } else {
-        	geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0, 0, 0, 0, 0);
+            geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0, 0, 0, 0, 0);
         }
         int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
         builder.finishSizePrefixed(featureOffset);
@@ -120,11 +120,13 @@ public class FeatureConversions {
         return value;
     }
 
-    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta, String fid) {
+    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta,
+            String fid) {
         Geometry geometry = feature.geometry();
         if (geometry == null)
             return null;
-        org.locationtech.jts.geom.Geometry jtsGeometry = GeometryConversions.deserialize(geometry, headerMeta.geometryType);
+        org.locationtech.jts.geom.Geometry jtsGeometry = GeometryConversions.deserialize(geometry,
+                headerMeta.geometryType);
         if (jtsGeometry != null)
             fb.add(GeometryConversions.deserialize(geometry, headerMeta.geometryType));
         int propertiesLength = feature.propertiesLength();

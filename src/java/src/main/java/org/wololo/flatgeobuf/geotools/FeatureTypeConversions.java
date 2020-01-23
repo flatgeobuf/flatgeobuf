@@ -36,8 +36,8 @@ import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
 public class FeatureTypeConversions {
 
-
-    public static HeaderMeta serialize(SimpleFeatureType featureType, long featuresCount, OutputStream outputStream) throws IOException {
+    public static HeaderMeta serialize(SimpleFeatureType featureType, long featuresCount, OutputStream outputStream)
+            throws IOException {
 
         List<AttributeDescriptor> types = featureType.getAttributeDescriptors();
         List<ColumnMeta> columns = new ArrayList<ColumnMeta>();
@@ -61,17 +61,15 @@ public class FeatureTypeConversions {
                     column.type = ColumnType.Int;
                 else if (binding.isAssignableFrom(BigInteger.class))
                     column.type = ColumnType.Long;
-                    else if (binding.isAssignableFrom(BigDecimal.class))
+                else if (binding.isAssignableFrom(BigDecimal.class))
                     column.type = ColumnType.Double;
                 else if (binding.isAssignableFrom(Long.class))
                     column.type = ColumnType.Long;
                 else if (binding.isAssignableFrom(Double.class))
                     column.type = ColumnType.Double;
-                else if (binding.isAssignableFrom(LocalDateTime.class) ||
-                         binding.isAssignableFrom(LocalDate.class) ||
-                         binding.isAssignableFrom(LocalTime.class) ||
-                         binding.isAssignableFrom(OffsetDateTime.class) ||
-                         binding.isAssignableFrom(OffsetTime.class))
+                else if (binding.isAssignableFrom(LocalDateTime.class) || binding.isAssignableFrom(LocalDate.class)
+                        || binding.isAssignableFrom(LocalTime.class) || binding.isAssignableFrom(OffsetDateTime.class)
+                        || binding.isAssignableFrom(OffsetTime.class))
                     column.type = ColumnType.DateTime;
                 else if (binding.isAssignableFrom(String.class))
                     column.type = ColumnType.String;
@@ -81,12 +79,15 @@ public class FeatureTypeConversions {
             }
         }
 
-        //CoordinateReferenceSystem crs = featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
+        // CoordinateReferenceSystem crs =
+        // featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
         byte geometryType = GeometryType.Unknown;
         GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
         if (geometryDescriptor != null)
-            geometryType = GeometryConversions.toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        //byte dimensions = (byte) (crs == null ? 2 : crs.getCoordinateSystem().getDimension());
+            geometryType = GeometryConversions
+                    .toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
+        // byte dimensions = (byte) (crs == null ? 2 :
+        // crs.getCoordinateSystem().getDimension());
 
         outputStream.write(Constants.MAGIC_BYTES);
 
@@ -136,29 +137,29 @@ public class FeatureTypeConversions {
         int geometryType = header.geometryType();
         Class<?> geometryClass;
         switch (geometryType) {
-            case GeometryType.Unknown:
-                geometryClass = Geometry.class;
-                break;
-            case GeometryType.Point:
-                geometryClass = Point.class;
-                break;
-            case GeometryType.MultiPoint:
-                geometryClass = MultiPoint.class;
-                break;
-            case GeometryType.LineString:
-                geometryClass = LineString.class;
-                break;
-            case GeometryType.MultiLineString:
-                geometryClass = MultiLineString.class;
-                break;
-            case GeometryType.Polygon:
-                geometryClass = Polygon.class;
-                break;
-            case GeometryType.MultiPolygon:
-                geometryClass = MultiPolygon.class;
-                break;
-            default:
-                throw new RuntimeException("Unknown geometry type");
+        case GeometryType.Unknown:
+            geometryClass = Geometry.class;
+            break;
+        case GeometryType.Point:
+            geometryClass = Point.class;
+            break;
+        case GeometryType.MultiPoint:
+            geometryClass = MultiPoint.class;
+            break;
+        case GeometryType.LineString:
+            geometryClass = LineString.class;
+            break;
+        case GeometryType.MultiLineString:
+            geometryClass = MultiLineString.class;
+            break;
+        case GeometryType.Polygon:
+            geometryClass = Polygon.class;
+            break;
+        case GeometryType.MultiPolygon:
+            geometryClass = MultiPolygon.class;
+            break;
+        default:
+            throw new RuntimeException("Unknown geometry type");
         }
 
         int columnsLength = header.columnsLength();

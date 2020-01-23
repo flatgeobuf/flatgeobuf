@@ -24,7 +24,7 @@ import org.wololo.flatgeobuf.generated.Geometry;
 
 public class GeometryConversions {
     public static GeometryOffsets serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
-    		byte geometryType) throws IOException {
+            byte geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
 
         if (geometry == null)
@@ -46,17 +46,17 @@ public class GeometryConversions {
             for (int i = 0; i < p.getNumInteriorRing(); i++)
                 go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
         } else if (geometryType == GeometryType.MultiPolygon) {
-        	MultiPolygon mp = (MultiPolygon) geometry;
-        	int numGeometries = mp.getNumGeometries();
-        	GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
-        	for (int i = 0; i < numGeometries; i++) {
+            MultiPolygon mp = (MultiPolygon) geometry;
+            int numGeometries = mp.getNumGeometries();
+            GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
+            for (int i = 0; i < numGeometries; i++) {
                 Polygon p = (Polygon) mp.getGeometryN(i);
                 gos[i] = serialize(builder, p, GeometryType.Polygon);
             }
-        	go.gos = gos;
-        	return go;
+            go.gos = gos;
+            return go;
         }
-        
+
         Stream<Coordinate> cs = Stream.of(geometry.getCoordinates());
         double[] coords;
         //if (headerMeta.hasZ && headerMeta.hasM)
@@ -64,9 +64,9 @@ public class GeometryConversions {
         //else if (headerMeta.hasZ || headerMeta.hasM)
         //    coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y, c.getZ())).toArray();
         //else
-            coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y)).toArray();
+        coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y)).toArray();
         go.coordsOffset = Geometry.createXyVector(builder, coords);
-        
+
         if (go.ends != null)
             go.endsOffset = Geometry.createEndsVector(builder, go.ends);
 
@@ -75,17 +75,17 @@ public class GeometryConversions {
 
     public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, byte geometryType) {
         GeometryFactory factory = new GeometryFactory();
-        
+
         switch (geometryType) {
-    	case GeometryType.MultiPolygon:
-    		int partsLength = geometry.partsLength();
-    		Polygon[] polygons = new Polygon[partsLength];
-    		for (int i = 0; i < geometry.partsLength(); i++) {
-    			polygons[i] = (Polygon) deserialize(geometry.parts(i), GeometryType.Polygon);
-    		}
-    		return factory.createMultiPolygon(polygons);
-    	}
-        
+        case GeometryType.MultiPolygon:
+            int partsLength = geometry.partsLength();
+            Polygon[] polygons = new Polygon[partsLength];
+            for (int i = 0; i < geometry.partsLength(); i++) {
+                polygons[i] = (Polygon) deserialize(geometry.parts(i), GeometryType.Polygon);
+            }
+            return factory.createMultiPolygon(polygons);
+        }
+
         int xyLength = geometry.xyLength();
         Coordinate[] coordinates = new Coordinate[xyLength >> 1];
         int c = 0;
@@ -149,7 +149,7 @@ public class GeometryConversions {
     }
 
     public static byte toGeometryType(Class<?> geometryClass) {
-        
+
         if (geometryClass == org.locationtech.jts.geom.Geometry.class)
             return GeometryType.Unknown;
         else if (geometryClass.isAssignableFrom(MultiPoint.class))
