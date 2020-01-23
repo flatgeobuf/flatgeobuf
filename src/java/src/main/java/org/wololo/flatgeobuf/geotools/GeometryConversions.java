@@ -27,6 +27,9 @@ public class GeometryConversions {
     		byte geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
 
+        if (geometry == null)
+            return go;
+
         if (geometryType == GeometryType.MultiLineString) {
             int end = 0;
             MultiLineString mls = (MultiLineString) geometry;
@@ -83,7 +86,6 @@ public class GeometryConversions {
     		return factory.createMultiPolygon(polygons);
     	}
         
-        
         int xyLength = geometry.xyLength();
         Coordinate[] coordinates = new Coordinate[xyLength >> 1];
         int c = 0;
@@ -113,6 +115,8 @@ public class GeometryConversions {
         };
 
         switch (geometryType) {
+        case GeometryType.Unknown:
+            return null;
         case GeometryType.Point:
             if (coordinates.length > 0) {
                 return factory.createPoint(coordinates[0]);
@@ -145,7 +149,10 @@ public class GeometryConversions {
     }
 
     public static byte toGeometryType(Class<?> geometryClass) {
-        if (geometryClass.isAssignableFrom(MultiPoint.class))
+        
+        if (geometryClass == org.locationtech.jts.geom.Geometry.class)
+            return GeometryType.Unknown;
+        else if (geometryClass.isAssignableFrom(MultiPoint.class))
             return GeometryType.MultiPoint;
         else if (geometryClass.isAssignableFrom(Point.class))
             return GeometryType.Point;
