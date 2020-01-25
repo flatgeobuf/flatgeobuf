@@ -46,9 +46,9 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
+* GeoServer WFS output format (https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
 * QGIS provider (WIP @ https://github.com/bjornharrtell/QGIS/tree/fgb)
 * OpenLayers example (WIP @ https://github.com/bjornharrtell/ol3/tree/flatgeobuf)
-* GeoServer WFS output format (WIP @ https://github.com/bjornharrtell/geoserver/tree/flatgeobuf-output)
 * Complete test coverage
 
 ## TODO
