@@ -4,8 +4,9 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
-import { toGeometryType } from '../generic/geometry'
+import { parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
+import { parseProperties } from '../generic/feature'
+import { buildGeometry, toGeometryType } from '../generic/geometry'
 import { GeometryType } from '../header_generated'
 
 export interface IGeoJsonProperties {
@@ -109,82 +110,4 @@ export function fromFeature(feature: Feature, header: HeaderMeta) {
         geoJsonfeature.properties = geojsonProperties
 
     return geoJsonfeature
-}
-
-function parseProperties(feature: Feature, columns: ColumnMeta[]) {
-    if (!columns || columns.length === 0)
-        return
-    const array = feature.propertiesArray()
-    const view = new DataView(array.buffer, array.byteOffset)
-    const length = feature.propertiesLength()
-    let offset = 0
-    const properties: IGeoJsonProperties = {}
-    while (offset < length) {
-        const i = view.getUint16(offset, true)
-        offset += 2
-        const column = columns[i]
-        switch (column.type) {
-            case ColumnType.Bool: {
-                properties[column.name] = !!view.getUint8(offset)
-                offset += 1
-                break
-            }
-            case ColumnType.Byte: {
-                properties[column.name] = view.getInt8(offset)
-                offset += 1
-                break
-            }
-            case ColumnType.UByte: {
-                properties[column.name] = view.getUint8(offset)
-                offset += 1
-                break
-            }
-            case ColumnType.Short: {
-                properties[column.name] = view.getInt16(offset, true)
-                offset += 2
-                break
-            }
-            case ColumnType.UShort: {
-                properties[column.name] = view.getUint16(offset, true)
-                offset += 2
-                break
-            }
-            case ColumnType.Int: {
-                properties[column.name] = view.getInt32(offset, true)
-                offset += 4
-                break
-            }
-            case ColumnType.UInt: {
-                properties[column.name] = view.getUint32(offset, true)
-                offset += 4
-                break
-            }
-            case ColumnType.Long: {
-                properties[column.name] = Number(view.getBigInt64(offset, true))
-                offset += 8
-                break
-            }
-            case ColumnType.ULong: {
-                properties[column.name] = Number(view.getBigUint64(offset, true))
-                offset += 8
-                break
-            }
-            case ColumnType.Double: {
-                properties[column.name] = view.getFloat64(offset, true)
-                offset += 8
-                break
-            }
-            case ColumnType.String: {
-                const length = view.getUint32(offset, true)
-                offset += 4
-                const decoder = new TextDecoder()
-                properties[column.name] = decoder.decode(array.subarray(offset, offset + length))
-                offset += length
-                break
-            }
-            default:
-                throw new Error('Unknown type')
-        }
-    }
-    return properties
 }

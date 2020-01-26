@@ -10,31 +10,6 @@ export interface IGeoJsonGeometry {
     geometries?: IGeoJsonGeometry[]
 }
 
-export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry) {
-    const { xy, ends, parts, type } = parsedGeometry
-
-    if (parts) {
-        const partOffsets = parts.map(part => buildGeometry(builder, part))
-        const partsOffset = Geometry.createPartsVector(builder, partOffsets)
-        Geometry.start(builder)
-        Geometry.addParts(builder, partsOffset)
-        return Geometry.end(builder)
-    }
-
-    const coordsOffset = Geometry.createXyVector(builder, xy)
-
-    let endsOffset: number = null
-    if (ends)
-        endsOffset = Geometry.createEndsVector(builder, ends)
-
-    Geometry.start(builder)
-    if (endsOffset)
-        Geometry.addEnds(builder, endsOffset)
-    Geometry.addXy(builder, coordsOffset)
-    Geometry.addType(builder, type)
-    return Geometry.end(builder)
-}
-
 export function parseGeometry(geometry: IGeoJsonGeometry) {
     const cs = geometry.coordinates
     let xy: number[] = null
