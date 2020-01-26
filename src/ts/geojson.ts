@@ -4,6 +4,7 @@ import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 import {
     deserialize as fcDeserialize,
     deserializeStream as fcDeserializeStream,
+    deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize } from './geojson/featurecollection'
 
 // NOTE: monkey patch until https://github.com/google/flatbuffers/pull/5326 is mainlined
@@ -45,5 +46,10 @@ export function deserialize(bytes: Uint8Array) {
 
 export function deserializeStream(stream: ReadableStream) {
     const geojson = fcDeserializeStream(stream)
+    return geojson
+}
+
+export function deserializeFiltered(url) {
+    const geojson = fcDeserializeFiltered(url)
     return geojson
 }

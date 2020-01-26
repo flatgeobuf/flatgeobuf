@@ -6,7 +6,8 @@ import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import {
     buildHeader,
     deserialize as genericDeserialize,
-    deserializeStream as genericDeserializeStream } from '../generic/featurecollection'
+    deserializeStream as genericDeserializeStream,
+    deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
 
 const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00]);
@@ -45,6 +46,10 @@ export function deserialize(bytes: Uint8Array) {
 
 export function deserializeStream(stream: any) {
     return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
+}
+
+export function deserializeFiltered(url) {
+    return genericDeserializeFiltered(url, (f, h) => fromFeature(f, h))
 }
 
 function valueToType(value: boolean | number | string | object): ColumnType {

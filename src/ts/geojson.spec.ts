@@ -8,12 +8,15 @@ import 'mocha'
 import { readFileSync } from 'fs'
 import { TextDecoder, TextEncoder } from 'util'
 
+import fetch from 'node-fetch'
+
+global['fetch'] = fetch
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
 
 import { arrayToStream, takeAsync } from './streams/utils'
 
-import { deserialize, deserializeStream, serialize } from './geojson'
+import { deserialize, deserializeStream, deserializeFiltered, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 
 function makeFeatureCollection(wkt: string, properties?: any) {
@@ -220,6 +223,22 @@ describe('geojson module', () => {
   })
 
   describe('Prepared buffers tests', () => {
+    it('Should parse countries fgb produced from GDAL', () => {
+      const buffer = readFileSync('./test/data/countries.fgb')
+      const bytes = new Uint8Array(buffer)
+      const geojson = deserialize(bytes)
+      expect(geojson.features.length).to.eq(179)
+      for (let f of geojson.features)
+        expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
+    })
+
+    it('Should parse countries fgb produced from GDAL', async () => {
+      const features = await takeAsync(deserializeFiltered('http://127.0.0.1:8000/test/data/countries.fgb'))
+      expect(features.length).to.eq(179)
+      for (let f of features)
+        expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
+    })
+
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
