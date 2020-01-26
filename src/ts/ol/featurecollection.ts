@@ -3,7 +3,7 @@ import {
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream } from '../generic/featurecollection'
 import { IFeature } from '../generic/feature'
-import { fromFeature, createFeatureOl } from './feature'
+import { fromFeature } from './feature'
 
 export { serialize as serialize }
 

@@ -4,8 +4,10 @@ import { GeometryType } from './header_generated'
 export default class HeaderMeta {
     public geometryType: GeometryType
     public columns: ColumnMeta[]
-    constructor(geometryType: GeometryType, columns: ColumnMeta[]) {
+    public featuresCount: number
+    constructor(geometryType: GeometryType, columns: ColumnMeta[], featuresCount: number) {
         this.geometryType = geometryType
         this.columns = columns
+        this.featuresCount = featuresCount
     }
 }

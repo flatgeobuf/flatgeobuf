@@ -1,19 +1,13 @@
-import { flatbuffers } from 'flatbuffers'
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
-import slice from 'slice-source/index.js'
-
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { Header, Column } from '../header_generated'
-import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
+import {
+    buildHeader,
+    deserialize as genericDeserialize,
+    deserializeStream as genericDeserializeStream } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
-import * as tree from '../packedrtree'
-
-const SIZE_PREFIX_LEN: number = 4
-const FEATURE_OFFSET_LEN: number = 8
 
 const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00]);
 
@@ -24,7 +18,7 @@ export interface IGeoJsonFeatureCollection {
 
 export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     const headerMeta = introspectHeaderMeta(featurecollection)
-    const header = buildHeader(featurecollection, headerMeta)
+    const header = buildHeader(headerMeta)
     const features: Uint8Array[] = featurecollection.features
         .map(f => buildFeature(f, headerMeta))
     const featuresLength = features
@@ -42,112 +36,15 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
 }
 
 export function deserialize(bytes: Uint8Array) {
-    if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file')
-
-    const bb = new flatbuffers.ByteBuffer(bytes)
-    const headerLength = bb.readUint32(magicbytes.length)
-    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN)
-    const header = Header.getRoot(bb)
-    const count = header.featuresCount().toFloat64()
-
-    const columns: ColumnMeta[] = []
-    for (let j = 0; j < header.columnsLength(); j++) {
-        const column = header.columns(j)
-        columns.push(new ColumnMeta(column.name(), column.type()))
-    }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns)
-
-    let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
-
-    const indexNodeSize = header.indexNodeSize()
-    if (indexNodeSize > 0)
-        offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
-
-    const features = []
-    for (let i = 0; i < count; i++) {
-        const bb = new flatbuffers.ByteBuffer(bytes)
-        const featureLength = bb.readUint32(offset)
-        bb.setPosition(offset + SIZE_PREFIX_LEN)
-        const feature = Feature.getRoot(bb)
-        features.push(fromFeature(feature, headerMeta))
-        offset += SIZE_PREFIX_LEN + featureLength
-    }
-
+    const features = genericDeserialize(bytes, (f, h) => fromFeature(f, h))
     return {
         type: 'FeatureCollection',
         features,
     } as IGeoJsonFeatureCollection
 }
 
-export async function* deserializeStream(
-    stream: ReadableStream) {
-    const reader = slice(stream)
-    let bytes = await reader.slice(8)
-    if (!bytes.every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file')
-    bytes = await reader.slice(4)
-    let bb = new flatbuffers.ByteBuffer(bytes)
-    const headerLength = bb.readUint32(0)
-    bytes = await reader.slice(headerLength)
-    bb = new flatbuffers.ByteBuffer(bytes)
-    const header = Header.getRoot(bb)
-    const count = header.featuresCount().toFloat64()
-
-    const columns: ColumnMeta[] = []
-    for (let j = 0; j < header.columnsLength(); j++) {
-        const column = header.columns(j)
-        columns.push(new ColumnMeta(column.name(), column.type()))
-    }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns)
-
-    const indexNodeSize = header.indexNodeSize()
-    if (indexNodeSize > 0)
-        await reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN))
-
-    for (let i = 0; i < count; i++) {
-        bytes = await reader.slice(4)
-        bb = new flatbuffers.ByteBuffer(bytes)
-        const featureLength = bb.readUint32(0)
-        bytes = await reader.slice(featureLength)
-        const bytesAligned = new Uint8Array(featureLength + 4)
-        bytesAligned.set(bytes, 4)
-        bb = new flatbuffers.ByteBuffer(bytesAligned)
-        bb.setPosition(SIZE_PREFIX_LEN)
-        const feature = Feature.getRoot(bb)
-        yield fromFeature(feature, headerMeta)
-    }
-}
-
-function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
-    const nameOffset = builder.createString(column.name)
-    Column.start(builder)
-    Column.addName(builder, nameOffset)
-    Column.addType(builder, column.type)
-    return Column.end(builder)
-}
-
-function buildHeader(featurecollection: IGeoJsonFeatureCollection, header: HeaderMeta) {
-    const length = featurecollection.features.length
-    const builder = new flatbuffers.Builder(0)
-
-    let columnOffsets = null
-    if (header.columns)
-        columnOffsets = Header.createColumnsVector(builder,
-            header.columns.map(c => buildColumn(builder, c)))
-
-    const nameOffset = builder.createString('L1')
-
-    Header.start(builder)
-    Header.addFeaturesCount(builder, new flatbuffers.Long(length, 0))
-    Header.addGeometryType(builder, header.geometryType)
-    Header.addIndexNodeSize(builder, 0)
-    if (columnOffsets)
-        Header.addColumns(builder, columnOffsets)
-    Header.addName(builder, nameOffset)
-    const offset = Header.end(builder)
-    builder.finishSizePrefixed(offset)
-    return builder.asUint8Array()
+export function deserializeStream(stream: any) {
+    return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
 }
 
 function valueToType(value: boolean | number | string | object): ColumnType {
@@ -179,7 +76,7 @@ function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) {
     for (const f of featurecollection.features)
         geometryTypeNamesSet.add(feature.geometry.type)
 
-    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns)
+    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length)
 
     return headerMeta
 }

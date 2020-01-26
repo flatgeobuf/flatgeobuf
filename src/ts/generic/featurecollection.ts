@@ -19,7 +19,7 @@ const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x6
 
 export function serialize(features: IFeature[]) {
     const headerMeta = introspectHeaderMeta(features)
-    const header = buildHeader(features, headerMeta)
+    const header = buildHeader(headerMeta)
     const featureBuffers: Uint8Array[] = features
         .map(f => buildFeature(f, headerMeta))
     const featuresLength = featureBuffers
@@ -51,7 +51,7 @@ export function deserialize(bytes: Uint8Array, fromFeature) {
         const column = header.columns(j)
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns)
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0)
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
 
@@ -90,7 +90,7 @@ export async function* deserializeStream(stream: ReadableStream, fromFeature) {
         const column = header.columns(j)
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns)
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0)
 
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0)
@@ -118,8 +118,7 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
     return Column.end(builder)
 }
 
-function buildHeader(features: any, header: HeaderMeta) {
-    const length = features.length
+export function buildHeader(header: HeaderMeta) {
     const builder = new flatbuffers.Builder(0)
 
     let columnOffsets = null
@@ -130,7 +129,7 @@ function buildHeader(features: any, header: HeaderMeta) {
     const nameOffset = builder.createString('L1')
 
     Header.start(builder)
-    Header.addFeaturesCount(builder, new flatbuffers.Long(length, 0))
+    Header.addFeaturesCount(builder, new flatbuffers.Long(header.featuresCount, 0))
     Header.addGeometryType(builder, header.geometryType)
     Header.addIndexNodeSize(builder, 0)
     if (columnOffsets)
@@ -172,7 +171,7 @@ function introspectHeaderMeta(features: any) {
     for (const f of features)
         geometryTypeNamesSet.add(geometryType)
 
-    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns)
+    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length)
 
     return headerMeta
 }
