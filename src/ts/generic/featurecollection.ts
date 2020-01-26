@@ -8,8 +8,8 @@ import { Header, Column } from '../header_generated'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 
-import { buildFeature, fromFeature, ICreateFeature, IFeature } from './feature'
-import { toGeometryType, ICreateGeometry } from './geometry'
+import { buildFeature, IFeature } from './feature'
+import { toGeometryType } from './geometry'
 import * as tree from '../packedrtree'
 
 const SIZE_PREFIX_LEN: number = 4
@@ -36,10 +36,7 @@ export function serialize(features: IFeature[]) {
     return uint8
 }
 
-export function deserialize(
-        bytes: Uint8Array,
-        createGeometry: ICreateGeometry,
-        createFeature: ICreateFeature): IFeature[] {
+export function deserialize(bytes: Uint8Array, fromFeature) {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -68,17 +65,14 @@ export function deserialize(
         const featureLength = bb.readUint32(offset)
         bb.setPosition(offset + SIZE_PREFIX_LEN)
         const feature = Feature.getRoot(bb)
-        features.push(fromFeature(feature, headerMeta, createGeometry, createFeature))
+        features.push(fromFeature(feature, headerMeta))
         offset += SIZE_PREFIX_LEN + featureLength
     }
 
     return features
 }
 
-export async function* deserializeStream(
-        stream: ReadableStream,
-        createGeometry: ICreateGeometry,
-        createFeature: ICreateFeature) {
+export async function* deserializeStream(stream: ReadableStream, fromFeature) {
     const reader = slice(stream)
     let bytes = await reader.slice(8)
     if (!bytes.every((v, i) => magicbytes[i] === v))
@@ -112,7 +106,7 @@ export async function* deserializeStream(
         bb = new flatbuffers.ByteBuffer(bytesAligned)
         bb.setPosition(SIZE_PREFIX_LEN)
         const feature = Feature.getRoot(bb)
-        yield fromFeature(feature, headerMeta, createGeometry, createFeature)
+        yield fromFeature(feature, headerMeta)
     }
 }
 

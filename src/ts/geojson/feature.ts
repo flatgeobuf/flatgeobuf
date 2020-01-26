@@ -1,13 +1,11 @@
 import { flatbuffers } from 'flatbuffers'
 
-import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature, Geometry } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
 import { parseProperties } from '../generic/feature'
-import { buildGeometry, toGeometryType } from '../generic/geometry'
-import { GeometryType } from '../header_generated'
+import { buildGeometry } from '../generic/geometry'
 
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | object

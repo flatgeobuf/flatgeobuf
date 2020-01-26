@@ -1,6 +1,5 @@
-import { flatbuffers } from 'flatbuffers'
 import { GeometryType } from '../header_generated'
-import { Feature, Geometry } from '../feature_generated'
+import { Geometry } from '../feature_generated'
 
 import { IParsedGeometry, flat, pairFlatCoordinates, toGeometryType } from '../generic/geometry'
 
