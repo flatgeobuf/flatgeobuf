@@ -10,7 +10,12 @@ import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, IFeature } from './feature'
 import { toGeometryType } from './geometry'
-import * as tree from '../packedrtree'
+import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
+import { IGeoJsonFeature } from '../geojson/feature'
+
+export interface IFromFeature {
+    (feature: Feature, header: HeaderMeta): IFeature | IGeoJsonFeature
+}
 
 const SIZE_PREFIX_LEN: number = 4
 const FEATURE_OFFSET_LEN: number = 8
@@ -36,7 +41,7 @@ export function serialize(features: IFeature[]) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature) {
+export function deserialize(bytes: Uint8Array, fromFeature: IFromFeature) {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -57,7 +62,7 @@ export function deserialize(bytes: Uint8Array, fromFeature) {
 
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0)
-        offset += tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
+        offset += calcTreeSize(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
 
     const features = []
     for (let i = 0; i < count; i++) {
@@ -72,13 +77,13 @@ export function deserialize(bytes: Uint8Array, fromFeature) {
     return features
 }
 
-export function deserializeStream(stream: ReadableStream, fromFeature) {
+export function deserializeStream(stream: ReadableStream, fromFeature: IFromFeature) {
     const reader = slice(stream)
     const read = async size => await reader.slice(size)
     return deserializeInternal(read, undefined, undefined, fromFeature)
 }
 
-export function deserializeFiltered(url, rect, fromFeature) {
+export function deserializeFiltered(url: string, rect: Rect, fromFeature: IFromFeature) {
     let offset = 0
     const read = async size => {
         const response = await fetch(url, {
@@ -94,7 +99,11 @@ export function deserializeFiltered(url, rect, fromFeature) {
     return deserializeInternal(read, seek, rect, fromFeature)
 }
 
-async function* deserializeInternal(read, seek, rect, fromFeature) {
+async function* deserializeInternal(
+        read: (size: number) => Promise<Uint8Array>,
+        seek: (offset: number) => Promise<void>,
+        rect: Rect,
+        fromFeature: IFromFeature) {
     let offset = 0
     let bytes = await read(8)
     offset += 8
@@ -119,7 +128,7 @@ async function* deserializeInternal(read, seek, rect, fromFeature) {
 
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0) {
-        const treeSize = tree.size(count, indexNodeSize)
+        const treeSize = calcTreeSize(count, indexNodeSize)
         const offsetSize = count * FEATURE_OFFSET_LEN
         if (rect) {
             if (rect) {
@@ -127,7 +136,7 @@ async function* deserializeInternal(read, seek, rect, fromFeature) {
                     await seek(offset + treeOffset)
                     return await read(size)
                 }
-                const foundIndices = await tree.streamSearch(count, indexNodeSize, rect, readNode)
+                const foundIndices = await treeStreamSearch(count, indexNodeSize, rect, readNode)
                 offset += treeSize
 
                 const foundOffsets = []
@@ -157,7 +166,10 @@ async function* deserializeInternal(read, seek, rect, fromFeature) {
     }
 }
 
-async function readFeature(read, headerMeta, fromFeature) {
+async function readFeature(
+        read: (size: number) => Promise<Uint8Array>,
+        headerMeta: HeaderMeta,
+        fromFeature: IFromFeature) {
     let bytes = await read(4)
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
@@ -216,7 +228,7 @@ function valueToType(value: boolean | number | string | object): ColumnType {
         throw new Error(`Unknown type (value '${value}')`)
 }
 
-function introspectHeaderMeta(features: any) {
+function introspectHeaderMeta(features: IFeature[]) {
     const feature = features[0]
     const geometry = feature.getGeometry()
     const geometryType = geometry.getType()
@@ -232,6 +244,5 @@ function introspectHeaderMeta(features: any) {
         geometryTypeNamesSet.add(geometryType)
 
     const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length)
-
     return headerMeta
 }

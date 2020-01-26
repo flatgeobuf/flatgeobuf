@@ -7,6 +7,8 @@ import {
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize } from './geojson/featurecollection'
 
+import { Rect } from './packedrtree'
+
 // NOTE: monkey patch until https://github.com/google/flatbuffers/pull/5326 is mainlined
 flatbuffers.SIZE_PREFIX_LENGTH = 4;
 flatbuffers.Builder.prototype.finish = function (root_table: any, opt_file_identifier: any, opt_size_prefix: any) {
@@ -49,7 +51,7 @@ export function deserializeStream(stream: ReadableStream) {
     return generator
 }
 
-export function deserializeFiltered(url, rect) {
+export function deserializeFiltered(url, rect: Rect) {
     const generator = fcDeserializeFiltered(url, rect)
     return generator
 }

@@ -15,7 +15,11 @@ export interface ICreateFeature {
     (geometry: ISimpleGeometry, properties: any): IFeature;
 }
 
-export function fromFeature(feature: Feature, header: HeaderMeta, createGeometry: ICreateGeometry, createFeature: ICreateFeature) {
+export function fromFeature(
+        feature: Feature,
+        header: HeaderMeta,
+        createGeometry: ICreateGeometry,
+        createFeature: ICreateFeature) {
     const columns = header.columns
     const geometry = feature.geometry()
     const simpleGeometry = createGeometry(geometry, header.geometryType)

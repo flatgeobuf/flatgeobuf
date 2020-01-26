@@ -1,27 +1,22 @@
 const NODE_RECT_LEN: number = 8 * 4
 const NODE_INDEX_LEN: number = 4
 
-export class Rect {
+export interface Rect {
     minX: number
     minY: number
     maxX: number
     maxY: number
-    constructor(minX: number, minY: number, maxX: number, maxY: number) {
-        this.minX = minX
-        this.minY = minY
-        this.maxX = maxX
-        this.maxY = maxY
-    }
-    intersects(r: Rect) {
-        if (this.maxX < r.minX) return false
-        if (this.maxY < r.minY) return false
-        if (this.minX > r.maxX) return false
-        if (this.minY > r.maxY) return false
-        return true
-    }
 }
 
-export function size(numItems: number, nodeSize: number) {
+function intersects(a: Rect, b: Rect) {
+    if (a.maxX < b.minX) return false
+    if (a.maxY < b.minY) return false
+    if (a.minX > b.maxX) return false
+    if (a.minY > b.maxY) return false
+    return true
+}
+
+export function calcTreeSize(numItems: number, nodeSize: number) {
     nodeSize = Math.min(Math.max(+nodeSize, 2), 65535)
     let n = numItems
     let numNodes = n
@@ -84,13 +79,13 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
             const minY = dataView.getFloat64(i * 32 + 8, true)
             const maxX = dataView.getFloat64(i * 32 + 16, true)
             const maxY = dataView.getFloat64(i * 32 + 24, true)
-            nodeRects.push(new Rect(minX, minY, maxX, maxY))
+            nodeRects.push({ minX, minY, maxX, maxY })
         }
 
         // search through child nodes
         for (let pos = nodeIndex; pos < end; pos++) {
             const nodePos = pos - nodeIndex;
-            if (!rect.intersects(nodeRects[nodePos]))
+            if (!intersects(rect, nodeRects[nodePos]))
                 continue
             if (isLeafNode) {
                 results.push(pos) // leaf item

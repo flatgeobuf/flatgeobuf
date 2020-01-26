@@ -11,6 +11,7 @@ export interface IParsedGeometry {
 
 export interface ISimpleGeometry {
     getFlatCoordinates(): number[]
+    getType(): string
 }
 
 export interface IPolygon extends ISimpleGeometry {

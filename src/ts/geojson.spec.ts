@@ -234,7 +234,7 @@ describe('geojson module', () => {
     })
 
     it('Should parse countries fgb produced from GDAL', async () => {
-      const r = new Rect(12, 56, 12, 56)
+      const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 }
       const features = await takeAsync(deserializeFiltered('http://127.0.0.1:8000/test/data/countries.fgb', r))
       expect(features.length).to.eq(3)
       for (let f of features)

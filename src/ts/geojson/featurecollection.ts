@@ -9,6 +9,7 @@ import {
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
+import { Rect } from '../packedrtree'
 
 const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00]);
 
@@ -48,7 +49,7 @@ export function deserializeStream(stream: any) {
     return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
 }
 
-export function deserializeFiltered(url, rect) {
+export function deserializeFiltered(url: string, rect: Rect) {
     return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h))
 }
 
