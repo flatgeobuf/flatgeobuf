@@ -5,8 +5,7 @@
   "scripts": {
     "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
     "pretest": "ws &",
-    "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm src/**/*.spec.ts",
-    "posttest": "pkill -f ws"
+    "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm src/**/*.spec.ts"
   },
   "files": [
     "lib/**/*",
