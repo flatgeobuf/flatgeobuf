@@ -48,8 +48,8 @@ export function deserializeStream(stream: any) {
     return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
 }
 
-export function deserializeFiltered(url) {
-    return genericDeserializeFiltered(url, (f, h) => fromFeature(f, h))
+export function deserializeFiltered(url, rect) {
+    return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h))
 }
 
 function valueToType(value: boolean | number | string | object): ColumnType {

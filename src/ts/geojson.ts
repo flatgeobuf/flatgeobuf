@@ -45,11 +45,11 @@ export function deserialize(bytes: Uint8Array) {
 }
 
 export function deserializeStream(stream: ReadableStream) {
-    const geojson = fcDeserializeStream(stream)
-    return geojson
+    const generator = fcDeserializeStream(stream)
+    return generator
 }
 
-export function deserializeFiltered(url) {
-    const geojson = fcDeserializeFiltered(url)
-    return geojson
+export function deserializeFiltered(url, rect) {
+    const generator = fcDeserializeFiltered(url, rect)
+    return generator
 }

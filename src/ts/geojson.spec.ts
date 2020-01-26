@@ -18,6 +18,7 @@ import { arrayToStream, takeAsync } from './streams/utils'
 
 import { deserialize, deserializeStream, deserializeFiltered, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
+import { Rect } from './packedrtree'
 
 function makeFeatureCollection(wkt: string, properties?: any) {
   return makeFeatureCollectionFromArray([wkt], properties)
@@ -233,8 +234,9 @@ describe('geojson module', () => {
     })
 
     it('Should parse countries fgb produced from GDAL', async () => {
-      const features = await takeAsync(deserializeFiltered('http://127.0.0.1:8000/test/data/countries.fgb'))
-      expect(features.length).to.eq(179)
+      const r = new Rect(12, 56, 12, 56)
+      const features = await takeAsync(deserializeFiltered('http://127.0.0.1:8000/test/data/countries.fgb', r))
+      expect(features.length).to.eq(3)
       for (let f of features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })

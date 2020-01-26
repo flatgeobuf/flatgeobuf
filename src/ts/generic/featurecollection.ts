@@ -72,45 +72,13 @@ export function deserialize(bytes: Uint8Array, fromFeature) {
     return features
 }
 
-export async function* deserializeStream(stream: ReadableStream, fromFeature) {
+export function deserializeStream(stream: ReadableStream, fromFeature) {
     const reader = slice(stream)
-    let bytes = await reader.slice(8)
-    if (!bytes.every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file')
-    bytes = await reader.slice(4)
-    let bb = new flatbuffers.ByteBuffer(bytes)
-    const headerLength = bb.readUint32(0)
-    bytes = await reader.slice(headerLength)
-    bb = new flatbuffers.ByteBuffer(bytes)
-    const header = Header.getRoot(bb)
-    const count = header.featuresCount().toFloat64()
-
-    const columns: ColumnMeta[] = []
-    for (let j = 0; j < header.columnsLength(); j++) {
-        const column = header.columns(j)
-        columns.push(new ColumnMeta(column.name(), column.type()))
-    }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0)
-
-    const indexNodeSize = header.indexNodeSize()
-    if (indexNodeSize > 0)
-        await reader.slice(tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN))
-
-    for (let i = 0; i < count; i++) {
-        bytes = await reader.slice(4)
-        bb = new flatbuffers.ByteBuffer(bytes)
-        const featureLength = bb.readUint32(0)
-        bytes = await reader.slice(featureLength)
-        const bytesAligned = new Uint8Array(featureLength + 4)
-        bytesAligned.set(bytes, 4)
-        bb = new flatbuffers.ByteBuffer(bytesAligned)
-        bb.setPosition(SIZE_PREFIX_LEN)
-        const feature = Feature.getRoot(bb)
-        yield fromFeature(feature, headerMeta)
-    }
+    const read = async size => await reader.slice(size)
+    return deserializeInternal(read, undefined, undefined, fromFeature)
 }
 
-export function deserializeFiltered(url, fromFeature) {
+export function deserializeFiltered(url, rect, fromFeature) {
     let offset = 0
     const read = async size => {
         const response = await fetch(url, {
@@ -123,10 +91,10 @@ export function deserializeFiltered(url, fromFeature) {
         return new Uint8Array(arrayBuffer)
     }
     const seek = async newoffset => offset = newoffset
-    return deserializeFiltered2(read, seek, fromFeature)
+    return deserializeInternal(read, seek, rect, fromFeature)
 }
 
-export async function* deserializeFiltered2(read, seek, fromFeature) {
+async function* deserializeInternal(read, seek, rect, fromFeature) {
     let offset = 0
     let bytes = await read(8)
     offset += 8
@@ -151,25 +119,55 @@ export async function* deserializeFiltered2(read, seek, fromFeature) {
 
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0) {
-        const treeSize = tree.size(count, indexNodeSize) + (count * FEATURE_OFFSET_LEN)
-        await seek(offset + treeSize)
-        offset += treeSize
-    }
+        const treeSize = tree.size(count, indexNodeSize)
+        const offsetSize = count * FEATURE_OFFSET_LEN
+        if (rect) {
+            if (rect) {
+                const readNode = async (treeOffset, size) => {
+                    await seek(offset + treeOffset)
+                    return await read(size)
+                }
+                const foundIndices = await tree.streamSearch(count, indexNodeSize, rect, readNode)
+                offset += treeSize
 
-    for (let i = 0; i < count; i++) {
-        bytes = await read(4)
-        offset += 4
-        bb = new flatbuffers.ByteBuffer(bytes)
-        const featureLength = bb.readUint32(0)
-        bytes = await read(featureLength)
-        offset += featureLength
-        const bytesAligned = new Uint8Array(featureLength + 4)
-        bytesAligned.set(bytes, 4)
-        bb = new flatbuffers.ByteBuffer(bytesAligned)
-        bb.setPosition(SIZE_PREFIX_LEN)
-        const feature = Feature.getRoot(bb)
-        yield fromFeature(feature, headerMeta)
+                const foundOffsets = []
+                for (let index of foundIndices) {
+                    await seek(offset + (index * 4))
+                    const dataView = new DataView((await read(4)).buffer)
+                    foundOffsets.push(dataView.getUint32(0, true))
+                }
+                offset += offsetSize
+
+                for (let featureOffset of foundOffsets) {
+                    await seek(offset + featureOffset)
+                    yield await readFeature(read, headerMeta, fromFeature)
+                }
+                return
+            }
+        } else {
+            if (seek)
+                await seek(offset + treeSize + offsetSize)
+            else
+                await read(treeSize + offsetSize)
+        }
+        offset += treeSize
+    } else {
+        for (let i = 0; i < count; i++)
+            yield await readFeature(read, headerMeta, fromFeature)
     }
+}
+
+async function readFeature(read, headerMeta, fromFeature) {
+    let bytes = await read(4)
+    let bb = new flatbuffers.ByteBuffer(bytes)
+    const featureLength = bb.readUint32(0)
+    bytes = await read(featureLength)
+    const bytesAligned = new Uint8Array(featureLength + 4)
+    bytesAligned.set(bytes, 4)
+    bb = new flatbuffers.ByteBuffer(bytesAligned)
+    bb.setPosition(SIZE_PREFIX_LEN)
+    const feature = Feature.getRoot(bb)
+    return fromFeature(feature, headerMeta)
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
