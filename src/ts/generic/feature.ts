@@ -74,6 +74,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
                     view.setFloat64(offset, value as number, true)
                     offset += 8
                     break
+                case ColumnType.DateTime:
                 case ColumnType.String:
                     const str = value as string
                     const encoder = new TextEncoder()
@@ -84,7 +85,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
                     offset += stringArray.length
                     break
                 default:
-                    throw new Error('Unknown type')
+                    throw new Error('Unknown type ' + column.type)
             }
         }
     }
@@ -166,6 +167,7 @@ export function parseProperties(feature: Feature, columns: ColumnMeta[]) {
                 offset += 8
                 break
             }
+            case ColumnType.DateTime:
             case ColumnType.String: {
                 const length = view.getUint32(offset, true)
                 offset += 4
@@ -175,7 +177,7 @@ export function parseProperties(feature: Feature, columns: ColumnMeta[]) {
                 break
             }
             default:
-                throw new Error('Unknown type')
+                throw new Error('Unknown type ' + column.type)
         }
     }
     return properties
