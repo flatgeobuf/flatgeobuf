@@ -146,7 +146,7 @@ void PackedRTree::init(const uint16_t nodeSize)
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
     _numNodes = _levelBounds.back();
-    _nodes.reserve(static_cast<size_t>(_numNodes));
+    _nodes = new Node[_numNodes];
 }
 
 std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize) {
@@ -170,13 +170,14 @@ std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, 
 
 void PackedRTree::generateNodes()
 {
+    size_t c = _numItems;
     for (uint32_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
         uint32_t end = static_cast<uint32_t>(_levelBounds[i]);
         while (pos < end) {
             Node node = Node::create(pos);
             for (uint32_t j = 0; j < _nodeSize && pos < end; j++)
                 node.expand(_nodes[pos++]);
-            _nodes.push_back(node);
+            _nodes[c++] = node;
         }
     }
 }
@@ -187,34 +188,28 @@ void PackedRTree::fromData(const void *data)
     const Node *pn = reinterpret_cast<const Node *>(buf);
     for (uint64_t i = 0; i < _numNodes; i++) {
         Node n = *pn++;
-        _nodes.push_back(n);
+        _nodes[i] = n;
         _extent.expand(n);
     }
 }
 
-static std::vector<Node> convert(const std::vector<std::shared_ptr<Item>> &items)
-{
-    std::vector<Node> nodes;
-    for (const std::shared_ptr<Item> item: items)
-        nodes.push_back(item->node);
-    return nodes;
-}
-
 PackedRTree::PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const Node& extent, const uint16_t nodeSize) :
     _extent(extent),
-    _nodes(convert(items)),
     _numItems(items.size())
 {
     init(nodeSize);
+    for (size_t i = 0; i < _numItems; i++)
+        _nodes[i] = items[i]->node;
     generateNodes();
 }
 
 PackedRTree::PackedRTree(const std::vector<Node> &nodes, const Node& extent, const uint16_t nodeSize) :
     _extent(extent),
-    _nodes(nodes),
     _numItems(nodes.size())
 {
     init(nodeSize);
+    for (size_t i = 0; i < _numItems; i++)
+        _nodes[i] = nodes[i];
     generateNodes();
 }
 
@@ -231,7 +226,7 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
     Node n { minX, minY, maxX, maxY };
     std::vector<uint64_t> queue;
     std::vector<uint64_t> results;
-    queue.push_back(_nodes.size() - 1);
+    queue.push_back(_numNodes - 1);
     queue.push_back(_levelBounds.size() - 1);
     while(queue.size() != 0) {
         uint64_t nodeIndex = queue[queue.size() - 2];
@@ -318,7 +313,7 @@ uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
 }
 
 void PackedRTree::streamWrite(const std::function<void(uint8_t *, size_t)> &writeData) {
-    writeData(reinterpret_cast<uint8_t *>(_nodes.data()), _nodes.size() * sizeof(Node));
+    writeData(reinterpret_cast<uint8_t *>(_nodes), _numNodes * sizeof(Node));
 }
 
 Node PackedRTree::getExtent() const { return _extent; }

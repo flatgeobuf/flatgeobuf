@@ -46,7 +46,7 @@ Node calcExtent(const std::vector<Node> &rects);
  */
 class PackedRTree {
     Node _extent;
-    std::vector<Node> _nodes;
+    Node *_nodes = nullptr;
     uint64_t _numItems;
     uint64_t _numNodes;
     uint16_t _nodeSize;
@@ -56,6 +56,10 @@ class PackedRTree {
     void generateNodes();
     void fromData(const void *data);
 public:
+    ~PackedRTree() {
+        if (_nodes != nullptr)
+            delete[] _nodes;
+    }
     PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const Node& extent, const uint16_t nodeSize = 16);
     PackedRTree(const std::vector<Node> &nodes, const Node& extent, const uint16_t nodeSize = 16);
     PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize = 16);
