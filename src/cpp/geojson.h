@@ -35,7 +35,7 @@ struct FeatureItem : Item {
     uint64_t offset;
 };
 
-Rect toRect(geometry geometry)
+Node toNode(geometry geometry)
 {
     auto box = envelope(geometry);
     return { box.min.x, box.min.y, box.max.x, box.max.y };
@@ -430,7 +430,7 @@ const void serialize(
         auto feature = *f;
         auto size = writeFeature(feature, columMetasMap, writeTmpData);
         const auto item = std::make_shared<FeatureItem>();
-        item->rect = toRect(feature.geometry);
+        item->node = toNode(feature.geometry);
         item->size = size;
         item->offset = featureOffset;
         featureOffset += size;
@@ -439,7 +439,7 @@ const void serialize(
     }
     fflush(tmpfile);
     std::vector<double> envelope;
-    Rect extent = calcExtent(items);
+    Node extent = calcExtent(items);
     envelope = extent.toVector();
     const auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
 
@@ -495,7 +495,7 @@ const void deserialize(
     const std::function<void(const void *, const size_t)> &readData,
     const std::function<void(const feature&)> &writeFeature,
     const std::function<void(const size_t)> &seekData = nullptr,
-    const Rect *rect = nullptr)
+    const Node *rect = nullptr)
 {
     std::vector<uint8_t> buf;
     buf.reserve(8);
@@ -579,7 +579,7 @@ const feature_collection deserialize(const void *buf)
     return fc;
 }
 
-const feature_collection deserialize(const void *buf, const Rect rect)
+const feature_collection deserialize(const void *buf, const Node rect)
 {
     const uint8_t *data = static_cast<const uint8_t*>(buf);
     uint64_t offset = 0;
