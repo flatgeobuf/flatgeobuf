@@ -86,6 +86,7 @@ export function deserializeStream(stream: ReadableStream, fromFeature: IFromFeat
 export function deserializeFiltered(url: string, rect: Rect, fromFeature: IFromFeature) {
     let offset = 0
     const read = async size => {
+        console.log(`fetch bytes=${offset}-${offset + size - 1}`)
         const response = await fetch(url, {
             headers: {
                 'Range': `bytes=${offset}-${offset + size - 1}`
@@ -93,6 +94,7 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: IFromF
         })
         offset += size
         const arrayBuffer = await response.arrayBuffer()
+        console.log(`fetch done`)
         return new Uint8Array(arrayBuffer)
     }
     const seek = async newoffset => offset = newoffset
