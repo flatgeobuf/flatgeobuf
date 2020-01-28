@@ -146,7 +146,6 @@ void PackedRTree::init(const uint16_t nodeSize)
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
     _numNodes = _levelBounds.back();
-    _minAlign = _numNonLeafNodes % 2;
     _nodes.reserve(static_cast<size_t>(_numNodes));
 }
 
@@ -204,7 +203,7 @@ static std::vector<Node> convert(const std::vector<std::shared_ptr<Item>> &items
 PackedRTree::PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const Node& extent, const uint16_t nodeSize) :
     _extent(extent),
     _nodes(convert(items)),
-    _numItems(_nodes.size())
+    _numItems(items.size())
 {
     init(nodeSize);
     generateNodes();
@@ -213,7 +212,7 @@ PackedRTree::PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const 
 PackedRTree::PackedRTree(const std::vector<Node> &nodes, const Node& extent, const uint16_t nodeSize) :
     _extent(extent),
     _nodes(nodes),
-    _numItems(_nodes.size())
+    _numItems(nodes.size())
 {
     init(nodeSize);
     generateNodes();
