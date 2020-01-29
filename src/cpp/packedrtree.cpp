@@ -145,6 +145,7 @@ void PackedRTree::init(const uint16_t nodeSize)
         throw std::invalid_argument("Cannot create empty tree");
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
+    _levelOffsets = generateLevelOffsets(_numItems, _nodeSize);
     _numNodes = _levelBounds.back();
     _nodes = new Node[_numNodes];
 }
@@ -157,27 +158,65 @@ std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, 
     if (numItems > std::numeric_limits<uint64_t>::max() - ((numItems / nodeSize) * 2))
         throw std::overflow_error("Number of items too large");
     std::vector<uint64_t> levelBounds;
+    std::vector<uint64_t> levelSizes;
     uint64_t n = numItems;
     uint64_t numNodes = n;
     levelBounds.push_back(n);
+    levelSizes.push_back(n);
     do {
         n = (n + nodeSize - 1) / nodeSize;
         numNodes += n;
         levelBounds.push_back(numNodes);
+        levelSizes.push_back(n);
     } while (n != 1);
+    std::vector<uint64_t> levelOffsets;
+    n = numNodes;
+    for (auto size : levelSizes) {
+        levelOffsets.push_back(n - size);
+        n -= size;
+    }
     return levelBounds;
+}
+
+std::vector<uint64_t> PackedRTree::generateLevelOffsets(const uint64_t numItems, const uint16_t nodeSize) {
+    if (nodeSize < 2)
+        throw std::invalid_argument("Node size must be at least 2");
+    if (numItems == 0)
+        throw std::invalid_argument("Number of items must be greater than 0");
+    if (numItems > std::numeric_limits<uint64_t>::max() - ((numItems / nodeSize) * 2))
+        throw std::overflow_error("Number of items too large");
+    std::vector<uint64_t> levelBounds;
+    std::vector<uint64_t> levelSizes;
+    uint64_t n = numItems;
+    uint64_t numNodes = n;
+    levelBounds.push_back(n);
+    levelSizes.push_back(n);
+    do {
+        n = (n + nodeSize - 1) / nodeSize;
+        numNodes += n;
+        levelBounds.push_back(numNodes);
+        levelSizes.push_back(n);
+    } while (n != 1);
+    std::vector<uint64_t> levelOffsets;
+    n = 0;
+    for (auto size : levelSizes) {
+        levelOffsets.push_back(n);
+        n += size;
+    }
+    return levelOffsets;
 }
 
 void PackedRTree::generateNodes()
 {
-    size_t c = _numItems;
-    for (uint32_t i = 0, pos = 0; i < _levelBounds.size() - 1; i++) {
-        uint32_t end = static_cast<uint32_t>(_levelBounds[i]);
+    for (uint32_t i = 0; i < _levelBounds.size() - 1; i++) {
+        auto pos = _levelOffsets[i];
+        auto end = _levelBounds[i];
+        auto newpos = _levelOffsets[i + 1];
         while (pos < end) {
             Node node = Node::create(pos);
             for (uint32_t j = 0; j < _nodeSize && pos < end; j++)
                 node.expand(_nodes[pos++]);
-            _nodes[c++] = node;
+            _nodes[newpos++] = node;
         }
     }
 }

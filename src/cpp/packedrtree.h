@@ -51,8 +51,10 @@ class PackedRTree {
     uint64_t _numNodes;
     uint16_t _nodeSize;
     std::vector<uint64_t> _levelBounds;
+    std::vector<uint64_t> _levelOffsets;
     void init(const uint16_t nodeSize);
     static std::vector<uint64_t> generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize);
+    static std::vector<uint64_t> generateLevelOffsets(const uint64_t numItems, const uint16_t nodeSize);
     void generateNodes();
     void fromData(const void *data);
 public:
