@@ -2,6 +2,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <iostream>
 
 namespace FlatGeobuf
 {
@@ -149,83 +150,51 @@ void PackedRTree::init(const uint16_t nodeSize)
         throw std::invalid_argument("Cannot create empty tree");
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
-    _levelOffsets = generateLevelOffsets(_numItems, _nodeSize);
-    _numNodes = _levelBounds.front();
+    _numNodes = _levelBounds.front().second;
     _nodes = new Node[_numNodes];
 }
 
-std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize) {
+std::vector<std::pair<uint64_t, uint64_t>> PackedRTree::generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize) {
     if (nodeSize < 2)
         throw std::invalid_argument("Node size must be at least 2");
     if (numItems == 0)
         throw std::invalid_argument("Number of items must be greater than 0");
     if (numItems > std::numeric_limits<uint64_t>::max() - ((numItems / nodeSize) * 2))
         throw std::overflow_error("Number of items too large");
-    std::vector<uint64_t> levelBounds;
-    std::vector<uint64_t> levelSizes;
+
+    // number of nodes per level in bottom-up order
+    std::vector<uint64_t> levelNumNodes;
     uint64_t n = numItems;
     uint64_t numNodes = n;
-    levelBounds.push_back(n);
-    levelSizes.push_back(n);
+    levelNumNodes.push_back(n);
     do {
         n = (n + nodeSize - 1) / nodeSize;
         numNodes += n;
-        levelBounds.push_back(numNodes);
-        levelSizes.push_back(n);
+        levelNumNodes.push_back(n);
     } while (n != 1);
     
+    // bounds per level in reversed storage order (top-down)
     std::vector<uint64_t> levelOffsets;
     n = numNodes;
-    for (auto size : levelSizes) {
+    for (auto size : levelNumNodes) {
         levelOffsets.push_back(n - size);
         n -= size;
     }
     std::reverse(levelOffsets.begin(), levelOffsets.end());
-    std::reverse(levelSizes.begin(), levelSizes.end());
-    levelBounds = levelOffsets;
-    for (size_t i = 0; i < levelBounds.size(); i++) {
-        levelBounds[i] += levelSizes[i];
-    }
+    std::reverse(levelNumNodes.begin(), levelNumNodes.end());
+    std::vector<std::pair<uint64_t, uint64_t>> levelBounds;
+    for (size_t i = 0; i < levelNumNodes.size(); i++)
+        levelBounds.push_back(std::pair<uint64_t, uint64_t>(levelOffsets[i], levelOffsets[i] + levelNumNodes[i]));
     std::reverse(levelBounds.begin(), levelBounds.end());
     return levelBounds;
-}
-
-std::vector<uint64_t> PackedRTree::generateLevelOffsets(const uint64_t numItems, const uint16_t nodeSize) {
-    if (nodeSize < 2)
-        throw std::invalid_argument("Node size must be at least 2");
-    if (numItems == 0)
-        throw std::invalid_argument("Number of items must be greater than 0");
-    if (numItems > std::numeric_limits<uint64_t>::max() - ((numItems / nodeSize) * 2))
-        throw std::overflow_error("Number of items too large");
-    std::vector<uint64_t> levelBounds;
-    std::vector<uint64_t> levelSizes;
-    uint64_t n = numItems;
-    uint64_t numNodes = n;
-    levelBounds.push_back(n);
-    levelSizes.push_back(n);
-    do {
-        n = (n + nodeSize - 1) / nodeSize;
-        numNodes += n;
-        levelBounds.push_back(numNodes);
-        levelSizes.push_back(n);
-    } while (n != 1);
-    std::reverse(levelSizes.begin(), levelSizes.end());
-    std::vector<uint64_t> levelOffsets;
-    n = 0;
-    for (auto size : levelSizes) {
-        levelOffsets.push_back(n);
-        n += size;
-    }
-    std::reverse(levelOffsets.begin(), levelOffsets.end());
-    return levelOffsets;
 }
 
 void PackedRTree::generateNodes()
 {
     for (uint32_t i = 0; i < _levelBounds.size() - 1; i++) {
-        auto pos = _levelOffsets[i];
-        auto end = _levelBounds[i];
-        auto newpos = _levelOffsets[i + 1];
+        auto pos = _levelBounds[i].first;
+        auto end = _levelBounds[i].second;
+        auto newpos = _levelBounds[i + 1].first;
         while (pos < end) {
             Node node = Node::create(pos);
             for (uint32_t j = 0; j < _nodeSize && pos < end; j++)
@@ -289,14 +258,15 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
         uint64_t nodeIndex = next->first;
         uint64_t level = next->second;
         queue.erase(next);
+        bool isLeafNode = nodeIndex >= _numNodes - _numItems;
         // find the end index of the node
-        uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + _nodeSize), _levelBounds[static_cast<size_t>(level)]);
+        uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + _nodeSize), _levelBounds[static_cast<size_t>(level)].second);
         // search through child nodes
         for (uint64_t pos = nodeIndex; pos < end; pos++) {
             auto node = _nodes[static_cast<size_t>(pos)];
             if (!n.intersects(node))
                 continue;
-            if (nodeIndex >= _numNodes - _numItems)
+            if (isLeafNode)
                 results.push_back(pos - (_numNodes - _numItems));
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(node.index, level - 1));
@@ -310,11 +280,11 @@ std::vector<Node> PackedRTree::streamSearch(
     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
 {
     auto levelBounds = generateLevelBounds(numItems, nodeSize);
-    uint64_t numNodes = levelBounds.front();
+    uint64_t numNodes = levelBounds.front().second;
     std::vector<Node> nodes;
     nodes.reserve(nodeSize);
     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(nodes.data());
-    // use ordered search queue to read index sequentially
+    // use ordered search queue to make index traversal in sequential order
     std::map<uint64_t, uint64_t> queue;
     std::vector<Node> results;
     queue.insert(std::pair<uint64_t, uint64_t>(0, levelBounds.size() - 1));
@@ -325,7 +295,7 @@ std::vector<Node> PackedRTree::streamSearch(
         queue.erase(next);
         bool isLeafNode = nodeIndex >= numNodes - numItems;
         // find the end index of the node
-        uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[static_cast<size_t>(level)]);
+        uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[static_cast<size_t>(level)].second);
         uint64_t length = end - nodeIndex;
         readNode(nodesBuf, static_cast<size_t>(nodeIndex * sizeof(Node)), static_cast<size_t>(length * sizeof(Node)));
         // search through child nodes
