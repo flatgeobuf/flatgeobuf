@@ -71,7 +71,6 @@ public:
         const std::function<void(uint8_t *, size_t, size_t)> &readNode);
     uint64_t size() const;
     static uint64_t size(const uint64_t numItems, const uint16_t nodeSize = 16);
-    uint8_t *toData() const;
     Node getExtent() const;
     void streamWrite(const std::function<void(uint8_t *, size_t)> &writeData);
 };

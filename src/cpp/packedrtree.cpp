@@ -1,5 +1,8 @@
 #include "packedrtree.h"
 
+#include <map>
+#include <unordered_map>
+
 namespace FlatGeobuf
 {
 
@@ -18,7 +21,8 @@ Node Node::create(uint64_t index)
         std::numeric_limits<double>::infinity(),
         -1 * std::numeric_limits<double>::infinity(),
         -1 * std::numeric_limits<double>::infinity(),
-        index
+        index,
+        0
     };
 }
 
@@ -146,7 +150,7 @@ void PackedRTree::init(const uint16_t nodeSize)
     _nodeSize = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
     _levelBounds = generateLevelBounds(_numItems, _nodeSize);
     _levelOffsets = generateLevelOffsets(_numItems, _nodeSize);
-    _numNodes = _levelBounds.back();
+    _numNodes = _levelBounds.front();
     _nodes = new Node[_numNodes];
 }
 
@@ -169,12 +173,20 @@ std::vector<uint64_t> PackedRTree::generateLevelBounds(const uint64_t numItems, 
         levelBounds.push_back(numNodes);
         levelSizes.push_back(n);
     } while (n != 1);
+    
     std::vector<uint64_t> levelOffsets;
     n = numNodes;
     for (auto size : levelSizes) {
         levelOffsets.push_back(n - size);
         n -= size;
     }
+    std::reverse(levelOffsets.begin(), levelOffsets.end());
+    std::reverse(levelSizes.begin(), levelSizes.end());
+    levelBounds = levelOffsets;
+    for (size_t i = 0; i < levelBounds.size(); i++) {
+        levelBounds[i] += levelSizes[i];
+    }
+    std::reverse(levelBounds.begin(), levelBounds.end());
     return levelBounds;
 }
 
@@ -197,12 +209,14 @@ std::vector<uint64_t> PackedRTree::generateLevelOffsets(const uint64_t numItems,
         levelBounds.push_back(numNodes);
         levelSizes.push_back(n);
     } while (n != 1);
+    std::reverse(levelSizes.begin(), levelSizes.end());
     std::vector<uint64_t> levelOffsets;
     n = 0;
     for (auto size : levelSizes) {
         levelOffsets.push_back(n);
         n += size;
     }
+    std::reverse(levelOffsets.begin(), levelOffsets.end());
     return levelOffsets;
 }
 
@@ -237,8 +251,10 @@ PackedRTree::PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const 
     _numItems(items.size())
 {
     init(nodeSize);
-    for (size_t i = 0; i < _numItems; i++)
-        _nodes[i] = items[i]->node;
+    for (size_t i = 0; i < _numItems; i++) {
+        _nodes[_numNodes - _numItems + i] = items[i]->node;
+        _nodes[_numNodes - _numItems + i].index = _numNodes - _numItems + i;
+    }
     generateNodes();
 }
 
@@ -247,8 +263,10 @@ PackedRTree::PackedRTree(const std::vector<Node> &nodes, const Node& extent, con
     _numItems(nodes.size())
 {
     init(nodeSize);
-    for (size_t i = 0; i < _numItems; i++)
-        _nodes[i] = nodes[i];
+    for (size_t i = 0; i < _numItems; i++) {
+        _nodes[_numNodes - _numItems + i] = nodes[i];
+        _nodes[_numNodes - _numItems + i].index = _numNodes - _numItems + i;
+    }
     generateNodes();
 }
 
@@ -263,15 +281,14 @@ PackedRTree::PackedRTree(const void *data, const uint64_t numItems, const uint16
 std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX, double maxY) const
 {
     Node n { minX, minY, maxX, maxY };
-    std::vector<uint64_t> queue;
     std::vector<uint64_t> results;
-    queue.push_back(_numNodes - 1);
-    queue.push_back(_levelBounds.size() - 1);
+    std::unordered_map<uint64_t, uint64_t> queue;
+    queue.insert(std::pair<uint64_t, uint64_t>(0, _levelBounds.size() - 1));
     while(queue.size() != 0) {
-        uint64_t nodeIndex = queue[queue.size() - 2];
-        uint64_t level = queue[queue.size() - 1];
-        queue.pop_back();
-        queue.pop_back();
+        auto next = queue.begin();
+        uint64_t nodeIndex = next->first;
+        uint64_t level = next->second;
+        queue.erase(next);
         // find the end index of the node
         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + _nodeSize), _levelBounds[static_cast<size_t>(level)]);
         // search through child nodes
@@ -279,12 +296,10 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
             auto node = _nodes[static_cast<size_t>(pos)];
             if (!n.intersects(node))
                 continue;
-            if (nodeIndex < _numItems) {
-                results.push_back(pos); // leaf item
-            } else {
-                queue.push_back(node.index); // node; add it to the search queue
-                queue.push_back(level - 1);
-            }
+            if (nodeIndex >= _numNodes - _numItems)
+                results.push_back(pos - (_numNodes - _numItems));
+            else
+                queue.insert(std::pair<uint64_t, uint64_t>(node.index, level - 1));
         }
     }
     return results;
@@ -295,20 +310,20 @@ std::vector<uint64_t> PackedRTree::streamSearch(
     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
 {
     auto levelBounds = generateLevelBounds(numItems, nodeSize);
-    uint64_t numNodes = levelBounds.back();
+    uint64_t numNodes = levelBounds.front();
     std::vector<Node> nodes;
     nodes.reserve(nodeSize);
     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(nodes.data());
-    std::vector<uint64_t> queue;
+    // use ordered search queue to read index sequentially
+    std::map<uint64_t, uint64_t> queue;
     std::vector<uint64_t> results;
-    queue.push_back(numNodes - 1);
-    queue.push_back(levelBounds.size() - 1);
+    queue.insert(std::pair<uint64_t, uint64_t>(0, levelBounds.size() - 1));
     while(queue.size() != 0) {
-        uint64_t nodeIndex = queue[queue.size() - 2];
-        bool isLeafNode = nodeIndex < numItems;
-        uint64_t level = queue[queue.size() - 1];
-        queue.pop_back();
-        queue.pop_back();
+        auto next = queue.begin();
+        uint64_t nodeIndex = next->first;
+        uint64_t level = next->second;
+        queue.erase(next);
+        bool isLeafNode = nodeIndex >= numNodes - numItems;
         // find the end index of the node
         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[static_cast<size_t>(level)]);
         uint64_t length = end - nodeIndex;
@@ -319,12 +334,10 @@ std::vector<uint64_t> PackedRTree::streamSearch(
             auto node = nodes[static_cast<size_t>(nodePos)];
             if (!n.intersects(node))
                 continue;
-            if (isLeafNode) {
-                results.push_back(pos); // leaf item
-            } else {
-                queue.push_back(node.index); // node; add it to the search queue
-                queue.push_back(level - 1);
-            }
+            if (isLeafNode)
+                results.push_back(pos - (numNodes - numItems));
+            else
+                queue.insert(std::pair<uint64_t, uint64_t>(node.index, level - 1));
         }
     }
     return results;
