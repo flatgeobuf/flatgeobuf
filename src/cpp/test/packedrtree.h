@@ -98,7 +98,7 @@ TEST_CASE("PackedRTree")
         auto list3 = PackedRTree::streamSearch(nodes.size(), 16, {102, 102, 103, 103}, readNode);
         REQUIRE(list3.size() == 4);
         for (uint32_t i = 0; i < list3.size(); i++) {
-            auto node = nodes[list3[i]];
+            auto node = list3[i];
             REQUIRE(node.intersects({102, 102, 103, 103}) == true);
         }
     }
@@ -134,7 +134,7 @@ TEST_CASE("PackedRTree")
         };
         auto list2 = PackedRTree::streamSearch(nodes.size(), 16, {690407, 6063692, 811682, 6176467}, readNode);
         for (uint64_t i = 0; i < list2.size(); i++) {
-            auto rect = nodes[list2[i]];
+            auto rect = list2[i];
             CHECK(rect.intersects({690407, 6063692, 811682, 6176467}) == true);
         }
     }

@@ -305,7 +305,7 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
     return results;
 }
 
-std::vector<uint64_t> PackedRTree::streamSearch(
+std::vector<Node> PackedRTree::streamSearch(
     const uint64_t numItems, const uint16_t nodeSize, const Node& n,
     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
 {
@@ -316,7 +316,7 @@ std::vector<uint64_t> PackedRTree::streamSearch(
     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(nodes.data());
     // use ordered search queue to read index sequentially
     std::map<uint64_t, uint64_t> queue;
-    std::vector<uint64_t> results;
+    std::vector<Node> results;
     queue.insert(std::pair<uint64_t, uint64_t>(0, levelBounds.size() - 1));
     while(queue.size() != 0) {
         auto next = queue.begin();
@@ -335,7 +335,7 @@ std::vector<uint64_t> PackedRTree::streamSearch(
             if (!n.intersects(node))
                 continue;
             if (isLeafNode)
-                results.push_back(pos - (numNodes - numItems));
+                results.push_back(node);
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(node.index, level - 1));
         }

@@ -66,7 +66,7 @@ public:
     PackedRTree(const std::vector<Node> &nodes, const Node& extent, const uint16_t nodeSize = 16);
     PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize = 16);
     std::vector<uint64_t> search(double minX, double minY, double maxX, double maxY) const;
-    static std::vector<uint64_t> streamSearch(
+    static std::vector<Node> streamSearch(
         const uint64_t numItems, const uint16_t nodeSize, const Node& n,
         const std::function<void(uint8_t *, size_t, size_t)> &readNode);
     uint64_t size() const;

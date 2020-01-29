@@ -195,7 +195,6 @@ const void writeHeader(
     writeData(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
-
 const std::vector<point> extractPoints(const double *coords, uint32_t length, uint32_t offset = 0)
 {
     std::vector<point> points;
@@ -447,15 +446,14 @@ const void serialize(
     writeHeader(nullptr, pEnvelope, 16, geometryType, columnMetas, items.size(), writeData);
 
     hilbertSort(items);
-    PackedRTree tree(items, extent, 16);
-    tree.streamWrite(writeData);
-
     featureOffset = 0;
     for (auto item : items) {
         auto featureItem = std::static_pointer_cast<FeatureItem>(item);
-        writeData(&featureOffset, sizeof(uint64_t));
+        featureItem->node.offset = featureOffset;
         featureOffset += featureItem->size;
     }
+    PackedRTree tree(items, extent, 16);
+    tree.streamWrite(writeData);
 
     std::vector<uint8_t> buf;
     for (auto item : items) {
@@ -537,24 +535,16 @@ const void deserialize(
                 seekData(treeOffset + i);
                 readData(buf, s);
             };
-            const auto foundIndices = PackedRTree::streamSearch(featuresCount, indexNodeSize, *rect, readNode);
+            const auto foundNodes = PackedRTree::streamSearch(featuresCount, indexNodeSize, *rect, readNode);
             offset += PackedRTree::size(featuresCount, indexNodeSize);
-
-            // TODO: read feature offset on demand
-            std::vector<uint64_t> featureOffsets;
-            featureOffsets.reserve(featuresCount * sizeof(uint64_t));
-            seekData(offset);
-            readData(featureOffsets.data(), featuresCount * sizeof(uint64_t));
-            offset += featuresCount * sizeof(uint64_t);
-            for (auto index : foundIndices) {
-                seekData(offset + featureOffsets[index]);
+            for (auto node : foundNodes) {
+                seekData(offset + node.offset);
                 readFeature(readData, writeFeature, geometryType, columnMetas);
             }
             return;
         } else {
             // ignore index as no filter was requested
             offset += PackedRTree::size(featuresCount, indexNodeSize);
-            offset += featuresCount * sizeof(uint64_t);
         }   
     }
 
