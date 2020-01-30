@@ -61,24 +61,27 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
 export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode)
 {
     const levelBounds = generateLevelBounds(numItems, nodeSize)
-    const numNodes = levelBounds[0][1]
+    const [[,numNodes]] = levelBounds
     const queue = []
     const results = []
     queue.push([0, levelBounds.length - 1])
     while (queue.length !== 0) {
-        let [nodeIndex, level] = queue.pop()
+        const [nodeIndex, level] = queue.pop()
         const isLeafNode = nodeIndex >= numNodes - numItems;
         // find the end index of the node
-        const end = Math.min(nodeIndex + nodeSize, levelBounds[level][1])
+        const [,levelBound] = levelBounds[level]
+        const end = Math.min(nodeIndex + nodeSize, levelBound)
         const length = end - nodeIndex
-        const dataView = new DataView((await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)).buffer)
+        const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
+        const float64Array = new Float64Array(buffer)
+        const uint32Array = new Uint32Array(buffer)
         const nodeItems = []
-        for (let i = 0; i < length; i++) {
-            const minX = dataView.getFloat64(i * NODE_ITEM_LEN + 0, true)
-            const minY = dataView.getFloat64(i * NODE_ITEM_LEN + 8, true)
-            const maxX = dataView.getFloat64(i * NODE_ITEM_LEN + 16, true)
-            const maxY = dataView.getFloat64(i * NODE_ITEM_LEN + 24, true)
-            const offset = Number(dataView.getBigUint64(i * NODE_ITEM_LEN + 32, true))
+        for (let i = 0; i < length * 5; i += 5) {
+            const minX = float64Array[i + 0]
+            const minY = float64Array[i + 1]
+            const maxX = float64Array[i + 2]
+            const maxY = float64Array[i + 3]
+            const offset = uint32Array[(i << 1) + 8]
             nodeItems.push({ minX, minY, maxX, maxY, offset })
         }
         // search through child nodes

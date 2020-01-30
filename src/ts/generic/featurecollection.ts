@@ -95,27 +95,27 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: IFromF
         offset += size
         const arrayBuffer = await response.arrayBuffer()
         //console.log(`fetch done`)
-        return new Uint8Array(arrayBuffer)
+        return arrayBuffer
     }
     const seek = async newoffset => offset = newoffset
     return deserializeInternal(read, seek, rect, fromFeature)
 }
 
 async function* deserializeInternal(
-        read: (size: number) => Promise<Uint8Array>,
+        read: (size: number) => Promise<ArrayBuffer>,
         seek: (offset: number) => Promise<void>,
         rect: Rect,
         fromFeature: IFromFeature) {
     let offset = 0
-    let bytes = await read(8)
+    let bytes = new Uint8Array(await read(8))
     offset += 8
     if (!bytes.every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
-    bytes = await read(4)
+    bytes = new Uint8Array(await read(4))
     offset += 4
     let bb = new flatbuffers.ByteBuffer(bytes)
     const headerLength = bb.readUint32(0)
-    bytes = await read(headerLength)
+    bytes = new Uint8Array(await read(headerLength))
     offset += headerLength
     bb = new flatbuffers.ByteBuffer(bytes)
     const header = Header.getRoot(bb)
@@ -157,13 +157,13 @@ async function* deserializeInternal(
 }
 
 async function readFeature(
-        read: (size: number) => Promise<Uint8Array>,
+        read: (size: number) => Promise<ArrayBuffer>,
         headerMeta: HeaderMeta,
         fromFeature: IFromFeature) {
-    let bytes = await read(4)
+    let bytes = new Uint8Array(await read(4))
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
-    bytes = await read(featureLength)
+    bytes = new Uint8Array(await read(featureLength))
     const bytesAligned = new Uint8Array(featureLength + 4)
     bytesAligned.set(bytes, 4)
     bb = new flatbuffers.ByteBuffer(bytesAligned)
