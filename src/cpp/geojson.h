@@ -35,7 +35,7 @@ struct FeatureItem : Item {
     uint64_t offset;
 };
 
-Node toNode(geometry geometry)
+NodeItem toNodeItem(geometry geometry)
 {
     auto box = envelope(geometry);
     return { box.min.x, box.min.y, box.max.x, box.max.y };
@@ -429,7 +429,7 @@ const void serialize(
         auto feature = *f;
         auto size = writeFeature(feature, columMetasMap, writeTmpData);
         const auto item = std::make_shared<FeatureItem>();
-        item->node = toNode(feature.geometry);
+        item->nodeItem = toNodeItem(feature.geometry);
         item->size = size;
         item->offset = featureOffset;
         featureOffset += size;
@@ -438,7 +438,7 @@ const void serialize(
     }
     fflush(tmpfile);
     std::vector<double> envelope;
-    Node extent = calcExtent(items);
+    NodeItem extent = calcExtent(items);
     envelope = extent.toVector();
     const auto pEnvelope = envelope.size() > 0 ? &envelope : nullptr;
 
@@ -449,7 +449,7 @@ const void serialize(
     featureOffset = 0;
     for (auto item : items) {
         auto featureItem = std::static_pointer_cast<FeatureItem>(item);
-        featureItem->node.offset = featureOffset;
+        featureItem->nodeItem.offset = featureOffset;
         featureOffset += featureItem->size;
     }
     PackedRTree tree(items, extent, 16);
@@ -493,7 +493,7 @@ const void deserialize(
     const std::function<void(const void *, const size_t)> &readData,
     const std::function<void(const feature&)> &writeFeature,
     const std::function<void(const size_t)> &seekData = nullptr,
-    const Node *rect = nullptr)
+    const NodeItem *nodeItem = nullptr)
 {
     std::vector<uint8_t> buf;
     buf.reserve(8);
@@ -528,17 +528,17 @@ const void deserialize(
 
     // check if there is an index
     if (indexNodeSize > 0) {
-        if (seekData != nullptr && rect != nullptr) {
+        if (seekData != nullptr && nodeItem != nullptr) {
             // spatial filter requested, read and use index
             const auto treeOffset = offset;
             const auto readNode = [treeOffset, &seekData, &readData] (uint8_t *buf, size_t i, size_t s) {
                 seekData(treeOffset + i);
                 readData(buf, s);
             };
-            const auto foundNodes = PackedRTree::streamSearch(featuresCount, indexNodeSize, *rect, readNode);
+            const auto foundItems = PackedRTree::streamSearch(featuresCount, indexNodeSize, *nodeItem, readNode);
             offset += PackedRTree::size(featuresCount, indexNodeSize);
-            for (auto node : foundNodes) {
-                seekData(offset + node.offset);
+            for (auto item : foundItems) {
+                seekData(offset + item.nodeItem.offset);
                 readFeature(readData, writeFeature, geometryType, columnMetas);
             }
             return;
@@ -569,7 +569,7 @@ const feature_collection deserialize(const void *buf)
     return fc;
 }
 
-const feature_collection deserialize(const void *buf, const Node rect)
+const feature_collection deserialize(const void *buf, const NodeItem rect)
 {
     const uint8_t *data = static_cast<const uint8_t*>(buf);
     uint64_t offset = 0;
