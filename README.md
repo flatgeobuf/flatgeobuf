@@ -41,6 +41,16 @@ The test was done using GDAL implementing FlatGeobuf as a driver and measurement
 
 Note that for the test with spatial filter a small bounding box was chosen resulting in only 1204 features. The reason for this is to primarily test the spatial index search performance.
 
+As performance is highly data dependent I've also made similar tests on a larger dataset with Danish cadastral data consisting of 2511772 Polygons with extensive attribute data.
+
+|                       | Shapefile | GeoPackage | FlatGeobuf | 
+|-----------------------|-----------|------------|------------|
+| Read full dataset     | 1         | 0.23       | 0.12       |
+| Read w/spatial filter | 1         | 0.31       | 0.26       |
+| Write full dataset    | 1         | 0.95       | 0.63       |
+| Write w/spatial index | 1         | 1.07       | 0.70       |
+| Size                  | 1         | 0.77       | 0.95       |
+
 ## Features
 
 * Language support for JavaScript, TypeScript, C, C++, Java and C#
