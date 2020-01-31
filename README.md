@@ -27,19 +27,19 @@ Any 64-bit flatbuffer value contained anywhere in the file (for example coordina
 
 ## Performance
 
-Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 884594 LineString features with a set of attributes.
+Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 906602 LineString features with a set of attributes.
 
 |                       | Shapefile | GeoPackage | FlatGeobuf | GeoJSON | GML |
 |-----------------------|-----------|------------|------------|---------|-----|
-| Read full dataset     | 1         | 0.94       | 0.47       | 14      | 7.9 |
-| Read w/spatial filter | 1         | 0.14       | 0.13       | 102     | 53  |
-| Write full dataset    | 1         | 0.78       | 0.40       | 3.1     | 3.2 |
-| Write w/spatial index | 1         | 1.6        | 0.65       | -       | -   |
-| Size                  | 1         | 0.72       | 0.76       | 1.2     | 2.1 |
+| Read full dataset     | 1         | 1.02       | 0.46       | 15      | 8.9 |
+| Read w/spatial filter | 1         | 0.94       | 0.71       | 705     | 399 |
+| Write full dataset    | 1         | 0.77       | 0.39       | 3.9     | 3.2 |
+| Write w/spatial index | 1         | 1.58       | 0.65       | -       | -   |
+| Size                  | 1         | 0.72       | 0.77       | 1.2     | 2.1 |
 
 The test was done using GDAL implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
 
-Note that for the test with spatial filter a small bounding box was chosen resulting in only 16 features. The reason for this is to test mainly the spatial index search performance for that case.
+Note that for the test with spatial filter a small bounding box was chosen resulting in only 1204 features. The reason for this is to primarily test the spatial index search performance.
 
 ## Features
 
