@@ -150,10 +150,9 @@ async function* deserializeInternal(
                 await read(treeSize)
         }
         offset += treeSize
-    } else {
-        for (let i = 0; i < count; i++)
-            yield await readFeature(read, headerMeta, fromFeature)
     }
+    for (let i = 0; i < count; i++)
+        yield await readFeature(read, headerMeta, fromFeature)
 }
 
 async function readFeature(
