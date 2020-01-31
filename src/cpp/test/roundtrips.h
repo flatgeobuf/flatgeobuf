@@ -66,11 +66,11 @@ TEST_CASE("Geometry roundtrips")
         auto expected = parse(getFixture("src/cpp/test/fixtures/points.geojson")).get<feature_collection>();
         std::vector<uint8_t> flatgeobuf;
         serialize(flatgeobuf, expected, true);
-        const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1000, 1000 });
+        const auto fc1 = deserialize(flatgeobuf.data(), NodeItem { 0, 0, 1000, 1000 });
         REQUIRE(4 == fc1.size());
-        const auto fc2 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
+        const auto fc2 = deserialize(flatgeobuf.data(), NodeItem { 0, 0, 1, 1 });
         REQUIRE(1 == fc2.size());
-        const auto fc3 = deserialize(flatgeobuf.data(), Rect { 10, 10, 100, 100 });
+        const auto fc3 = deserialize(flatgeobuf.data(), NodeItem { 10, 10, 100, 100 });
         REQUIRE(2 == fc3.size());
     }
 
@@ -141,9 +141,9 @@ TEST_CASE("Geometry roundtrips")
         auto expected = parse(getFixture("src/cpp/test/fixtures/poly_landmarks.geojson")).get<feature_collection>();
         std::vector<uint8_t> flatgeobuf;
         serialize(flatgeobuf, expected, true);
-        const auto fc1 = deserialize(flatgeobuf.data(), Rect { 0, 0, 1, 1 });
+        const auto fc1 = deserialize(flatgeobuf.data(), NodeItem { 0, 0, 1, 1 });
         REQUIRE(0 == fc1.size());
-        const auto fc2 = deserialize(flatgeobuf.data(), Rect { -73.996035, 40.730647, -73.987054,40.738246 });
+        const auto fc2 = deserialize(flatgeobuf.data(), NodeItem { -73.996035, 40.730647, -73.987054,40.738246 });
         REQUIRE(4 == fc2.size());
     }
 }

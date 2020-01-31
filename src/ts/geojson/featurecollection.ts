@@ -4,14 +4,13 @@ import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
 import {
+    magicbytes,
     buildHeader,
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
 import { Rect } from '../packedrtree'
-
-const magicbytes: Uint8Array  = new Uint8Array([0x66, 0x67, 0x62, 0x02, 0x66, 0x67, 0x62, 0x00]);
 
 export interface IGeoJsonFeatureCollection {
     type: string,

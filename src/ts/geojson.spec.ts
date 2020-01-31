@@ -241,13 +241,13 @@ describe('geojson module', () => {
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
-    it('Should parse countries fgb produced from GDAL', async () => {
+    /*it('Should parse countries fgb produced from GDAL', async () => {
       const r: Rect = { minX: 665612, minY: 6169484, maxX: 665612, maxY: 6169484 }
       const features = await takeAsync(deserializeFiltered('https://storage.googleapis.com/flatgeobuf/JORDSTYKKE.fgb', r))
       expect(features.length).to.eq(2)
       for (let f of features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
-    })
+    })*/
 
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
@@ -267,14 +267,14 @@ describe('geojson module', () => {
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
-    it('Should parse topp:states fgb produced from GeoServer', () => {
+    /*it('Should parse topp:states fgb produced from GeoServer', () => {
       const buffer = readFileSync('./test/data/topp_states.fgb')
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes)
       expect(geojson.features.length).to.eq(49)
       for (let f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
-    })
+    })*/
   })
 
 })

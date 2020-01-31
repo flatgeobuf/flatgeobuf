@@ -1,5 +1,4 @@
-const NODE_RECT_LEN: number = 8 * 4
-const NODE_INDEX_LEN: number = 4
+const NODE_ITEM_LEN: number = 8 * 4 + 8
 
 export interface Rect {
     minX: number
@@ -24,9 +23,7 @@ export function calcTreeSize(numItems: number, nodeSize: number) {
         n = Math.ceil(n / nodeSize)
         numNodes += n
     } while (n !== 1)
-    const numNonLeafNodes = numNodes - numItems
-    const minAlign = numNonLeafNodes % 2
-    return numNodes * NODE_RECT_LEN + (numNonLeafNodes + minAlign) * NODE_INDEX_LEN
+    return numNodes * NODE_ITEM_LEN
 }
 
 function generateLevelBounds(numItems: number, nodeSize: number) {
@@ -34,66 +31,72 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
         throw new Error('Node size must be at least 2')
     if (numItems === 0)
         throw new Error('Number of items must be greater than 0')
+    
+    // number of nodes per level in bottom-up order
     let n = numItems
     let numNodes = n
-    const levelBounds = [n]
+    const levelNumNodes = [n]
     do {
         n = Math.ceil(n / nodeSize)
         numNodes += n
-        levelBounds.push(numNodes)
+        levelNumNodes.push(n)
     } while (n !== 1)
+
+    // bounds per level in reversed storage order (top-down)
+    const levelOffsets = [];
+    n = numNodes;
+    for (let size of levelNumNodes) {
+        levelOffsets.push(n - size)
+        n -= size
+    }
+    levelOffsets.reverse()
+    levelNumNodes.reverse()
+    const levelBounds = []
+    for (let i = 0; i < levelNumNodes.length; i++)
+        levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]]);
+    levelBounds.reverse()
     return levelBounds
 }
 
 export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode)
 {
     const levelBounds = generateLevelBounds(numItems, nodeSize)
-    const numNodes = levelBounds[levelBounds.length - 1]
+    const [[,numNodes]] = levelBounds
     const queue = []
     const results = []
-    queue.push(numNodes - 1)
-    queue.push(levelBounds.length - 1)
-    while(queue.length !== 0) {
-        const nodeIndex = queue[queue.length - 2]
-        const isLeafNode = nodeIndex < numItems
-        const level = queue[queue.length - 1]
-        queue.pop()
-        queue.pop()
+    queue.push([0, levelBounds.length - 1])
+    while (queue.length !== 0) {
+        const [nodeIndex, level] = queue.pop()
+        const isLeafNode = nodeIndex >= numNodes - numItems;
         // find the end index of the node
-        const end = Math.min(nodeIndex + nodeSize, levelBounds[level])
+        const [,levelBound] = levelBounds[level]
+        const end = Math.min(nodeIndex + nodeSize, levelBound)
         const length = end - nodeIndex
-        const nodeIndices = []
-        if (!isLeafNode) {
-            const offset = numNodes * 32 + (nodeIndex - numItems) * 4
-            const dataView = new DataView((await readNode(offset, length * 4)).buffer)
-            for (let i = 0; i < length; i++) {
-                const index = dataView.getUint32(i * 4, true)
-                nodeIndices.push(index)
-            }
+        const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
+        const float64Array = new Float64Array(buffer)
+        const uint32Array = new Uint32Array(buffer)
+        const nodeItems = []
+        for (let i = 0; i < length * 5; i += 5) {
+            const minX = float64Array[i + 0]
+            const minY = float64Array[i + 1]
+            const maxX = float64Array[i + 2]
+            const maxY = float64Array[i + 3]
+            const offset = uint32Array[(i << 1) + 8]
+            nodeItems.push({ minX, minY, maxX, maxY, offset })
         }
-        const offset = nodeIndex * 32
-        const dataView = new DataView((await readNode(offset, length * 32)).buffer)
-        const nodeRects = []
-        for (let i = 0; i < length; i++) {
-            const minX = dataView.getFloat64(i * 32 + 0, true)
-            const minY = dataView.getFloat64(i * 32 + 8, true)
-            const maxX = dataView.getFloat64(i * 32 + 16, true)
-            const maxY = dataView.getFloat64(i * 32 + 24, true)
-            nodeRects.push({ minX, minY, maxX, maxY })
-        }
-
         // search through child nodes
         for (let pos = nodeIndex; pos < end; pos++) {
-            const nodePos = pos - nodeIndex;
-            if (!intersects(rect, nodeRects[nodePos]))
+            const nodePos = pos - nodeIndex
+            const nodeItem = nodeItems[nodePos]
+            if (!intersects(rect, nodeItem))
                 continue
-            if (isLeafNode) {
-                results.push(pos) // leaf item
-            } else {
-                queue.push(nodeIndices[nodePos]) // node; add it to the search queue
-                queue.push(level - 1)
-            }
+            if (isLeafNode)
+                results.push([nodeItem, pos - 1])
+            else
+                queue.push([nodeItem.offset, level - 1])
         }
+        // order queue to traverse sequential
+        queue.sort((a, b) => b[0] - a[0])
     }
     return results
 }

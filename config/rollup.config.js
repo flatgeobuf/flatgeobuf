@@ -15,7 +15,8 @@ const plugins = [
       }
     }]],
     babelrc: false
-  })
+  }),
+  terser()
 ]
 
 export default [{

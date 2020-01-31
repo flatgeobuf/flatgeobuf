@@ -79,15 +79,11 @@ public class FeatureTypeConversions {
             }
         }
 
-        // CoordinateReferenceSystem crs =
-        // featureType.getGeometryDescriptor().getCoordinateReferenceSystem();
         byte geometryType = GeometryType.Unknown;
         GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
         if (geometryDescriptor != null)
             geometryType = GeometryConversions
                     .toGeometryType(featureType.getGeometryDescriptor().getType().getBinding());
-        // byte dimensions = (byte) (crs == null ? 2 :
-        // crs.getCoordinateSystem().getDimension());
 
         outputStream.write(Constants.MAGIC_BYTES);
 
@@ -126,9 +122,8 @@ public class FeatureTypeConversions {
 
     public static HeaderMeta deserialize(ByteBuffer bb, String name, String geometryPropertyName) throws IOException {
         int offset = 0;
-        if (Constants.isFlatgeobuf(bb)) {
+        if (Constants.isFlatgeobuf(bb))
             throw new IOException("This is not a flatgeobuf!");
-        }
         bb.position(offset += Constants.MAGIC_BYTES.length);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
         bb.position(offset += SIZE_PREFIX_LENGTH);
@@ -174,9 +169,8 @@ public class FeatureTypeConversions {
         SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
         ftb.setName(name);
         ftb.add(geometryPropertyName, geometryClass);
-        for (ColumnMeta columnMeta : columnMetas) {
+        for (ColumnMeta columnMeta : columnMetas)
             ftb.add(columnMeta.name, columnMeta.getBinding());
-        }
         SimpleFeatureType ft = ftb.buildFeatureType();
 
         HeaderMeta headerMeta = new HeaderMeta();
