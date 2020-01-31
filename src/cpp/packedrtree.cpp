@@ -332,7 +332,7 @@ uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
 }
 
 void PackedRTree::streamWrite(const std::function<void(uint8_t *, size_t)> &writeData) {
-    writeData(reinterpret_cast<uint8_t *>(_nodeItems), _numNodes * sizeof(NodeItem));
+    writeData(reinterpret_cast<uint8_t *>(_nodeItems), static_cast<size_t>(_numNodes * sizeof(NodeItem)));
 }
 
 NodeItem PackedRTree::getExtent() const { return _extent; }
