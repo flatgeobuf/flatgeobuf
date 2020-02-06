@@ -53,22 +53,20 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ## Features
 
-* Language support for JavaScript, TypeScript, C, C++, Java and C#
+* Reference implementation for JavaScript, TypeScript, C++ and Java
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
-* GeoServer WFS output format (https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
-* QGIS provider (WIP @ https://github.com/bjornharrtell/QGIS/tree/fgb)
-* OpenLayers example (WIP @ https://github.com/bjornharrtell/ol3/tree/flatgeobuf)
-* Complete test coverage
+* [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
+* [OpenLayers example](https://bjornharrtell.github.io/flatgeobuf/examples/openlayers)
+* [Leaflet example](https://bjornharrtell.github.io/flatgeobuf/examples/leaflet)
 
 ## TODO
 
 * Java index support
-* C# support update
+* C# langauge support
 * C langauge support
 * Go langauge support
 * Rust language support
-* Further optimizations
 
 ## FAQ
 
