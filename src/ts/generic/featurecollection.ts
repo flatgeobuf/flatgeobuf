@@ -65,8 +65,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: IFromFeature) {
         offset += calcTreeSize(count, indexNodeSize)
 
     const features = []
-    for (let i = 0; i < count; i++) {
-        const bb = new flatbuffers.ByteBuffer(bytes)
+    while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset)
         bb.setPosition(offset + SIZE_PREFIX_LEN)
         const feature = Feature.getRoot(bb)
@@ -151,8 +150,10 @@ async function* deserializeInternal(
         }
         offset += treeSize
     }
-    for (let i = 0; i < count; i++)
-        yield await readFeature(read, headerMeta, fromFeature)
+    let feature
+    while ((feature = await readFeature(read, headerMeta, fromFeature))) {
+        yield feature
+    }
 }
 
 async function readFeature(
@@ -160,6 +161,8 @@ async function readFeature(
         headerMeta: HeaderMeta,
         fromFeature: IFromFeature) {
     let bytes = new Uint8Array(await read(4))
+    if (bytes.byteLength === 0)
+        return null
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
     bytes = new Uint8Array(await read(featureLength))
