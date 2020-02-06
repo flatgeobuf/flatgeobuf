@@ -9,31 +9,10 @@ import { IFeature } from './generic/feature'
 import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
-import Point from 'ol/geom/Point'
-import MultiPoint from 'ol/geom/MultiPoint'
-import LineString from 'ol/geom/LineString'
-import MultiLineString from 'ol/geom/MultiLineString'
-import Polygon from 'ol/geom/Polygon'
-import MultiPolygon from 'ol/geom/MultiPolygon'
-import GeometryLayout from 'ol/geom/GeometryLayout'
-
 import { TextDecoder, TextEncoder } from 'util'
 
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
-
-const ol = {
-  geom: {
-    Point,
-    MultiPoint,
-    LineString,
-    MultiLineString,
-    Polygon,
-    MultiPolygon,
-    GeometryLayout
-  },
-  Feature
-}
 
 const format = new WKT()
 const geojson = new GeoJSON()
@@ -66,7 +45,7 @@ describe('ol module', () => {
     it('Point', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
-      const actual = deserialize(s, ol)
+      const actual = deserialize(s)
       expect(g(actual)).to.equal(g(expected))
     })
 
@@ -74,65 +53,65 @@ describe('ol module', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
       const stream = arrayToStream(s)
-      const actual = await takeAsync(deserializeStream(stream, ol))
+      const actual = await takeAsync(deserializeStream(stream))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('Points', () => {
       const expected = makeFeatureCollectionFromArray(['POINT(1.2 -2.1)', 'POINT(2.4 -4.8)'])
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiPoint', () => {
       const expected = makeFeatureCollection('MULTIPOINT(10 40, 40 30, 20 20, 30 10)')
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('LineString', () => {
       const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)')
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiLineString', () => {
       const expected = makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
  (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiLineStringSinglePart', () => {
       const expected = makeFeatureCollection(`MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('Polygon', () => {
       const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('PolygonWithHole', () => {
       const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('PolygonWithTwoHoles', () => {
       const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30), (20 30, 35 35, 30 20, 20 30))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiPolygon', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
       expect(g(actual)).to.equal(g(expected))
     })
@@ -140,21 +119,21 @@ describe('ol module', () => {
     it('MultiPolygonWithHole', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiPolygonSinglePart', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
     it('MultiPolygonSinglePartWithHole', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`)
-      const actual = deserialize(serialize(expected), ol)
+      const actual = deserialize(serialize(expected))
       expect(g(actual)).to.equal(g(expected))
     })
 
@@ -178,7 +157,7 @@ describe('ol module', () => {
             }
         }]
       }
-      const actual = deserialize(serialize(geojson.readFeatures(expected)), ol)
+      const actual = deserialize(serialize(geojson.readFeatures(expected)))
       expect(JSON.parse(g(actual))).to.deep.equal(expected)
     })
 
@@ -200,7 +179,7 @@ describe('ol module', () => {
               }
           }]
       }
-      const actual = deserialize(serialize(geojson.readFeatures(expected)), ol)
+      const actual = deserialize(serialize(geojson.readFeatures(expected)))
       expect(JSON.parse(g(actual))).to.deep.equal(expected)
     })
     
