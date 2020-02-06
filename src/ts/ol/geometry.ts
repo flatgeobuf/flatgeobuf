@@ -9,7 +9,13 @@ import LineString from 'ol/geom/LineString'
 import MultiLineString from 'ol/geom/MultiLineString'
 import Polygon from 'ol/geom/Polygon'
 import MultiPolygon from 'ol/geom/MultiPolygon'
-import GeometryLayout from 'ol/geom/GeometryLayout'
+
+const GeometryLayout = {
+    XY: 'XY',
+    XYZ: 'XYZ',
+    XYM: 'XYM',
+    XYZM: 'XYZM'
+}
 
 export function createGeometryOl(geometry: Geometry, type: GeometryType): ISimpleGeometry {
     const xy = geometry.xyArray() ? Array.from(geometry.xyArray()) : undefined
