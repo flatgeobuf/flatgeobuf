@@ -1,5 +1,5 @@
 // basic OSM Leaflet map
-let map = L.map('mapid').setView([41.505, -80.09], 4)
+let map = L.map('map').setView([41.505, -80.09], 4)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -21,5 +21,5 @@ function handleResponse(response) {
 }
 
 // using fetch API to get readable stream
-fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.0.1/test/data/UScounties.fgb')
+fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.1.0/test/data/UScounties.fgb')
     .then(handleResponse)
