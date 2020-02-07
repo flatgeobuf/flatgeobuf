@@ -63,7 +63,7 @@ namespace FlatGeobuf.NTS
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
                     }
-                    var header = BuildHeader(count, geometryType.Value, dimensions, columns, index);
+                    var header = BuildHeader(count, geometryType.Value, columns, index);
                     memoryStream.Write(header, 0, header.Length);
                     var indexBytes = index.ToBytes();
                     memoryStream.Write(indexBytes, 0, indexBytes.Length);
@@ -99,7 +99,6 @@ namespace FlatGeobuf.NTS
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
             var geometryType = header.GeometryType;
-            var dimensions = header.Dimensions;
 
             IList<ColumnMeta> columns = null;
             if (header.ColumnsLength > 0)
@@ -123,7 +122,7 @@ namespace FlatGeobuf.NTS
             while (bb.Position < bb.Length) {
                 var featureLength = ByteBufferUtil.GetSizePrefix(bb);
                 bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = FeatureConversions.FromByteBuffer(bb, geometryType, dimensions, columns);
+                var feature = FeatureConversions.FromByteBuffer(bb, geometryType, 2, columns);
                 fc.Add(feature);
                 bb.Position += featureLength;
             }
@@ -131,7 +130,8 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        private static byte[] BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedHilbertRTree index) {
+        private static byte[] BuildHeader(ulong count, GeometryType geometryType, IList<ColumnMeta> columns, PackedHilbertRTree index)
+        {
             var builder = new FlatBufferBuilder(4096);
 
             VectorOffset? columnsOffset = null;
@@ -140,12 +140,11 @@ namespace FlatGeobuf.NTS
                 var columnsArray = columns
                     .Select(c => Column.CreateColumn(builder, builder.CreateString(c.Name), c.Type))
                     .ToArray();
-                columnsOffset = Column.CreateSortedVectorOfColumn(builder, columnsArray);
+                columnsOffset = Header.CreateColumnsVector(builder, columnsArray);
             }
 
             Header.StartHeader(builder);
             Header.AddGeometryType(builder, geometryType);
-            Header.AddDimensions(builder, dimensions);
             if (columnsOffset.HasValue)
                 Header.AddColumns(builder, columnsOffset.Value);
             if (index != null)

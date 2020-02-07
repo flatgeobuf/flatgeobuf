@@ -5,6 +5,7 @@ using NetTopologySuite.Features;
 using FlatBuffers;
 using System.Text;
 using System.IO;
+using GeoAPI.Geometries;
 
 namespace FlatGeobuf.NTS
 {
@@ -54,20 +55,27 @@ namespace FlatGeobuf.NTS
                 }
             }
 
-            VectorOffset? propertiesOffset = null;
+            var propertiesOffset = default(VectorOffset);
             if (memoryStream.Position > 0)
                 propertiesOffset = Feature.CreatePropertiesVector(builder, memoryStream.ToArray());
 
+            var geometryOffset = default(Offset<Geometry>);
+            if (go.gos != null && go.gos.Length > 0) {
+                var partOffsets = new Offset<Geometry>[go.gos.Length];
+                for (int i = 0; i < go.gos.Length; i++) {
+                    var goPart = go.gos[i];
+                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, default(VectorOffset));
+                    partOffsets[i] = partOffset;
+                }
+                var partsOffset = Geometry.CreatePartsVector(builder, partOffsets);
+                geometryOffset = Geometry.CreateGeometry(builder, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, partsOffset);
+            } else {
+                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, default(VectorOffset));
+            }
             Feature.StartFeature(builder);
-            Feature.AddCoords(builder, go.coordsOffset.Value);
-            if (go.lengthsOffset.HasValue)
-                Feature.AddLengths(builder, go.lengthsOffset.Value);
-            if (go.ringLengthsOffset.HasValue)
-                Feature.AddRingLengths(builder, go.ringLengthsOffset.Value);
-            if (go.ringCountsOffset.HasValue)
-                Feature.AddRingCounts(builder, go.ringCountsOffset.Value);
-            if (propertiesOffset.HasValue)
-                Feature.AddProperties(builder, propertiesOffset.Value);
+
+            Feature.AddGeometry(builder, geometryOffset);
+            Feature.AddProperties(builder, propertiesOffset);
             var featureOffset = Feature.EndFeature(builder);
 
             builder.FinishSizePrefixed(featureOffset.Value);
@@ -116,7 +124,9 @@ namespace FlatGeobuf.NTS
                 }
             }
 
-            var geometry = GeometryConversions.FromFlatbuf(feature, geometryType, dimensions);
+            IGeometry geometry = null;
+            if (feature.Geometry.HasValue)
+                geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType);
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }
