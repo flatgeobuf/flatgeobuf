@@ -12,7 +12,11 @@ Goals are to be suitable for large volumes of static data, significantly faster 
 
 The site http://switchfromshapefile.org has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
 
-Live demonstration at https://observablehq.com/@bjornharrtell/streaming-flatgeobuf. (conceptual, not performance optimized)
+## Examples
+
+* [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
+* [OpenLayers example](https://bjornharrtell.github.io/flatgeobuf/examples/openlayers)
+* [Leaflet example](https://bjornharrtell.github.io/flatgeobuf/examples/leaflet)
 
 ## Specification
 
@@ -57,8 +61,6 @@ As performance is highly data dependent I've also made similar tests on a larger
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
-* [OpenLayers example](https://bjornharrtell.github.io/flatgeobuf/examples/openlayers)
-* [Leaflet example](https://bjornharrtell.github.io/flatgeobuf/examples/leaflet)
 
 ## TODO
 
