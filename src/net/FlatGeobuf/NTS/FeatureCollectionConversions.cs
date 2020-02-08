@@ -24,7 +24,7 @@ namespace FlatGeobuf.NTS
     }
 
     public static class FeatureCollectionConversions {
-        public static byte[] ToFlatGeobuf(FeatureCollection fc, GeometryType? geometryType = null, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+        public static byte[] ToFlatGeobuf(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
             ulong count = (ulong) fc.Features.LongCount();
 
             if (count == 0)
@@ -39,9 +39,6 @@ namespace FlatGeobuf.NTS
             index.Finish();
 
             var featureFirst = fc.Features.First();
-
-            if (geometryType == null)
-                geometryType = GeometryConversions.ToGeometryType(featureFirst.Geometry);
 
             if (columns == null && featureFirst.Attributes != null)
                 columns = featureFirst.Attributes.GetNames()
@@ -58,12 +55,13 @@ namespace FlatGeobuf.NTS
                     for (ulong i = 0; i < count; i++)
                     {
                         var feature = fc.Features[(int)index.Indices[i]];
-                        var buffer = FeatureConversions.ToByteBuffer(feature, geometryType.Value, dimensions, columns);
+                        var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
+                        var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
                         featuresStream.Write(buffer, 0, buffer.Length);
                         offetsWriter.Write(offset);
                         offset += (ulong) buffer.Length;
                     }
-                    var header = BuildHeader(count, geometryType.Value, columns, index);
+                    var header = BuildHeader(count, geometryType, columns, index);
                     memoryStream.Write(header, 0, header.Length);
                     var indexBytes = index.ToBytes();
                     memoryStream.Write(indexBytes, 0, indexBytes.Length);

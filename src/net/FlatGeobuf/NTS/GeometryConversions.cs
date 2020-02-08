@@ -15,12 +15,15 @@ namespace FlatGeobuf.NTS
         public VectorOffset coordsOffset = default(VectorOffset);
         public VectorOffset endsOffset = default(VectorOffset);
         public GeometryOffsets[] gos = null;
+        public GeometryType type { get; set; }
     }
 
     public static class GeometryConversions {
         public static GeometryOffsets BuildGeometry(FlatBufferBuilder builder, IGeometry geometry, GeometryType geometryType, byte dimensions)
         {
             var go = new GeometryOffsets();
+
+            go.type = geometryType;
 
             if (geometry == null)
                 return go;
@@ -85,14 +88,14 @@ namespace FlatGeobuf.NTS
                 return ParseFlatbufMultiLineStringSinglePart(coords, dimensions);
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
-            var arraySegment = new ArraySegment<double>(coords);
+            var coordsSpan = coords.AsSpan();
 
             IList<ILineString> lineStrings = new List<ILineString>();
             uint offset = 0;
             for (var i = 0; i < ends.Length; i++)
             {
                 var end = ends[i] << 1;
-                var lineStringCoords = arraySegment.Skip((int) offset).Take((int) end).ToArray();
+                var lineStringCoords = coordsSpan.Slice((int) offset, (int) (end - offset)).ToArray();
                 var lineString = factory.CreateLineString(sequenceFactory.Create(lineStringCoords, dimensions));
                 lineStrings.Add(lineString);
                 offset = end;
@@ -166,6 +169,9 @@ namespace FlatGeobuf.NTS
         public static IGeometry FromFlatbuf(Geometry geometry, GeometryType type) {
             byte dimensions = 2;
             var factory = new GeometryFactory();
+
+            if (type == GeometryType.Unknown)
+                type = geometry.Type;
             
             switch (type)
             {

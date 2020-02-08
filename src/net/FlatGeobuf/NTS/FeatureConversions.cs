@@ -64,13 +64,13 @@ namespace FlatGeobuf.NTS
                 var partOffsets = new Offset<Geometry>[go.gos.Length];
                 for (int i = 0; i < go.gos.Length; i++) {
                     var goPart = go.gos[i];
-                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, default(VectorOffset));
+                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, default(VectorOffset));
                     partOffsets[i] = partOffset;
                 }
                 var partsOffset = Geometry.CreatePartsVector(builder, partOffsets);
-                geometryOffset = Geometry.CreateGeometry(builder, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, partsOffset);
+                geometryOffset = Geometry.CreateGeometry(builder, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, partsOffset);
             } else {
-                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), GeometryType.Unknown, default(VectorOffset));
+                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, default(VectorOffset));
             }
             Feature.StartFeature(builder);
 

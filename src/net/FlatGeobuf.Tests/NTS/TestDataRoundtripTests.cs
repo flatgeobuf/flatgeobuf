@@ -15,7 +15,7 @@ namespace FlatGeobuf.Tests.NTS
             var geojson = File.ReadAllText("../../../../../../test/data/states.geojson");
             var reader = new GeoJsonReader();
             var fcExpected = reader.Read<FeatureCollection>(geojson);
-            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected, GeometryType.MultiPolygon);
+            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected, GeometryType.Unknown);
             var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
             Assert.AreEqual(fcExpected.Count, fcActual.Count);
         }
@@ -26,7 +26,7 @@ namespace FlatGeobuf.Tests.NTS
             var geojson = File.ReadAllText("../../../../../../test/data/tiger_roads.geojson");
             var reader = new GeoJsonReader();
             var fcExpected = reader.Read<FeatureCollection>(geojson);
-            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected);
+            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected, GeometryType.LineString);
             var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
             Assert.AreEqual(fcExpected.Count, fcActual.Count);
         }
