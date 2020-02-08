@@ -30,5 +30,13 @@ namespace FlatGeobuf.Tests.NTS
             var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
             Assert.AreEqual(fcExpected.Count, fcActual.Count);
         }
+
+        [TestMethod]
+        public void CountriesTest()
+        {
+            var bytes = File.ReadAllBytes("../../../../../../test/data/countries.fgb");
+            var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
+            Assert.AreEqual(179, fcActual.Count);
+        }
     }
 }
