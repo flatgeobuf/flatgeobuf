@@ -24,7 +24,7 @@ namespace FlatGeobuf.NTS
     }
 
     public static class FeatureCollectionConversions {
-        public static byte[] ToFlatGeobuf(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+        public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
             ulong count = (ulong) fc.Features.LongCount();
 
             if (count == 0)
@@ -47,7 +47,7 @@ namespace FlatGeobuf.NTS
 
             using (var memoryStream = new MemoryStream())
             {
-                memoryStream.Write(BitConverter.GetBytes(Constants.MagicBytes));
+                memoryStream.Write(Constants.MagicBytes);
 
                 using (var featuresStream = new MemoryStream())
                 using (var offsetsStream = new MemoryStream())
@@ -87,16 +87,26 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        public static FeatureCollection FromFlatGeobuf(byte[] bytes) {
+        public static FeatureCollection Deserialize(byte[] bytes) {
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
-            var bb = new ByteBuffer(bytes);
-            
-            bb.Position += 8;
+            foreach (var feature in Deserialize(new MemoryStream(bytes)))
+            {
+                fc.Add(feature);
+            }
 
-            var headerSize = ByteBufferUtil.GetSizePrefix(bb);
-            bb.Position += FlatBufferConstants.SizePrefixLength;
-            var header = Header.GetRootAsHeader(bb);
+            return fc;
+        }
+
+        public static IEnumerable<IFeature> Deserialize(Stream stream) {
+            var reader = new BinaryReader(stream);
+
+            var magicBytes = reader.ReadBytes(8);
+            if (!magicBytes.SequenceEqual(Constants.MagicBytes))
+                throw new Exception("Not a FlatGeobuf file");
+
+            var headerSize = reader.ReadInt32();
+            var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
             
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
@@ -112,22 +122,18 @@ namespace FlatGeobuf.NTS
                 }
             }
 
-            bb.Position += headerSize;
-            
-            if (nodeSize > 0) {
+            if (nodeSize > 0)
+            {
                 var size = PackedHilbertRTree.CalcSize(count, nodeSize);
-                bb.Position += (int) size;
+                stream.Seek((int) size, SeekOrigin.Current);
             }
 
-            while (bb.Position < bb.Length) {
-                var featureLength = ByteBufferUtil.GetSizePrefix(bb);
-                bb.Position += FlatBufferConstants.SizePrefixLength;
-                var feature = FeatureConversions.FromByteBuffer(bb, geometryType, 2, columns);
-                fc.Add(feature);
-                bb.Position += featureLength;
+            while (stream.Position < stream.Length)
+            {
+                var featureLength = reader.ReadInt32();
+                var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, 2, columns);
+                yield return feature;
             }
-
-            return fc;
         }
 
         private static byte[] BuildHeader(ulong count, GeometryType geometryType, IList<ColumnMeta> columns, PackedHilbertRTree index)

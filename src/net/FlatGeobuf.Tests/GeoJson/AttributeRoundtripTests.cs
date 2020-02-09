@@ -44,7 +44,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test"] = 1
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -57,7 +57,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test2"] = 1
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -73,7 +73,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test5"] = 1
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
         
@@ -94,7 +94,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test10"] = 1
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -106,7 +106,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test"] = 1.1
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -118,7 +118,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test"] = true
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -130,7 +130,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test"] = "test"
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 
@@ -147,7 +147,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test6"] = false, 
             };
             var expected = MakeFeatureCollection(attributes);
-            var actual = GeoJsonConversions.ToGeoJson(GeoJsonConversions.FromGeoJson(expected));
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
 

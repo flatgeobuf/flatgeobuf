@@ -15,8 +15,8 @@ namespace FlatGeobuf.Tests.NTS
             var geojson = File.ReadAllText("../../../../../../test/data/states.geojson");
             var reader = new GeoJsonReader();
             var fcExpected = reader.Read<FeatureCollection>(geojson);
-            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected, GeometryType.Unknown);
-            var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
+            var bytes = FeatureCollectionConversions.Serialize(fcExpected, GeometryType.Unknown);
+            var fcActual = FeatureCollectionConversions.Deserialize(bytes);
             Assert.AreEqual(fcExpected.Count, fcActual.Count);
         }
 
@@ -26,8 +26,8 @@ namespace FlatGeobuf.Tests.NTS
             var geojson = File.ReadAllText("../../../../../../test/data/tiger_roads.geojson");
             var reader = new GeoJsonReader();
             var fcExpected = reader.Read<FeatureCollection>(geojson);
-            var bytes = FeatureCollectionConversions.ToFlatGeobuf(fcExpected, GeometryType.LineString);
-            var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
+            var bytes = FeatureCollectionConversions.Serialize(fcExpected, GeometryType.LineString);
+            var fcActual = FeatureCollectionConversions.Deserialize(bytes);
             Assert.AreEqual(fcExpected.Count, fcActual.Count);
         }
 
@@ -35,7 +35,7 @@ namespace FlatGeobuf.Tests.NTS
         public void CountriesTest()
         {
             var bytes = File.ReadAllBytes("../../../../../../test/data/countries.fgb");
-            var fcActual = FeatureCollectionConversions.FromFlatGeobuf(bytes);
+            var fcActual = FeatureCollectionConversions.Deserialize(bytes);
             Assert.AreEqual(179, fcActual.Count);
         }
     }

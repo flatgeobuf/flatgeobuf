@@ -7,6 +7,9 @@ executors:
   java:
     docker:
       - image: circleci/openjdk:11.0-jdk
+  net:
+    docker:
+      - image: mcr.microsoft.com/dotnet/core/sdk:3.1
 
 jobs:
   test-ts:
@@ -59,9 +62,24 @@ jobs:
           key: v1-dependencies-{{ checksum "src/java/pom.xml" }}
       - run: cd src/java && mvn test
 
+  test-java:
+    executor: net
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+            - v1-dependencies-
+      - save_cache:
+          paths:
+            - ~/.nuget/packages
+          key: v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+      - run: cd src/net && dotnet test
+
 workflows:
   main:
     jobs:
       - test-ts
       - test-cpp
       - test-java
+      - test-net

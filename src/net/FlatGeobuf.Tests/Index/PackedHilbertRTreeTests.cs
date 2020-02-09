@@ -6,7 +6,7 @@ namespace FlatGeobuf.Tests.Index
     [TestClass]
     public class PackedHilbertRTreeTests
     {
-        [TestMethod]
+        /*[TestMethod]
         public void SingleItemTest()
         {
             var tree = new PackedHilbertRTree(1);
@@ -42,6 +42,6 @@ namespace FlatGeobuf.Tests.Index
             tree.Finish();
             var result = tree.Search(1, 1, 2, 2);
             Assert.AreEqual(2, result.Count);
-        }
+        }*/
     }
 }
