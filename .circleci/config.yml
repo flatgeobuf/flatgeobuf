@@ -62,7 +62,7 @@ jobs:
           key: v1-dependencies-{{ checksum "src/java/pom.xml" }}
       - run: cd src/java && mvn test
 
-  test-java:
+  test-net:
     executor: net
     steps:
       - checkout
