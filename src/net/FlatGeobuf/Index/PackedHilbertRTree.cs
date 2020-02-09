@@ -4,16 +4,6 @@ using System.IO;
 
 namespace FlatGeobuf.Index
 {
-    struct NodeItem {
-        double minX;
-        double minY;
-        double maxX;
-        double maxY;
-        ulong offset;
-    };
-
-    
-
     public class PackedHilbertRTree
     {
         public static ulong CalcSize(ulong numItems, ushort nodeSize)
@@ -23,7 +13,7 @@ namespace FlatGeobuf.Index
             if (numItems == 0)
                 throw new Exception("Number of items must be greater than 0");
             ushort nodeSizeMin = Math.Min(Math.Max(nodeSize, (ushort) 2), (ushort) 65535);
-            // limit so that resulting size in bytes can be represented by uint64_t
+            // limit so that resulting size in bytes can be represented by ulong
             if (numItems > 1 << 56)
                 throw new OverflowException("Number of items must be less than 2^56");
             ulong n = numItems;
