@@ -137,7 +137,7 @@ namespace FlatGeobuf.Tests.GeoJson
         private void AssertJson(string expected, string actual) {
             var compare = new JTokenComparer(new IndexArrayKeySelector());
             var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
-            Assert.AreEqual(ComparisonResult.Identical, result.ComparrisonResult);
+            Assert.AreEqual(ComparisonResult.Identical, result.ComparisonResult);
         }
     }
 }

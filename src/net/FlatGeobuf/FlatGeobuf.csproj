@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <VersionPrefix>3.1.1</VersionPrefix>
+  </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\FlatBuffers\FlatBuffers.csproj" />
+    <ProjectReference Include="..\FlatBuffers\FlatBuffers.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -11,7 +15,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
 </Project>
