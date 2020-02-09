@@ -74,7 +74,7 @@ jobs:
           paths:
             - ~/.nuget/packages
           key: v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
-      - run: cd src/net && dotnet test
+      - run: cd src/net && fetch.sh && dotnet test
 
 workflows:
   main:
