@@ -25,52 +25,27 @@ namespace FlatGeobuf.NTS
 
     public static class FeatureCollectionConversions {
         public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
-            ulong count = (ulong) fc.Features.LongCount();
-
-            if (count == 0)
-                return new byte[0];
-            
-            /*var index = new PackedHilbertRTree(count);
-            foreach (var f in fc.Features)
-            {
-                var b = f.Geometry.EnvelopeInternal;
-                index.Add(b.MinX, b.MinY, b.MaxX, b.MaxY);
-            }
-            index.Finish();*/
-
             var featureFirst = fc.Features.First();
-
             if (columns == null && featureFirst.Attributes != null)
-                columns = featureFirst.Attributes.GetNames()
-                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
-                    .ToList();
-
+                    columns = featureFirst.Attributes.GetNames()
+                        .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                        .ToList();
             using (var memoryStream = new MemoryStream())
             {
-                memoryStream.Write(Constants.MagicBytes);
-
-                using (var featuresStream = new MemoryStream())
-                using (var offsetsStream = new MemoryStream())
-                using (var offetsWriter = new BinaryWriter(offsetsStream))
-                {
-                    ulong offset = 0;
-                    for (ulong i = 0; i < count; i++)
-                    {
-                        var feature = fc.Features[(int)i];
-                        var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
-                        var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
-                        featuresStream.Write(buffer, 0, buffer.Length);
-                        offetsWriter.Write(offset);
-                        offset += (ulong) buffer.Length;
-                    }
-                    var header = BuildHeader(count, geometryType, columns, null);
-                    memoryStream.Write(header);
-                    //var indexBytes = index.ToBytes();
-                    //memoryStream.Write(indexBytes);
-                    //offsetsStream.WriteTo(memoryStream);
-                    featuresStream.WriteTo(memoryStream);
-                }
+                Serialize(memoryStream, fc.Features, geometryType, dimensions, columns);
                 return memoryStream.ToArray();
+            }
+        }
+
+        public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+            output.Write(Constants.MagicBytes);
+            var header = BuildHeader(0, geometryType, columns, null);
+            output.Write(header);
+            foreach (var feature in features)
+            {
+                var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
+                var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
+                output.Write(buffer);
             }
         }
 
