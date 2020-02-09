@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <VersionPrefix>3.1.1</VersionPrefix>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\FlatBuffers\FlatBuffers.Core.csproj" />
   </ItemGroup>
