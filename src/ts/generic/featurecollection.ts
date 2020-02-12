@@ -13,14 +13,13 @@ import { toGeometryType } from './geometry'
 import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
 import { IGeoJsonFeature } from '../geojson/feature'
 
-export interface IFromFeature {
-    (feature: Feature, header: HeaderMeta): IFeature | IGeoJsonFeature
-}
+export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature | IGeoJsonFeature
+type ReadFn = (size: number) => Promise<ArrayBuffer>
 
 const SIZE_PREFIX_LEN: number = 4
 const FEATURE_OFFSET_LEN: number = 8
 
-export const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00]);
+export const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00])
 
 export function serialize(features: IFeature[]) {
     const headerMeta = introspectHeaderMeta(features)
@@ -41,7 +40,7 @@ export function serialize(features: IFeature[]) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature: IFromFeature) {
+export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -76,13 +75,13 @@ export function deserialize(bytes: Uint8Array, fromFeature: IFromFeature) {
     return features
 }
 
-export function deserializeStream(stream: ReadableStream, fromFeature: IFromFeature) {
+export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn) {
     const reader = slice(stream)
     const read = async size => await reader.slice(size)
     return deserializeInternal(read, undefined, undefined, fromFeature)
 }
 
-export function deserializeFiltered(url: string, rect: Rect, fromFeature: IFromFeature) {
+export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn) {
     let offset = 0
     const read = async size => {
         //console.log(`fetch bytes=${offset}-${offset + size - 1}`)
@@ -104,7 +103,7 @@ async function* deserializeInternal(
         read: (size: number) => Promise<ArrayBuffer>,
         seek: (offset: number) => Promise<void>,
         rect: Rect,
-        fromFeature: IFromFeature) {
+        fromFeature: FromFeatureFn) {
     let offset = 0
     let bytes = new Uint8Array(await read(8))
     offset += 8
@@ -131,7 +130,7 @@ async function* deserializeInternal(
     if (indexNodeSize > 0) {
         const treeSize = calcTreeSize(count, indexNodeSize)
         if (rect) {
-            const readNode = async (treeOffset, size) => {
+            const readNode = async (treeOffset: number, size: number) => {
                 await seek(offset + treeOffset)
                 return await read(size)
             }
@@ -156,10 +155,7 @@ async function* deserializeInternal(
     }
 }
 
-async function readFeature(
-        read: (size: number) => Promise<ArrayBuffer>,
-        headerMeta: HeaderMeta,
-        fromFeature: IFromFeature) {
+async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn) {
     let bytes = new Uint8Array(await read(4))
     if (bytes.byteLength === 0)
         return null

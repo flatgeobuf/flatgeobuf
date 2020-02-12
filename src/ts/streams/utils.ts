@@ -2,7 +2,9 @@ import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 
 import { ReadableStreamBuffer } from 'stream-buffers'
 
-export function arrayToStream (array) {
+import { Readable } from 'stream'
+
+export function arrayToStream (array: ArrayBuffer) {
     const myReadableStreamBuffer = new ReadableStreamBuffer({
         frequency: 10,   // in milliseconds.
         chunkSize: 2048  // in bytes.
@@ -16,64 +18,69 @@ export function arrayToStream (array) {
     return webReader
 }
 
-export async function takeAsync(asyncIterable, count = Infinity) {
+export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infinity) {
   const result = [];
-  const iterator = asyncIterable[Symbol.asyncIterator]();
+  const iterator = asyncIterable[Symbol.asyncIterator]()
   while (result.length < count) {
-    const { value, done } = await iterator.next();
-    if (done) break;
-    result.push(value);
+    const { value, done } = await iterator.next()
+    if (done)
+      break
+    result.push(value)
   }
-  return result;
+  return result
 }
 
-function nodeToWeb (nodeStream) {
+function nodeToWeb(nodeStream: Readable) {
     var destroyed = false
     var listeners = {}
   
-    function start (controller) {
+    function start (controller: ReadableStreamDefaultController) {
       listeners['data'] = onData
       listeners['end'] = onData
       listeners['end'] = onDestroy
       listeners['close'] = onDestroy
       listeners['error'] = onDestroy
-      for (var name in listeners) nodeStream.on(name, listeners[name])
+      for (var name in listeners)
+        nodeStream.on(name, listeners[name])
   
       nodeStream.pause()
   
-      function onData (chunk) {
-        if (destroyed) return
+      function onData(chunk: Buffer) {
+        if (destroyed)
+          return
         controller.enqueue(chunk)
         nodeStream.pause()
       }
   
-      function onDestroy (err) {
-        if (destroyed) return
+      function onDestroy(err: Error) {
+        if (destroyed)
+          return
         destroyed = true
   
-        for (var name in listeners) nodeStream.removeListener(name, listeners[name])
+        for (var name in listeners)
+          nodeStream.removeListener(name, listeners[name])
   
         if (err) controller.error(err)
         else controller.close()
       }
     }
   
-    function pull () {
-      if (destroyed) return
+    function pull() {
+      if (destroyed)
+        return
       nodeStream.resume()
     }
   
-    function cancel () {
+    function cancel() {
       destroyed = true
   
-      for (var name in listeners) nodeStream.removeListener(name, listeners[name])
+      for (var name in listeners)
+        nodeStream.removeListener(name, listeners[name])
   
       nodeStream.push(null)
       nodeStream.pause()
-      if (nodeStream.destroy) nodeStream.destroy()
-      else if (nodeStream.close) nodeStream.close()
+      nodeStream.destroy()
     }
   
-    return new ReadableStream({start: start, pull: pull, cancel: cancel})
+    return new ReadableStream({ start: start, pull: pull, cancel: cancel })
   }
-  

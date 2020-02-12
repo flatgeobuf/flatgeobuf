@@ -7,14 +7,6 @@ export interface Rect {
     maxY: number
 }
 
-function intersects(a: Rect, b: Rect) {
-    if (a.maxX < b.minX) return false
-    if (a.maxY < b.minY) return false
-    if (a.minX > b.maxX) return false
-    if (a.minY > b.maxY) return false
-    return true
-}
-
 export function calcTreeSize(numItems: number, nodeSize: number) {
     nodeSize = Math.min(Math.max(+nodeSize, 2), 65535)
     let n = numItems
@@ -58,8 +50,15 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     return levelBounds
 }
 
-export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode)
+interface IReadNode {
+    (treeOffset: number, size: number): Promise<ArrayBuffer>
+}
+
+type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
+
+export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn)
 {
+    const { minX, minY, maxX, maxY } = rect;
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[,numNodes]] = levelBounds
     const queue = []
@@ -75,25 +74,16 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
         const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
         const float64Array = new Float64Array(buffer)
         const uint32Array = new Uint32Array(buffer)
-        const nodeItems = []
         for (let i = 0; i < length * 5; i += 5) {
-            const minX = float64Array[i + 0]
-            const minY = float64Array[i + 1]
-            const maxX = float64Array[i + 2]
-            const maxY = float64Array[i + 3]
+            if (maxX < float64Array[i + 0]) continue; // maxX < nodeMinX
+            if (maxY < float64Array[i + 1]) continue; // maxY < nodeMinY
+            if (minX > float64Array[i + 2]) continue; // minX > nodeMaxX
+            if (minY > float64Array[i + 3]) continue; // minY > nodeMaxY
             const offset = uint32Array[(i << 1) + 8]
-            nodeItems.push({ minX, minY, maxX, maxY, offset })
-        }
-        // search through child nodes
-        for (let pos = nodeIndex; pos < end; pos++) {
-            const nodePos = pos - nodeIndex
-            const nodeItem = nodeItems[nodePos]
-            if (!intersects(rect, nodeItem))
-                continue
             if (isLeafNode)
-                results.push(nodeItem.offset)
+                results.push(offset)
             else
-                queue.push([nodeItem.offset, level - 1])
+                queue.push([offset, level - 1])
         }
         // order queue to traverse sequential
         queue.sort((a, b) => b[0] - a[0])
