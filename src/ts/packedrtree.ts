@@ -58,7 +58,7 @@ type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
 
 export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn)
 {
-    const { minX, minY, maxX, maxY } = rect;
+    const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[,numNodes]] = levelBounds
     const queue = []
@@ -75,10 +75,10 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
         const float64Array = new Float64Array(buffer)
         const uint32Array = new Uint32Array(buffer)
         for (let i = 0; i < length * 5; i += 5) {
-            if (maxX < float64Array[i + 0]) continue; // maxX < nodeMinX
-            if (maxY < float64Array[i + 1]) continue; // maxY < nodeMinY
-            if (minX > float64Array[i + 2]) continue; // minX > nodeMaxX
-            if (minY > float64Array[i + 3]) continue; // minY > nodeMaxY
+            if (maxX < float64Array[i + 0]) continue // maxX < nodeMinX
+            if (maxY < float64Array[i + 1]) continue // maxY < nodeMinY
+            if (minX > float64Array[i + 2]) continue // minX > nodeMaxX
+            if (minY > float64Array[i + 3]) continue // minY > nodeMaxY
             const offset = uint32Array[(i << 1) + 8]
             if (isLeafNode)
                 results.push(offset)
