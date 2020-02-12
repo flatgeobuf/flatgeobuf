@@ -56,13 +56,12 @@ interface IReadNode {
 
 type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
 
-export async function streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn)
+export async function* streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn)
 {
     const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[,numNodes]] = levelBounds
     const queue = []
-    const results = []
     queue.push([0, levelBounds.length - 1])
     while (queue.length !== 0) {
         const [nodeIndex, level] = queue.pop()
@@ -81,12 +80,11 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
             if (minY > float64Array[i + 3]) continue // minY > nodeMaxY
             const offset = uint32Array[(i << 1) + 8]
             if (isLeafNode)
-                results.push(offset)
+                yield offset
             else
                 queue.push([offset, level - 1])
         }
         // order queue to traverse sequential
         queue.sort((a, b) => b[0] - a[0])
     }
-    return results
 }
