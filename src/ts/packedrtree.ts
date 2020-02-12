@@ -43,8 +43,8 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     } while (n !== 1)
 
     // bounds per level in reversed storage order (top-down)
-    const levelOffsets = [];
-    n = numNodes;
+    const levelOffsets = []
+    n = numNodes
     for (let size of levelNumNodes) {
         levelOffsets.push(n - size)
         n -= size
@@ -53,7 +53,7 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     levelNumNodes.reverse()
     const levelBounds = []
     for (let i = 0; i < levelNumNodes.length; i++)
-        levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]]);
+        levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]])
     levelBounds.reverse()
     return levelBounds
 }
@@ -67,7 +67,7 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
     queue.push([0, levelBounds.length - 1])
     while (queue.length !== 0) {
         const [nodeIndex, level] = queue.pop()
-        const isLeafNode = nodeIndex >= numNodes - numItems;
+        const isLeafNode = nodeIndex >= numNodes - numItems
         // find the end index of the node
         const [,levelBound] = levelBounds[level]
         const end = Math.min(nodeIndex + nodeSize, levelBound)
@@ -91,7 +91,7 @@ export async function streamSearch(numItems: number, nodeSize: number, rect: Rec
             if (!intersects(rect, nodeItem))
                 continue
             if (isLeafNode)
-                results.push([nodeItem, pos - 1])
+                results.push(nodeItem.offset)
             else
                 queue.push([nodeItem.offset, level - 1])
         }

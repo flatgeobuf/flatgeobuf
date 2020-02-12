@@ -135,10 +135,10 @@ async function* deserializeInternal(
                 await seek(offset + treeOffset)
                 return await read(size)
             }
-            const foundItems = await treeStreamSearch(count, indexNodeSize, rect, readNode)
+            const foundOffsets = await treeStreamSearch(count, indexNodeSize, rect, readNode)
             offset += treeSize
-            for (let [nodeItem] of foundItems) {
-                await seek(offset + nodeItem.offset)
+            for (let foundOffset of foundOffsets) {
+                await seek(offset + foundOffset)
                 yield await readFeature(read, headerMeta, fromFeature)
             }
             return
