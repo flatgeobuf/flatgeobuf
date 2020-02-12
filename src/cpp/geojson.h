@@ -535,10 +535,10 @@ const void deserialize(
                 seekData(treeOffset + i);
                 readData(buf, s);
             };
-            const auto foundItems = PackedRTree::streamSearch(featuresCount, indexNodeSize, *nodeItem, readNode);
+            const auto foundOffsets = PackedRTree::streamSearch(featuresCount, indexNodeSize, *nodeItem, readNode);
             offset += PackedRTree::size(featuresCount, indexNodeSize);
-            for (auto item : foundItems) {
-                seekData(offset + item.nodeItem.offset);
+            for (auto foundOffset : foundOffsets) {
+                seekData(offset + foundOffset);
                 readFeature(readData, writeFeature, geometryType, columnMetas);
             }
             return;

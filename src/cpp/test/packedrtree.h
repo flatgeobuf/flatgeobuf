@@ -17,13 +17,17 @@ TEST_CASE("PackedRTree")
         REQUIRE(nodes[0].intersects({0, 0, 1, 1}) == true);
         REQUIRE(nodes[1].intersects({2, 2, 3, 3}) == true);
         hilbertSort(nodes);
+        uint64_t offset = 0;
+        for (auto &node : nodes) {
+            node.offset = offset;
+            offset += sizeof(NodeItem);
+        }
         REQUIRE(nodes[1].intersects({0, 0, 1, 1}) == true);
         REQUIRE(nodes[0].intersects({2, 2, 3, 3}) == true);
         PackedRTree tree(nodes, extent);
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
-        REQUIRE(list[0].index == 1);
-        REQUIRE(nodes[list[0].index].intersects({0, 0, 1, 1}) == true);
+        REQUIRE(nodes[list[0]/sizeof(NodeItem)].intersects({0, 0, 1, 1}) == true);
     }
 
     SECTION("PackedRTree 2 rectitems 2")
@@ -39,13 +43,17 @@ TEST_CASE("PackedRTree")
         REQUIRE(items[0]->nodeItem.intersects({0, 0, 1, 1}) == true);
         REQUIRE(items[1]->nodeItem.intersects({2, 2, 3, 3}) == true);
         hilbertSort(items);
+        uint64_t offset = 0;
+        for (auto &item : items) {
+            item->nodeItem.offset = offset;
+            offset += sizeof(NodeItem);
+        }
         REQUIRE(items[1]->nodeItem.intersects({0, 0, 1, 1}) == true);
         REQUIRE(items[0]->nodeItem.intersects({2, 2, 3, 3}) == true);
         PackedRTree tree(items, extent);
         auto list = tree.search(0, 0, 1, 1);
         REQUIRE(list.size() == 1);
-        REQUIRE(list[0].index == 1);
-        REQUIRE(items[list[0].index]->nodeItem.intersects({0, 0, 1, 1}) == true);
+        REQUIRE(items[list[0]/sizeof(NodeItem)]->nodeItem.intersects({0, 0, 1, 1}) == true);
     }
 
     SECTION("PackedRTree 19 items + roundtrip + streamSearch")
@@ -73,11 +81,16 @@ TEST_CASE("PackedRTree")
         nodes.push_back({10010, 10010, 10110, 10110});
         NodeItem extent = calcExtent(nodes);
         hilbertSort(nodes);
+        uint64_t offset = 0;
+        for (auto &node : nodes) {
+            node.offset = offset;
+            offset += sizeof(NodeItem);
+        }
         PackedRTree tree(nodes, extent);
         auto list = tree.search(102, 102, 103, 103);
         REQUIRE(list.size() == 4);
         for (uint32_t i = 0; i < list.size(); i++) {
-            REQUIRE(list[i].nodeItem.intersects({102, 102, 103, 103}) == true);
+            REQUIRE(nodes[list[i]/sizeof(NodeItem)].intersects({102, 102, 103, 103}) == true);
         }
         std::vector<uint8_t> treeData;
         tree.streamWrite([&treeData] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(treeData)); });
@@ -87,7 +100,7 @@ TEST_CASE("PackedRTree")
         auto list2 = tree2.search(102, 102, 103, 103);
         REQUIRE(list2.size() == 4);
         for (uint32_t i = 0; i < list2.size(); i++) {
-            REQUIRE(list2[i].nodeItem.intersects({102, 102, 103, 103}) == true);
+            REQUIRE(nodes[list2[i]/sizeof(NodeItem)].intersects({102, 102, 103, 103}) == true);
         }
         auto readNode = [data] (uint8_t *buf, uint32_t i, uint32_t s) {
             //std::cout << "i: " << i << std::endl;
@@ -96,8 +109,7 @@ TEST_CASE("PackedRTree")
         auto list3 = PackedRTree::streamSearch(nodes.size(), 16, {102, 102, 103, 103}, readNode);
         REQUIRE(list3.size() == 4);
         for (uint32_t i = 0; i < list3.size(); i++) {
-            auto node = list3[i];
-            REQUIRE(node.nodeItem.intersects({102, 102, 103, 103}) == true);
+            REQUIRE(nodes[list3[i]/sizeof(NodeItem)].intersects({102, 102, 103, 103}) == true);
         }
     }
     
@@ -118,7 +130,7 @@ TEST_CASE("PackedRTree")
         PackedRTree tree(nodes, extent);
         auto list = tree.search(690407, 6063692, 811682, 6176467);
         for (uint64_t i = 0; i < list.size(); i++)
-            CHECK(list[i].nodeItem.intersects({690407, 6063692, 811682, 6176467}) == true);
+            CHECK(nodes[list[i]/sizeof(NodeItem)].intersects({690407, 6063692, 811682, 6176467}) == true);
         
         std::vector<uint8_t> treeData;
         tree.streamWrite([&treeData] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(treeData)); });
@@ -130,6 +142,6 @@ TEST_CASE("PackedRTree")
         };
         auto list2 = PackedRTree::streamSearch(nodes.size(), 16, {690407, 6063692, 811682, 6176467}, readNode);
         for (uint64_t i = 0; i < list2.size(); i++)
-            CHECK(list2[i].nodeItem.intersects({690407, 6063692, 811682, 6176467}) == true);
+            CHECK(nodes[list2[i]/sizeof(NodeItem)].intersects({690407, 6063692, 811682, 6176467}) == true);
     }
 }
