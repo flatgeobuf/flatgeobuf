@@ -11,7 +11,7 @@ Inspired by [geobuf](https://github.com/mapbox/geobuf) and [flatbush](https://gi
 
 Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access.
 
-The site http://switchfromshapefile.org has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
+The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
 
 ## Examples
 
