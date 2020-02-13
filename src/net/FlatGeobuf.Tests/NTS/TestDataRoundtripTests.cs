@@ -3,6 +3,8 @@ using System.IO;
 using NetTopologySuite.IO;
 using NetTopologySuite.Features;
 using FlatGeobuf.NTS;
+using GeoAPI.Geometries;
+using System.Linq;
 
 namespace FlatGeobuf.Tests.NTS
 {
@@ -37,6 +39,10 @@ namespace FlatGeobuf.Tests.NTS
             var bytes = File.ReadAllBytes("../../../../../../test/data/countries.fgb");
             var fcActual = FeatureCollectionConversions.Deserialize(bytes);
             Assert.AreEqual(179, fcActual.Count);
+
+            var rect = new Envelope(12, 12, 56, 56);
+            var list = FeatureCollectionConversions.Deserialize(new MemoryStream(bytes), rect).ToList();
+            Assert.AreEqual(3, list.Count);
         }
     }
 }

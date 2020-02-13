@@ -6,6 +6,7 @@ using System.IO;
 using FlatBuffers;
 using NetTopologySuite.Features;
 using FlatGeobuf.Index;
+using GeoAPI.Geometries;
 
 namespace FlatGeobuf.NTS
 {
@@ -66,14 +67,12 @@ namespace FlatGeobuf.NTS
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
             foreach (var feature in Deserialize(new MemoryStream(bytes)))
-            {
                 fc.Add(feature);
-            }
 
             return fc;
         }
 
-        public static IEnumerable<IFeature> Deserialize(Stream stream) {
+        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null) {
             var reader = new BinaryReader(stream);
 
             var magicBytes = reader.ReadBytes(8);
@@ -99,8 +98,22 @@ namespace FlatGeobuf.NTS
 
             if (nodeSize > 0)
             {
-                var size = PackedHilbertRTree.CalcSize(count, nodeSize);
-                stream.Seek((int) size, SeekOrigin.Current);
+                long offset = 8 + 4 + headerSize;
+                var size = PackedRTree.CalcSize(count, nodeSize);
+                if (rect != null) {
+                    var result = PackedRTree.StreamSearch(count, nodeSize, rect, (ulong treeOffset, ulong size) => {
+                        stream.Seek(offset + (long) treeOffset, SeekOrigin.Begin);
+                        return stream;
+                    }).ToList();
+                    foreach (var item in result) {
+                        stream.Seek(offset + (long) size + (long) item.Offset, SeekOrigin.Begin);
+                        var featureLength = reader.ReadInt32();
+                        var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, 2, columns);
+                        yield return feature;
+                    }
+                    yield break;
+                }
+                stream.Seek(8 + 4 + headerSize + (long) size, SeekOrigin.Begin);
             }
 
             while (stream.Position < stream.Length)
@@ -111,7 +124,7 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        private static byte[] BuildHeader(ulong count, GeometryType geometryType, IList<ColumnMeta> columns, PackedHilbertRTree index)
+        private static byte[] BuildHeader(ulong count, GeometryType geometryType, IList<ColumnMeta> columns, PackedRTree index)
         {
             var builder = new FlatBufferBuilder(4096);
 
