@@ -135,7 +135,7 @@ async function* deserializeInternal(
                 return await read(size)
             }
             const foundOffsets = []
-            for await (let foundOffset of treeStreamSearch(count, indexNodeSize, rect, readNode))
+            for await (let [foundOffset] of treeStreamSearch(count, indexNodeSize, rect, readNode))
                 foundOffsets.push(foundOffset)
             offset += treeSize
             for await (let foundOffset of foundOffsets) {

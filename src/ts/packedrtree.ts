@@ -73,14 +73,15 @@ export async function* streamSearch(numItems: number, nodeSize: number, rect: Re
         const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
         const float64Array = new Float64Array(buffer)
         const uint32Array = new Uint32Array(buffer)
-        for (let i = 0; i < length * 5; i += 5) {
-            if (maxX < float64Array[i + 0]) continue // maxX < nodeMinX
-            if (maxY < float64Array[i + 1]) continue // maxY < nodeMinY
-            if (minX > float64Array[i + 2]) continue // minX > nodeMaxX
-            if (minY > float64Array[i + 3]) continue // minY > nodeMaxY
-            const offset = uint32Array[(i << 1) + 8]
+        for (let pos = nodeIndex; pos < end; pos++) {
+            const nodePos = (pos - nodeIndex) * 5
+            if (maxX < float64Array[nodePos + 0]) continue // maxX < nodeMinX
+            if (maxY < float64Array[nodePos + 1]) continue // maxY < nodeMinY
+            if (minX > float64Array[nodePos + 2]) continue // minX > nodeMaxX
+            if (minY > float64Array[nodePos + 3]) continue // minY > nodeMaxY
+            const offset = uint32Array[(nodePos << 1) + 8]
             if (isLeafNode)
-                yield offset
+                yield [offset, pos - 1]
             else
                 queue.push([offset, level - 1])
         }
