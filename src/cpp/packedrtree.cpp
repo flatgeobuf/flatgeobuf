@@ -244,10 +244,10 @@ PackedRTree::PackedRTree(const void *data, const uint64_t numItems, const uint16
     fromData(data);
 }
 
-std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX, double maxY) const
+std::vector<SearchResultItem> PackedRTree::search(double minX, double minY, double maxX, double maxY) const
 {
     NodeItem n { minX, minY, maxX, maxY, 0 };
-    std::vector<uint64_t> results;
+    std::vector<SearchResultItem> results;
     std::unordered_map<uint64_t, uint64_t> queue;
     queue.insert(std::pair<uint64_t, uint64_t>(0, _levelBounds.size() - 1));
     while(queue.size() != 0) {
@@ -264,7 +264,7 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
             if (!n.intersects(nodeItem))
                 continue;
             if (isLeafNode)
-                results.push_back(nodeItem.offset);
+                results.push_back({nodeItem.offset, pos - 1});
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(nodeItem.offset, level - 1));
         }
@@ -272,7 +272,7 @@ std::vector<uint64_t> PackedRTree::search(double minX, double minY, double maxX,
     return results;
 }
 
-std::vector<uint64_t> PackedRTree::streamSearch(
+std::vector<SearchResultItem> PackedRTree::streamSearch(
     const uint64_t numItems, const uint16_t nodeSize, const NodeItem& item,
     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
 {
@@ -283,7 +283,7 @@ std::vector<uint64_t> PackedRTree::streamSearch(
     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(nodeItems.data());
     // use ordered search queue to make index traversal in sequential order
     std::map<uint64_t, uint64_t> queue;
-    std::vector<uint64_t> results;
+    std::vector<SearchResultItem> results;
     queue.insert(std::pair<uint64_t, uint64_t>(0, levelBounds.size() - 1));
     while(queue.size() != 0) {
         auto next = queue.begin();
@@ -296,12 +296,13 @@ std::vector<uint64_t> PackedRTree::streamSearch(
         uint64_t length = end - nodeIndex;
         readNode(nodesBuf, static_cast<size_t>(nodeIndex * sizeof(NodeItem)), static_cast<size_t>(length * sizeof(NodeItem)));
         // search through child nodes
-        for (size_t i = 0; i < length; i++) {
-            auto nodeItem = nodeItems[i];
+        for (uint64_t pos = nodeIndex; pos < end; pos++) {
+            uint64_t nodePos = pos - nodeIndex;
+            auto nodeItem = nodeItems[static_cast<size_t>(nodePos)];
             if (!item.intersects(nodeItem))
                 continue;
             if (isLeafNode)
-                results.push_back(nodeItem.offset);
+                results.push_back({ nodeItem.offset, pos - 1 });
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(nodeItem.offset, level - 1));
         }

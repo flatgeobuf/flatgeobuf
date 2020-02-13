@@ -31,7 +31,7 @@ struct Item {
 };
 
 struct SearchResultItem {
-    NodeItem nodeItem;
+    uint64_t offset;
     uint64_t index;
 };
 
@@ -66,8 +66,8 @@ public:
     PackedRTree(const std::vector<std::shared_ptr<Item>> &items, const NodeItem& extent, const uint16_t nodeSize = 16);
     PackedRTree(const std::vector<NodeItem> &nodes, const NodeItem& extent, const uint16_t nodeSize = 16);
     PackedRTree(const void *data, const uint64_t numItems, const uint16_t nodeSize = 16);
-    std::vector<uint64_t> search(double minX, double minY, double maxX, double maxY) const;
-    static std::vector<uint64_t> streamSearch(
+    std::vector<SearchResultItem> search(double minX, double minY, double maxX, double maxY) const;
+    static std::vector<SearchResultItem> streamSearch(
         const uint64_t numItems, const uint16_t nodeSize, const NodeItem& item,
         const std::function<void(uint8_t *, size_t, size_t)> &readNode);
     static std::vector<std::pair<uint64_t, uint64_t>> generateLevelBounds(const uint64_t numItems, const uint16_t nodeSize);
