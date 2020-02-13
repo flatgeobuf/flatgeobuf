@@ -32,7 +32,7 @@ Any 64-bit flatbuffer value contained anywhere in the file (for example coordina
 
 ## Performance
 
-Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from https://download.geofabrik.de/, containing 906602 LineString features with a set of attributes.
+Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from [download.geofabrik.de](https://download.geofabrik.de), containing 906602 LineString features with a set of attributes.
 
 |                       | Shapefile | GeoPackage | FlatGeobuf | GeoJSON | GML |
 |-----------------------|-----------|------------|------------|---------|-----|
