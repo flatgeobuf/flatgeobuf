@@ -30,6 +30,8 @@ The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in d
 
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinates) is aligned to 8 bytes to from the start of the file or feature to allow for direct memory access.
 
+Encoding of any string value is assumed to be UTF-8.
+
 ## Performance
 
 Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from [download.geofabrik.de](https://download.geofabrik.de), containing 906602 LineString features with a set of attributes.
