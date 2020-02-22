@@ -24,8 +24,14 @@ namespace FlatGeobuf.NTS
         public IList<ColumnMeta> Columns { get; set; }
     }
 
-    public static class FeatureCollectionConversions {
-        public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+    public static class FeatureCollectionConversions
+    {
+        public static byte[] Serialize(
+            FeatureCollection fc,
+            GeometryType geometryType,
+            byte dimensions = 2,
+            IList<ColumnMeta> columns = null)
+        {
             var featureFirst = fc.Features.First();
             if (columns == null && featureFirst.Attributes != null)
                     columns = featureFirst.Attributes.GetNames()
@@ -38,7 +44,13 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+        public static void Serialize(
+            Stream output,
+            IEnumerable<IFeature> features,
+            GeometryType geometryType,
+            byte dimensions = 2,
+            IList<ColumnMeta> columns = null)
+        {
             output.Write(Constants.MagicBytes);
             var header = BuildHeader(0, geometryType, columns, null);
             output.Write(header);
@@ -50,7 +62,8 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        private static ColumnType ToColumnType(Type type) {
+        private static ColumnType ToColumnType(Type type)
+        {
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte: return ColumnType.UByte;
                 case TypeCode.SByte: return ColumnType.Byte;
@@ -63,7 +76,8 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        public static FeatureCollection Deserialize(byte[] bytes) {
+        public static FeatureCollection Deserialize(byte[] bytes)
+        {
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
             foreach (var feature in Deserialize(new MemoryStream(bytes)))
@@ -72,7 +86,8 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null) {
+        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null)
+        {
             var reader = new BinaryReader(stream);
 
             var magicBytes = reader.ReadBytes(8);

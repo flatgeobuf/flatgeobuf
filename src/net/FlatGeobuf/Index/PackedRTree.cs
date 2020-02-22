@@ -12,6 +12,119 @@ namespace FlatGeobuf.Index
 
         public delegate Stream ReadNode(ulong offset, ulong length);
 
+        double MinX { get; set; } = double.MinValue;
+        double MinY { get; set; } = double.MinValue;
+        double MaxX { get; set; } = double.MaxValue;
+        double MaxY { get; set; } = double.MaxValue;
+
+        ulong NumItems { get; set; }
+        ulong NumNodes { get; set; }
+        ushort NodeSize { get; set; }
+
+        IList<(ulong Start, ulong End)> LevelBounds { get; set; }
+
+        private byte[] _data;
+        private ulong _pos;
+
+        public PackedRTree(ulong numItems, ushort nodeSize) {
+            if (nodeSize < 2)
+                throw new ArgumentException("Node size must be at least 2");
+            NodeSize = nodeSize;
+            if (numItems == 0)
+                throw new ArgumentException("Cannot create empty tree");
+            NumItems = numItems;
+            NodeSize = Math.Min(Math.Max(nodeSize, (ushort) 2), (ushort) 65535);
+            LevelBounds = GenerateLevelBounds(NumItems, NodeSize);
+            NumNodes = LevelBounds.First().End;
+            _data = new byte[NumNodes * NODE_ITEM_LEN];
+        }
+
+        private void GenerateNodes()
+        {
+            for (int i = 0; i < LevelBounds.Count - 1; i++) {
+                var pos = LevelBounds[i].Start;
+                var readerStream = new MemoryStream(_data);
+                readerStream.Position = (long) pos;
+                var reader = new BinaryReader(readerStream);
+                var end = LevelBounds[i].End;
+                var newpos = LevelBounds[i + 1].Start;
+                var writerStream = new MemoryStream(_data);
+                writerStream.Position = (long) newpos;
+                var writer = new BinaryWriter(writerStream);
+                while (pos < end) {
+                    var nodeMinX = double.MinValue;
+                    var nodeMinY = double.MinValue;
+                    var nodeMaxX = double.MaxValue;
+                    var nodeMaxY = double.MaxValue;
+                    for (var j = 0; j < NodeSize && pos < end; j++) {
+                        var minX = reader.ReadDouble();
+                        var minY = reader.ReadDouble();
+                        var maxX = reader.ReadDouble();
+                        var maxY = reader.ReadDouble();
+                        reader.ReadUInt64();
+                        if (MinX < nodeMinX) nodeMinX = minX;
+                        if (MinY < nodeMinY) nodeMinY = minY;
+                        if (MaxX > nodeMaxX) nodeMaxX = maxX;
+                        if (MaxY > nodeMaxY) nodeMaxY = maxY;
+                    }
+                    writer.Write(nodeMinX);
+                    writer.Write(nodeMinY);
+                    writer.Write(nodeMaxX);
+                    writer.Write(nodeMaxY);
+                    writer.Write(pos);
+                }
+            }
+        }
+
+        private static uint hilbert(uint x, uint y)
+        {
+            uint a = x ^ y;
+            uint b = 0xFFFF ^ a;
+            uint c = 0xFFFF ^ (x | y);
+            uint d = x & (y ^ 0xFFFF);
+
+            uint A = a | (b >> 1);
+            uint B = (a >> 1) ^ a;
+            uint C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+            uint D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+
+            a = A; b = B; c = C; d = D;
+            A = ((a & (a >> 2)) ^ (b & (b >> 2)));
+            B = ((a & (b >> 2)) ^ (b & ((a ^ b) >> 2)));
+            C ^= ((a & (c >> 2)) ^ (b & (d >> 2)));
+            D ^= ((b & (c >> 2)) ^ ((a ^ b) & (d >> 2)));
+
+            a = A; b = B; c = C; d = D;
+            A = ((a & (a >> 4)) ^ (b & (b >> 4)));
+            B = ((a & (b >> 4)) ^ (b & ((a ^ b) >> 4)));
+            C ^= ((a & (c >> 4)) ^ (b & (d >> 4)));
+            D ^= ((b & (c >> 4)) ^ ((a ^ b) & (d >> 4)));
+
+            a = A; b = B; c = C; d = D;
+            C ^= ((a & (c >> 8)) ^ (b & (d >> 8)));
+            D ^= ((b & (c >> 8)) ^ ((a ^ b) & (d >> 8)));
+
+            a = C ^ (C >> 1);
+            b = D ^ (D >> 1);
+
+            uint i0 = x ^ y;
+            uint i1 = b | (0xFFFF ^ (i0 | a));
+
+            i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
+            i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
+            i0 = (i0 | (i0 << 2)) & 0x33333333;
+            i0 = (i0 | (i0 << 1)) & 0x55555555;
+
+            i1 = (i1 | (i1 << 8)) & 0x00FF00FF;
+            i1 = (i1 | (i1 << 4)) & 0x0F0F0F0F;
+            i1 = (i1 | (i1 << 2)) & 0x33333333;
+            i1 = (i1 | (i1 << 1)) & 0x55555555;
+
+            uint value = ((i1 << 1) | i0);
+
+            return value;
+        }
+
         public static ulong CalcSize(ulong numItems, ushort nodeSize)
         {
             if (nodeSize < 2)
