@@ -6,16 +6,27 @@ using GeoAPI.Geometries;
 
 namespace FlatGeobuf.Index
 {
+    public class Rect {
+        public double MinX { get; set; }
+        public double MinY { get; set; }
+        public double MaxX { get; set; }
+        public double MaxY { get; set; }
+    }
+
+    public class Item : Rect {
+        public ulong Offset { get; set; }
+    }
+
     public class PackedRTree
     {
         private const ulong NODE_ITEM_LEN = 8 * 4 + 8;
 
         public delegate Stream ReadNode(ulong offset, ulong length);
 
-        double MinX { get; set; } = double.MinValue;
-        double MinY { get; set; } = double.MinValue;
-        double MaxX { get; set; } = double.MaxValue;
-        double MaxY { get; set; } = double.MaxValue;
+        double MinX { get; set; } = double.MaxValue;
+        double MinY { get; set; } = double.MaxValue;
+        double MaxX { get; set; } = double.MinValue;
+        double MaxY { get; set; } = double.MinValue;
 
         ulong NumItems { get; set; }
         ulong NumNodes { get; set; }
@@ -24,19 +35,26 @@ namespace FlatGeobuf.Index
         IList<(ulong Start, ulong End)> LevelBounds { get; set; }
 
         private byte[] _data;
-        private ulong _pos;
+        private MemoryStream _memoryStream;
+        private BinaryWriter _writer;
 
-        public PackedRTree(ulong numItems, ushort nodeSize) {
+        public PackedRTree(IList<Item> items, ushort nodeSize) {
             if (nodeSize < 2)
                 throw new ArgumentException("Node size must be at least 2");
             NodeSize = nodeSize;
-            if (numItems == 0)
+            if (items.LongCount() == 0)
                 throw new ArgumentException("Cannot create empty tree");
-            NumItems = numItems;
+            NumItems = (ulong) items.LongCount();
             NodeSize = Math.Min(Math.Max(nodeSize, (ushort) 2), (ushort) 65535);
             LevelBounds = GenerateLevelBounds(NumItems, NodeSize);
             NumNodes = LevelBounds.First().End;
+
             _data = new byte[NumNodes * NODE_ITEM_LEN];
+            _memoryStream = new MemoryStream(_data);
+            _memoryStream.Position = (long) LevelBounds[0].Start;
+            _writer = new BinaryWriter(_memoryStream);
+
+            GenerateNodes();
         }
 
         private void GenerateNodes()
@@ -76,7 +94,7 @@ namespace FlatGeobuf.Index
             }
         }
 
-        private static uint hilbert(uint x, uint y)
+        public static uint Hilbert(uint x, uint y)
         {
             uint a = x ^ y;
             uint b = 0xFFFF ^ a;

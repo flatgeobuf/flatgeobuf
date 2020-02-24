@@ -26,10 +26,17 @@ namespace FlatGeobuf.NTS
 
     public static class FeatureCollectionConversions
     {
+        private class FeatureItem : Item
+        {
+            public int Size { get; set; }
+        }
+
         public static byte[] Serialize(
             FeatureCollection fc,
             GeometryType geometryType,
             byte dimensions = 2,
+            long featuresCount = 0,
+            bool spatialIndex = false,
             IList<ColumnMeta> columns = null)
         {
             var featureFirst = fc.Features.First();
@@ -39,26 +46,81 @@ namespace FlatGeobuf.NTS
                         .ToList();
             using (var memoryStream = new MemoryStream())
             {
-                Serialize(memoryStream, fc.Features, geometryType, dimensions, columns);
+                Serialize(memoryStream, fc.Features, geometryType, dimensions, featuresCount, spatialIndex, columns);
                 return memoryStream.ToArray();
             }
         }
 
         public static void Serialize(
             Stream output,
-            IEnumerable<IFeature> features,
+            IEnumerable<IFeature> features,            
             GeometryType geometryType,
             byte dimensions = 2,
+            long featuresCount = 0,
+            bool spatialIndex = false,
             IList<ColumnMeta> columns = null)
         {
-            output.Write(Constants.MagicBytes);
-            var header = BuildHeader(0, geometryType, columns, null);
-            output.Write(header);
-            foreach (var feature in features)
+            if (spatialIndex)
             {
-                var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
-                var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
-                output.Write(buffer);
+                var tempFileName = Path.GetTempFileName();
+                var tempStreamWrite = new FileStream(tempFileName, FileMode.Open, FileAccess.Write);
+                var indexData = new MemoryStream();
+                var writer = new BinaryWriter(indexData);
+                var items = new List<Item>();
+                ulong offset = 0;
+                ulong numItems = 0;
+                double minX = double.MaxValue;
+                double minY = double.MaxValue;
+                double maxX = double.MinValue;
+                double maxY = double.MinValue;
+                foreach (var feature in features)
+                {
+                    var buffer = FeatureConversions.ToByteBuffer(feature, GeometryType.Unknown, dimensions, columns);
+                    tempStreamWrite.Write(buffer);
+                    var e = feature.Geometry.EnvelopeInternal;
+                    items.Add(new FeatureItem() {
+                        MinX = e.MinX,
+                        MinY = e.MinY,
+                        MaxX = e.MaxX,
+                        MaxY = e.MaxY,
+                        Offset = offset,
+                        Size = buffer.Count()
+                    });
+                    if (e.MinX < minX) minX = e.MinX;
+                    if (e.MinY < minY) minY = e.MinY;
+                    if (e.MaxX > maxX) maxX = e.MaxX;
+                    if (e.MaxY > maxY) maxY = e.MaxY;
+                    offset += (ulong) buffer.LongCount();
+                    numItems++;
+                }
+                var width = maxX - minX;
+                var height = maxY - minY;
+                var hilbertMax = (1 << 16) - 1;
+                var sortedItems = items.OrderBy(i => {
+                    var x = (uint) Math.Floor(hilbertMax * ((i.MinX + i.MaxX) / 2 - minX) / width);
+                    var y = (uint) Math.Floor(hilbertMax * ((i.MinY + i.MaxY) / 2 - minY) / height);
+                    return PackedRTree.Hilbert(x, y);
+                }).ToList();
+                // TODO: recalc offsets in sortedItems
+                PackedRTree tree = new PackedRTree(sortedItems, 16);
+                output.Write(Constants.MagicBytes);
+                var header = BuildHeader(0, geometryType, columns, null);
+                output.Write(header);
+                // TODO: write tree index
+                // TODO: rewrite features in sorted order
+                return;
+            }
+            else
+            {
+                output.Write(Constants.MagicBytes);
+                var header = BuildHeader(0, geometryType, columns, null);
+                output.Write(header);
+                foreach (var feature in features)
+                {
+                    var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
+                    var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
+                    output.Write(buffer);
+                }
             }
         }
 

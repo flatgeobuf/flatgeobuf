@@ -44,7 +44,7 @@ namespace FlatGeobuf.Tests.NTS
             var list = FeatureCollectionConversions.Deserialize(new MemoryStream(bytes), rect).ToList();
             Assert.AreEqual(3, list.Count);
 
-            bytes = FeatureCollectionConversions.Serialize(fcActual, GeometryType.Unknown, 2);
+            bytes = FeatureCollectionConversions.Serialize(fcActual, GeometryType.Unknown, 2, fcActual.Count, true);
             fcActual = FeatureCollectionConversions.Deserialize(bytes);
             Assert.AreEqual(179, fcActual.Count);
 
