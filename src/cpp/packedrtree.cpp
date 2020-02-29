@@ -246,6 +246,7 @@ PackedRTree::PackedRTree(const void *data, const uint64_t numItems, const uint16
 
 std::vector<SearchResultItem> PackedRTree::search(double minX, double minY, double maxX, double maxY) const
 {
+    uint64_t leafNodesOffset = _levelBounds.front().first;
     NodeItem n { minX, minY, maxX, maxY, 0 };
     std::vector<SearchResultItem> results;
     std::unordered_map<uint64_t, uint64_t> queue;
@@ -264,7 +265,7 @@ std::vector<SearchResultItem> PackedRTree::search(double minX, double minY, doub
             if (!n.intersects(nodeItem))
                 continue;
             if (isLeafNode)
-                results.push_back({nodeItem.offset, pos - 1});
+                results.push_back({nodeItem.offset, pos - leafNodesOffset});
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(nodeItem.offset, level - 1));
         }
@@ -277,6 +278,7 @@ std::vector<SearchResultItem> PackedRTree::streamSearch(
     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
 {
     auto levelBounds = generateLevelBounds(numItems, nodeSize);
+    uint64_t leafNodesOffset = levelBounds.front().first;
     uint64_t numNodes = levelBounds.front().second;
     std::vector<NodeItem> nodeItems;
     nodeItems.reserve(nodeSize);
@@ -302,7 +304,7 @@ std::vector<SearchResultItem> PackedRTree::streamSearch(
             if (!item.intersects(nodeItem))
                 continue;
             if (isLeafNode)
-                results.push_back({ nodeItem.offset, pos - 1 });
+                results.push_back({ nodeItem.offset, pos - leafNodesOffset });
             else
                 queue.insert(std::pair<uint64_t, uint64_t>(nodeItem.offset, level - 1));
         }
