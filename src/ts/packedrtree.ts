@@ -50,14 +50,9 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     return levelBounds
 }
 
-interface IReadNode {
-    (treeOffset: number, size: number): Promise<ArrayBuffer>
-}
-
 type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
 
-export async function* streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn)
-{
+export async function* streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn) {
     const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[leafNodesOffset,numNodes]] = levelBounds

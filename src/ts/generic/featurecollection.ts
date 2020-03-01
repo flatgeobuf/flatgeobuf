@@ -15,9 +15,9 @@ import { IGeoJsonFeature } from '../geojson/feature'
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature | IGeoJsonFeature
 type ReadFn = (size: number) => Promise<ArrayBuffer>
+type SeekFn = (offset: number) => Promise<void>
 
 const SIZE_PREFIX_LEN: number = 4
-const FEATURE_OFFSET_LEN: number = 8
 
 export const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00])
 
@@ -77,14 +77,13 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) {
 
 export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn) {
     const reader = slice(stream)
-    const read = async size => await reader.slice(size)
+    const read: ReadFn = async size => await reader.slice(size)
     return deserializeInternal(read, undefined, undefined, fromFeature)
 }
 
 export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn) {
     let offset = 0
-    const read = async size => {
-        //console.log(`fetch bytes=${offset}-${offset + size - 1}`)
+    const read: ReadFn = async size => {
         const response = await fetch(url, {
             headers: {
                 'Range': `bytes=${offset}-${offset + size - 1}`
@@ -92,18 +91,13 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFe
         })
         offset += size
         const arrayBuffer = await response.arrayBuffer()
-        //console.log(`fetch done`)
         return arrayBuffer
     }
-    const seek = async newoffset => offset = newoffset
+    const seek: SeekFn = async newoffset => { offset = newoffset }
     return deserializeInternal(read, seek, rect, fromFeature)
 }
 
-async function* deserializeInternal(
-        read: (size: number) => Promise<ArrayBuffer>,
-        seek: (offset: number) => Promise<void>,
-        rect: Rect,
-        fromFeature: FromFeatureFn) {
+async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, fromFeature: FromFeatureFn) {
     let offset = 0
     let bytes = new Uint8Array(await read(8))
     offset += 8

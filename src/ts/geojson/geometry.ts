@@ -89,7 +89,6 @@ export function fromGeometry(geometry: Geometry, type: GeometryType) {
         const geometries = []
         for (let i = 0; i < geometry.partsLength(); i++) {
             const part = geometry.parts(i)
-            const partType = part.type()
             geometries.push(fromGeometry(part, GeometryType.Polygon))
         }
         return {
