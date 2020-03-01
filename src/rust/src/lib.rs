@@ -5,3 +5,5 @@ mod header_generated;
 
 pub use feature_generated::flat_geobuf::*;
 pub use header_generated::flat_geobuf::*;
+
+pub static MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', 3, b'f', b'g', b'b', 0];
