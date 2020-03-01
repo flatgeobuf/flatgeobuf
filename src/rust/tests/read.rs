@@ -21,15 +21,26 @@ fn read_file() -> std::result::Result<(), std::io::Error> {
     let header = get_root_as_header(&header_buf[..]);
     assert_eq!(header.name(), Some("countries"));
     assert!(header.envelope().is_some());
+    assert_eq!(
+        header.envelope().unwrap().safe_slice(),
+        &[-180.0, -85.609038, 180.0, 83.64513]
+    );
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(header.hasZ(), false);
     assert_eq!(header.hasM(), false);
     assert_eq!(header.hasT(), false);
     assert_eq!(header.hasTM(), false);
-    // assert_eq!(header.columns(), ...);
+    assert!(header.columns().is_some());
+    let columns = header.columns().unwrap();
+    assert_eq!(columns.len(), 2);
+    let column0 = columns.get(0);
+    assert_eq!(column0.name(), "id");
+    assert_eq!(column0.type_(), ColumnType::String);
     assert_eq!(header.features_count(), 179);
     assert_eq!(header.index_node_size(), 16);
     assert!(header.crs().is_some());
+    let crs = header.crs().unwrap();
+    assert_eq!(crs.code(), 4326);
 
     // Skip index
     let index_size = packed_rtree_size(header.features_count(), header.index_node_size());
@@ -47,7 +58,7 @@ fn read_file() -> std::result::Result<(), std::io::Error> {
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::MultiPolygon);
     assert!(feature.properties().is_some());
-    // assert_eq!(feature.columns(), ...);
+    assert!(feature.columns().is_none());
 
     Ok(())
 }
