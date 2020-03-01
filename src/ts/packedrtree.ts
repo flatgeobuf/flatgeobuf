@@ -60,7 +60,7 @@ export async function* streamSearch(numItems: number, nodeSize: number, rect: Re
 {
     const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
-    const [[,numNodes]] = levelBounds
+    const [[leafNodesOffset,numNodes]] = levelBounds
     const queue = []
     queue.push([0, levelBounds.length - 1])
     while (queue.length !== 0) {
@@ -81,7 +81,7 @@ export async function* streamSearch(numItems: number, nodeSize: number, rect: Re
             if (minY > float64Array[nodePos + 3]) continue // minY > nodeMaxY
             const offset = uint32Array[(nodePos << 1) + 8]
             if (isLeafNode)
-                yield [offset, pos - 1]
+                yield [offset, pos - leafNodesOffset]
             else
                 queue.push([offset, level - 1])
         }
