@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "0.1.0"
+version = "3.0.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 
