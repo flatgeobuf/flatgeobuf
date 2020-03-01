@@ -1,6 +1,12 @@
-# FlatGeobuf bindings for Rust
+# FlatGeobuf for Rust
 
-Rust bindings for the [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/) format.
+Rust implementation of [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/).
+
+## Limitations
+
+- No read/write support for packed R-tree index
+- Missing FlatBuffers features like simple mutation and buffer verifier
+  ([Platform / Language / Feature support](http://google.github.io/flatbuffers/flatbuffers_support.html))
 
 ## Documentation
 
