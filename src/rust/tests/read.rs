@@ -58,9 +58,19 @@ fn read_file() -> std::result::Result<(), std::io::Error> {
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::MultiPolygon);
+
+    let parts = geometry.parts().unwrap();
+    let mut num_vertices = 0;
+    for i in 0..parts.len() {
+        let part = parts.get(i);
+        for _j in 0..part.xy().unwrap().len() {
+            num_vertices += 1;
+        }
+    }
+    assert_eq!(num_vertices, 1316);
+
     assert!(feature.properties().is_some());
     assert!(feature.columns().is_none());
-
     Ok(())
 }
 
