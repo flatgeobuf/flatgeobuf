@@ -1,4 +1,5 @@
 use flatgeobuf::*;
+use std::error::Error;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
 #[test]
@@ -70,12 +71,19 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     let header = reader.read_header()?;
     let cnt = header.features_count();
     assert_eq!(cnt, 179);
-    assert_eq!(header.name(), Some("countries"));
     reader.select_all()?;
     let mut num_features = 0;
     while let Ok(_feature) = reader.next() {
         num_features += 1;
     }
     assert_eq!(cnt, num_features);
+
+    let f = std::fs::File::open("../../test/data/states.geojson")?;
+    let mut reader = Reader::new(f);
+    assert_eq!(
+        reader.read_header().err().unwrap().description(),
+        "Magic byte doesn\'t match"
+    );
+
     Ok(())
 }
