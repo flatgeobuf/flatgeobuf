@@ -71,7 +71,7 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     let cnt = header.features_count();
     assert_eq!(cnt, 179);
     assert_eq!(header.name(), Some("countries"));
-    reader.query_all()?;
+    reader.select_all()?;
     let mut num_features = 0;
     while let Ok(_feature) = reader.next() {
         num_features += 1;

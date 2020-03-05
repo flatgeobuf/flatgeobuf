@@ -34,7 +34,7 @@ impl<R: Read + Seek> Reader<R> {
         let header = get_root_as_header(&self.header_buf[..]);
         Ok(header)
     }
-    pub fn query_all(&mut self) -> std::result::Result<(), std::io::Error> {
+    pub fn select_all(&mut self) -> std::result::Result<(), std::io::Error> {
         let header = get_root_as_header(&self.header_buf[..]);
         let index_size = packed_rtree_size(header.features_count(), header.index_node_size());
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
