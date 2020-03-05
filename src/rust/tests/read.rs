@@ -63,34 +63,19 @@ fn read_file() -> std::result::Result<(), std::io::Error> {
     Ok(())
 }
 
-fn packed_rtree_size(num_items: u64, node_size: u16) -> u64 {
-    let node_size_min = node_size as u64;
-    let mut n = num_items;
-    let mut num_nodes = n;
-    loop {
-        n = (n + node_size_min - 1) / node_size_min;
-        num_nodes += n;
-        if n == 1 {
-            break;
-        }
+#[test]
+fn file_reader() -> std::result::Result<(), std::io::Error> {
+    let f = std::fs::File::open("../../test/data/countries.fgb")?;
+    let mut reader = Reader::new(f);
+    let header = reader.read_header()?;
+    let cnt = header.features_count();
+    assert_eq!(cnt, 179);
+    assert_eq!(header.name(), Some("countries"));
+    reader.query_all()?;
+    let mut num_features = 0;
+    while let Ok(_feature) = reader.next() {
+        num_features += 1;
     }
-    num_nodes * 40
+    assert_eq!(cnt, num_features);
+    Ok(())
 }
-// uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
-// {
-//     if (nodeSize < 2)
-//         throw std::invalid_argument("Node size must be at least 2");
-//     if (numItems == 0)
-//         throw std::invalid_argument("Number of items must be greater than 0");
-//     const uint16_t nodeSizeMin = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
-//     // limit so that resulting size in bytes can be represented by uint64_t
-//     if (numItems > static_cast<uint64_t>(1) << 56)
-//         throw std::overflow_error("Number of items must be less than 2^56");
-//     uint64_t n = numItems;
-//     uint64_t numNodes = n;
-//     do {
-//         n = (n + nodeSizeMin - 1) / nodeSizeMin;
-//         numNodes += n;
-//     } while (n != 1);
-//     return numNodes * sizeof(NodeItem);
-// }
