@@ -8,4 +8,5 @@ pub use feature_generated::flat_geobuf::*;
 pub use header_generated::flat_geobuf::*;
 pub use reader::*;
 
-pub static MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', 3, b'f', b'g', b'b', 0];
+pub const VERSION: u8 = 3;
+pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
