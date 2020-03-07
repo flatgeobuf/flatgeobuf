@@ -30,21 +30,21 @@ export default [{
   plugins
 }, {
   input: 'lib/ol.js',
+  external: [
+    'ol/Feature',
+    'ol/geom/Point',
+    'ol/geom/MultiPoint',
+    'ol/geom/LineString',
+    'ol/geom/MultiLineString',
+    'ol/geom/Polygon',
+    'ol/geom/MultiPolygon',
+    'ol/geom/GeometryLayout'
+  ],
   output: {
     file: 'dist/flatgeobuf-ol.min.js',
     format: 'umd',
     name: 'flatgeobuf',
     sourcemap: true,
-    external: [
-      'ol/Feature',
-      'ol/geom/Point',
-      'ol/geom/MultiPoint',
-      'ol/geom/LineString',
-      'ol/geom/MultiLineString',
-      'ol/geom/Polygon',
-      'ol/geom/MultiPolygon',
-      'ol/geom/GeometryLayout'
-    ],
     globals: {
       'ol/Feature': 'ol.Feature',
       'ol/geom/Point': 'ol.geom.Point',
