@@ -242,3 +242,63 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
 
     Ok(())
 }
+
+struct TopFinder(f64);
+
+impl GeomVisitor for TopFinder {
+    fn dimensions(&self) -> Dimensions {
+        Dimensions {
+            z: true,
+            m: false,
+            t: false,
+            tm: false,
+        }
+    }
+    fn point(
+        &mut self,
+        _x: f64,
+        _y: f64,
+        z: Option<f64>,
+        _m: Option<f64>,
+        _t: Option<f64>,
+        _tm: Option<u64>,
+    ) {
+        if let Some(z) = z {
+            if z > self.0 {
+                self.0 = z
+            }
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn multi_dim() -> std::result::Result<(), std::io::Error> {
+    let f = std::fs::File::open("../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb")?;
+    let mut reader = Reader::new(f);
+    let header = reader.read_header()?;
+    assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
+    assert_eq!(header.hasZ(), true);
+    assert_eq!(header.hasM(), false);
+    assert_eq!(header.hasT(), false);
+    assert_eq!(header.hasTM(), false);
+    assert_eq!(header.features_count(), 87);
+
+    reader.select_all()?;
+    let feature = reader.next()?;
+    assert!(feature.geometry().is_some());
+    let geometry = feature.geometry().unwrap();
+    assert_eq!(geometry.type_(), GeometryType::MultiPolygon);
+    // MULTIPOLYGON Z (((2683312.339 1247968.33 401.7,2683311.496 1247964.044 401.7,2683307.761 1247964.745 401.7,2683309.16 1247973.337 401.7,2683313.003 1247972.616 401.7,2683312.339 1247968.33 401.7),(2683312.339 1247968.33
+    // 401.7,2683313.003 1247972.616 401.7,2683313.003 1247972.616 410.5,2683312.339 1247968.33 410.5,2683312.339 1247968.33 401.7),(2683307.761 1247964.745 401.7,2683311.496 1247964.044 401.7,2683311.496 1247964.044 410.5,268330
+    // 7.761 1247964.745 410.5,2683307.761 1247964.745 401.7),(2683311.496 1247964.044 401.7,2683312.339 1247968.33 401.7,2683312.339 1247968.33 410.5,2683311.496 1247964.044 410.5,2683311.496 1247964.044 401.7)),((2683309.16 124
+    // 7973.337 401.7,2683307.761 1247964.745 401.7,2683307.761 1247964.745 410.5,2683309.16 1247973.337 410.5,2683309.16 1247973.337 401.7)),((2683312.339 1247968.33 410.5,2683311.496 1247964.044 410.5,2683307.761 1247964.745 41
+    // 0.5,2683309.16 1247973.337 410.5,2683313.003 1247972.616 410.5,2683312.339 1247968.33 410.5),(2683313.003 1247972.616 401.7,2683309.16 1247973.337 401.7,2683309.16 1247973.337 410.5,2683313.003 1247972.616 410.5,2683313.00
+    // 3 1247972.616 401.7)))
+
+    let mut max_finder = TopFinder(0.0);
+    visit_geometry(&mut max_finder, &geometry, GeometryType::MultiPolygon);
+    assert_eq!(max_finder.0, 410.5);
+
+    Ok(())
+}

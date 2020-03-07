@@ -53,8 +53,33 @@ impl<R: Read + Seek> Reader<R> {
     }
 }
 
+pub struct Dimensions {
+    pub z: bool,
+    pub m: bool,
+    pub t: bool,
+    pub tm: bool,
+}
+
 pub trait GeomVisitor {
+    fn dimensions(&self) -> Dimensions {
+        Dimensions {
+            z: false,
+            m: false,
+            t: false,
+            tm: false,
+        }
+    }
     fn pointxy(&mut self, _x: f64, _y: f64) {}
+    fn point(
+        &mut self,
+        _x: f64,
+        _y: f64,
+        _z: Option<f64>,
+        _m: Option<f64>,
+        _t: Option<f64>,
+        _tm: Option<u64>,
+    ) {
+    }
     fn multipoint_begin(&mut self, _size: usize) {}
     fn multipoint_end(&mut self) {}
     fn line_begin(&mut self, _size: usize) {}
@@ -81,51 +106,89 @@ pub fn is_collection(geometry_type: GeometryType) -> bool {
     }
 }
 
-fn visit_points<F: GeomVisitor>(
-    visitor: &mut F,
-    xy: flatbuffers::Vector<f64>,
+fn multi_dim<V: GeomVisitor>(visitor: &mut V) -> bool {
+    visitor.dimensions().z
+        || visitor.dimensions().m
+        || visitor.dimensions().t
+        || visitor.dimensions().tm
+}
+
+fn visit_point<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry, offset: usize) {
+    let xy = geometry.xy().unwrap();
+    let z = if visitor.dimensions().z {
+        Some(geometry.z().unwrap().get(offset))
+    } else {
+        None
+    };
+    let m = if visitor.dimensions().m {
+        Some(geometry.m().unwrap().get(offset))
+    } else {
+        None
+    };
+    let t = if visitor.dimensions().t {
+        Some(geometry.t().unwrap().get(offset))
+    } else {
+        None
+    };
+    let tm = if visitor.dimensions().tm {
+        Some(geometry.tm().unwrap().get(offset))
+    } else {
+        None
+    };
+    visitor.point(xy.get(offset * 2), xy.get(offset * 2 + 1), z, m, t, tm);
+}
+
+fn visit_points<V: GeomVisitor>(
+    visitor: &mut V,
+    geometry: &Geometry,
     offset: usize,
     length: usize,
 ) {
+    let xy = geometry.xy().unwrap();
+    let multi = multi_dim(visitor);
     for i in (offset..offset + length).step_by(2) {
         visitor.pointxy(xy.get(i), xy.get(i + 1));
+        if multi {
+            visit_point(visitor, geometry, i / 2);
+        }
     }
 }
 
-pub fn visit_line<F: GeomVisitor>(
-    visitor: &mut F,
-    xy: flatbuffers::Vector<f64>,
+pub fn visit_line<V: GeomVisitor>(
+    visitor: &mut V,
+    geometry: &Geometry,
     offset: usize,
     length: usize,
 ) {
     visitor.line_begin(length / 2);
-    visit_points(visitor, xy, offset, length);
+    visit_points(visitor, geometry, offset, length);
     visitor.line_end();
 }
 
-pub fn visit_multi_line<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry) {
-    let xy = geometry.xy().unwrap();
+pub fn visit_multi_line<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
     if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
-        visitor.multiline_begin(1);
-        visit_line(visitor, xy, 0, xy.len());
+        if let Some(xy) = geometry.xy() {
+            visitor.multiline_begin(1);
+            visit_line(visitor, geometry, 0, xy.len());
+        }
     } else {
         let ends = geometry.ends().unwrap();
         visitor.multiline_begin(ends.len() / 2);
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
-            visit_line(visitor, xy, offset as usize, (end - offset) as usize);
+            visit_line(visitor, geometry, offset as usize, (end - offset) as usize);
             offset = end;
         }
     }
     visitor.multiline_end();
 }
 
-pub fn visit_polygon<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry) {
+pub fn visit_polygon<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
     let xy = geometry.xy().unwrap();
     if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
         visitor.poly_begin(xy.len());
-        visit_points(visitor, xy, 0, xy.len());
+        visit_points(visitor, geometry, 0, xy.len());
     } else {
         let ends = geometry.ends().unwrap();
         visitor.poly_begin(ends.len() / 2);
@@ -134,7 +197,7 @@ pub fn visit_polygon<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry) {
             let end = ends.get(i) << 1;
             let length = (end - offset) as usize;
             visitor.ring_begin(length / 2);
-            visit_points(visitor, xy, offset as usize, length);
+            visit_points(visitor, geometry, offset as usize, length);
             visitor.ring_end();
             offset = end;
         }
@@ -142,7 +205,7 @@ pub fn visit_polygon<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry) {
     visitor.poly_end();
 }
 
-pub fn visit_multi_polygon<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry) {
+pub fn visit_multi_polygon<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
     let parts = geometry.parts().unwrap();
     visitor.multipoly_begin(parts.len());
     for i in 0..parts.len() {
@@ -152,8 +215,8 @@ pub fn visit_multi_polygon<F: GeomVisitor>(visitor: &mut F, geometry: &Geometry)
     visitor.multipoly_end();
 }
 
-pub fn visit_geometry<F: GeomVisitor>(
-    visitor: &mut F,
+pub fn visit_geometry<V: GeomVisitor>(
+    visitor: &mut V,
     geometry: &Geometry,
     geometry_type: GeometryType,
 ) {
@@ -162,14 +225,17 @@ pub fn visit_geometry<F: GeomVisitor>(
         match geometry_type {
             GeometryType::Point => {
                 visitor.pointxy(xy.get(0), xy.get(1));
+                if multi_dim(visitor) {
+                    visit_point(visitor, geometry, 0);
+                }
             }
             GeometryType::MultiPoint => {
                 visitor.multipoint_begin(xy.len() / 2);
-                visit_points(visitor, xy, 0, xy.len());
+                visit_points(visitor, geometry, 0, xy.len());
                 visitor.multipoint_end();
             }
             GeometryType::LineString => {
-                visit_line(visitor, xy, 0, xy.len());
+                visit_line(visitor, geometry, 0, xy.len());
             }
             GeometryType::MultiLineString => {
                 visit_multi_line(visitor, geometry);
