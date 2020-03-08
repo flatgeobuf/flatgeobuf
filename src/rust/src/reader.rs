@@ -159,7 +159,7 @@ fn read_points<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize
     }
 }
 
-pub fn read_line<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize, length: usize) {
+fn read_line<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize, length: usize) {
     reader.line_begin(length / 2);
     read_points(reader, geometry, offset, length);
     reader.line_end();
@@ -170,6 +170,7 @@ pub fn read_multi_line<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
         if let Some(xy) = geometry.xy() {
             reader.multiline_begin(1);
             read_line(reader, geometry, 0, xy.len());
+            reader.multiline_end();
         }
     } else {
         let ends = geometry.ends().unwrap();
@@ -180,8 +181,8 @@ pub fn read_multi_line<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
             read_line(reader, geometry, offset as usize, (end - offset) as usize);
             offset = end;
         }
+        reader.multiline_end();
     }
-    reader.multiline_end();
 }
 
 pub fn read_polygon<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
@@ -275,9 +276,9 @@ pub enum ColumnValue<'a> {
     Float(f32),
     Double(f64),
     String(&'a str),
-    Json(String),
+    Json(&'a str),
     DateTime(&'a str),
-    Binary(Vec<u8>),
+    Binary(&'a [u8]),
 }
 
 pub fn columns_meta(header: &Header) -> Vec<ColumnMeta> {
