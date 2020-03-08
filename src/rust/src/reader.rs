@@ -1,7 +1,9 @@
 use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
 use crate::MAGIC_BYTES;
+use byteorder::{ByteOrder, LittleEndian};
 use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
+use std::mem::size_of;
 
 pub struct Reader<R: Read> {
     reader: BufReader<R>,
@@ -252,6 +254,116 @@ pub fn visit_geometry<V: GeomVisitor>(
         }
         _ => {} // panic!("visit_geometry: Unknown geometry type"),
     }
+}
+
+pub struct ColumnMeta {
+    pub coltype: ColumnType,
+    pub name: String,
+    pub index: usize,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum ColumnValue {
+    Byte(i8),
+    UByte(u8),
+    Bool(bool),
+    Short(i16),
+    UShort(u16),
+    Int(i32),
+    UInt(u32),
+    Long(i64),
+    ULong(u64),
+    Float(f32),
+    Double(f64),
+    String(String),
+    Json(String),
+    DateTime(String),
+    Binary(Vec<u8>),
+}
+
+pub fn columns_meta(header: &Header) -> Vec<ColumnMeta> {
+    if let Some(columns) = header.columns() {
+        columns
+            .iter()
+            .enumerate()
+            .map(|(i, col)| ColumnMeta {
+                coltype: col.type_(),
+                name: col.name().to_string(),
+                index: i,
+            })
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
+
+pub fn property_values(
+    feature: &Feature,
+    columns_meta: &Vec<ColumnMeta>,
+) -> Vec<(usize, ColumnValue)> {
+    let mut propvalues = Vec::new();
+    if let Some(properties) = feature.properties() {
+        let mut offset = 0;
+        while offset < properties.len() {
+            let i = LittleEndian::read_u16(&properties[offset..offset + 2]) as usize;
+            offset += size_of::<u16>();
+            let column = &columns_meta[i];
+            match column.coltype {
+                ColumnType::Int => {
+                    propvalues.push((
+                        i,
+                        ColumnValue::Int(LittleEndian::read_i32(&properties[offset..offset + 4])),
+                    ));
+                    offset += size_of::<i32>();
+                }
+                ColumnType::Long => {
+                    propvalues.push((
+                        i,
+                        ColumnValue::Long(LittleEndian::read_i64(&properties[offset..offset + 8])),
+                    ));
+                    offset += size_of::<i64>();
+                }
+                ColumnType::ULong => {
+                    propvalues.push((
+                        i,
+                        ColumnValue::ULong(LittleEndian::read_u64(&properties[offset..offset + 8])),
+                    ));
+                    offset += size_of::<u64>();
+                }
+                ColumnType::Double => {
+                    propvalues.push((
+                        i,
+                        ColumnValue::Double(LittleEndian::read_f64(
+                            &properties[offset..offset + 8],
+                        )),
+                    ));
+                    offset += size_of::<f64>();
+                }
+                ColumnType::String => {
+                    let len = LittleEndian::read_u32(&properties[offset..offset + 4]) as usize;
+                    offset += size_of::<u32>();
+                    propvalues.push((
+                        i,
+                        ColumnValue::String(
+                            String::from_utf8_lossy(&properties[offset..offset + len]).to_string(),
+                        ),
+                    ));
+                    offset += len;
+                }
+                ColumnType::Byte => todo!(),
+                ColumnType::UByte => todo!(),
+                ColumnType::Bool => todo!(),
+                ColumnType::Short => todo!(),
+                ColumnType::UShort => todo!(),
+                ColumnType::UInt => todo!(),
+                ColumnType::Float => todo!(),
+                ColumnType::Json => todo!(),
+                ColumnType::DateTime => todo!(),
+                ColumnType::Binary => todo!(),
+            }
+        }
+    }
+    propvalues
 }
 
 pub fn packed_rtree_size(num_items: u64, node_size: u16) -> u64 {
