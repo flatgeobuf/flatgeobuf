@@ -62,7 +62,7 @@ pub struct Dimensions {
     pub tm: bool,
 }
 
-pub trait GeomVisitor {
+pub trait GeomReader {
     fn dimensions(&self) -> Dimensions {
         Dimensions {
             z: false,
@@ -108,117 +108,107 @@ pub fn is_collection(geometry_type: GeometryType) -> bool {
     }
 }
 
-fn multi_dim<V: GeomVisitor>(visitor: &mut V) -> bool {
-    visitor.dimensions().z
-        || visitor.dimensions().m
-        || visitor.dimensions().t
-        || visitor.dimensions().tm
+fn multi_dim<R: GeomReader>(reader: &mut R) -> bool {
+    reader.dimensions().z
+        || reader.dimensions().m
+        || reader.dimensions().t
+        || reader.dimensions().tm
 }
 
-fn visit_point<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry, offset: usize) {
+fn read_point<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize) {
     let xy = geometry.xy().unwrap();
-    let z = if visitor.dimensions().z {
+    let z = if reader.dimensions().z {
         Some(geometry.z().unwrap().get(offset))
     } else {
         None
     };
-    let m = if visitor.dimensions().m {
+    let m = if reader.dimensions().m {
         Some(geometry.m().unwrap().get(offset))
     } else {
         None
     };
-    let t = if visitor.dimensions().t {
+    let t = if reader.dimensions().t {
         Some(geometry.t().unwrap().get(offset))
     } else {
         None
     };
-    let tm = if visitor.dimensions().tm {
+    let tm = if reader.dimensions().tm {
         Some(geometry.tm().unwrap().get(offset))
     } else {
         None
     };
-    visitor.point(xy.get(offset * 2), xy.get(offset * 2 + 1), z, m, t, tm);
+    reader.point(xy.get(offset * 2), xy.get(offset * 2 + 1), z, m, t, tm);
 }
 
-fn visit_points<V: GeomVisitor>(
-    visitor: &mut V,
-    geometry: &Geometry,
-    offset: usize,
-    length: usize,
-) {
+fn read_points<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize, length: usize) {
     let xy = geometry.xy().unwrap();
-    let multi = multi_dim(visitor);
+    let multi = multi_dim(reader);
     for i in (offset..offset + length).step_by(2) {
-        visitor.pointxy(xy.get(i), xy.get(i + 1));
+        reader.pointxy(xy.get(i), xy.get(i + 1));
         if multi {
-            visit_point(visitor, geometry, i / 2);
+            read_point(reader, geometry, i / 2);
         }
     }
 }
 
-pub fn visit_line<V: GeomVisitor>(
-    visitor: &mut V,
-    geometry: &Geometry,
-    offset: usize,
-    length: usize,
-) {
-    visitor.line_begin(length / 2);
-    visit_points(visitor, geometry, offset, length);
-    visitor.line_end();
+pub fn read_line<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize, length: usize) {
+    reader.line_begin(length / 2);
+    read_points(reader, geometry, offset, length);
+    reader.line_end();
 }
 
-pub fn visit_multi_line<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
+pub fn read_multi_line<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
     if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
         if let Some(xy) = geometry.xy() {
-            visitor.multiline_begin(1);
-            visit_line(visitor, geometry, 0, xy.len());
+            reader.multiline_begin(1);
+            read_line(reader, geometry, 0, xy.len());
         }
     } else {
         let ends = geometry.ends().unwrap();
-        visitor.multiline_begin(ends.len() / 2);
+        reader.multiline_begin(ends.len() / 2);
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
-            visit_line(visitor, geometry, offset as usize, (end - offset) as usize);
+            read_line(reader, geometry, offset as usize, (end - offset) as usize);
             offset = end;
         }
     }
-    visitor.multiline_end();
+    reader.multiline_end();
 }
 
-pub fn visit_polygon<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
+pub fn read_polygon<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
     let xy = geometry.xy().unwrap();
     if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
-        visitor.poly_begin(xy.len());
-        visit_points(visitor, geometry, 0, xy.len());
+        reader.poly_begin(xy.len());
+        read_points(reader, geometry, 0, xy.len());
     } else {
         let ends = geometry.ends().unwrap();
-        visitor.poly_begin(ends.len() / 2);
+        reader.poly_begin(ends.len() / 2);
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
             let length = (end - offset) as usize;
-            visitor.ring_begin(length / 2);
-            visit_points(visitor, geometry, offset as usize, length);
-            visitor.ring_end();
+            reader.ring_begin(length / 2);
+            read_points(reader, geometry, offset as usize, length);
+            reader.ring_end();
             offset = end;
         }
     }
-    visitor.poly_end();
+    reader.poly_end();
 }
 
-pub fn visit_multi_polygon<V: GeomVisitor>(visitor: &mut V, geometry: &Geometry) {
+pub fn read_multi_polygon<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
     let parts = geometry.parts().unwrap();
-    visitor.multipoly_begin(parts.len());
+    reader.multipoly_begin(parts.len());
     for i in 0..parts.len() {
         let part = parts.get(i);
-        visit_polygon(visitor, &part);
+        read_polygon(reader, &part);
     }
-    visitor.multipoly_end();
+    reader.multipoly_end();
 }
 
-pub fn visit_geometry<V: GeomVisitor>(
-    visitor: &mut V,
+pub fn read_geometry<R: GeomReader>(
+    reader: &mut R,
     geometry: &Geometry,
     geometry_type: GeometryType,
 ) {
@@ -226,33 +216,33 @@ pub fn visit_geometry<V: GeomVisitor>(
         let xy = geometry.xy().unwrap();
         match geometry_type {
             GeometryType::Point => {
-                visitor.pointxy(xy.get(0), xy.get(1));
-                if multi_dim(visitor) {
-                    visit_point(visitor, geometry, 0);
+                reader.pointxy(xy.get(0), xy.get(1));
+                if multi_dim(reader) {
+                    read_point(reader, geometry, 0);
                 }
             }
             GeometryType::MultiPoint => {
-                visitor.multipoint_begin(xy.len() / 2);
-                visit_points(visitor, geometry, 0, xy.len());
-                visitor.multipoint_end();
+                reader.multipoint_begin(xy.len() / 2);
+                read_points(reader, geometry, 0, xy.len());
+                reader.multipoint_end();
             }
             GeometryType::LineString => {
-                visit_line(visitor, geometry, 0, xy.len());
+                read_line(reader, geometry, 0, xy.len());
             }
             GeometryType::MultiLineString => {
-                visit_multi_line(visitor, geometry);
+                read_multi_line(reader, geometry);
             }
             GeometryType::Polygon => {
-                visit_polygon(visitor, geometry);
+                read_polygon(reader, geometry);
             }
-            _ => panic!("visit_geometry: Unknown geometry type"),
+            _ => panic!("read_geometry: Unknown geometry type"),
         }
     }
     match geometry_type {
         GeometryType::MultiPolygon => {
-            visit_multi_polygon(visitor, geometry);
+            read_multi_polygon(reader, geometry);
         }
-        _ => {} // panic!("visit_geometry: Unknown geometry type"),
+        _ => {} // panic!("read_geometry: Unknown geometry type"),
     }
 }
 

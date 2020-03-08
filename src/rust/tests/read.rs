@@ -76,7 +76,7 @@ fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
 
 struct VertexCounter(u64);
 
-impl GeomVisitor for VertexCounter {
+impl GeomReader for VertexCounter {
     fn pointxy(&mut self, _x: f64, _y: f64) {
         self.0 += 1;
     }
@@ -107,7 +107,7 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     let geometry = feature.geometry().unwrap();
 
     let mut vertex_counter = VertexCounter(0);
-    visit_geometry(&mut vertex_counter, &geometry, GeometryType::MultiPolygon);
+    read_geometry(&mut vertex_counter, &geometry, GeometryType::MultiPolygon);
     assert_eq!(vertex_counter.0, 24);
 
     let propvalues = property_values(&feature, &columns_meta);
@@ -164,7 +164,7 @@ struct WktLineEmitter {
     is_first_point: bool,
 }
 
-impl GeomVisitor for WktLineEmitter {
+impl GeomReader for WktLineEmitter {
     fn line_begin(&mut self, _n: usize) {
         self.wkt.push_str("LINESTRING (");
         self.is_first_point = true;
@@ -209,7 +209,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
         wkt: String::new(),
         is_first_point: true,
     };
-    visit_geometry(&mut visitor, &geometry, GeometryType::LineString);
+    read_geometry(&mut visitor, &geometry, GeometryType::LineString);
     assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
     let _ = property_values(&feature, &columns_meta);
@@ -219,7 +219,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
 
 struct MultiLineGenerator(Vec<Vec<(f64, f64)>>);
 
-impl GeomVisitor for MultiLineGenerator {
+impl GeomReader for MultiLineGenerator {
     fn multiline_begin(&mut self, n: usize) {
         self.0.reserve(n);
     }
@@ -254,7 +254,7 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(num_vertices, 361);
 
     let mut visitor = MultiLineGenerator(Vec::new());
-    visit_multi_line(&mut visitor, &geometry);
+    read_multi_line(&mut visitor, &geometry);
     assert_eq!(visitor.0.len(), 1);
     assert_eq!(visitor.0[0].len(), 361);
     assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
@@ -264,9 +264,9 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     Ok(())
 }
 
-struct TopFinder(f64);
+struct MaxFinder(f64);
 
-impl GeomVisitor for TopFinder {
+impl GeomReader for MaxFinder {
     fn dimensions(&self) -> Dimensions {
         Dimensions {
             z: true,
@@ -318,8 +318,8 @@ fn multi_dim() -> std::result::Result<(), std::io::Error> {
     // 0.5,2683309.16 1247973.337 410.5,2683313.003 1247972.616 410.5,2683312.339 1247968.33 410.5),(2683313.003 1247972.616 401.7,2683309.16 1247973.337 401.7,2683309.16 1247973.337 410.5,2683313.003 1247972.616 410.5,2683313.00
     // 3 1247972.616 401.7)))
 
-    let mut max_finder = TopFinder(0.0);
-    visit_geometry(&mut max_finder, &geometry, GeometryType::MultiPolygon);
+    let mut max_finder = MaxFinder(0.0);
+    read_geometry(&mut max_finder, &geometry, GeometryType::MultiPolygon);
     assert_eq!(max_finder.0, 410.5);
 
     let _ = property_values(&feature, &columns_meta);
