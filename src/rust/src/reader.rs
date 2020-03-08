@@ -115,7 +115,7 @@ fn multi_dim<R: GeomReader>(reader: &mut R) -> bool {
         || reader.dimensions().tm
 }
 
-fn read_point<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize) {
+fn read_point_multi_dim<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize) {
     let xy = geometry.xy().unwrap();
     let z = if reader.dimensions().z {
         Some(geometry.z().unwrap().get(offset))
@@ -144,9 +144,10 @@ fn read_points<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize
     let xy = geometry.xy().unwrap();
     let multi = multi_dim(reader);
     for i in (offset..offset + length).step_by(2) {
-        reader.pointxy(xy.get(i), xy.get(i + 1));
         if multi {
-            read_point(reader, geometry, i / 2);
+            read_point_multi_dim(reader, geometry, i / 2);
+        } else {
+            reader.pointxy(xy.get(i), xy.get(i + 1));
         }
     }
 }
@@ -216,9 +217,10 @@ pub fn read_geometry<R: GeomReader>(
         let xy = geometry.xy().unwrap();
         match geometry_type {
             GeometryType::Point => {
-                reader.pointxy(xy.get(0), xy.get(1));
                 if multi_dim(reader) {
-                    read_point(reader, geometry, 0);
+                    read_point_multi_dim(reader, geometry, 0);
+                } else {
+                    reader.pointxy(xy.get(0), xy.get(1));
                 }
             }
             GeometryType::MultiPoint => {
