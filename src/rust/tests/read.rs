@@ -93,10 +93,16 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     assert_eq!(columns_meta.len(), 2);
 
     reader.select_all()?;
-    for _ in 0..46 {
-        let _ = reader.next();
+
+    while let Ok(feature) = reader.next() {
+        let found = read_properties(&feature, &columns_meta, |i, _n, v| {
+            i == 0 && v == ColumnValue::String("DNK")
+        });
+        if found {
+            break;
+        }
     }
-    let feature = reader.next().unwrap();
+    let feature = reader.cur_feature();
     // OGRFeature(countries):46
     //   id (String) = DNK
     //   name (String) = Denmark
@@ -110,14 +116,16 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     read_geometry(&mut vertex_counter, &geometry, GeometryType::MultiPolygon);
     assert_eq!(vertex_counter.0, 24);
 
-    let propvalues = property_values(&feature, &columns_meta);
+    let mut propvalues = Vec::new();
+    let _ = read_properties(&feature, &columns_meta, |_i, n, v| {
+        if let ColumnValue::String(s) = v {
+            propvalues.push((n.clone(), s.to_string()));
+        }
+        false
+    });
     assert_eq!(propvalues.len(), 2);
-    assert_eq!(propvalues[0], (0, ColumnValue::String("DNK".to_string())));
-    assert_eq!(
-        propvalues[1],
-        (1, ColumnValue::String("Denmark".to_string()))
-    );
-    assert_eq!(columns_meta[1].name, "name".to_string());
+    assert_eq!(propvalues[0], ("id".to_string(), "DNK".to_string()));
+    assert_eq!(propvalues[1], ("name".to_string(), "Denmark".to_string()));
     Ok(())
 }
 
@@ -154,7 +162,7 @@ fn point_layer() -> std::result::Result<(), std::io::Error> {
         (2223639.4731508396, -15878634.348995442)
     );
 
-    let _ = property_values(&feature, &columns_meta);
+    read_properties(&feature, &columns_meta, |_, _, _| false);
 
     Ok(())
 }
@@ -212,7 +220,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
     read_geometry(&mut visitor, &geometry, GeometryType::LineString);
     assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
-    let _ = property_values(&feature, &columns_meta);
+    read_properties(&feature, &columns_meta, |_, _, _| false);
 
     Ok(())
 }
@@ -259,7 +267,7 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(visitor.0[0].len(), 361);
     assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
 
-    let _ = property_values(&feature, &columns_meta);
+    read_properties(&feature, &columns_meta, |_, _, _| false);
 
     Ok(())
 }
@@ -322,7 +330,7 @@ fn multi_dim() -> std::result::Result<(), std::io::Error> {
     read_geometry(&mut max_finder, &geometry, GeometryType::MultiPolygon);
     assert_eq!(max_finder.0, 410.5);
 
-    let _ = property_values(&feature, &columns_meta);
+    read_properties(&feature, &columns_meta, |_, _, _| false);
 
     Ok(())
 }

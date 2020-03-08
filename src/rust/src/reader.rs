@@ -4,6 +4,7 @@ use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
 use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
 use std::mem::size_of;
+use std::str;
 
 pub struct Reader<R: Read> {
     reader: BufReader<R>,
@@ -36,6 +37,9 @@ impl<R: Read + Seek> Reader<R> {
         let header = get_root_as_header(&self.header_buf[..]);
         Ok(header)
     }
+    pub fn header(&self) -> Header {
+        get_root_as_header(&self.header_buf[..])
+    }
     pub fn select_all(&mut self) -> std::result::Result<(), std::io::Error> {
         let header = get_root_as_header(&self.header_buf[..]);
         // Skip index
@@ -52,6 +56,9 @@ impl<R: Read + Seek> Reader<R> {
         self.reader.read_exact(&mut self.feature_buf)?;
         let feature = get_root_as_feature(&self.feature_buf[..]);
         Ok(feature)
+    }
+    pub fn cur_feature(&self) -> Feature {
+        get_root_as_feature(&self.feature_buf[..])
     }
 }
 
@@ -255,7 +262,7 @@ pub struct ColumnMeta {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum ColumnValue {
+pub enum ColumnValue<'a> {
     Byte(i8),
     UByte(u8),
     Bool(bool),
@@ -267,9 +274,9 @@ pub enum ColumnValue {
     ULong(u64),
     Float(f32),
     Double(f64),
-    String(String),
+    String(&'a str),
     Json(String),
-    DateTime(String),
+    DateTime(&'a str),
     Binary(Vec<u8>),
 }
 
@@ -289,57 +296,64 @@ pub fn columns_meta(header: &Header) -> Vec<ColumnMeta> {
     }
 }
 
-pub fn property_values(
-    feature: &Feature,
-    columns_meta: &Vec<ColumnMeta>,
-) -> Vec<(usize, ColumnValue)> {
-    let mut propvalues = Vec::new();
+pub fn read_properties<R>(feature: &Feature, columns_meta: &Vec<ColumnMeta>, mut reader: R) -> bool
+where
+    R: FnMut(usize, &String, ColumnValue) -> bool,
+{
+    let mut finish = false;
     if let Some(properties) = feature.properties() {
         let mut offset = 0;
-        while offset < properties.len() {
+        while offset < properties.len() && !finish {
             let i = LittleEndian::read_u16(&properties[offset..offset + 2]) as usize;
             offset += size_of::<u16>();
             let column = &columns_meta[i];
             match column.coltype {
                 ColumnType::Int => {
-                    propvalues.push((
+                    finish = reader(
                         i,
+                        &column.name,
                         ColumnValue::Int(LittleEndian::read_i32(&properties[offset..offset + 4])),
-                    ));
+                    );
                     offset += size_of::<i32>();
                 }
                 ColumnType::Long => {
-                    propvalues.push((
+                    finish = reader(
                         i,
+                        &column.name,
                         ColumnValue::Long(LittleEndian::read_i64(&properties[offset..offset + 8])),
-                    ));
+                    );
                     offset += size_of::<i64>();
                 }
                 ColumnType::ULong => {
-                    propvalues.push((
+                    finish = reader(
                         i,
+                        &column.name,
                         ColumnValue::ULong(LittleEndian::read_u64(&properties[offset..offset + 8])),
-                    ));
+                    );
                     offset += size_of::<u64>();
                 }
                 ColumnType::Double => {
-                    propvalues.push((
+                    finish = reader(
                         i,
+                        &column.name,
                         ColumnValue::Double(LittleEndian::read_f64(
                             &properties[offset..offset + 8],
                         )),
-                    ));
+                    );
                     offset += size_of::<f64>();
                 }
                 ColumnType::String => {
                     let len = LittleEndian::read_u32(&properties[offset..offset + 4]) as usize;
                     offset += size_of::<u32>();
-                    propvalues.push((
+                    finish = reader(
                         i,
+                        &column.name,
                         ColumnValue::String(
-                            String::from_utf8_lossy(&properties[offset..offset + len]).to_string(),
+                            // unsafe variant without UTF-8 checking would be faster...
+                            str::from_utf8(&properties[offset..offset + len])
+                                .expect("Invalid UTF-8 string"),
                         ),
-                    ));
+                    );
                     offset += len;
                 }
                 ColumnType::Byte => todo!(),
@@ -355,7 +369,7 @@ pub fn property_values(
             }
         }
     }
-    propvalues
+    finish
 }
 
 pub fn packed_rtree_size(num_items: u64, node_size: u16) -> u64 {
