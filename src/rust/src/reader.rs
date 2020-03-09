@@ -1,5 +1,6 @@
 use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
+use crate::packed_r_tree::PackedRTree;
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
 use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
@@ -43,7 +44,7 @@ impl<R: Read + Seek> Reader<R> {
     pub fn select_all(&mut self) -> std::result::Result<(), std::io::Error> {
         let header = get_root_as_header(&self.header_buf[..]);
         // Skip index
-        let index_size = packed_rtree_size(header.features_count(), header.index_node_size());
+        let index_size = PackedRTree::size(header.features_count(), header.index_node_size());
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(())
     }
@@ -372,35 +373,3 @@ where
     }
     finish
 }
-
-pub fn packed_rtree_size(num_items: u64, node_size: u16) -> u64 {
-    let node_size_min = node_size as u64;
-    let mut n = num_items;
-    let mut num_nodes = n;
-    loop {
-        n = (n + node_size_min - 1) / node_size_min;
-        num_nodes += n;
-        if n == 1 {
-            break;
-        }
-    }
-    num_nodes * 40
-}
-// uint64_t PackedRTree::size(const uint64_t numItems, const uint16_t nodeSize)
-// {
-//     if (nodeSize < 2)
-//         throw std::invalid_argument("Node size must be at least 2");
-//     if (numItems == 0)
-//         throw std::invalid_argument("Number of items must be greater than 0");
-//     const uint16_t nodeSizeMin = std::min(std::max(nodeSize, static_cast<uint16_t>(2)), static_cast<uint16_t>(65535));
-//     // limit so that resulting size in bytes can be represented by uint64_t
-//     if (numItems > static_cast<uint64_t>(1) << 56)
-//         throw std::overflow_error("Number of items must be less than 2^56");
-//     uint64_t n = numItems;
-//     uint64_t numNodes = n;
-//     do {
-//         n = (n + nodeSizeMin - 1) / nodeSizeMin;
-//         numNodes += n;
-//     } while (n != 1);
-//     return numNodes * sizeof(NodeItem);
-// }
