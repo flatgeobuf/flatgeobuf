@@ -3,6 +3,7 @@ use crate::header_generated::flat_geobuf::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
+use std::collections::HashMap;
 use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
 use std::mem::size_of;
 use std::str;
@@ -411,4 +412,33 @@ where
         }
     }
     finish
+}
+
+pub fn read_all_properties(
+    feature: &Feature,
+    columns_meta: &Vec<ColumnMeta>,
+) -> HashMap<String, String> {
+    let mut properties = HashMap::new();
+    let _ = read_properties(&feature, &columns_meta, |_i, colname, colval| {
+        let vstr = match colval {
+            ColumnValue::Byte(v) => format!("{}", v),
+            ColumnValue::UByte(v) => format!("{}", v),
+            ColumnValue::Bool(v) => format!("{}", v),
+            ColumnValue::Short(v) => format!("{}", v),
+            ColumnValue::UShort(v) => format!("{}", v),
+            ColumnValue::Int(v) => format!("{}", v),
+            ColumnValue::UInt(v) => format!("{}", v),
+            ColumnValue::Long(v) => format!("{}", v),
+            ColumnValue::ULong(v) => format!("{}", v),
+            ColumnValue::Float(v) => format!("{}", v),
+            ColumnValue::Double(v) => format!("{}", v),
+            ColumnValue::String(v) => format!("{}", v),
+            ColumnValue::Json(v) => format!("{}", v),
+            ColumnValue::DateTime(v) => format!("{}", v),
+            ColumnValue::Binary(_v) => "[BINARY]".to_string(),
+        };
+        properties.insert(colname.to_string(), vstr);
+        false
+    });
+    properties
 }

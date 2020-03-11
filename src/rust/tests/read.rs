@@ -133,15 +133,16 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
 fn bbox_file_reader() -> std::result::Result<(), std::io::Error> {
     let f = std::fs::File::open("../../test/data/countries.fgb")?;
     let mut reader = Reader::new(f);
-    let _header = reader.read_header()?;
+    let header = reader.read_header()?;
+    let columns_meta = columns_meta(&header);
+
     reader.select_bbox(8.8, 47.2, 9.5, 55.3)?;
     assert_eq!(reader.select_count(), Some(6));
-    let feature = reader.next().unwrap();
 
-    let geometry = feature.geometry().unwrap();
-    let mut vertex_counter = VertexCounter(0);
-    read_geometry(&mut vertex_counter, &geometry, GeometryType::MultiPolygon);
-    assert_eq!(vertex_counter.0, 24);
+    let feature = reader.next().unwrap();
+    let props = read_all_properties(&feature, &columns_meta);
+    assert_eq!(props["name"], "Denmark".to_string());
+
     Ok(())
 }
 
@@ -177,8 +178,7 @@ fn point_layer() -> std::result::Result<(), std::io::Error> {
         (xy.get(0), xy.get(1)),
         (2223639.4731508396, -15878634.348995442)
     );
-
-    read_properties(&feature, &columns_meta, |_, _, _| false);
+    let _props = read_all_properties(&feature, &columns_meta);
 
     Ok(())
 }
@@ -236,7 +236,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
     read_geometry(&mut visitor, &geometry, GeometryType::LineString);
     assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
-    read_properties(&feature, &columns_meta, |_, _, _| false);
+    let _props = read_all_properties(&feature, &columns_meta);
 
     Ok(())
 }
@@ -283,7 +283,7 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(visitor.0[0].len(), 361);
     assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
 
-    read_properties(&feature, &columns_meta, |_, _, _| false);
+    let _props = read_all_properties(&feature, &columns_meta);
 
     Ok(())
 }
@@ -346,7 +346,7 @@ fn multi_dim() -> std::result::Result<(), std::io::Error> {
     read_geometry(&mut max_finder, &geometry, GeometryType::MultiPolygon);
     assert_eq!(max_finder.0, 410.5);
 
-    read_properties(&feature, &columns_meta, |_, _, _| false);
+    let _props = read_all_properties(&feature, &columns_meta);
 
     Ok(())
 }
