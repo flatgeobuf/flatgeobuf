@@ -130,6 +130,22 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
 }
 
 #[test]
+fn bbox_file_reader() -> std::result::Result<(), std::io::Error> {
+    let f = std::fs::File::open("../../test/data/countries.fgb")?;
+    let mut reader = Reader::new(f);
+    let _header = reader.read_header()?;
+    reader.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+    assert_eq!(reader.select_count(), Some(6));
+    let feature = reader.next().unwrap();
+
+    let geometry = feature.geometry().unwrap();
+    let mut vertex_counter = VertexCounter(0);
+    read_geometry(&mut vertex_counter, &geometry, GeometryType::MultiPolygon);
+    assert_eq!(vertex_counter.0, 24);
+    Ok(())
+}
+
+#[test]
 fn magic_byte() -> std::result::Result<(), std::io::Error> {
     let f = std::fs::File::open("../../test/data/states.geojson")?;
     let mut reader = Reader::new(f);

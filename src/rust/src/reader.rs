@@ -1,6 +1,6 @@
 use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
-use crate::packed_r_tree::PackedRTree;
+use crate::packed_r_tree::{self, PackedRTree};
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
 use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
@@ -10,7 +10,12 @@ use std::str;
 pub struct Reader<R: Read> {
     reader: BufReader<R>,
     header_buf: Vec<u8>,
+    feature_base: u64,
     feature_buf: Vec<u8>,
+    /// Selected features or None if no bbox filter
+    item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
+    /// Current position in item_filter
+    filter_idx: usize,
 }
 
 impl<R: Read + Seek> Reader<R> {
@@ -18,7 +23,10 @@ impl<R: Read + Seek> Reader<R> {
         Reader {
             reader: BufReader::new(reader),
             header_buf: Vec::new(),
+            feature_base: 0,
             feature_buf: Vec::new(),
+            item_filter: None,
+            filter_idx: 0,
         }
     }
     pub fn read_header(&mut self) -> std::result::Result<Header, std::io::Error> {
@@ -48,8 +56,39 @@ impl<R: Read + Seek> Reader<R> {
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(())
     }
+    pub fn select_bbox(
+        &mut self,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> std::result::Result<(), std::io::Error> {
+        let header = get_root_as_header(&self.header_buf[..]);
+        let tree = PackedRTree::from_buf(
+            &mut self.reader,
+            header.features_count(),
+            PackedRTree::DEFAULT_NODE_SIZE,
+        );
+        let mut list = tree.search(min_x, min_y, max_x, max_y);
+        list.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap());
+        self.item_filter = Some(list);
+        self.feature_base = self.reader.seek(SeekFrom::Current(0))?;
+        Ok(())
+    }
+    pub fn select_count(&self) -> Option<usize> {
+        self.item_filter.as_ref().map(|f| f.len())
+    }
     pub fn next(&mut self) -> std::result::Result<Feature, std::io::Error> {
-        // impl Iterator for Reader is diffcult, because Type Feature has a lifetime
+        // impl Iterator for Reader is diffcult, because of Feature lifetime
+        if let Some(filter) = &self.item_filter {
+            if self.filter_idx >= filter.len() {
+                return Err(Error::new(ErrorKind::Other, "No more features"));
+            }
+            let item = &filter[self.filter_idx];
+            self.reader
+                .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
+            self.filter_idx += 1;
+        }
         let mut size_buf: [u8; 4] = [0; 4];
         self.reader.read_exact(&mut size_buf)?;
         let feature_size = u32::from_le_bytes(size_buf);

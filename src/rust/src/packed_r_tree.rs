@@ -83,9 +83,10 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
 }
 
 #[allow(non_snake_case)]
+#[derive(Debug)]
 pub struct SearchResultItem {
-    offset: usize,
-    index: usize,
+    pub offset: usize,
+    pub index: usize,
 }
 
 const HILBERT_MAX: u32 = (1 << 16) - 1;
@@ -179,7 +180,7 @@ pub struct PackedRTree {
 
 #[allow(non_snake_case)]
 impl PackedRTree {
-    const DEFAULT_NODE_SIZE: u16 = 16;
+    pub const DEFAULT_NODE_SIZE: u16 = 16;
 
     fn init(&mut self, nodeSize: u16) {
         assert!(nodeSize >= 2, "Node size must be at least 2");
