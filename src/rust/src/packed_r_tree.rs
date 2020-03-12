@@ -93,7 +93,7 @@ const HILBERT_MAX: u32 = (1 << 16) - 1;
 
 // Based on public domain code at https://github.com/rawrunprotected/hilbert_curves
 #[allow(non_snake_case)]
-fn hilbert_xy(x: u32, y: u32) -> u32 {
+fn hilbert(x: u32, y: u32) -> u32 {
     let mut a: u32 = x ^ y;
     let mut b: u32 = 0xFFFF ^ a;
     let mut c: u32 = 0xFFFF ^ (x | y);
@@ -151,19 +151,21 @@ fn hilbert_xy(x: u32, y: u32) -> u32 {
 }
 
 #[allow(non_snake_case)]
-fn hilbert(r: &NodeItem, hilbertMax: u32, extent: &NodeItem) -> u32 {
+fn hilbert_bbox(r: &NodeItem, hilbertMax: u32, extent: &NodeItem) -> u32 {
+    // calculate bbox center and scale to hilbertMax
+    // Hint from @vmx: Why not OMT tree (http://ceur-ws.org/Vol-74/files/FORUM_18.pdf)?
     let x = (hilbertMax as f64 * ((r.minX + r.maxX) / 2.0 - extent.minX) / extent.width()).floor()
         as u32;
     let y = (hilbertMax as f64 * ((r.minY + r.maxY) / 2.0 - extent.minY) / extent.height()).floor()
         as u32;
-    hilbert_xy(x, y)
+    hilbert(x, y)
 }
 
 pub fn hilbert_sort(items: &mut Vec<NodeItem>) {
     let extent = calc_extent(items);
     items.sort_by(|a, b| {
-        let ha = hilbert(a, HILBERT_MAX, &extent);
-        let hb = hilbert(b, HILBERT_MAX, &extent);
+        let ha = hilbert_bbox(a, HILBERT_MAX, &extent);
+        let hb = hilbert_bbox(b, HILBERT_MAX, &extent);
         hb.partial_cmp(&ha).unwrap() // ha > hb
     });
 }
