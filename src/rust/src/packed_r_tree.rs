@@ -450,3 +450,37 @@ fn tree_19items_roundtrip_stream_search() {
     //     REQUIRE(nodes[list3[i].index].intersects({102, 102, 103, 103}) == true);
     // }
 }
+
+#[test]
+fn tree_100_000_items_in_denmark() {
+    use rand::distributions::{Distribution, Uniform};
+
+    let unifx = Uniform::from(466379..708929);
+    let unify = Uniform::from(6096801..6322352);
+    let mut rng = rand::thread_rng();
+
+    let mut nodes = Vec::new();
+    for _ in 0..100000 {
+        let x = unifx.sample(&mut rng) as f64;
+        let y = unify.sample(&mut rng) as f64;
+        nodes.push(NodeItem::new(x, y, x, y));
+    }
+
+    let extent = calc_extent(&nodes);
+    hilbert_sort(&mut nodes);
+    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE);
+    let list = tree.search(690407.0, 6063692.0, 811682.0, 6176467.0);
+
+    for i in 0..list.len() {
+        assert!(nodes[list[i].index]
+            .intersects(&NodeItem::new(690407.0, 6063692.0, 811682.0, 6176467.0)));
+    }
+
+    let mut tree_data: Vec<u8> = Vec::new();
+    let res = tree.stream_write(&mut tree_data);
+    assert!(res.is_ok());
+
+    // auto list2 = PackedRTree::streamSearch(nodes.size(), 16, {690407, 6063692, 811682, 6176467}, readNode);
+    // for (uint64_t i = 0; i < list2.size(); i++)
+    //     CHECK(nodes[list2[i].index].intersects({690407, 6063692, 811682, 6176467}) == true);
+}
