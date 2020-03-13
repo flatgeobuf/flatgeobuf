@@ -8,9 +8,10 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class Crs extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static Crs getRootAsCrs(ByteBuffer _bb) { return getRootAsCrs(_bb, new Crs()); }
   public static Crs getRootAsCrs(ByteBuffer _bb, Crs obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public Crs __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public String org() { int o = __offset(4); return o != 0 ? __string(o + bb_pos) : null; }
@@ -33,7 +34,7 @@ public final class Crs extends Table {
       int nameOffset,
       int descriptionOffset,
       int wktOffset) {
-    builder.startObject(5);
+    builder.startTable(5);
     Crs.addWkt(builder, wktOffset);
     Crs.addDescription(builder, descriptionOffset);
     Crs.addName(builder, nameOffset);
@@ -42,15 +43,22 @@ public final class Crs extends Table {
     return Crs.endCrs(builder);
   }
 
-  public static void startCrs(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startCrs(FlatBufferBuilder builder) { builder.startTable(5); }
   public static void addOrg(FlatBufferBuilder builder, int orgOffset) { builder.addOffset(0, orgOffset, 0); }
   public static void addCode(FlatBufferBuilder builder, int code) { builder.addInt(1, code, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(2, nameOffset, 0); }
   public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(3, descriptionOffset, 0); }
   public static void addWkt(FlatBufferBuilder builder, int wktOffset) { builder.addOffset(4, wktOffset, 0); }
   public static int endCrs(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public Crs get(int j) { return get(new Crs(), j); }
+    public Crs get(Crs obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 
