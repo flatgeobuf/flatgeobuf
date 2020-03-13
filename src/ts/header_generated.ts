@@ -70,7 +70,7 @@ __init(i:number, bb:flatbuffers.ByteBuffer):Column {
  * @returns Column
  */
 static getRoot(bb:flatbuffers.ByteBuffer, obj?:Column):Column {
-  return (obj || new Column).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  return (obj || new Column()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -79,7 +79,8 @@ static getRoot(bb:flatbuffers.ByteBuffer, obj?:Column):Column {
  * @returns Column
  */
 static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Column):Column {
-  return (obj || new Column).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
+  return (obj || new Column()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -165,7 +166,7 @@ __init(i:number, bb:flatbuffers.ByteBuffer):Crs {
  * @returns Crs
  */
 static getRoot(bb:flatbuffers.ByteBuffer, obj?:Crs):Crs {
-  return (obj || new Crs).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  return (obj || new Crs()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -174,7 +175,8 @@ static getRoot(bb:flatbuffers.ByteBuffer, obj?:Crs):Crs {
  * @returns Crs
  */
 static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Crs):Crs {
-  return (obj || new Crs).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
+  return (obj || new Crs()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -319,7 +321,7 @@ __init(i:number, bb:flatbuffers.ByteBuffer):Header {
  * @returns Header
  */
 static getRoot(bb:flatbuffers.ByteBuffer, obj?:Header):Header {
-  return (obj || new Header).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  return (obj || new Header()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -328,7 +330,8 @@ static getRoot(bb:flatbuffers.ByteBuffer, obj?:Header):Header {
  * @returns Header
  */
 static getSizePrefixedRoot(bb:flatbuffers.ByteBuffer, obj?:Header):Header {
-  return (obj || new Header).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
+  return (obj || new Header()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
 /**
@@ -414,7 +417,7 @@ hasTM():boolean {
  */
 columns(index: number, obj?:Column):Column|null {
   var offset = this.bb!.__offset(this.bb_pos, 18);
-  return offset ? (obj || new Column).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+  return offset ? (obj || new Column()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
 /**
@@ -447,7 +450,7 @@ indexNodeSize():number {
  */
 crs(obj?:Crs):Crs|null {
   var offset = this.bb!.__offset(this.bb_pos, 24);
-  return offset ? (obj || new Crs).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
+  return offset ? (obj || new Crs()).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
 /**

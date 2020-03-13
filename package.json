@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/bjornharrtell/flatgeobuf#readme",
   "dependencies": {
-    "flatbuffers": "1.11.0",
+    "flatbuffers": "1.12.0",
     "slice-source": "0.4.1"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@rollup/plugin-node-resolve": "7.0.0",
     "@types/chai": "4.2.10",
     "@types/mocha": "7.0.2",
-    "@types/node": "13.9.0",
+    "@types/node": "13.9.1",
     "chai": "4.2.0",
     "esm": "3.2.25",
     "jsts": "2.1.0",
@@ -39,12 +39,12 @@
     "mocha": "7.1.0",
     "node-fetch": "2.6.0",
     "ol": "6.2.1",
-    "rollup": "2.0.1",
-    "rollup-plugin-babel": "4.3.3",
-    "rollup-plugin-terser": "5.2.0",
+    "rollup": "2.0.6",
+    "rollup-plugin-babel": "4.4.0",
+    "rollup-plugin-terser": "5.3.0",
     "stream-buffers": "3.0.2",
     "ts-node": "8.6.2",
-    "tslint": "6.0.0",
+    "tslint": "6.1.0",
     "typescript": "3.8.3",
     "web-streams-polyfill": "2.1.0"
   }
