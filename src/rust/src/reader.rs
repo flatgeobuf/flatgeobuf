@@ -8,6 +8,54 @@ use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
 use std::mem::size_of;
 use std::str;
 
+/// FlatGeobuf reader
+///
+/// ## High-level API
+///
+/// ```rust
+/// # use flatgeobuf::*;
+/// # use std::fs::File;
+/// # let fgb = File::open("../../test/data/countries.fgb").unwrap();
+/// let mut reader = Reader::new(fgb);
+/// let header = reader.read_header().unwrap();
+/// let columns_meta = columns_meta(&header);
+/// reader.select_bbox(8.8, 47.2, 9.5, 55.3).unwrap();
+/// while let Ok(feature) = reader.next() {
+///     let props = read_all_properties(&feature, &columns_meta);
+///     println!("{}", props["name"]);
+/// }
+/// ```
+///
+/// ## Zero-copy feature access
+///
+/// ```rust
+/// # use flatgeobuf::*;
+/// # let fgb = std::fs::File::open("../../test/data/countries.fgb").unwrap();
+/// # let mut reader = Reader::new(fgb);
+/// # let header = reader.read_header().unwrap();
+/// # let columns_meta = columns_meta(&header);
+/// # reader.select_all().unwrap();
+/// # let feature = reader.next().unwrap();
+/// let _ = read_properties(&feature, &columns_meta, |i, n, v| {
+///     println!("columnidx: {} name: {} value: {:?}", i, n, v);
+///     false // don't abort
+/// });
+/// ```
+///
+/// ## Zero-copy geometry reader
+///
+/// Geometries can be accessed by implementing the `GeomReader` trait.
+///
+/// ```rust
+/// # use flatgeobuf::*;
+/// struct CoordPrinter;
+///
+/// impl GeomReader for CoordPrinter {
+///     fn pointxy(&mut self, x: f64, y: f64) {
+///         println!("({} {})", x, y);
+///     }
+/// }
+/// ```
 pub struct Reader<R: Read> {
     reader: BufReader<R>,
     header_buf: Vec<u8>,
@@ -104,13 +152,18 @@ impl<R: Read + Seek> Reader<R> {
 }
 
 pub struct Dimensions {
+    /// height
     pub z: bool,
+    /// measurement
     pub m: bool,
+    /// geodetic decimal year time
     pub t: bool,
+    /// time nanosecond measurement
     pub tm: bool,
 }
 
 pub trait GeomReader {
+    /// Additional dimensions requested from reader
     fn dimensions(&self) -> Dimensions {
         Dimensions {
             z: false,
@@ -119,7 +172,9 @@ pub trait GeomReader {
             tm: false,
         }
     }
+    /// Point without additional dimensions
     fn pointxy(&mut self, _x: f64, _y: f64) {}
+    /// Point with additional dimensions
     fn point(
         &mut self,
         _x: f64,

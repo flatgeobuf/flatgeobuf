@@ -1,8 +1,15 @@
 [package]
 name = "flatgeobuf"
-version = "3.0.1"
+version = "0.3.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
+description = "FlatGeobuf for Rust."
+homepage = "https://bjornharrtell.github.io/flatgeobuf/"
+repository = "https://github.com/bjornharrtell/flatgeobuf"
+readme = "README.md"
+license = "ISC"
+license-file = "../../LICENSE"
+keywords = ["geo", "r-tree"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

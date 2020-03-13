@@ -1,3 +1,6 @@
+//! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
+//! to enable fast bounding box spatial filtering.
+
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::mem::size_of;
@@ -5,11 +8,13 @@ use std::{cmp, f64, u64};
 
 #[allow(non_snake_case)]
 #[derive(Clone, PartialEq, Debug)]
+/// R-Tree node
 pub struct NodeItem {
     minX: f64,   // double
     minY: f64,   // double
     maxX: f64,   // double
     maxY: f64,   // double
+    /// Byte offset in feature data section
     offset: u64, // uint64_t
 }
 
@@ -84,8 +89,11 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
 
 #[allow(non_snake_case)]
 #[derive(Debug)]
+/// Bbox filter search result
 pub struct SearchResultItem {
+    /// Byte offset in feature data section
     pub offset: usize,
+    /// Feature number
     pub index: usize,
 }
 
@@ -171,6 +179,7 @@ pub fn hilbert_sort(items: &mut Vec<NodeItem>) {
 }
 
 #[allow(non_snake_case)]
+/// Packed Hilbert R-Tree
 pub struct PackedRTree {
     _extent: NodeItem,
     _nodeItems: Vec<NodeItem>,

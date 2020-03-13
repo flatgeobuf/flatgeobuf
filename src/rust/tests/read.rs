@@ -1,10 +1,11 @@
 use flatgeobuf::*;
 use std::error::Error;
 use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::fs::File;
 
 #[test]
 fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/countries.fgb")?;
+    let f = File::open("../../test/data/countries.fgb")?;
     let mut reader = BufReader::new(f);
 
     let mut magic_buf: [u8; 8] = [0; 8];
@@ -84,7 +85,7 @@ impl GeomReader for VertexCounter {
 
 #[test]
 fn file_reader() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/countries.fgb")?;
+    let f = File::open("../../test/data/countries.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
@@ -131,7 +132,7 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
 
 #[test]
 fn bbox_file_reader() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/countries.fgb")?;
+    let f = File::open("../../test/data/countries.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     let columns_meta = columns_meta(&header);
@@ -148,7 +149,7 @@ fn bbox_file_reader() -> std::result::Result<(), std::io::Error> {
 
 #[test]
 fn magic_byte() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/states.geojson")?;
+    let f = File::open("../../test/data/states.geojson")?;
     let mut reader = Reader::new(f);
     assert_eq!(
         reader.read_header().err().unwrap().description(),
@@ -161,7 +162,7 @@ fn magic_byte() -> std::result::Result<(), std::io::Error> {
 #[test]
 #[ignore]
 fn point_layer() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/ne_10m_admin_0_country_points.fgb")?;
+    let f = File::open("../../test/data/ne_10m_admin_0_country_points.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     assert_eq!(header.geometry_type(), GeometryType::Point);
@@ -209,7 +210,7 @@ impl GeomReader for WktLineEmitter {
 #[test]
 #[ignore]
 fn line_layer() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/lines.fgb")?;
+    let f = File::open("../../test/data/lines.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     assert_eq!(header.geometry_type(), GeometryType::LineString);
@@ -259,7 +260,7 @@ impl GeomReader for MultiLineGenerator {
 #[test]
 #[ignore]
 fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/ne_10m_geographic_lines.fgb")?;
+    let f = File::open("../../test/data/ne_10m_geographic_lines.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     assert_eq!(header.geometry_type(), GeometryType::MultiLineString);
@@ -319,7 +320,7 @@ impl GeomReader for MaxFinder {
 #[test]
 #[ignore]
 fn multi_dim() -> std::result::Result<(), std::io::Error> {
-    let f = std::fs::File::open("../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb")?;
+    let f = File::open("../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb")?;
     let mut reader = Reader::new(f);
     let header = reader.read_header()?;
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
