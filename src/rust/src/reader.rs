@@ -4,61 +4,42 @@ use crate::packed_r_tree::{self, PackedRTree};
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
-use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
+use std::io::{Error, ErrorKind, Read, Seek, SeekFrom};
 use std::mem::size_of;
 use std::str;
 
-/// FlatGeobuf reader
-///
-/// ## High-level API
-///
-/// ```rust
-/// # use flatgeobuf::*;
-/// # use std::fs::File;
-/// # let fgb = File::open("../../test/data/countries.fgb").unwrap();
-/// let mut reader = Reader::new(fgb);
-/// let header = reader.read_header().unwrap();
-/// let columns_meta = columns_meta(&header);
-/// reader.select_bbox(8.8, 47.2, 9.5, 55.3).unwrap();
-/// while let Ok(feature) = reader.next() {
-///     let props = read_all_properties(&feature, &columns_meta);
-///     println!("{}", props["name"]);
-/// }
-/// ```
-///
-/// ## Zero-copy feature access
-///
-/// ```rust
-/// # use flatgeobuf::*;
-/// # let fgb = std::fs::File::open("../../test/data/countries.fgb").unwrap();
-/// # let mut reader = Reader::new(fgb);
-/// # let header = reader.read_header().unwrap();
-/// # let columns_meta = columns_meta(&header);
-/// # reader.select_all().unwrap();
-/// # let feature = reader.next().unwrap();
-/// let _ = read_properties(&feature, &columns_meta, |i, n, v| {
-///     println!("columnidx: {} name: {} value: {:?}", i, n, v);
-///     false // don't abort
-/// });
-/// ```
-///
-/// ## Zero-copy geometry reader
-///
-/// Geometries can be accessed by implementing the `GeomReader` trait.
-///
-/// ```rust
-/// # use flatgeobuf::*;
-/// struct CoordPrinter;
-///
-/// impl GeomReader for CoordPrinter {
-///     fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
-///         println!("({} {})", x, y);
-///     }
-/// }
-/// ```
-pub struct Reader<R: Read> {
-    reader: BufReader<R>,
+/// FlatGeobuf header reader
+pub struct HeaderReader {
     header_buf: Vec<u8>,
+}
+
+impl HeaderReader {
+    pub fn read<R: Read + Seek>(mut reader: R) -> std::result::Result<Self, std::io::Error> {
+        let mut magic_buf: [u8; 8] = [0; 8];
+        reader.read_exact(&mut magic_buf)?;
+        if magic_buf != MAGIC_BYTES {
+            return Err(Error::new(ErrorKind::Other, "Magic byte doesn't match"));
+        }
+
+        let mut size_buf: [u8; 4] = [0; 4];
+        reader.read_exact(&mut size_buf)?;
+        let header_size = u32::from_le_bytes(size_buf);
+
+        let mut data = HeaderReader {
+            header_buf: Vec::with_capacity(header_size as usize),
+        };
+        data.header_buf.resize(header_size as usize, 0);
+        reader.read_exact(&mut data.header_buf)?;
+
+        Ok(data)
+    }
+    pub fn header(&self) -> Header {
+        get_root_as_header(&self.header_buf[..])
+    }
+}
+
+/// FlatGeobuf feature reader
+pub struct FeatureReader {
     feature_base: u64,
     feature_buf: Vec<u8>,
     /// Selected features or None if no bbox filter
@@ -67,82 +48,68 @@ pub struct Reader<R: Read> {
     filter_idx: usize,
 }
 
-impl<R: Read + Seek> Reader<R> {
-    pub fn new(reader: R) -> Reader<R> {
-        Reader {
-            reader: BufReader::new(reader),
-            header_buf: Vec::new(),
+impl FeatureReader {
+    pub fn select_all<R: Read + Seek>(
+        mut reader: R,
+        header: &Header,
+    ) -> std::result::Result<Self, std::io::Error> {
+        let mut data = FeatureReader {
             feature_base: 0,
             feature_buf: Vec::new(),
             item_filter: None,
             filter_idx: 0,
-        }
-    }
-    pub fn read_header(&mut self) -> std::result::Result<Header, std::io::Error> {
-        let mut magic_buf: [u8; 8] = [0; 8];
-        self.reader.read_exact(&mut magic_buf)?;
-        if magic_buf != MAGIC_BYTES {
-            return Err(Error::new(ErrorKind::Other, "Magic byte doesn't match"));
-        }
-
-        let mut size_buf: [u8; 4] = [0; 4];
-        self.reader.read_exact(&mut size_buf)?;
-        let header_size = u32::from_le_bytes(size_buf);
-
-        self.header_buf.resize(header_size as usize, 0);
-        self.reader.read_exact(&mut self.header_buf)?;
-
-        let header = get_root_as_header(&self.header_buf[..]);
-        Ok(header)
-    }
-    pub fn header(&self) -> Header {
-        get_root_as_header(&self.header_buf[..])
-    }
-    pub fn select_all(&mut self) -> std::result::Result<(), std::io::Error> {
-        let header = get_root_as_header(&self.header_buf[..]);
+        };
         // Skip index
         let index_size = PackedRTree::size(header.features_count(), header.index_node_size());
-        self.reader.seek(SeekFrom::Current(index_size as i64))?;
-        Ok(())
+        data.feature_base = reader.seek(SeekFrom::Current(index_size as i64))?;
+        Ok(data)
     }
-    pub fn select_bbox(
-        &mut self,
+    pub fn select_bbox<R: Read + Seek>(
+        mut reader: R,
+        header: &Header,
         min_x: f64,
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> std::result::Result<(), std::io::Error> {
-        let header = get_root_as_header(&self.header_buf[..]);
+    ) -> std::result::Result<Self, std::io::Error> {
+        let mut data = FeatureReader {
+            feature_base: 0,
+            feature_buf: Vec::new(),
+            item_filter: None,
+            filter_idx: 0,
+        };
         let tree = PackedRTree::from_buf(
-            &mut self.reader,
+            &mut reader,
             header.features_count(),
             PackedRTree::DEFAULT_NODE_SIZE,
         );
         let mut list = tree.search(min_x, min_y, max_x, max_y);
         list.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap());
-        self.item_filter = Some(list);
-        self.feature_base = self.reader.seek(SeekFrom::Current(0))?;
-        Ok(())
+        data.item_filter = Some(list);
+        data.feature_base = reader.seek(SeekFrom::Current(0))?;
+        Ok(data)
     }
-    pub fn select_count(&self) -> Option<usize> {
+    pub fn filter_count(&self) -> Option<usize> {
         self.item_filter.as_ref().map(|f| f.len())
     }
-    pub fn next(&mut self) -> std::result::Result<Feature, std::io::Error> {
+    pub fn next<R: Read + Seek>(
+        &mut self,
+        mut reader: R,
+    ) -> std::result::Result<Feature, std::io::Error> {
         // impl Iterator for Reader is diffcult, because of Feature lifetime
         if let Some(filter) = &self.item_filter {
             if self.filter_idx >= filter.len() {
                 return Err(Error::new(ErrorKind::Other, "No more features"));
             }
             let item = &filter[self.filter_idx];
-            self.reader
-                .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
+            reader.seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
             self.filter_idx += 1;
         }
         let mut size_buf: [u8; 4] = [0; 4];
-        self.reader.read_exact(&mut size_buf)?;
+        reader.read_exact(&mut size_buf)?;
         let feature_size = u32::from_le_bytes(size_buf);
         self.feature_buf.resize(feature_size as usize, 0);
-        self.reader.read_exact(&mut self.feature_buf)?;
+        reader.read_exact(&mut self.feature_buf)?;
         let feature = get_root_as_feature(&self.feature_buf[..]);
         Ok(feature)
     }
@@ -150,6 +117,36 @@ impl<R: Read + Seek> Reader<R> {
         get_root_as_feature(&self.feature_buf[..])
     }
 }
+
+pub struct ColumnMeta {
+    pub coltype: ColumnType,
+    pub name: String,
+    pub index: usize,
+}
+
+fn columns_meta(header: &Header) -> Vec<ColumnMeta> {
+    if let Some(columns) = header.columns() {
+        columns
+            .iter()
+            .enumerate()
+            .map(|(i, col)| ColumnMeta {
+                coltype: col.type_(),
+                name: col.name().to_string(),
+                index: i,
+            })
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
+
+impl Header<'_> {
+    pub fn columns_meta(&self) -> Vec<ColumnMeta> {
+        columns_meta(self)
+    }
+}
+
+// --- Geometry reader ---
 
 pub struct Dimensions {
     /// height
@@ -397,11 +394,7 @@ pub fn read_geometry<R: GeomReader>(
     }
 }
 
-pub struct ColumnMeta {
-    pub coltype: ColumnType,
-    pub name: String,
-    pub index: usize,
-}
+// --- Property reader ---
 
 #[derive(PartialEq, Debug)]
 pub enum ColumnValue<'a> {
@@ -422,38 +415,23 @@ pub enum ColumnValue<'a> {
     Binary(&'a [u8]),
 }
 
-pub fn columns_meta(header: &Header) -> Vec<ColumnMeta> {
-    if let Some(columns) = header.columns() {
-        columns
-            .iter()
-            .enumerate()
-            .map(|(i, col)| ColumnMeta {
-                coltype: col.type_(),
-                name: col.name().to_string(),
-                index: i,
-            })
-            .collect()
-    } else {
-        Vec::new()
-    }
-}
-
-pub fn read_properties<R>(feature: &Feature, columns_meta: &Vec<ColumnMeta>, mut reader: R) -> bool
+fn iter_properties<R>(feature: &Feature, header: &Header, mut reader: R) -> bool
 where
-    R: FnMut(usize, &String, ColumnValue) -> bool,
+    R: FnMut(usize, &str, ColumnValue) -> bool,
 {
+    let columns_meta = header.columns().unwrap();
     let mut finish = false;
     if let Some(properties) = feature.properties() {
         let mut offset = 0;
         while offset < properties.len() && !finish {
             let i = LittleEndian::read_u16(&properties[offset..offset + 2]) as usize;
             offset += size_of::<u16>();
-            let column = &columns_meta[i];
-            match column.coltype {
+            let column = &columns_meta.get(i);
+            match column.type_() {
                 ColumnType::Int => {
                     finish = reader(
                         i,
-                        &column.name,
+                        &column.name(),
                         ColumnValue::Int(LittleEndian::read_i32(&properties[offset..offset + 4])),
                     );
                     offset += size_of::<i32>();
@@ -461,7 +439,7 @@ where
                 ColumnType::Long => {
                     finish = reader(
                         i,
-                        &column.name,
+                        &column.name(),
                         ColumnValue::Long(LittleEndian::read_i64(&properties[offset..offset + 8])),
                     );
                     offset += size_of::<i64>();
@@ -469,7 +447,7 @@ where
                 ColumnType::ULong => {
                     finish = reader(
                         i,
-                        &column.name,
+                        &column.name(),
                         ColumnValue::ULong(LittleEndian::read_u64(&properties[offset..offset + 8])),
                     );
                     offset += size_of::<u64>();
@@ -477,7 +455,7 @@ where
                 ColumnType::Double => {
                     finish = reader(
                         i,
-                        &column.name,
+                        &column.name(),
                         ColumnValue::Double(LittleEndian::read_f64(
                             &properties[offset..offset + 8],
                         )),
@@ -489,7 +467,7 @@ where
                     offset += size_of::<u32>();
                     finish = reader(
                         i,
-                        &column.name,
+                        &column.name(),
                         ColumnValue::String(
                             // unsafe variant without UTF-8 checking would be faster...
                             str::from_utf8(&properties[offset..offset + len])
@@ -514,12 +492,9 @@ where
     finish
 }
 
-pub fn read_all_properties(
-    feature: &Feature,
-    columns_meta: &Vec<ColumnMeta>,
-) -> HashMap<String, String> {
+fn properties_map(feature: &Feature, header: &Header) -> HashMap<String, String> {
     let mut properties = HashMap::new();
-    let _ = read_properties(&feature, &columns_meta, |_i, colname, colval| {
+    let _ = iter_properties(&feature, &header, |_i, colname, colval| {
         let vstr = match colval {
             ColumnValue::Byte(v) => format!("{}", v),
             ColumnValue::UByte(v) => format!("{}", v),
@@ -541,4 +516,16 @@ pub fn read_all_properties(
         false
     });
     properties
+}
+
+impl Feature<'_> {
+    pub fn iter_properties<R>(&self, header: &Header, reader: R) -> bool
+    where
+        R: FnMut(usize, &str, ColumnValue) -> bool,
+    {
+        iter_properties(self, &header, reader)
+    }
+    pub fn properties_map(&self, header: &Header) -> HashMap<String, String> {
+        properties_map(self, &header)
+    }
 }

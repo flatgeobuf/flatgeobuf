@@ -7,7 +7,6 @@ description = "FlatGeobuf for Rust."
 homepage = "https://bjornharrtell.github.io/flatgeobuf/"
 repository = "https://github.com/bjornharrtell/flatgeobuf"
 readme = "README.md"
-license = "ISC"
 license-file = "../../LICENSE"
 keywords = ["geo", "r-tree"]
 

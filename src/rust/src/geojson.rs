@@ -1,6 +1,6 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
-use crate::header_generated::flat_geobuf::GeometryType;
-use crate::reader::{read_geometry, read_properties, ColumnMeta, ColumnValue, GeomReader};
+use crate::header_generated::flat_geobuf::{GeometryType, Header};
+use crate::reader::{read_geometry, ColumnValue, GeomReader};
 use std::fmt::Display;
 use std::io::Write;
 
@@ -103,12 +103,12 @@ impl Geometry<'_> {
     }
 }
 
-fn write_num_prop<'a, W: Write>(out: &'a mut W, colname: &String, v: &dyn Display) -> usize {
+fn write_num_prop<'a, W: Write>(out: &'a mut W, colname: &str, v: &dyn Display) -> usize {
     out.write(&format!(r#""{}": {}"#, colname, v).as_bytes())
         .unwrap()
 }
 
-fn write_str_prop<'a, W: Write>(out: &'a mut W, colname: &String, v: &dyn Display) -> usize {
+fn write_str_prop<'a, W: Write>(out: &'a mut W, colname: &str, v: &dyn Display) -> usize {
     out.write(&format!(r#""{}": "{}""#, colname, v).as_bytes())
         .unwrap()
 }
@@ -117,12 +117,12 @@ impl Feature<'_> {
     pub fn to_geojson<'a, W: Write>(
         &self,
         mut out: &'a mut W,
-        columns_meta: &Vec<ColumnMeta>,
+        header: &Header,
         geometry_type: GeometryType,
     ) {
         out.write(br#"{"type": "Feature", "properties": {"#)
             .unwrap();
-        let _ = read_properties(self, &columns_meta, |i, colname, colval| {
+        let _ = self.iter_properties(&header, |i, colname, colval| {
             if i > 0 {
                 out.write(b", ").unwrap();
             }
