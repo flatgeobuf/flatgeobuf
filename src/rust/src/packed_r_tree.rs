@@ -10,10 +10,10 @@ use std::{cmp, f64, u64};
 #[derive(Clone, PartialEq, Debug)]
 /// R-Tree node
 pub struct NodeItem {
-    minX: f64,   // double
-    minY: f64,   // double
-    maxX: f64,   // double
-    maxY: f64,   // double
+    minX: f64, // double
+    minY: f64, // double
+    maxX: f64, // double
+    maxY: f64, // double
     /// Byte offset in feature data section
     offset: u64, // uint64_t
 }

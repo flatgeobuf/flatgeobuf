@@ -31,12 +31,14 @@
 
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;
+mod geojson;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod header_generated;
 mod packed_r_tree;
 mod reader;
 
 pub use feature_generated::flat_geobuf::*;
+pub use geojson::*;
 pub use header_generated::flat_geobuf::*;
 pub use packed_r_tree::PackedRTree;
 pub use reader::*;

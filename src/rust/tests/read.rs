@@ -1,7 +1,7 @@
 use flatgeobuf::*;
 use std::error::Error;
-use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::fs::File;
+use std::io::{BufReader, Read, Seek, SeekFrom};
 
 #[test]
 fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
@@ -78,7 +78,7 @@ fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
 struct VertexCounter(u64);
 
 impl GeomReader for VertexCounter {
-    fn pointxy(&mut self, _x: f64, _y: f64) {
+    fn pointxy(&mut self, _x: f64, _y: f64, _idx: usize) {
         self.0 += 1;
     }
 }
@@ -186,23 +186,19 @@ fn point_layer() -> std::result::Result<(), std::io::Error> {
 
 struct WktLineEmitter {
     wkt: String,
-    is_first_point: bool,
 }
 
 impl GeomReader for WktLineEmitter {
-    fn line_begin(&mut self, _n: usize) {
+    fn line_begin(&mut self, _n: usize, _idx: usize) {
         self.wkt.push_str("LINESTRING (");
-        self.is_first_point = true;
     }
-    fn pointxy(&mut self, x: f64, y: f64) {
-        if self.is_first_point {
-            self.is_first_point = false;
-        } else {
+    fn pointxy(&mut self, x: f64, y: f64, idx: usize) {
+        if idx > 0 {
             self.wkt.push_str(", ");
         }
         self.wkt.push_str(&format!("{} {}", x, y));
     }
-    fn line_end(&mut self) {
+    fn line_end(&mut self, _idx: usize) {
         self.wkt.push_str(")");
     }
 }
@@ -230,10 +226,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(line.len(), 7);
     assert_eq!(line[0], (1875038.4476102313, -3269648.6879248763));
 
-    let mut visitor = WktLineEmitter {
-        wkt: String::new(),
-        is_first_point: true,
-    };
+    let mut visitor = WktLineEmitter { wkt: String::new() };
     read_geometry(&mut visitor, &geometry, GeometryType::LineString);
     assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
@@ -245,13 +238,13 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
 struct MultiLineGenerator(Vec<Vec<(f64, f64)>>);
 
 impl GeomReader for MultiLineGenerator {
-    fn multiline_begin(&mut self, n: usize) {
+    fn multiline_begin(&mut self, n: usize, _idx: usize) {
         self.0.reserve(n);
     }
-    fn line_begin(&mut self, n: usize) {
+    fn line_begin(&mut self, n: usize, _idx: usize) {
         self.0.push(Vec::with_capacity(n));
     }
-    fn pointxy(&mut self, x: f64, y: f64) {
+    fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
         let len = self.0.len();
         self.0[len - 1].push((x, y));
     }
@@ -279,7 +272,7 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(num_vertices, 361);
 
     let mut visitor = MultiLineGenerator(Vec::new());
-    read_multi_line(&mut visitor, &geometry);
+    read_geometry(&mut visitor, &geometry, GeometryType::MultiLineString);
     assert_eq!(visitor.0.len(), 1);
     assert_eq!(visitor.0[0].len(), 361);
     assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
@@ -308,6 +301,7 @@ impl GeomReader for MaxFinder {
         _m: Option<f64>,
         _t: Option<f64>,
         _tm: Option<u64>,
+        _idx: usize,
     ) {
         if let Some(z) = z {
             if z > self.0 {
