@@ -1,6 +1,7 @@
-use crate::feature_generated::flat_geobuf::Geometry;
+use crate::feature_generated::flat_geobuf::{Feature, Geometry};
 use crate::header_generated::flat_geobuf::GeometryType;
-use crate::reader::{read_geometry, GeomReader};
+use crate::reader::{read_geometry, read_properties, ColumnMeta, ColumnValue, GeomReader};
+use std::fmt::Display;
 use std::io::Write;
 
 struct GeoJsonEmitter<'a, W: Write> {
@@ -99,5 +100,55 @@ impl Geometry<'_> {
     pub fn to_geojson<'a, W: Write>(&self, mut out: &'a mut W, geometry_type: GeometryType) {
         let mut json = GeoJsonEmitter::new(&mut out);
         read_geometry(&mut json, self, geometry_type);
+    }
+}
+
+fn write_num_prop<'a, W: Write>(out: &'a mut W, colname: &String, v: &dyn Display) -> usize {
+    out.write(&format!(r#""{}": {}"#, colname, v).as_bytes())
+        .unwrap()
+}
+
+fn write_str_prop<'a, W: Write>(out: &'a mut W, colname: &String, v: &dyn Display) -> usize {
+    out.write(&format!(r#""{}": "{}""#, colname, v).as_bytes())
+        .unwrap()
+}
+
+impl Feature<'_> {
+    pub fn to_geojson<'a, W: Write>(
+        &self,
+        mut out: &'a mut W,
+        columns_meta: &Vec<ColumnMeta>,
+        geometry_type: GeometryType,
+    ) {
+        out.write(br#"{"type": "Feature", "properties": {"#)
+            .unwrap();
+        let _ = read_properties(self, &columns_meta, |i, colname, colval| {
+            if i > 0 {
+                out.write(b", ").unwrap();
+            }
+            match colval {
+                ColumnValue::Byte(v) => write_num_prop(out, colname, &v),
+                ColumnValue::UByte(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Bool(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Short(v) => write_num_prop(out, colname, &v),
+                ColumnValue::UShort(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Int(v) => write_num_prop(out, colname, &v),
+                ColumnValue::UInt(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Long(v) => write_num_prop(out, colname, &v),
+                ColumnValue::ULong(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Float(v) => write_num_prop(out, colname, &v),
+                ColumnValue::Double(v) => write_num_prop(out, colname, &v),
+                ColumnValue::String(v) => write_str_prop(out, colname, &v),
+                ColumnValue::Json(_v) => 0,
+                ColumnValue::DateTime(v) => write_str_prop(out, colname, &v),
+                ColumnValue::Binary(_v) => 0,
+            };
+            false
+        });
+        out.write(br#"}, "geometry": "#).unwrap();
+        let mut json = GeoJsonEmitter::new(&mut out);
+        let geometry = self.geometry().unwrap();
+        read_geometry(&mut json, &geometry, geometry_type);
+        out.write(b"}").unwrap();
     }
 }

@@ -241,7 +241,7 @@ impl GeomReader for MultiLineGenerator {
     fn multiline_begin(&mut self, n: usize, _idx: usize) {
         self.0.reserve(n);
     }
-    fn line_begin(&mut self, n: usize, _idx: usize) {
+    fn ring_begin(&mut self, n: usize, _idx: usize) {
         self.0.push(Vec::with_capacity(n));
     }
     fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
