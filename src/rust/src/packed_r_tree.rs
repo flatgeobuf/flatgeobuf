@@ -6,46 +6,44 @@ use std::io::{Read, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64};
 
-#[allow(non_snake_case)]
 #[derive(Clone, PartialEq, Debug)]
 /// R-Tree node
 pub struct NodeItem {
-    minX: f64, // double
-    minY: f64, // double
-    maxX: f64, // double
-    maxY: f64, // double
+    min_x: f64, // double
+    min_y: f64, // double
+    max_x: f64, // double
+    max_y: f64, // double
     /// Byte offset in feature data section
     offset: u64, // uint64_t
 }
 
-#[allow(non_snake_case)]
 impl NodeItem {
-    pub fn new(minX: f64, minY: f64, maxX: f64, maxY: f64) -> NodeItem {
+    pub fn new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> NodeItem {
         NodeItem {
-            minX,
-            minY,
-            maxX,
-            maxY,
+            min_x,
+            min_y,
+            max_x,
+            max_y,
             offset: 0,
         }
     }
 
     pub fn create(offset: u64) -> NodeItem {
         NodeItem {
-            minX: f64::INFINITY,
-            minY: f64::INFINITY,
-            maxX: f64::NEG_INFINITY,
-            maxY: f64::NEG_INFINITY,
+            min_x: f64::INFINITY,
+            min_y: f64::INFINITY,
+            max_x: f64::NEG_INFINITY,
+            max_y: f64::NEG_INFINITY,
             offset,
         }
     }
 
     pub fn width(&self) -> f64 {
-        self.maxX - self.minX
+        self.max_x - self.min_x
     }
 
     pub fn height(&self) -> f64 {
-        self.maxY - self.minY
+        self.max_y - self.min_y
     }
 
     pub fn sum(mut a: NodeItem, b: &NodeItem) -> NodeItem {
@@ -54,31 +52,31 @@ impl NodeItem {
     }
 
     fn expand(&mut self, r: &NodeItem) {
-        if r.minX < self.minX {
-            self.minX = r.minX;
+        if r.min_x < self.min_x {
+            self.min_x = r.min_x;
         }
-        if r.minY < self.minY {
-            self.minY = r.minY;
+        if r.min_y < self.min_y {
+            self.min_y = r.min_y;
         }
-        if r.maxX > self.maxX {
-            self.maxX = r.maxX;
+        if r.max_x > self.max_x {
+            self.max_x = r.max_x;
         }
-        if r.maxY > self.maxY {
-            self.maxY = r.maxY;
+        if r.max_y > self.max_y {
+            self.max_y = r.max_y;
         }
     }
 
     pub fn intersects(&self, r: &NodeItem) -> bool {
-        if self.maxX < r.minX {
+        if self.max_x < r.min_x {
             return false;
         }
-        if self.maxY < r.minY {
+        if self.max_y < r.min_y {
             return false;
         }
-        if self.minX > r.maxX {
+        if self.min_x > r.max_x {
             return false;
         }
-        if self.minY > r.maxY {
+        if self.min_y > r.max_y {
             return false;
         }
         true
@@ -86,11 +84,10 @@ impl NodeItem {
 
     // std::vector<double> NodeItem::toVector()
     // {
-    //     return std::vector<double> { minX, minY, maxX, maxY };
+    //     return std::vector<double> { min_x, min_y, max_x, max_y };
     // }
 }
 
-#[allow(non_snake_case)]
 #[derive(Debug)]
 /// Bbox filter search result
 pub struct SearchResultItem {
@@ -103,45 +100,44 @@ pub struct SearchResultItem {
 const HILBERT_MAX: u32 = (1 << 16) - 1;
 
 // Based on public domain code at https://github.com/rawrunprotected/hilbert_curves
-#[allow(non_snake_case)]
 fn hilbert(x: u32, y: u32) -> u32 {
     let mut a: u32 = x ^ y;
     let mut b: u32 = 0xFFFF ^ a;
     let mut c: u32 = 0xFFFF ^ (x | y);
     let mut d: u32 = x & (y ^ 0xFFFF);
 
-    let mut A: u32 = a | (b >> 1);
-    let mut B: u32 = (a >> 1) ^ a;
-    let mut C: u32 = ((c >> 1) ^ (b & (d >> 1))) ^ c;
-    let mut D: u32 = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+    let mut aa: u32 = a | (b >> 1);
+    let mut bb: u32 = (a >> 1) ^ a;
+    let mut cc: u32 = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+    let mut dd: u32 = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
 
-    a = A;
-    b = B;
-    c = C;
-    d = D;
-    A = (a & (a >> 2)) ^ (b & (b >> 2));
-    B = (a & (b >> 2)) ^ (b & ((a ^ b) >> 2));
-    C ^= (a & (c >> 2)) ^ (b & (d >> 2));
-    D ^= (b & (c >> 2)) ^ ((a ^ b) & (d >> 2));
+    a = aa;
+    b = bb;
+    c = cc;
+    d = dd;
+    aa = (a & (a >> 2)) ^ (b & (b >> 2));
+    bb = (a & (b >> 2)) ^ (b & ((a ^ b) >> 2));
+    cc ^= (a & (c >> 2)) ^ (b & (d >> 2));
+    dd ^= (b & (c >> 2)) ^ ((a ^ b) & (d >> 2));
 
-    a = A;
-    b = B;
-    c = C;
-    d = D;
-    A = (a & (a >> 4)) ^ (b & (b >> 4));
-    B = (a & (b >> 4)) ^ (b & ((a ^ b) >> 4));
-    C ^= (a & (c >> 4)) ^ (b & (d >> 4));
-    D ^= (b & (c >> 4)) ^ ((a ^ b) & (d >> 4));
+    a = aa;
+    b = bb;
+    c = cc;
+    d = dd;
+    aa = (a & (a >> 4)) ^ (b & (b >> 4));
+    bb = (a & (b >> 4)) ^ (b & ((a ^ b) >> 4));
+    cc ^= (a & (c >> 4)) ^ (b & (d >> 4));
+    dd ^= (b & (c >> 4)) ^ ((a ^ b) & (d >> 4));
 
-    a = A;
-    b = B;
-    c = C;
-    d = D;
-    C ^= (a & (c >> 8)) ^ (b & (d >> 8));
-    D ^= (b & (c >> 8)) ^ ((a ^ b) & (d >> 8));
+    a = aa;
+    b = bb;
+    c = cc;
+    d = dd;
+    cc ^= (a & (c >> 8)) ^ (b & (d >> 8));
+    dd ^= (b & (c >> 8)) ^ ((a ^ b) & (d >> 8));
 
-    a = C ^ (C >> 1);
-    b = D ^ (D >> 1);
+    a = cc ^ (cc >> 1);
+    b = dd ^ (dd >> 1);
 
     let mut i0: u32 = x ^ y;
     let mut i1: u32 = b | (0xFFFF ^ (i0 | a));
@@ -161,14 +157,13 @@ fn hilbert(x: u32, y: u32) -> u32 {
     value
 }
 
-#[allow(non_snake_case)]
-fn hilbert_bbox(r: &NodeItem, hilbertMax: u32, extent: &NodeItem) -> u32 {
-    // calculate bbox center and scale to hilbertMax
+fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
+    // calculate bbox center and scale to hilbert_max
     // Hint from @vmx: Why not OMT tree (http://ceur-ws.org/Vol-74/files/FORUM_18.pdf)?
-    let x = (hilbertMax as f64 * ((r.minX + r.maxX) / 2.0 - extent.minX) / extent.width()).floor()
-        as u32;
-    let y = (hilbertMax as f64 * ((r.minY + r.maxY) / 2.0 - extent.minY) / extent.height()).floor()
-        as u32;
+    let x = (hilbert_max as f64 * ((r.min_x + r.max_x) / 2.0 - extent.min_x) / extent.width())
+        .floor() as u32;
+    let y = (hilbert_max as f64 * ((r.min_y + r.max_y) / 2.0 - extent.min_y) / extent.height())
+        .floor() as u32;
     hilbert(x, y)
 }
 
@@ -184,12 +179,12 @@ pub fn hilbert_sort(items: &mut Vec<NodeItem>) {
 // void hilbert_sort_shared_ptr(std::vector<std::shared_ptr<Item>> &items)
 // {
 //     NodeItem extent = std::accumulate(items.begin(), items.end(), NodeItem::create(0), [] (NodeItem a, std::shared_ptr<Item> b) {
-//         a.expand(b->nodeItem);
+//         a.expand(b->node_item);
 //         return a;
 //     });
 //     std::sort(items.begin(), items.end(), [&extent] (std::shared_ptr<Item> a, std::shared_ptr<Item> b) {
-//         uint32_t ha = hilbert(a->nodeItem, hilbertMax, extent);
-//         uint32_t hb = hilbert(b->nodeItem, hilbertMax, extent);
+//         uint32_t ha = hilbert(a->node_item, hilbert_max, extent);
+//         uint32_t hb = hilbert(b->node_item, hilbert_max, extent);
 //         return ha > hb;
 //     });
 // }
@@ -204,89 +199,87 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
 // NodeItem calc_extent_shared_ptr(const std::vector<std::shared_ptr<Item>> &items)
 // {
 //     NodeItem extent = std::accumulate(items.begin(), items.end(), NodeItem::create(0), [] (NodeItem a, std::shared_ptr<Item> b) {
-//         a.expand(b->nodeItem);
+//         a.expand(b->node_item);
 //         return a;
 //     });
 //     return extent;
 // }
 
-#[allow(non_snake_case)]
 /// Packed Hilbert R-Tree
 pub struct PackedRTree {
     _extent: NodeItem,
-    _nodeItems: Vec<NodeItem>,
-    _numItems: u64, // TODO: usize ?
-    _numNodes: u64, // TODO: usize ?
-    _nodeSize: u16,
-    _levelBounds: Vec<(u64, u64)>, // TODO: (usize, usize) ?
+    node_items: Vec<NodeItem>,
+    num_items: u64, // TODO: usize ?
+    num_nodes: u64, // TODO: usize ?
+    node_size: u16,
+    level_bounds: Vec<(u64, u64)>, // TODO: (usize, usize) ?
 }
 
-#[allow(non_snake_case)]
 impl PackedRTree {
     pub const DEFAULT_NODE_SIZE: u16 = 16;
 
-    fn init(&mut self, nodeSize: u16) {
-        assert!(nodeSize >= 2, "Node size must be at least 2");
-        assert!(self._numItems > 0, "Cannot create empty tree");
-        self._nodeSize = cmp::min(cmp::max(nodeSize, 2u16), 65535u16);
-        self._levelBounds = PackedRTree::generateLevelBounds(self._numItems, self._nodeSize);
-        self._numNodes = self._levelBounds.first().unwrap().1;
-        self._nodeItems = vec![NodeItem::create(0); self._numNodes as usize];
+    fn init(&mut self, node_size: u16) {
+        assert!(node_size >= 2, "Node size must be at least 2");
+        assert!(self.num_items > 0, "Cannot create empty tree");
+        self.node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
+        self.num_nodes = self.level_bounds.first().unwrap().1;
+        self.node_items = vec![NodeItem::create(0); self.num_nodes as usize];
     }
 
-    fn generateLevelBounds(numItems: u64, nodeSize: u16) -> Vec<(u64, u64)> {
-        assert!(nodeSize >= 2, "Node size must be at least 2");
-        assert!(numItems > 0, "Cannot create empty tree");
+    fn generate_level_bounds(num_items: u64, node_size: u16) -> Vec<(u64, u64)> {
+        assert!(node_size >= 2, "Node size must be at least 2");
+        assert!(num_items > 0, "Cannot create empty tree");
         assert!(
-            numItems <= u64::MAX - ((numItems / nodeSize as u64) * 2),
+            num_items <= u64::MAX - ((num_items / node_size as u64) * 2),
             "Number of items too large"
         );
 
         // number of nodes per level in bottom-up order
-        let mut levelNumNodes: Vec<u64> = Vec::new();
-        let mut n = numItems;
-        let mut numNodes = n;
-        levelNumNodes.push(n);
+        let mut level_num_nodes: Vec<u64> = Vec::new();
+        let mut n = num_items;
+        let mut num_nodes = n;
+        level_num_nodes.push(n);
         loop {
-            n = (n + nodeSize as u64 - 1) / nodeSize as u64;
-            numNodes += n;
-            levelNumNodes.push(n);
+            n = (n + node_size as u64 - 1) / node_size as u64;
+            num_nodes += n;
+            level_num_nodes.push(n);
             if n == 1 {
                 break;
             }
         }
         // bounds per level in reversed storage order (top-down)
-        let mut levelOffsets: Vec<u64> = Vec::new();
-        n = numNodes;
-        for size in &levelNumNodes {
-            levelOffsets.push(n - size);
+        let mut level_offsets: Vec<u64> = Vec::new();
+        n = num_nodes;
+        for size in &level_num_nodes {
+            level_offsets.push(n - size);
             n -= size;
         }
-        levelOffsets.reverse();
-        levelNumNodes.reverse();
-        let mut levelBounds = Vec::new();
-        for i in 0..levelNumNodes.len() {
-            levelBounds.push((levelOffsets[i], levelOffsets[i] + levelNumNodes[i]));
+        level_offsets.reverse();
+        level_num_nodes.reverse();
+        let mut level_bounds = Vec::new();
+        for i in 0..level_num_nodes.len() {
+            level_bounds.push((level_offsets[i], level_offsets[i] + level_num_nodes[i]));
         }
-        levelBounds.reverse();
-        levelBounds
+        level_bounds.reverse();
+        level_bounds
     }
 
-    fn generateNodes(&mut self) {
-        for i in 0..self._levelBounds.len() - 1 {
-            let mut pos = self._levelBounds[i].0 as usize;
-            let end = self._levelBounds[i].1 as usize;
-            let mut newpos = self._levelBounds[i + 1].0 as usize;
+    fn generate_nodes(&mut self) {
+        for i in 0..self.level_bounds.len() - 1 {
+            let mut pos = self.level_bounds[i].0 as usize;
+            let end = self.level_bounds[i].1 as usize;
+            let mut newpos = self.level_bounds[i + 1].0 as usize;
             while pos < end {
                 let mut node = NodeItem::create(pos as u64);
-                for _j in 0..self._nodeSize {
+                for _j in 0..self.node_size {
                     if pos >= end {
                         break;
                     }
-                    node.expand(&self._nodeItems[pos]);
+                    node.expand(&self.node_items[pos]);
                     pos += 1;
                 }
-                self._nodeItems[newpos] = node;
+                self.node_items[newpos] = node;
                 newpos += 1;
             }
         }
@@ -297,75 +290,75 @@ impl PackedRTree {
         let buf: &mut [u8] = unsafe {
             std::slice::from_raw_parts_mut(&mut n as *mut _ as *mut u8, size_of::<NodeItem>())
         };
-        for i in 0..self._numNodes as usize {
+        for i in 0..self.num_nodes as usize {
             data.read_exact(buf).unwrap();
-            self._nodeItems[i] = n.clone();
+            self.node_items[i] = n.clone();
             self._extent.expand(&n);
         }
     }
 
-    pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, nodeSize: u16) -> PackedRTree {
+    pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
             _extent: extent.clone(),
-            _nodeItems: Vec::new(),
-            _numItems: nodes.len() as u64,
-            _numNodes: 0,
-            _nodeSize: 0,
-            _levelBounds: Vec::new(),
+            node_items: Vec::new(),
+            num_items: nodes.len() as u64,
+            num_nodes: 0,
+            node_size: 0,
+            level_bounds: Vec::new(),
         };
-        tree.init(nodeSize);
-        for i in 0..tree._numItems {
-            tree._nodeItems[(tree._numNodes - tree._numItems + i) as usize] =
+        tree.init(node_size);
+        for i in 0..tree.num_items {
+            tree.node_items[(tree.num_nodes - tree.num_items + i) as usize] =
                 nodes[i as usize].clone();
         }
-        tree.generateNodes();
+        tree.generate_nodes();
         tree
     }
 
-    pub fn from_buf(data: &mut dyn Read, num_items: u64, nodeSize: u16) -> PackedRTree {
+    pub fn from_buf(data: &mut dyn Read, num_items: u64, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
             _extent: NodeItem::create(0),
-            _nodeItems: Vec::new(),
-            _numItems: num_items,
-            _numNodes: 0,
-            _nodeSize: 0,
-            _levelBounds: Vec::new(),
+            node_items: Vec::new(),
+            num_items: num_items,
+            num_nodes: 0,
+            node_size: 0,
+            level_bounds: Vec::new(),
         };
-        tree.init(nodeSize);
+        tree.init(node_size);
         tree.read_data(data);
         tree
     }
 
-    pub fn search(&self, minX: f64, minY: f64, maxX: f64, maxY: f64) -> Vec<SearchResultItem> {
-        let leafNodesOffset = self._levelBounds.first().unwrap().0 as usize;
-        let n = NodeItem::new(minX, minY, maxX, maxY);
+    pub fn search(&self, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Vec<SearchResultItem> {
+        let leaf_nodes_offset = self.level_bounds.first().unwrap().0 as usize;
+        let n = NodeItem::new(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
         let mut queue = HashMap::new(); // C++: std::unordered_map
-        queue.insert(0, self._levelBounds.len() - 1);
+        queue.insert(0, self.level_bounds.len() - 1);
         while queue.len() != 0 {
             let next = queue.iter().next().unwrap();
-            let nodeIndex = *next.0;
+            let node_index = *next.0;
             let level = *next.1;
-            queue.remove(&nodeIndex);
-            let isLeafNode = nodeIndex >= self._numNodes as usize - self._numItems as usize;
+            queue.remove(&node_index);
+            let is_leaf_node = node_index >= self.num_nodes as usize - self.num_items as usize;
             // find the end index of the node
             let end = cmp::min(
-                nodeIndex + self._nodeSize as usize,
-                self._levelBounds[level].1 as usize,
+                node_index + self.node_size as usize,
+                self.level_bounds[level].1 as usize,
             );
             // search through child nodes
-            for pos in nodeIndex..end {
-                let nodeItem = &self._nodeItems[pos];
-                if !n.intersects(&nodeItem) {
+            for pos in node_index..end {
+                let node_item = &self.node_items[pos];
+                if !n.intersects(&node_item) {
                     continue;
                 }
-                if isLeafNode {
+                if is_leaf_node {
                     results.push(SearchResultItem {
-                        offset: nodeItem.offset as usize,
-                        index: pos - leafNodesOffset,
+                        offset: node_item.offset as usize,
+                        index: pos - leaf_nodes_offset,
                     });
                 } else {
-                    queue.insert(nodeItem.offset as usize, level - 1);
+                    queue.insert(node_item.offset as usize, level - 1);
                 }
             }
         }
@@ -373,46 +366,46 @@ impl PackedRTree {
     }
 
     // std::vector<SearchResultItem> PackedRTree::streamSearch(
-    //     const uint64_t numItems, const uint16_t nodeSize, const NodeItem& item,
+    //     const uint64_t num_items, const uint16_t node_size, const NodeItem& item,
     //     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
     // {
-    //     auto levelBounds = generateLevelBounds(numItems, nodeSize);
-    //     uint64_t leafNodesOffset = levelBounds.front().first;
-    //     uint64_t numNodes = levelBounds.front().second;
-    //     std::vector<NodeItem> nodeItems;
-    //     nodeItems.reserve(nodeSize);
-    //     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(nodeItems.data());
+    //     auto level_bounds = generate_level_bounds(num_items, node_size);
+    //     uint64_t leaf_nodes_offset = level_bounds.front().first;
+    //     uint64_t num_nodes = level_bounds.front().second;
+    //     std::vector<NodeItem> node_items;
+    //     node_items.reserve(node_size);
+    //     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(node_items.data());
     //     // use ordered search queue to make index traversal in sequential order
     //     std::map<uint64_t, uint64_t> queue;
     //     std::vector<SearchResultItem> results;
-    //     queue.insert(std::pair<uint64_t, uint64_t>(0, levelBounds.size() - 1));
+    //     queue.insert(std::pair<uint64_t, uint64_t>(0, level_bounds.size() - 1));
     //     while(queue.size() != 0) {
     //         auto next = queue.begin();
-    //         uint64_t nodeIndex = next->first;
+    //         uint64_t node_index = next->first;
     //         uint64_t level = next->second;
     //         queue.erase(next);
-    //         bool isLeafNode = nodeIndex >= numNodes - numItems;
+    //         bool is_leaf_node = node_index >= num_nodes - num_items;
     //         // find the end index of the node
-    //         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize), levelBounds[static_cast<size_t>(level)].second);
-    //         uint64_t length = end - nodeIndex;
-    //         readNode(nodesBuf, static_cast<size_t>(nodeIndex * sizeof(NodeItem)), static_cast<size_t>(length * sizeof(NodeItem)));
+    //         uint64_t end = std::min(static_cast<uint64_t>(node_index + node_size), level_bounds[static_cast<size_t>(level)].second);
+    //         uint64_t length = end - node_index;
+    //         readNode(nodesBuf, static_cast<size_t>(node_index * sizeof(NodeItem)), static_cast<size_t>(length * sizeof(NodeItem)));
     //         // search through child nodes
-    //         for (uint64_t pos = nodeIndex; pos < end; pos++) {
-    //             uint64_t nodePos = pos - nodeIndex;
-    //             auto nodeItem = nodeItems[static_cast<size_t>(nodePos)];
-    //             if (!item.intersects(nodeItem))
+    //         for (uint64_t pos = node_index; pos < end; pos++) {
+    //             uint64_t nodePos = pos - node_index;
+    //             auto node_item = node_items[static_cast<size_t>(nodePos)];
+    //             if (!item.intersects(node_item))
     //                 continue;
-    //             if (isLeafNode)
-    //                 results.push_back({ nodeItem.offset, pos - leafNodesOffset });
+    //             if (is_leaf_node)
+    //                 results.push_back({ node_item.offset, pos - leaf_nodes_offset });
     //             else
-    //                 queue.insert(std::pair<uint64_t, uint64_t>(nodeItem.offset, level - 1));
+    //                 queue.insert(std::pair<uint64_t, uint64_t>(node_item.offset, level - 1));
     //         }
     //     }
     //     return results;
     // }
 
     pub fn size(&self) -> usize {
-        self._numNodes as usize * size_of::<NodeItem>()
+        self.num_nodes as usize * size_of::<NodeItem>()
     }
 
     pub fn index_size(num_items: u64, node_size: u16) -> usize {
@@ -439,8 +432,8 @@ impl PackedRTree {
     pub fn stream_write(&self, out: &mut dyn Write) -> std::io::Result<()> {
         let buf: &[u8] = unsafe {
             std::slice::from_raw_parts(
-                self._nodeItems.as_ptr() as *const u8,
-                self._nodeItems.len() * size_of::<NodeItem>(),
+                self.node_items.as_ptr() as *const u8,
+                self.node_items.len() * size_of::<NodeItem>(),
             )
         };
         out.write_all(buf)
