@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::BufReader;
 use tempfile::tempfile;
 
 struct NullReader;
@@ -34,19 +34,7 @@ fn fgb_to_geojson() -> std::result::Result<(), std::io::Error> {
     let mut freader = FeatureReader::select_all(&mut filein, &header)?;
 
     let mut fout = tempfile()?; // or std::io::sink() or File::create("/tmp/countries.json")
-    fout.write(
-        br#"{
-"type": "FeatureCollection",
-"name": "countries",
-"features": ["#,
-    )?;
-    while let Ok(feature) = freader.next(&mut filein) {
-        feature.to_geojson(&mut fout, &header, header.geometry_type());
-        fout.write(b",\n")?;
-    }
-    fout.write(b"]}")?;
-
-    Ok(())
+    freader.to_geojson(&mut filein, &header, &mut fout)
 }
 
 fn read_header() -> std::result::Result<(BufReader<File>, HeaderReader), std::io::Error> {

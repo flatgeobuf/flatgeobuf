@@ -1,8 +1,9 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
+use crate::reader::FeatureReader;
 use crate::reader::{read_geometry, ColumnValue, GeomReader};
 use std::fmt::Display;
-use std::io::Write;
+use std::io::{Read, Seek, Write};
 
 struct GeoJsonEmitter<'a, W: Write> {
     out: &'a mut W,
@@ -150,5 +151,37 @@ impl Feature<'_> {
         let geometry = self.geometry().unwrap();
         read_geometry(&mut json, &geometry, geometry_type);
         out.write(b"}").unwrap();
+    }
+}
+
+impl FeatureReader {
+    pub fn to_geojson<'a, R: Read + Seek, W: Write>(
+        &mut self,
+        mut reader: R,
+        header: &Header,
+        mut out: &'a mut W,
+    ) -> std::result::Result<(), std::io::Error> {
+        out.write(
+            br#"{
+"type": "FeatureCollection",
+"name": ""#,
+        )?;
+        if let Some(name) = header.name() {
+            out.write(name.as_bytes())?;
+        }
+        out.write(
+            br#"",
+"features": ["#,
+        )?;
+        let mut cnt = 0;
+        while let Ok(feature) = self.next(&mut reader) {
+            if cnt > 0 {
+                out.write(b",\n")?;
+            }
+            feature.to_geojson(&mut out, &header, header.geometry_type());
+            cnt += 1;
+        }
+        out.write(b"]}")?;
+        Ok(())
     }
 }
