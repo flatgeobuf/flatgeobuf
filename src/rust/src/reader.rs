@@ -61,7 +61,8 @@ impl FeatureReader {
             filter_idx: 0,
         };
         // Skip index
-        let index_size = PackedRTree::index_size(header.features_count(), header.index_node_size());
+        let index_size =
+            PackedRTree::index_size(header.features_count() as usize, header.index_node_size());
         data.feature_base = reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(data)
     }
@@ -82,7 +83,7 @@ impl FeatureReader {
         };
         let tree = PackedRTree::from_buf(
             &mut reader,
-            header.features_count(),
+            header.features_count() as usize,
             PackedRTree::DEFAULT_NODE_SIZE,
         );
         let mut list = tree.search(min_x, min_y, max_x, max_y);

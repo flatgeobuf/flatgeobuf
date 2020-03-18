@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::mem::size_of;
-use std::{cmp, f64, u64};
+use std::{cmp, f64, u64, usize};
 
 #[derive(Clone, PartialEq, Debug)]
 /// R-Tree node
@@ -209,10 +209,10 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
 pub struct PackedRTree {
     _extent: NodeItem,
     node_items: Vec<NodeItem>,
-    num_items: u64, // TODO: usize ?
-    num_nodes: u64, // TODO: usize ?
+    num_items: usize,
+    num_nodes: usize,
     node_size: u16,
-    level_bounds: Vec<(u64, u64)>, // TODO: (usize, usize) ?
+    level_bounds: Vec<(usize, usize)>,
 }
 
 impl PackedRTree {
@@ -224,24 +224,24 @@ impl PackedRTree {
         self.node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
         self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
         self.num_nodes = self.level_bounds.first().unwrap().1;
-        self.node_items = vec![NodeItem::create(0); self.num_nodes as usize];
+        self.node_items = vec![NodeItem::create(0); self.num_nodes];
     }
 
-    fn generate_level_bounds(num_items: u64, node_size: u16) -> Vec<(u64, u64)> {
+    fn generate_level_bounds(num_items: usize, node_size: u16) -> Vec<(usize, usize)> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
         assert!(
-            num_items <= u64::MAX - ((num_items / node_size as u64) * 2),
+            num_items <= usize::MAX - ((num_items / node_size as usize) * 2),
             "Number of items too large"
         );
 
         // number of nodes per level in bottom-up order
-        let mut level_num_nodes: Vec<u64> = Vec::new();
+        let mut level_num_nodes: Vec<usize> = Vec::new();
         let mut n = num_items;
         let mut num_nodes = n;
         level_num_nodes.push(n);
         loop {
-            n = (n + node_size as u64 - 1) / node_size as u64;
+            n = (n + node_size as usize - 1) / node_size as usize;
             num_nodes += n;
             level_num_nodes.push(n);
             if n == 1 {
@@ -249,7 +249,7 @@ impl PackedRTree {
             }
         }
         // bounds per level in reversed storage order (top-down)
-        let mut level_offsets: Vec<u64> = Vec::new();
+        let mut level_offsets: Vec<usize> = Vec::new();
         n = num_nodes;
         for size in &level_num_nodes {
             level_offsets.push(n - size);
@@ -267,9 +267,9 @@ impl PackedRTree {
 
     fn generate_nodes(&mut self) {
         for i in 0..self.level_bounds.len() - 1 {
-            let mut pos = self.level_bounds[i].0 as usize;
-            let end = self.level_bounds[i].1 as usize;
-            let mut newpos = self.level_bounds[i + 1].0 as usize;
+            let mut pos = self.level_bounds[i].0;
+            let end = self.level_bounds[i].1;
+            let mut newpos = self.level_bounds[i + 1].0;
             while pos < end {
                 let mut node = NodeItem::create(pos as u64);
                 for _j in 0..self.node_size {
@@ -290,7 +290,7 @@ impl PackedRTree {
         let buf: &mut [u8] = unsafe {
             std::slice::from_raw_parts_mut(&mut n as *mut _ as *mut u8, size_of::<NodeItem>())
         };
-        for i in 0..self.num_nodes as usize {
+        for i in 0..self.num_nodes {
             data.read_exact(buf).unwrap();
             self.node_items[i] = n.clone();
             self._extent.expand(&n);
@@ -301,21 +301,20 @@ impl PackedRTree {
         let mut tree = PackedRTree {
             _extent: extent.clone(),
             node_items: Vec::new(),
-            num_items: nodes.len() as u64,
+            num_items: nodes.len(),
             num_nodes: 0,
             node_size: 0,
             level_bounds: Vec::new(),
         };
         tree.init(node_size);
         for i in 0..tree.num_items {
-            tree.node_items[(tree.num_nodes - tree.num_items + i) as usize] =
-                nodes[i as usize].clone();
+            tree.node_items[(tree.num_nodes - tree.num_items + i)] = nodes[i].clone();
         }
         tree.generate_nodes();
         tree
     }
 
-    pub fn from_buf(data: &mut dyn Read, num_items: u64, node_size: u16) -> PackedRTree {
+    pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
             _extent: NodeItem::create(0),
             node_items: Vec::new(),
@@ -330,7 +329,7 @@ impl PackedRTree {
     }
 
     pub fn search(&self, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Vec<SearchResultItem> {
-        let leaf_nodes_offset = self.level_bounds.first().unwrap().0 as usize;
+        let leaf_nodes_offset = self.level_bounds.first().unwrap().0;
         let n = NodeItem::new(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
         let mut queue = HashMap::new(); // C++: std::unordered_map
@@ -340,11 +339,11 @@ impl PackedRTree {
             let node_index = *next.0;
             let level = *next.1;
             queue.remove(&node_index);
-            let is_leaf_node = node_index >= self.num_nodes as usize - self.num_items as usize;
+            let is_leaf_node = node_index >= self.num_nodes - self.num_items;
             // find the end index of the node
             let end = cmp::min(
                 node_index + self.node_size as usize,
-                self.level_bounds[level].1 as usize,
+                self.level_bounds[level].1,
             );
             // search through child nodes
             for pos in node_index..end {
@@ -405,13 +404,13 @@ impl PackedRTree {
     // }
 
     pub fn size(&self) -> usize {
-        self.num_nodes as usize * size_of::<NodeItem>()
+        self.num_nodes * size_of::<NodeItem>()
     }
 
-    pub fn index_size(num_items: u64, node_size: u16) -> usize {
+    pub fn index_size(num_items: usize, node_size: u16) -> usize {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
-        let node_size_min = cmp::min(cmp::max(node_size, 2), 65535) as u64;
+        let node_size_min = cmp::min(cmp::max(node_size, 2), 65535) as usize;
         // limit so that resulting size in bytes can be represented by uint64_t
         assert!(
             num_items <= 1 << 56,
@@ -426,7 +425,7 @@ impl PackedRTree {
                 break;
             }
         }
-        num_nodes as usize * size_of::<NodeItem>()
+        num_nodes * size_of::<NodeItem>()
     }
 
     pub fn stream_write(&self, out: &mut dyn Write) -> std::io::Result<()> {
@@ -464,7 +463,7 @@ fn tree_2items() {
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE);
     let list = tree.search(0.0, 0.0, 1.0, 1.0);
     assert_eq!(list.len(), 1);
-    assert!(nodes[list[0].index as usize].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
+    assert!(nodes[list[0].index].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
 }
 
 #[test]
@@ -500,9 +499,7 @@ fn tree_19items_roundtrip_stream_search() {
     let list = tree.search(102.0, 102.0, 103.0, 103.0);
     assert_eq!(list.len(), 4);
     for i in 0..list.len() {
-        assert!(
-            nodes[list[i].index as usize].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0))
-        );
+        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
     }
     let mut tree_data: Vec<u8> = Vec::new();
     let res = tree.stream_write(&mut tree_data);
@@ -512,15 +509,13 @@ fn tree_19items_roundtrip_stream_search() {
 
     let tree2 = PackedRTree::from_buf(
         &mut &tree_data[..],
-        nodes.len() as u64,
+        nodes.len(),
         PackedRTree::DEFAULT_NODE_SIZE,
     );
     let list = tree2.search(102.0, 102.0, 103.0, 103.0);
     assert_eq!(list.len(), 4);
     for i in 0..list.len() {
-        assert!(
-            nodes[list[i].index as usize].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0))
-        );
+        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
     }
 
     // auto readNode = [data] (uint8_t *buf, uint32_t i, uint32_t s) {

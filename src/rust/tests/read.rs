@@ -44,7 +44,8 @@ fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
     assert_eq!(crs.code(), 4326);
 
     // Skip index
-    let index_size = PackedRTree::index_size(header.features_count(), header.index_node_size());
+    let index_size =
+        PackedRTree::index_size(header.features_count() as usize, header.index_node_size());
     reader.seek(SeekFrom::Current(index_size as i64))?;
 
     // Read first feature
