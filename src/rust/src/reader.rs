@@ -49,6 +49,7 @@ pub struct FeatureReader {
 }
 
 impl FeatureReader {
+    /// Skip R-Tree index
     pub fn select_all<R: Read + Seek>(
         mut reader: R,
         header: &Header,
@@ -60,10 +61,11 @@ impl FeatureReader {
             filter_idx: 0,
         };
         // Skip index
-        let index_size = PackedRTree::size(header.features_count(), header.index_node_size());
+        let index_size = PackedRTree::index_size(header.features_count(), header.index_node_size());
         data.feature_base = reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(data)
     }
+    /// Read R-Tree index and build filter for features within bbox
     pub fn select_bbox<R: Read + Seek>(
         mut reader: R,
         header: &Header,
@@ -89,9 +91,11 @@ impl FeatureReader {
         data.feature_base = reader.seek(SeekFrom::Current(0))?;
         Ok(data)
     }
+    /// Number of selected features
     pub fn filter_count(&self) -> Option<usize> {
         self.item_filter.as_ref().map(|f| f.len())
     }
+    /// Read next feature
     pub fn next<R: Read + Seek>(
         &mut self,
         mut reader: R,
@@ -113,6 +117,7 @@ impl FeatureReader {
         let feature = get_root_as_feature(&self.feature_buf[..]);
         Ok(feature)
     }
+    /// Return current feature
     pub fn cur_feature(&self) -> Feature {
         get_root_as_feature(&self.feature_buf[..])
     }
