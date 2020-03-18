@@ -101,15 +101,15 @@ const HILBERT_MAX: u32 = (1 << 16) - 1;
 
 // Based on public domain code at https://github.com/rawrunprotected/hilbert_curves
 fn hilbert(x: u32, y: u32) -> u32 {
-    let mut a: u32 = x ^ y;
-    let mut b: u32 = 0xFFFF ^ a;
-    let mut c: u32 = 0xFFFF ^ (x | y);
-    let mut d: u32 = x & (y ^ 0xFFFF);
+    let mut a = x ^ y;
+    let mut b = 0xFFFF ^ a;
+    let mut c = 0xFFFF ^ (x | y);
+    let mut d = x & (y ^ 0xFFFF);
 
-    let mut aa: u32 = a | (b >> 1);
-    let mut bb: u32 = (a >> 1) ^ a;
-    let mut cc: u32 = ((c >> 1) ^ (b & (d >> 1))) ^ c;
-    let mut dd: u32 = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+    let mut aa = a | (b >> 1);
+    let mut bb = (a >> 1) ^ a;
+    let mut cc = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+    let mut dd = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
 
     a = aa;
     b = bb;
@@ -139,8 +139,8 @@ fn hilbert(x: u32, y: u32) -> u32 {
     a = cc ^ (cc >> 1);
     b = dd ^ (dd >> 1);
 
-    let mut i0: u32 = x ^ y;
-    let mut i1: u32 = b | (0xFFFF ^ (i0 | a));
+    let mut i0 = x ^ y;
+    let mut i1 = b | (0xFFFF ^ (i0 | a));
 
     i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
     i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
@@ -152,14 +152,13 @@ fn hilbert(x: u32, y: u32) -> u32 {
     i1 = (i1 | (i1 << 2)) & 0x33333333;
     i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-    let value: u32 = (i1 << 1) | i0;
+    let value = (i1 << 1) | i0;
 
     value
 }
 
 fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
     // calculate bbox center and scale to hilbert_max
-    // Hint from @vmx: Why not OMT tree (http://ceur-ws.org/Vol-74/files/FORUM_18.pdf)?
     let x = (hilbert_max as f64 * ((r.min_x + r.max_x) / 2.0 - extent.min_x) / extent.width())
         .floor() as u32;
     let y = (hilbert_max as f64 * ((r.min_y + r.max_y) / 2.0 - extent.min_y) / extent.height())
