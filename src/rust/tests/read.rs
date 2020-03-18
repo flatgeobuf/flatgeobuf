@@ -114,7 +114,7 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     let geometry = feature.geometry().unwrap();
 
     let mut vertex_counter = VertexCounter(0);
-    read_geometry(&mut vertex_counter, &geometry, header.geometry_type());
+    geometry.parse(&mut vertex_counter, header.geometry_type());
     assert_eq!(vertex_counter.0, 24);
 
     let props = feature.properties_map(&header);
@@ -221,7 +221,7 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(line[0], (1875038.4476102313, -3269648.6879248763));
 
     let mut visitor = WktLineEmitter { wkt: String::new() };
-    read_geometry(&mut visitor, &geometry, header.geometry_type());
+    geometry.parse(&mut visitor, header.geometry_type());
     assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
     let _props = feature.properties_map(&header);
@@ -266,7 +266,7 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(num_vertices, 361);
 
     let mut visitor = MultiLineGenerator(Vec::new());
-    read_geometry(&mut visitor, &geometry, header.geometry_type());
+    geometry.parse(&mut visitor, header.geometry_type());
     assert_eq!(visitor.0.len(), 1);
     assert_eq!(visitor.0[0].len(), 361);
     assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
@@ -332,7 +332,7 @@ fn multi_dim() -> std::result::Result<(), std::io::Error> {
     // 3 1247972.616 401.7)))
 
     let mut max_finder = MaxFinder(0.0);
-    read_geometry(&mut max_finder, &geometry, header.geometry_type());
+    geometry.parse(&mut max_finder, header.geometry_type());
     assert_eq!(max_finder.0, 410.5);
 
     let _props = feature.properties_map(&header);

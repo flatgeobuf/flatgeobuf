@@ -535,3 +535,9 @@ impl Feature<'_> {
         properties_map(self, &header)
     }
 }
+
+impl Geometry<'_> {
+    pub fn parse<R: GeomReader>(&self, reader: &mut R, geometry_type: GeometryType) {
+        read_geometry(reader, self, geometry_type);
+    }
+}

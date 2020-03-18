@@ -18,7 +18,7 @@ fn read_fgb() -> std::result::Result<(), std::io::Error> {
     let mut null_reader = NullReader;
     while let Ok(feature) = freader.next(&mut filein) {
         let geometry = feature.geometry().unwrap();
-        read_geometry(&mut null_reader, &geometry, header.geometry_type());
+        geometry.parse(&mut null_reader, header.geometry_type());
     }
 
     Ok(())

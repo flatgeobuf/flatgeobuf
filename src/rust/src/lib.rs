@@ -72,7 +72,7 @@
 //! # let feature = freader.next(&mut reader).unwrap();
 //! let mut coord_printer = CoordPrinter {};
 //! let geometry = feature.geometry().unwrap();
-//! read_geometry(&mut coord_printer, &geometry, header.geometry_type());
+//! geometry.parse(&mut coord_printer, header.geometry_type());
 //! ```
 
 #[allow(dead_code, unused_imports, non_snake_case)]
@@ -86,7 +86,7 @@ mod reader;
 pub use feature_generated::flat_geobuf::*;
 pub use geojson::*;
 pub use header_generated::flat_geobuf::*;
-pub use packed_r_tree::PackedRTree;
+pub use packed_r_tree::*;
 pub use reader::*;
 
 pub const VERSION: u8 = 3;

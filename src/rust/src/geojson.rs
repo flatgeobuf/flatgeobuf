@@ -1,7 +1,7 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
 use crate::reader::FeatureReader;
-use crate::reader::{read_geometry, ColumnValue, GeomReader};
+use crate::reader::{ColumnValue, GeomReader};
 use std::fmt::Display;
 use std::io::{Read, Seek, Write};
 
@@ -100,7 +100,7 @@ impl<W: Write> GeomReader for GeoJsonEmitter<'_, W> {
 impl Geometry<'_> {
     pub fn to_geojson<'a, W: Write>(&self, mut out: &'a mut W, geometry_type: GeometryType) {
         let mut json = GeoJsonEmitter::new(&mut out);
-        read_geometry(&mut json, self, geometry_type);
+        self.parse(&mut json, geometry_type);
     }
 }
 
@@ -149,7 +149,7 @@ impl Feature<'_> {
         out.write(br#"}, "geometry": "#).unwrap();
         let mut json = GeoJsonEmitter::new(&mut out);
         let geometry = self.geometry().unwrap();
-        read_geometry(&mut json, &geometry, geometry_type);
+        geometry.parse(&mut json, geometry_type);
         out.write(b"}").unwrap();
     }
 }
