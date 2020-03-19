@@ -68,7 +68,9 @@ fn select_bbox(
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("read_fgb", |b| b.iter(|| read_fgb()));
     c.bench_function("fgb_to_geojson", |b| b.iter(|| fgb_to_geojson()));
-    c.bench_function("fgb_to_geojson_dev_null", |b| b.iter(|| fgb_to_geojson_dev_null()));
+    c.bench_function("fgb_to_geojson_dev_null", |b| {
+        b.iter(|| fgb_to_geojson_dev_null())
+    });
     c.bench_function("select_bbox", move |b| {
         b.iter_with_setup(
             || read_header().unwrap(),

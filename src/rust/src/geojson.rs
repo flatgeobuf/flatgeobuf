@@ -115,6 +115,7 @@ fn write_str_prop<'a, W: Write>(out: &'a mut W, colname: &str, v: &dyn Display) 
 }
 
 impl Feature<'_> {
+    /// Convert feature to GeoJSON
     pub fn to_geojson<'a, W: Write>(
         &self,
         mut out: &'a mut W,
@@ -155,6 +156,22 @@ impl Feature<'_> {
 }
 
 impl FeatureReader {
+    /// Convert selected FlatGeoBuf features to GeoJSON
+    ///
+    /// Usage:
+    ///```rust
+    /// # use flatgeobuf::*;
+    /// # use std::fs::File;
+    /// # use std::io::{BufReader, BufWriter};
+    /// # fn fgb_to_geojson() -> std::result::Result<(), std::io::Error> {
+    /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
+    /// # let hreader = HeaderReader::read(&mut filein)?;
+    /// # let header = hreader.header();
+    /// let mut freader = FeatureReader::select_all(&mut filein, &header)?;
+    /// let mut fout = BufWriter::new(File::create("countries.json")?);
+    /// freader.to_geojson(&mut filein, &header, &mut fout)
+    /// # }
+    ///```
     pub fn to_geojson<'a, R: Read + Seek, W: Write>(
         &mut self,
         mut reader: R,

@@ -18,16 +18,18 @@
 //! # use std::fs::File;
 //! # use std::io::BufReader;
 //!
-//! # let fgb = "../../test/data/countries.fgb";
-//! let mut reader = BufReader::new(File::open(fgb).unwrap());
-//! let hreader = HeaderReader::read(&mut reader).unwrap();
+//! # fn read_fbg() -> std::result::Result<(), std::io::Error> {
+//! let mut file = BufReader::new(File::open("countries.fgb")?);
+//! let hreader = HeaderReader::read(&mut file)?;
 //! let header = hreader.header();
 //!
-//! let mut freader = FeatureReader::select_bbox(&mut reader, &header, 8.8, 47.2, 9.5, 55.3).unwrap();
-//! while let Ok(feature) = freader.next(&mut reader) {
+//! let mut freader = FeatureReader::select_bbox(&mut file, &header, 8.8, 47.2, 9.5, 55.3)?;
+//! while let Ok(feature) = freader.next(&mut file) {
 //!     let props = feature.properties_map(&header);
 //!     println!("{}", props["name"]);
 //! }
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Zero-copy feature access
