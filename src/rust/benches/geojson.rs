@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 use tempfile::tempfile;
 
 struct NullReader;
@@ -33,7 +33,20 @@ fn fgb_to_geojson() -> std::result::Result<(), std::io::Error> {
 
     let mut freader = FeatureReader::select_all(&mut filein, &header)?;
 
-    let mut fout = tempfile()?; // or std::io::sink() or File::create("/tmp/countries.json")
+    let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
+    freader.to_geojson(&mut filein, &header, &mut fout)
+}
+
+fn fgb_to_geojson_dev_null() -> std::result::Result<(), std::io::Error> {
+    // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /dev/null ../../test/data/countries.fgb
+    let fin = File::open("../../test/data/countries.fgb")?;
+    let mut filein = BufReader::new(fin);
+    let hreader = HeaderReader::read(&mut filein)?;
+    let header = hreader.header();
+
+    let mut freader = FeatureReader::select_all(&mut filein, &header)?;
+
+    let mut fout = std::io::sink();
     freader.to_geojson(&mut filein, &header, &mut fout)
 }
 
@@ -55,6 +68,7 @@ fn select_bbox(
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("read_fgb", |b| b.iter(|| read_fgb()));
     c.bench_function("fgb_to_geojson", |b| b.iter(|| fgb_to_geojson()));
+    c.bench_function("fgb_to_geojson_dev_null", |b| b.iter(|| fgb_to_geojson_dev_null()));
     c.bench_function("select_bbox", move |b| {
         b.iter_with_setup(
             || read_header().unwrap(),
