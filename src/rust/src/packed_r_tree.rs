@@ -206,7 +206,7 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
 
 /// Packed Hilbert R-Tree
 pub struct PackedRTree {
-    _extent: NodeItem,
+    extent: NodeItem,
     node_items: Vec<NodeItem>,
     num_items: usize,
     num_nodes: usize,
@@ -292,13 +292,13 @@ impl PackedRTree {
         for i in 0..self.num_nodes {
             data.read_exact(buf).unwrap();
             self.node_items[i] = n.clone();
-            self._extent.expand(&n);
+            self.extent.expand(&n);
         }
     }
 
     pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
-            _extent: extent.clone(),
+            extent: extent.clone(),
             node_items: Vec::new(),
             num_items: nodes.len(),
             num_nodes: 0,
@@ -315,7 +315,7 @@ impl PackedRTree {
 
     pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
-            _extent: NodeItem::create(0),
+            extent: NodeItem::create(0),
             node_items: Vec::new(),
             num_items: num_items,
             num_nodes: 0,
@@ -438,7 +438,7 @@ impl PackedRTree {
     }
 
     pub fn extent(&self) -> NodeItem {
-        self._extent.clone()
+        self.extent.clone()
     }
 }
 
