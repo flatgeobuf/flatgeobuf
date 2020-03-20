@@ -4,6 +4,7 @@
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
 [![Maven Central](https://img.shields.io/maven-central/v/org.wololo/flatgeobuf.svg)](https://search.maven.org/artifact/org.wololo/flatgeobuf)
 [![Nuget](https://img.shields.io/nuget/v/FlatGeobuf)](https://www.nuget.org/packages/FlatGeobuf/)
+[![Crates.io](https://img.shields.io/crates/v/flatgeobuf.svg)](https://crates.io/crates/flatgeobuf)
 
 A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including circular interpolations as defined by SQL-MM Part 3.
 
@@ -60,7 +61,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ## Features
 
-* Reference implementation for JavaScript, TypeScript, C++ and Java
+* Reference implementation for JavaScript, TypeScript, C++, Java and Rust
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
@@ -70,7 +71,6 @@ As performance is highly data dependent I've also made similar tests on a larger
 * Java index support
 * C langauge support
 * Go langauge support
-* Rust language support
 
 ## FAQ
 

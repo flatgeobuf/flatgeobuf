@@ -12,25 +12,21 @@ circular interpolations as defined by SQL-MM Part 3.
 ```rust
 use flatgeobuf::*;
 
-let mut reader = Reader::new(File::open("countries.fgb")?);
-let header = reader.read_header()?;
-let columns_meta = columns_meta(&header);
+let mut file = BufReader::new(File::open("countries.fgb")?);
+let hreader = HeaderReader::read(&mut file)?;
+let header = hreader.header();
 
-reader.select_bbox(8.8, 47.2, 9.5, 55.3)?;
-while let Ok(feature) = reader.next() {
-    let props = read_all_properties(&feature, &columns_meta);
+let mut freader = FeatureReader::select_bbox(&mut file, &header, 8.8, 47.2, 9.5, 55.3)?;
+while let Ok(feature) = freader.next(&mut file) {
+    let props = feature.properties_map(&header);
     println!("{}", props["name"]);
 }
 ```
 
-## Documentation
+See [documentation](https://docs.rs/flatgeobuf/) and [tests](tests/) for more examples.
 
-    cargo doc --open
-
-## Usage
-
-See [tests](tests/)
-
-## Run tests
+## Run tests and benchmarks
 
     cargo test
+
+    cargo bench
