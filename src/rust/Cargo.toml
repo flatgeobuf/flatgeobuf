@@ -5,10 +5,11 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 description = "FlatGeobuf for Rust."
 homepage = "https://bjornharrtell.github.io/flatgeobuf/"
-repository = "https://github.com/bjornharrtell/flatgeobuf"
+repository = "https://github.com/bjornharrtell/flatgeobuf/tree/master/src/rust"
 readme = "README.md"
-license-file = "../../LICENSE"
-keywords = ["geo", "r-tree"]
+documentation = "https://docs.rs/flatgeobuf/"
+license = "ISC"
+keywords = ["geo", "r-tree", "spatial"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
