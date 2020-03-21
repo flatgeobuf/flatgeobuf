@@ -6,16 +6,18 @@ use std::io::{Read, Seek, Write};
 
 struct SvgEmitter<'a, W: Write> {
     out: &'a mut W,
+    invert_y: bool,
 }
 
 impl<'a, W: Write> SvgEmitter<'a, W> {
-    fn new(out: &'a mut W) -> SvgEmitter<'a, W> {
-        SvgEmitter { out }
+    fn new(out: &'a mut W, invert_y: bool) -> SvgEmitter<'a, W> {
+        SvgEmitter { out, invert_y }
     }
 }
 
 impl<W: Write> GeomReader for SvgEmitter<'_, W> {
     fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
+        let y = if self.invert_y { -y } else { y };
         self.out.write(&format!("{} {} ", x, y).as_bytes()).unwrap();
     }
     fn point_begin(&mut self, _idx: usize) {
@@ -57,16 +59,26 @@ impl<W: Write> GeomReader for SvgEmitter<'_, W> {
 }
 
 impl Geometry<'_> {
-    pub fn to_svg<'a, W: Write>(&self, mut out: &'a mut W, geometry_type: GeometryType) {
-        let mut svg = SvgEmitter::new(&mut out);
+    pub fn to_svg<'a, W: Write>(
+        &self,
+        mut out: &'a mut W,
+        geometry_type: GeometryType,
+        invert_y: bool,
+    ) {
+        let mut svg = SvgEmitter::new(&mut out, invert_y);
         self.parse(&mut svg, geometry_type);
     }
 }
 
 impl Feature<'_> {
     /// Convert feature to SVG
-    pub fn to_svg<'a, W: Write>(&self, mut out: &'a mut W, geometry_type: GeometryType) {
-        let mut svg = SvgEmitter::new(&mut out);
+    pub fn to_svg<'a, W: Write>(
+        &self,
+        mut out: &'a mut W,
+        geometry_type: GeometryType,
+        invert_y: bool,
+    ) {
+        let mut svg = SvgEmitter::new(&mut out, invert_y);
         let geometry = self.geometry().unwrap();
         geometry.parse(&mut svg, geometry_type);
     }
@@ -97,6 +109,10 @@ impl FeatureReader {
         height: u32,
         mut out: &'a mut W,
     ) -> std::result::Result<(), std::io::Error> {
+        let mut invert_y = false;
+        if let Some(crs) = header.crs() {
+            if crs.code() == 4326 { invert_y = true }
+        }
         out.write(
             br#"<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" "#,
@@ -104,8 +120,12 @@ impl FeatureReader {
         out.write(&format!("width=\"{}\" height=\"{}\" ", width, height).as_bytes())
             .unwrap();
         if let Some(envelope) = header.envelope() {
-            let (xmin, ymin) = (envelope.get(0), envelope.get(1));
-            let (xmax, ymax) = (envelope.get(2), envelope.get(3));
+            let (xmin, mut ymin) = (envelope.get(0), envelope.get(1));
+            let (xmax, mut ymax) = (envelope.get(2), envelope.get(3));
+            if invert_y {
+                ymin = -envelope.get(3);
+                ymax = -envelope.get(1);
+            }
             out.write(
                 &format!(
                     "viewBox=\"{} {} {} {}\" ",
@@ -128,7 +148,7 @@ impl FeatureReader {
         out.write(br#"">"#)?;
         while let Ok(feature) = self.next(&mut reader) {
             out.write(b"\n")?;
-            feature.to_svg(&mut out, header.geometry_type());
+            feature.to_svg(&mut out, header.geometry_type(), invert_y);
         }
         out.write(b"\n</g>\n</svg>")?;
         Ok(())
