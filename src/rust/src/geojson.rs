@@ -168,8 +168,8 @@ impl FeatureReader {
     /// # let hreader = HeaderReader::read(&mut filein)?;
     /// # let header = hreader.header();
     /// let mut freader = FeatureReader::select_all(&mut filein, &header)?;
-    /// let mut fout = BufWriter::new(File::create("countries.json")?);
-    /// freader.to_geojson(&mut filein, &header, &mut fout)
+    /// let mut fileout = BufWriter::new(File::create("countries.json")?);
+    /// freader.to_geojson(&mut filein, &header, &mut fileout)
     /// # }
     ///```
     pub fn to_geojson<'a, R: Read + Seek, W: Write>(
