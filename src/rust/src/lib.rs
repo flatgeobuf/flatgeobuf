@@ -79,20 +79,24 @@
 
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;
+mod file_reader;
 mod geojson;
+mod geometry_reader;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod header_generated;
 mod http_reader;
 mod packed_r_tree;
-mod reader;
+mod properties_reader;
 mod svg;
 
 pub use feature_generated::flat_geobuf::*;
+pub use file_reader::*;
 pub use geojson::*;
+pub use geometry_reader::*;
 pub use header_generated::flat_geobuf::*;
 pub use http_reader::*;
 pub use packed_r_tree::*;
-pub use reader::*;
+pub use properties_reader::*;
 pub use svg::*;
 
 pub const VERSION: u8 = 3;

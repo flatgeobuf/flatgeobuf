@@ -1,8 +1,8 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
+use crate::file_reader::FeatureReader;
+use crate::geometry_reader::GeomReader;
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
 use crate::http_reader::{HttpClient, HttpFeatureReader};
-use crate::reader::FeatureReader;
-use crate::reader::GeomReader;
 use std::io::{Read, Seek, Write};
 
 struct SvgEmitter<'a, W: Write> {

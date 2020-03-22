@@ -1,7 +1,8 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
+use crate::file_reader::FeatureReader;
+use crate::geometry_reader::GeomReader;
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
-use crate::reader::FeatureReader;
-use crate::reader::{ColumnValue, GeomReader};
+use crate::properties_reader::ColumnValue;
 use std::fmt::Display;
 use std::io::{Read, Seek, Write};
 
