@@ -1,4 +1,6 @@
+use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
+use crate::packed_r_tree::{self, PackedRTree};
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
@@ -55,5 +57,69 @@ impl HttpHeaderReader {
     }
     pub fn header(&self) -> Header {
         get_root_as_header(&self.bytes[..])
+    }
+    pub fn header_len(&self) -> usize {
+        12 + self.bytes.len()
+    }
+}
+
+/// FlatGeobuf feature reader
+pub struct HttpFeatureReader {
+    feature_base: usize,
+    pos: usize,
+    feature_buf: Bytes,
+    /// Selected features or None if no bbox filter
+    item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
+    /// Current position in item_filter
+    filter_idx: usize,
+}
+
+impl HttpFeatureReader {
+    /// Skip R-Tree index
+    pub async fn select_all(
+        header: &Header<'_>,
+        header_len: usize,
+    ) -> std::result::Result<Self, std::io::Error> {
+        // Skip index
+        let index_size =
+            PackedRTree::index_size(header.features_count() as usize, header.index_node_size());
+        let feature_base = header_len + index_size;
+        let data = HttpFeatureReader {
+            feature_base,
+            pos: feature_base,
+            feature_buf: Bytes::new(),
+            item_filter: None,
+            filter_idx: 0,
+        };
+        Ok(data)
+    }
+    /// Number of selected features
+    pub fn filter_count(&self) -> Option<usize> {
+        self.item_filter.as_ref().map(|f| f.len())
+    }
+    /// Read next feature
+    pub async fn next(
+        &mut self,
+        client: &HttpClient<'_>,
+    ) -> std::result::Result<Feature<'_>, std::io::Error> {
+        if let Some(filter) = &self.item_filter {
+            if self.filter_idx >= filter.len() {
+                return Err(Error::new(ErrorKind::Other, "No more features"));
+            }
+            let item = &filter[self.filter_idx];
+            self.pos = self.feature_base + item.offset;
+            self.filter_idx += 1;
+        }
+        let bytes = client.get(self.pos, 4).await?;
+        self.pos += 4;
+        let feature_size = LittleEndian::read_u32(&bytes) as usize;
+        self.feature_buf = client.get(self.pos, feature_size).await?;
+        self.pos += feature_size;
+        let feature = get_root_as_feature(&self.feature_buf[..]);
+        Ok(feature)
+    }
+    /// Return current feature
+    pub fn cur_feature(&self) -> Feature {
+        get_root_as_feature(&self.feature_buf[..])
     }
 }

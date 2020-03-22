@@ -1,5 +1,6 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
+use crate::http_reader::{HttpClient, HttpFeatureReader};
 use crate::reader::FeatureReader;
 use crate::reader::GeomReader;
 use std::io::{Read, Seek, Write};
@@ -149,6 +150,79 @@ impl FeatureReader {
         }
         out.write(br#"">"#)?;
         while let Ok(feature) = self.next(&mut reader) {
+            out.write(b"\n")?;
+            feature.to_svg(&mut out, header.geometry_type(), invert_y);
+        }
+        out.write(b"\n</g>\n</svg>")?;
+        Ok(())
+    }
+}
+
+impl HttpFeatureReader {
+    /// Convert selected FlatGeoBuf features to SVG
+    ///
+    /// Usage:
+    ///```rust
+    /// # use flatgeobuf::*;
+    /// # use std::fs::File;
+    /// # use std::io::BufWriter;
+    /// # async fn fgb_to_svg() {
+    /// # let client = HttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    /// # let hreader = HttpHeaderReader::read(&client).await.unwrap();
+    /// # let header = hreader.header();
+    /// let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await.unwrap();
+    /// let mut fileout = BufWriter::new(File::create("countries.svg").unwrap());
+    /// freader.to_svg(&client, &header, 800, 400, &mut fileout);
+    /// # }
+    ///```
+    pub async fn to_svg<'a, W: Write>(
+        &mut self,
+        client: &HttpClient<'_>,
+        header: &Header<'_>,
+        width: u32,
+        height: u32,
+        mut out: &'a mut W,
+    ) -> std::result::Result<(), std::io::Error> {
+        let mut invert_y = false;
+        if let Some(crs) = header.crs() {
+            if crs.code() == 4326 {
+                invert_y = true
+            }
+        }
+        out.write(
+            br#"<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" "#,
+        )?;
+        out.write(&format!("width=\"{}\" height=\"{}\" ", width, height).as_bytes())
+            .unwrap();
+        if let Some(envelope) = header.envelope() {
+            let (xmin, mut ymin) = (envelope.get(0), envelope.get(1));
+            let (xmax, mut ymax) = (envelope.get(2), envelope.get(3));
+            if invert_y {
+                ymin = -envelope.get(3);
+                ymax = -envelope.get(1);
+            }
+            out.write(
+                &format!(
+                    "viewBox=\"{} {} {} {}\" ",
+                    xmin,
+                    ymin,
+                    xmax - xmin,
+                    ymax - ymin
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        }
+        out.write(
+            br#"stroke-linecap="round" stroke-linejoin="round">
+<g id=""#,
+        )?;
+        if let Some(name) = header.name() {
+            out.write(name.as_bytes())?;
+        }
+        out.write(br#"">"#)?;
+        while let Ok(feature) = self.next(&client).await {
             out.write(b"\n")?;
             feature.to_svg(&mut out, header.geometry_type(), invert_y);
         }
