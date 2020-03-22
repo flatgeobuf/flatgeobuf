@@ -111,7 +111,9 @@ impl FeatureReader {
     ) -> std::result::Result<(), std::io::Error> {
         let mut invert_y = false;
         if let Some(crs) = header.crs() {
-            if crs.code() == 4326 { invert_y = true }
+            if crs.code() == 4326 {
+                invert_y = true
+            }
         }
         out.write(
             br#"<?xml version="1.0"?>
