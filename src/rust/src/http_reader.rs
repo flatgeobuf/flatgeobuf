@@ -13,12 +13,13 @@ impl<'a> HttpClient<'a> {
     pub fn new(url: &'a str) -> Self {
         HttpClient { url }
     }
-    pub fn get(&self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
-        let client = reqwest::blocking::Client::new();
+    pub async fn get(&self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
+        let client = reqwest::Client::new();
         let response = client
             .get(self.url)
             .header("Range", format!("bytes={}-{}", begin, begin + length - 1))
             .send()
+            .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("{}", e)))?;
         if !response.status().is_success() {
             return Err(Error::new(
@@ -28,6 +29,7 @@ impl<'a> HttpClient<'a> {
         }
         response
             .bytes()
+            .await
             .map_err(|e| Error::new(ErrorKind::Other, format!("{}", e)))
     }
 }
@@ -37,8 +39,8 @@ pub struct HttpHeaderReader {
 }
 
 impl HttpHeaderReader {
-    pub fn read(client: &HttpClient) -> Result<Self, std::io::Error> {
-        let bytes = client.get(0, 12)?;
+    pub async fn read(client: &HttpClient<'_>) -> Result<Self, std::io::Error> {
+        let bytes = client.get(0, 12).await?;
         assert_eq!(bytes.len(), 12);
         let mut data = HttpHeaderReader { bytes };
         if data.bytes[0..8] != MAGIC_BYTES {
@@ -46,7 +48,7 @@ impl HttpHeaderReader {
         }
 
         let header_size = LittleEndian::read_u32(&data.bytes[8..12]) as usize;
-        data.bytes = client.get(12, header_size)?;
+        data.bytes = client.get(12, header_size).await?;
 
         assert_eq!(data.bytes.len(), header_size);
         Ok(data)
