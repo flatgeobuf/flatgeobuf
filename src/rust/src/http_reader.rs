@@ -8,16 +8,20 @@ use std::io::{Error, ErrorKind};
 use std::str;
 
 pub struct HttpClient<'a> {
+    client: reqwest::Client,
     url: &'a str,
 }
 
 impl<'a> HttpClient<'a> {
     pub fn new(url: &'a str) -> Self {
-        HttpClient { url }
+        HttpClient {
+            client: reqwest::Client::new(),
+            url,
+        }
     }
     pub async fn get(&self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .get(self.url)
             .header("Range", format!("bytes={}-{}", begin, begin + length - 1))
             .send()
