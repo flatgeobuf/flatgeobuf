@@ -3,7 +3,8 @@ use crate::header_generated::flat_geobuf::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::MAGIC_BYTES;
 use byteorder::{ByteOrder, LittleEndian};
-use bytes::Bytes;
+use bytes::{BufMut, Bytes, BytesMut};
+use std::cmp::max;
 use std::io::{Error, ErrorKind};
 use std::str;
 
@@ -42,46 +43,72 @@ impl<'a> HttpClient<'a> {
 
 pub struct BufferedHttpClient<'a> {
     http_client: HttpClient<'a>,
-    bytes: Bytes,
+    buf: BytesMut,
+    /// Lower index of buffer relative to input stream
+    head: usize,
 }
 
 impl<'a> BufferedHttpClient<'a> {
     pub fn new(url: &'a str) -> Self {
         BufferedHttpClient {
             http_client: HttpClient::new(url),
-            bytes: Bytes::new(),
+            buf: BytesMut::new(),
+            head: 0,
         }
     }
-    pub async fn get(&mut self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
-        self.bytes = self.http_client.get(begin, length).await?;
-        Ok(self.bytes.slice(..))
+    pub async fn get(
+        &mut self,
+        begin: usize,
+        length: usize,
+        min_req_size: usize,
+    ) -> Result<&[u8], std::io::Error> {
+        let tail = self.head + self.buf.len();
+        if begin + length > tail || begin < self.head {
+            // Remove bytes before new begin
+            if begin > self.head && begin < tail {
+                let _ = self.buf.split_to(begin - self.head);
+                self.head = begin;
+            } else if begin >= tail || begin < self.head {
+                self.buf.clear();
+                self.head = begin;
+            }
+
+            // Read additional bytes
+            let range_begin = max(begin, tail);
+            let range_length = max(begin + length - range_begin, min_req_size);
+            let bytes = self.http_client.get(range_begin, range_length).await?;
+            self.buf.put(bytes);
+        }
+        let lower = begin - self.head;
+        let upper = begin + length - self.head;
+        Ok(&self.buf[lower..upper])
     }
 }
 
 pub struct HttpHeaderReader {
-    bytes: Bytes,
+    header_buf: Vec<u8>,
 }
 
 impl HttpHeaderReader {
     pub async fn read(client: &mut BufferedHttpClient<'_>) -> Result<Self, std::io::Error> {
-        let bytes = client.get(0, 12).await?;
-        assert_eq!(bytes.len(), 12);
-        let mut data = HttpHeaderReader { bytes };
-        if data.bytes[0..8] != MAGIC_BYTES {
+        let min_req_size = 512;
+        let bytes = client.get(0, 8, min_req_size).await?;
+        if bytes != MAGIC_BYTES {
             return Err(Error::new(ErrorKind::Other, "Magic byte doesn't match"));
         }
-
-        let header_size = LittleEndian::read_u32(&data.bytes[8..12]) as usize;
-        data.bytes = client.get(12, header_size).await?;
-
-        assert_eq!(data.bytes.len(), header_size);
+        let bytes = client.get(8, 12, min_req_size).await?;
+        let header_size = LittleEndian::read_u32(bytes) as usize;
+        let bytes = client.get(12, header_size, min_req_size).await?;
+        let data = HttpHeaderReader {
+            header_buf: bytes.to_vec(),
+        };
         Ok(data)
     }
     pub fn header(&self) -> Header {
-        get_root_as_header(&self.bytes[..])
+        get_root_as_header(&self.header_buf[..])
     }
     pub fn header_len(&self) -> usize {
-        12 + self.bytes.len()
+        12 + self.header_buf.len()
     }
 }
 
@@ -89,7 +116,7 @@ impl HttpHeaderReader {
 pub struct HttpFeatureReader {
     feature_base: usize,
     pos: usize,
-    feature_buf: Bytes,
+    feature_buf: Vec<u8>,
     /// Selected features or None if no bbox filter
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Current position in item_filter
@@ -109,7 +136,7 @@ impl HttpFeatureReader {
         let data = HttpFeatureReader {
             feature_base,
             pos: feature_base,
-            feature_buf: Bytes::new(),
+            feature_buf: Vec::new(),
             item_filter: None,
             filter_idx: 0,
         };
@@ -124,6 +151,7 @@ impl HttpFeatureReader {
         &mut self,
         client: &mut BufferedHttpClient<'_>,
     ) -> std::result::Result<Feature<'_>, std::io::Error> {
+        let min_req_size = 1_048_576; // 1MB
         if let Some(filter) = &self.item_filter {
             if self.filter_idx >= filter.len() {
                 return Err(Error::new(ErrorKind::Other, "No more features"));
@@ -132,10 +160,11 @@ impl HttpFeatureReader {
             self.pos = self.feature_base + item.offset;
             self.filter_idx += 1;
         }
-        let bytes = client.get(self.pos, 4).await?;
+        let bytes = client.get(self.pos, 4, min_req_size).await?;
         self.pos += 4;
-        let feature_size = LittleEndian::read_u32(&bytes) as usize;
-        self.feature_buf = client.get(self.pos, feature_size).await?;
+        let feature_size = LittleEndian::read_u32(bytes) as usize;
+        let bytes = client.get(self.pos, feature_size, min_req_size).await?;
+        self.feature_buf = bytes.to_vec(); // Not zero-copy
         self.pos += feature_size;
         let feature = get_root_as_feature(&self.feature_buf[..]);
         Ok(feature)
