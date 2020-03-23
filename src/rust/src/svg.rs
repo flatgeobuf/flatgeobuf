@@ -2,7 +2,7 @@ use crate::feature_generated::flat_geobuf::{Feature, Geometry};
 use crate::file_reader::FeatureReader;
 use crate::geometry_reader::GeomReader;
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
-use crate::http_reader::{HttpClient, HttpFeatureReader};
+use crate::http_reader::{BufferedHttpClient, HttpFeatureReader};
 use std::io::{Read, Seek, Write};
 
 struct SvgEmitter<'a, W: Write> {
@@ -167,17 +167,17 @@ impl HttpFeatureReader {
     /// # use std::fs::File;
     /// # use std::io::BufWriter;
     /// # async fn fgb_to_svg() {
-    /// # let client = HttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    /// # let hreader = HttpHeaderReader::read(&client).await.unwrap();
+    /// # let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    /// # let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
     /// # let header = hreader.header();
     /// let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await.unwrap();
     /// let mut fileout = BufWriter::new(File::create("countries.svg").unwrap());
-    /// freader.to_svg(&client, &header, 800, 400, &mut fileout);
+    /// freader.to_svg(&mut client, &header, 800, 400, &mut fileout);
     /// # }
     ///```
     pub async fn to_svg<'a, W: Write>(
         &mut self,
-        client: &HttpClient<'_>,
+        client: &mut BufferedHttpClient<'_>,
         header: &Header<'_>,
         width: u32,
         height: u32,
@@ -222,7 +222,7 @@ impl HttpFeatureReader {
             out.write(name.as_bytes())?;
         }
         out.write(br#"">"#)?;
-        while let Ok(feature) = self.next(&client).await {
+        while let Ok(feature) = self.next(client).await {
             out.write(b"\n")?;
             feature.to_svg(&mut out, header.geometry_type(), invert_y);
         }

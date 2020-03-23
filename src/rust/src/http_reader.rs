@@ -7,19 +7,19 @@ use bytes::Bytes;
 use std::io::{Error, ErrorKind};
 use std::str;
 
-pub struct HttpClient<'a> {
+struct HttpClient<'a> {
     client: reqwest::Client,
     url: &'a str,
 }
 
 impl<'a> HttpClient<'a> {
-    pub fn new(url: &'a str) -> Self {
+    fn new(url: &'a str) -> Self {
         HttpClient {
             client: reqwest::Client::new(),
             url,
         }
     }
-    pub async fn get(&self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
+    async fn get(&self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
         let response = self
             .client
             .get(self.url)
@@ -40,12 +40,30 @@ impl<'a> HttpClient<'a> {
     }
 }
 
+pub struct BufferedHttpClient<'a> {
+    http_client: HttpClient<'a>,
+    bytes: Bytes,
+}
+
+impl<'a> BufferedHttpClient<'a> {
+    pub fn new(url: &'a str) -> Self {
+        BufferedHttpClient {
+            http_client: HttpClient::new(url),
+            bytes: Bytes::new(),
+        }
+    }
+    pub async fn get(&mut self, begin: usize, length: usize) -> Result<Bytes, std::io::Error> {
+        self.bytes = self.http_client.get(begin, length).await?;
+        Ok(self.bytes.slice(..))
+    }
+}
+
 pub struct HttpHeaderReader {
     bytes: Bytes,
 }
 
 impl HttpHeaderReader {
-    pub async fn read(client: &HttpClient<'_>) -> Result<Self, std::io::Error> {
+    pub async fn read(client: &mut BufferedHttpClient<'_>) -> Result<Self, std::io::Error> {
         let bytes = client.get(0, 12).await?;
         assert_eq!(bytes.len(), 12);
         let mut data = HttpHeaderReader { bytes };
@@ -104,7 +122,7 @@ impl HttpFeatureReader {
     /// Read next feature
     pub async fn next(
         &mut self,
-        client: &HttpClient<'_>,
+        client: &mut BufferedHttpClient<'_>,
     ) -> std::result::Result<Feature<'_>, std::io::Error> {
         if let Some(filter) = &self.item_filter {
             if self.filter_idx >= filter.len() {
