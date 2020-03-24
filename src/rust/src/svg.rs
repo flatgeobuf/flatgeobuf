@@ -85,6 +85,64 @@ impl Feature<'_> {
     }
 }
 
+impl Header<'_> {
+    fn invert_y(&self) -> bool {
+        if let Some(crs) = self.crs() {
+            if crs.code() == 4326 {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+fn features_to_svg_begin<W: Write>(
+    header: &Header,
+    width: u32,
+    height: u32,
+    out: &mut W,
+) -> std::result::Result<(), std::io::Error> {
+    out.write(
+        br#"<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" "#,
+    )?;
+    out.write(&format!("width=\"{}\" height=\"{}\" ", width, height).as_bytes())
+        .unwrap();
+    if let Some(envelope) = header.envelope() {
+        let (xmin, mut ymin) = (envelope.get(0), envelope.get(1));
+        let (xmax, mut ymax) = (envelope.get(2), envelope.get(3));
+        if header.invert_y() {
+            ymin = -envelope.get(3);
+            ymax = -envelope.get(1);
+        }
+        out.write(
+            &format!(
+                "viewBox=\"{} {} {} {}\" ",
+                xmin,
+                ymin,
+                xmax - xmin,
+                ymax - ymin
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    }
+    out.write(
+        br#"stroke-linecap="round" stroke-linejoin="round">
+<g id=""#,
+    )?;
+    if let Some(name) = header.name() {
+        out.write(name.as_bytes())?;
+    }
+    out.write(br#"">"#)?;
+    Ok(())
+}
+
+fn features_to_svg_end<W: Write>(out: &mut W) -> std::result::Result<(), std::io::Error> {
+    out.write(b"\n</g>\n</svg>")?;
+    Ok(())
+}
+
 impl FeatureReader {
     /// Convert selected FlatGeoBuf features to SVG
     ///
@@ -110,51 +168,13 @@ impl FeatureReader {
         height: u32,
         mut out: &'a mut W,
     ) -> std::result::Result<(), std::io::Error> {
-        let mut invert_y = false;
-        if let Some(crs) = header.crs() {
-            if crs.code() == 4326 {
-                invert_y = true
-            }
-        }
-        out.write(
-            br#"<?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" "#,
-        )?;
-        out.write(&format!("width=\"{}\" height=\"{}\" ", width, height).as_bytes())
-            .unwrap();
-        if let Some(envelope) = header.envelope() {
-            let (xmin, mut ymin) = (envelope.get(0), envelope.get(1));
-            let (xmax, mut ymax) = (envelope.get(2), envelope.get(3));
-            if invert_y {
-                ymin = -envelope.get(3);
-                ymax = -envelope.get(1);
-            }
-            out.write(
-                &format!(
-                    "viewBox=\"{} {} {} {}\" ",
-                    xmin,
-                    ymin,
-                    xmax - xmin,
-                    ymax - ymin
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        }
-        out.write(
-            br#"stroke-linecap="round" stroke-linejoin="round">
-<g id=""#,
-        )?;
-        if let Some(name) = header.name() {
-            out.write(name.as_bytes())?;
-        }
-        out.write(br#"">"#)?;
+        let invert_y = header.invert_y();
+        features_to_svg_begin(header, width, height, out)?;
         while let Ok(feature) = self.next(&mut reader) {
             out.write(b"\n")?;
             feature.to_svg(&mut out, header.geometry_type(), invert_y);
         }
-        out.write(b"\n</g>\n</svg>")?;
-        Ok(())
+        features_to_svg_end(out)
     }
 }
 
@@ -166,13 +186,13 @@ impl HttpFeatureReader {
     /// # use flatgeobuf::*;
     /// # use std::fs::File;
     /// # use std::io::BufWriter;
-    /// # async fn fgb_to_svg() {
+    /// # async fn fgb_to_svg() -> std::result::Result<(), std::io::Error> {
     /// # let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    /// # let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    /// # let hreader = HttpHeaderReader::read(&mut client).await?;
     /// # let header = hreader.header();
-    /// let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await.unwrap();
-    /// let mut fileout = BufWriter::new(File::create("countries.svg").unwrap());
-    /// freader.to_svg(&mut client, &header, 800, 400, &mut fileout);
+    /// let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await?;
+    /// let mut fileout = BufWriter::new(File::create("countries.svg")?);
+    /// freader.to_svg(&mut client, &header, 800, 400, &mut fileout).await
     /// # }
     ///```
     pub async fn to_svg<'a, W: Write>(
@@ -183,50 +203,12 @@ impl HttpFeatureReader {
         height: u32,
         mut out: &'a mut W,
     ) -> std::result::Result<(), std::io::Error> {
-        let mut invert_y = false;
-        if let Some(crs) = header.crs() {
-            if crs.code() == 4326 {
-                invert_y = true
-            }
-        }
-        out.write(
-            br#"<?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" "#,
-        )?;
-        out.write(&format!("width=\"{}\" height=\"{}\" ", width, height).as_bytes())
-            .unwrap();
-        if let Some(envelope) = header.envelope() {
-            let (xmin, mut ymin) = (envelope.get(0), envelope.get(1));
-            let (xmax, mut ymax) = (envelope.get(2), envelope.get(3));
-            if invert_y {
-                ymin = -envelope.get(3);
-                ymax = -envelope.get(1);
-            }
-            out.write(
-                &format!(
-                    "viewBox=\"{} {} {} {}\" ",
-                    xmin,
-                    ymin,
-                    xmax - xmin,
-                    ymax - ymin
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        }
-        out.write(
-            br#"stroke-linecap="round" stroke-linejoin="round">
-<g id=""#,
-        )?;
-        if let Some(name) = header.name() {
-            out.write(name.as_bytes())?;
-        }
-        out.write(br#"">"#)?;
+        let invert_y = header.invert_y();
+        features_to_svg_begin(header, width, height, out)?;
         while let Ok(feature) = self.next(client).await {
             out.write(b"\n")?;
             feature.to_svg(&mut out, header.geometry_type(), invert_y);
         }
-        out.write(b"\n</g>\n</svg>")?;
-        Ok(())
+        features_to_svg_end(out)
     }
 }

@@ -130,3 +130,32 @@ fn fgb_to_svg() -> std::result::Result<(), std::io::Error> {
 
     Ok(())
 }
+
+#[allow(dead_code)]
+async fn http_svg_async() {
+    let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let header = hreader.header();
+
+    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len())
+        .await
+        .unwrap();
+    let mut svg_data: Vec<u8> = Vec::new();
+    freader
+        .to_svg(&mut client, &header, 800, 400, &mut svg_data)
+        .await
+        .unwrap();
+    let out = std::str::from_utf8(&svg_data).unwrap();
+    let expected = r#"<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="800" height="400" viewBox="-180 -83.64513 360 169.254168" stroke-linecap="round" stroke-linejoin="round">
+<g id="countries">
+<path d="M -59.572095 80.040179 -59.865849 80.549657 -60.159656 81.000327 -62.255393 80.863178 -64.488125 80.921934 -65.741666 80.588827 -65.741666 80.549657 -66.290031 80.255773 -64.037688 80.294944 -61.883246 80.39287 -61.138976 79.981371 -60.610119 79.628679 -59.572095 80.040179 Z "/><path d="M -159.208184 79.497059 -161.127601 79.634209 -162.439847 79.281465 -163.027408 78.928774 -163.066604 78.869966 -163.712896 78.595667 -163.712896 78.595667 -163.105801 78.223338 -161.245113 78.380176 -160.246208 78.693645 -159.482405 79.046338 -159.208184 79.497059 Z "/><path d="M -45.154758 78.04707 -43.920828 78.478103 -43.48995 79.08556 -43.372438 79.516645 -43.333267 80.026123 -44.880537 80.339644 -46.506174 80.594357 -48.386421 80.829485 -50.482107 81.025442 -52.851988 80.966685 -54.164259 80.633528 -53.987991 80.222028 -51.853134 79.94773 -50.991326 79.614623 -50.364595 79.183487 -49.914131 78.811209 -49.306959 78.458569 -48.660616 78.047018 -48.660616 78.047019 -48.151396 78.04707 -46.662857 77.831476 -45.154758 78.04707 Z "/><path d="M -121.211511 73.50099 -119.918851 73.657725 -118.724143 73.481353 -119.292119 73.834097 -120.232217 74.08881 -121.62283 74.010468 -122.621735 73.657778 -122.621735 73.657777 -122.406245 73.324619 -121.211511 73.50099 Z "/><path d="M -125.559566 73.481353 -124"#;
+    assert_eq!(&out[..expected.len()], expected);
+}
+
+// #[test]
+// fn http_svg() {
+//     tokio::runtime::Runtime::new()
+//         .unwrap()
+//         .block_on(http_svg_async());
+// }

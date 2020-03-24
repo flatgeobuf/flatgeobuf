@@ -21,27 +21,6 @@ fn http_read() {
     Runtime::new().unwrap().block_on(http_read_async());
 }
 
-#[allow(dead_code)]
-async fn http_svg_async() {
-    let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
-    let header = hreader.header();
-
-    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len())
-        .await
-        .unwrap();
-    let mut svg_data: Vec<u8> = Vec::new();
-    freader
-        .to_svg(&mut client, &header, 800, 400, &mut svg_data)
-        .await
-        .unwrap();
-}
-
-// #[test]
-// fn http_svg() {
-//     Runtime::new().unwrap().block_on(http_svg_async());
-// }
-
 fn result_err_str<T>(res: Result<T, std::io::Error>) -> String {
     match res {
         Ok(_) => String::new(),
