@@ -139,3 +139,33 @@ fn num_properties() -> std::result::Result<(), std::io::Error> {
 
     Ok(())
 }
+
+#[allow(dead_code)]
+async fn http_json_async() {
+    let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let header = hreader.header();
+
+    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len())
+        .await
+        .unwrap();
+    let mut json_data: Vec<u8> = Vec::new();
+    freader
+        .to_geojson(&mut client, &header, &mut json_data)
+        .await
+        .unwrap();
+    assert_eq!(
+        &std::str::from_utf8(&json_data).unwrap()[..239],
+        r#"{
+"type": "FeatureCollection",
+"name": "countries",
+"features": [{"type": "Feature", "properties": {"id": "ATA", "name": "Antarctica"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[-59.572095,-80.040179],[-59.865849,-80.549657],"#
+    );
+}
+
+// #[test]
+// fn http_json() {
+//     tokio::runtime::Runtime::new()
+//         .unwrap()
+//         .block_on(http_json_async());
+// }
