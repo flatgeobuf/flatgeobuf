@@ -306,8 +306,7 @@ impl PackedRTree {
                 .get(pos, size_of::<NodeItem>(), min_req_size)
                 .await
                 .unwrap();
-            let p: *const [u8; std::mem::size_of::<NodeItem>()] =
-                bytes.as_ptr() as *const [u8; std::mem::size_of::<NodeItem>()];
+            let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
             let n: NodeItem = unsafe { std::mem::transmute(*p) };
             self.node_items[i] = n.clone();
             self.extent.expand(&n);
