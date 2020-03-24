@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 description = "FlatGeobuf for Rust."
