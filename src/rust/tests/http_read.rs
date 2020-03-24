@@ -21,6 +21,34 @@ fn http_read() {
     Runtime::new().unwrap().block_on(http_read_async());
 }
 
+async fn http_bbox_read_async() {
+    let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let header = hreader.header();
+    assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
+    assert_eq!(header.features_count(), 179);
+
+    let mut freader = HttpFeatureReader::select_bbox(
+        &mut client,
+        &header,
+        hreader.header_len(),
+        8.8,
+        47.2,
+        9.5,
+        55.3,
+    )
+    .await
+    .unwrap();
+    let feature = freader.next(&mut client).await.unwrap();
+    let props = feature.properties_map(&header);
+    assert_eq!(props["name"], "Denmark".to_string());
+}
+
+#[test]
+fn http_bbox_read() {
+    Runtime::new().unwrap().block_on(http_bbox_read_async());
+}
+
 fn result_err_str<T>(res: Result<T, std::io::Error>) -> String {
     match res {
         Ok(_) => String::new(),

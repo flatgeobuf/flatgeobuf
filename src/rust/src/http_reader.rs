@@ -142,6 +142,35 @@ impl HttpFeatureReader {
         };
         Ok(data)
     }
+    /// Read R-Tree index and build filter for features within bbox
+    pub async fn select_bbox(
+        mut client: &mut BufferedHttpClient<'_>,
+        header: &Header<'_>,
+        header_len: usize,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> std::result::Result<Self, std::io::Error> {
+        let tree = PackedRTree::from_http(
+            &mut client,
+            header_len,
+            header.features_count() as usize,
+            PackedRTree::DEFAULT_NODE_SIZE,
+        )
+        .await;
+        let feature_base = header_len + tree.size();
+        let mut list = tree.search(min_x, min_y, max_x, max_y);
+        list.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap());
+        let data = HttpFeatureReader {
+            feature_base,
+            pos: feature_base,
+            feature_buf: Vec::new(),
+            item_filter: Some(list),
+            filter_idx: 0,
+        };
+        Ok(data)
+    }
     /// Number of selected features
     pub fn filter_count(&self) -> Option<usize> {
         self.item_filter.as_ref().map(|f| f.len())

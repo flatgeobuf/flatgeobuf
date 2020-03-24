@@ -146,9 +146,17 @@ async fn http_json_async() {
     let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
     let header = hreader.header();
 
-    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len())
-        .await
-        .unwrap();
+    let mut freader = HttpFeatureReader::select_bbox(
+        &mut client,
+        &header,
+        hreader.header_len(),
+        8.8,
+        47.2,
+        9.5,
+        55.3,
+    )
+    .await
+    .unwrap();
     let mut json_data: Vec<u8> = Vec::new();
     freader
         .to_geojson(&mut client, &header, &mut json_data)
@@ -159,13 +167,13 @@ async fn http_json_async() {
         r#"{
 "type": "FeatureCollection",
 "name": "countries",
-"features": [{"type": "Feature", "properties": {"id": "ATA", "name": "Antarctica"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[-59.572095,-80.040179],[-59.865849,-80.549657],"#
+"features": [{"type": "Feature", "properties": {"id": "DNK", "name": "Denmark"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[12.690006,55.609991],[12.089991,54.800015],[11.043"#
     );
 }
 
-// #[test]
-// fn http_json() {
-//     tokio::runtime::Runtime::new()
-//         .unwrap()
-//         .block_on(http_json_async());
-// }
+#[test]
+fn http_json() {
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(http_json_async());
+}
