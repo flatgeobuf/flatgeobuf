@@ -50,17 +50,17 @@ impl FeatureReader {
         mut reader: R,
         header: &Header,
     ) -> std::result::Result<Self, std::io::Error> {
-        let mut data = FeatureReader {
-            feature_base: 0,
+        let index_size =
+            PackedRTree::index_size(header.features_count() as usize, header.index_node_size());
+        // Skip index
+        let feature_base = reader.seek(SeekFrom::Current(index_size as i64))?;
+        let reader = FeatureReader {
+            feature_base,
             feature_buf: Vec::new(),
             item_filter: None,
             filter_idx: 0,
         };
-        // Skip index
-        let index_size =
-            PackedRTree::index_size(header.features_count() as usize, header.index_node_size());
-        data.feature_base = reader.seek(SeekFrom::Current(index_size as i64))?;
-        Ok(data)
+        Ok(reader)
     }
     /// Read R-Tree index and build filter for features within bbox
     pub fn select_bbox<R: Read + Seek>(
@@ -71,12 +71,6 @@ impl FeatureReader {
         max_x: f64,
         max_y: f64,
     ) -> std::result::Result<Self, std::io::Error> {
-        let mut data = FeatureReader {
-            feature_base: 0,
-            feature_buf: Vec::new(),
-            item_filter: None,
-            filter_idx: 0,
-        };
         let tree = PackedRTree::from_buf(
             &mut reader,
             header.features_count() as usize,
@@ -84,9 +78,14 @@ impl FeatureReader {
         );
         let mut list = tree.search(min_x, min_y, max_x, max_y);
         list.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap());
-        data.item_filter = Some(list);
-        data.feature_base = reader.seek(SeekFrom::Current(0))?;
-        Ok(data)
+        let feature_base = reader.seek(SeekFrom::Current(0))?;
+        let reader = FeatureReader {
+            feature_base,
+            feature_buf: Vec::new(),
+            item_filter: Some(list),
+            filter_idx: 0,
+        };
+        Ok(reader)
     }
     /// Number of selected features
     pub fn filter_count(&self) -> Option<usize> {

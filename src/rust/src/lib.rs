@@ -76,6 +76,35 @@
 //! let geometry = feature.geometry().unwrap();
 //! geometry.parse(&mut coord_printer, header.geometry_type());
 //! ```
+//!
+//! ## Reading FlatGeobuf via HTTP
+//!
+//! ```rust
+//! use flatgeobuf::*;
+//!
+//! # async fn read_fbg() -> std::result::Result<(), std::io::Error> {
+//! let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+//! let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+//! let header = hreader.header();
+//!
+//! let mut freader = HttpFeatureReader::select_bbox(
+//!     &mut client,
+//!     &header,
+//!     hreader.header_len(),
+//!     8.8,
+//!     47.2,
+//!     9.5,
+//!     55.3,
+//! )
+//! .await?;
+//! while let Ok(feature) = freader.next(&mut client).await {
+//!     let props = feature.properties_map(&header);
+//!     println!("{}", props["name"]);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
 
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;

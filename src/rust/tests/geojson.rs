@@ -140,10 +140,9 @@ fn num_properties() -> std::result::Result<(), std::io::Error> {
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn http_json_async() {
+async fn http_json_async() -> std::result::Result<(), std::io::Error> {
     let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let hreader = HttpHeaderReader::read(&mut client).await?;
     let header = hreader.header();
 
     let mut freader = HttpFeatureReader::select_bbox(
@@ -155,13 +154,11 @@ async fn http_json_async() {
         9.5,
         55.3,
     )
-    .await
-    .unwrap();
+    .await?;
     let mut json_data: Vec<u8> = Vec::new();
     freader
         .to_geojson(&mut client, &header, &mut json_data)
-        .await
-        .unwrap();
+        .await?;
     assert_eq!(
         &std::str::from_utf8(&json_data).unwrap()[..239],
         r#"{
@@ -169,11 +166,13 @@ async fn http_json_async() {
 "name": "countries",
 "features": [{"type": "Feature", "properties": {"id": "DNK", "name": "Denmark"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[12.690006,55.609991],[12.089991,54.800015],[11.043"#
     );
+    Ok(())
 }
 
 #[test]
 fn http_json() {
-    tokio::runtime::Runtime::new()
+    assert!(tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(http_json_async());
+        .block_on(http_json_async())
+        .is_ok());
 }

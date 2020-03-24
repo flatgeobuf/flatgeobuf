@@ -1,29 +1,28 @@
 use flatgeobuf::*;
 use tokio::runtime::Runtime;
 
-async fn http_read_async() {
+async fn http_read_async() -> std::result::Result<(), std::io::Error> {
     let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let hreader = HttpHeaderReader::read(&mut client).await?;
     let header = hreader.header();
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(header.features_count(), 179);
 
-    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len())
-        .await
-        .unwrap();
-    let feature = freader.next(&mut client).await.unwrap();
+    let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await?;
+    let feature = freader.next(&mut client).await?;
     let props = feature.properties_map(&header);
     assert_eq!(props["name"], "Antarctica".to_string());
+    Ok(())
 }
 
 #[test]
 fn http_read() {
-    Runtime::new().unwrap().block_on(http_read_async());
+    assert!(Runtime::new().unwrap().block_on(http_read_async()).is_ok());
 }
 
-async fn http_bbox_read_async() {
+async fn http_bbox_read_async() -> std::result::Result<(), std::io::Error> {
     let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let hreader = HttpHeaderReader::read(&mut client).await?;
     let header = hreader.header();
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(header.features_count(), 179);
@@ -37,16 +36,19 @@ async fn http_bbox_read_async() {
         9.5,
         55.3,
     )
-    .await
-    .unwrap();
-    let feature = freader.next(&mut client).await.unwrap();
+    .await?;
+    let feature = freader.next(&mut client).await?;
     let props = feature.properties_map(&header);
     assert_eq!(props["name"], "Denmark".to_string());
+    Ok(())
 }
 
 #[test]
 fn http_bbox_read() {
-    Runtime::new().unwrap().block_on(http_bbox_read_async());
+    assert!(Runtime::new()
+        .unwrap()
+        .block_on(http_bbox_read_async())
+        .is_ok());
 }
 
 fn result_err_str<T>(res: Result<T, std::io::Error>) -> String {

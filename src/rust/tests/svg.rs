@@ -131,10 +131,9 @@ fn fgb_to_svg() -> std::result::Result<(), std::io::Error> {
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn http_svg_async() {
+async fn http_svg_async() -> std::result::Result<(), std::io::Error> {
     let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-    let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+    let hreader = HttpHeaderReader::read(&mut client).await?;
     let header = hreader.header();
 
     let mut freader = HttpFeatureReader::select_bbox(
@@ -146,13 +145,11 @@ async fn http_svg_async() {
         9.5,
         55.3,
     )
-    .await
-    .unwrap();
+    .await?;
     let mut svg_data: Vec<u8> = Vec::new();
     freader
         .to_svg(&mut client, &header, 800, 400, &mut svg_data)
-        .await
-        .unwrap();
+        .await?;
     let out = std::str::from_utf8(&svg_data).unwrap();
     let expected = r#"<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="800" height="400" viewBox="-180 -83.64513 360 169.254168" stroke-linecap="round" stroke-linejoin="round">
@@ -161,11 +158,13 @@ async fn http_svg_async() {
 <path d="M 16.979667 -48.123497 16.903754 -47.714866 16.340584 -47.712902 16.534268 -47.496171 16.202298 -46.852386 16.011664 -46.683611 15.137092 -46.658703 14.632472 -46.431817 13.806475 -46.509306 12.376485 -46.767559 12.153088 -47.115393 11.164828 -46.941579 11.048556 -46.751359 10.442701 -46.893546 9.932448 -46.920728 9.47997 -47.10281 9.632932 -47.347601 9.594226 -47.525058 9.896068 -47.580197 10.402084 -47.302488 10.544504 -47.566399 11.426414 -47.523766 12.141357 -47.703083 12.62076 -47.672388 12.932627 -47.467646 13.025851 -47.637584 12.884103 -48.289146 13.243357 -48.416115 13.595946 -48.877172 14.338898 -48.555305 14.901447 -48.964402 15.253416 -49.039074 16.029647 -48.733899 16.499283 -48.785808 16.960288 -48.596982 16.879983 -48.470013 16.979667 -48.123497 Z "/>
 "#;
     assert_eq!(&out[..expected.len()], expected);
+    Ok(())
 }
 
 #[test]
 fn http_svg() {
-    tokio::runtime::Runtime::new()
+    assert!(tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(http_svg_async());
+        .block_on(http_svg_async())
+        .is_ok());
 }
