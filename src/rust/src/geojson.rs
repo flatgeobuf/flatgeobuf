@@ -1,7 +1,9 @@
 use crate::feature_generated::flat_geobuf::{Feature, Geometry};
+use crate::file_reader::FeatureReader;
+use crate::geometry_reader::GeomReader;
 use crate::header_generated::flat_geobuf::{GeometryType, Header};
-use crate::reader::FeatureReader;
-use crate::reader::{ColumnValue, GeomReader};
+use crate::http_reader::{BufferedHttpClient, HttpFeatureReader};
+use crate::properties_reader::ColumnValue;
 use std::fmt::Display;
 use std::io::{Read, Seek, Write};
 
@@ -155,6 +157,30 @@ impl Feature<'_> {
     }
 }
 
+fn features_to_geojson_begin<W: Write>(
+    header: &Header,
+    out: &mut W,
+) -> std::result::Result<(), std::io::Error> {
+    out.write(
+        br#"{
+"type": "FeatureCollection",
+"name": ""#,
+    )?;
+    if let Some(name) = header.name() {
+        out.write(name.as_bytes())?;
+    }
+    out.write(
+        br#"",
+"features": ["#,
+    )?;
+    Ok(())
+}
+
+fn features_to_geojson_end<W: Write>(out: &mut W) -> std::result::Result<(), std::io::Error> {
+    out.write(b"]}")?;
+    Ok(())
+}
+
 impl FeatureReader {
     /// Convert selected FlatGeoBuf features to GeoJSON
     ///
@@ -168,28 +194,17 @@ impl FeatureReader {
     /// # let hreader = HeaderReader::read(&mut filein)?;
     /// # let header = hreader.header();
     /// let mut freader = FeatureReader::select_all(&mut filein, &header)?;
-    /// let mut fout = BufWriter::new(File::create("countries.json")?);
-    /// freader.to_geojson(&mut filein, &header, &mut fout)
+    /// let mut fileout = BufWriter::new(File::create("countries.json")?);
+    /// freader.to_geojson(&mut filein, &header, &mut fileout)
     /// # }
     ///```
-    pub fn to_geojson<'a, R: Read + Seek, W: Write>(
+    pub fn to_geojson<R: Read + Seek, W: Write>(
         &mut self,
         mut reader: R,
         header: &Header,
-        mut out: &'a mut W,
+        mut out: &mut W,
     ) -> std::result::Result<(), std::io::Error> {
-        out.write(
-            br#"{
-"type": "FeatureCollection",
-"name": ""#,
-        )?;
-        if let Some(name) = header.name() {
-            out.write(name.as_bytes())?;
-        }
-        out.write(
-            br#"",
-"features": ["#,
-        )?;
+        features_to_geojson_begin(header, out)?;
         let mut cnt = 0;
         while let Ok(feature) = self.next(&mut reader) {
             if cnt > 0 {
@@ -198,7 +213,41 @@ impl FeatureReader {
             feature.to_geojson(&mut out, &header, header.geometry_type());
             cnt += 1;
         }
-        out.write(b"]}")?;
-        Ok(())
+        features_to_geojson_end(out)
+    }
+}
+
+impl HttpFeatureReader {
+    /// Convert selected FlatGeoBuf features to GeoJSON
+    ///
+    /// Usage:
+    ///```rust
+    /// # use flatgeobuf::*;
+    /// # use std::fs::File;
+    /// # use std::io::{BufReader, BufWriter};
+    /// # async fn fgb_to_geojson() -> std::result::Result<(), std::io::Error> {
+    /// # let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+    /// # let hreader = HttpHeaderReader::read(&mut client).await?;
+    /// # let header = hreader.header();
+    /// let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await?;
+    /// let mut fileout = BufWriter::new(File::create("countries.json")?);
+    /// freader.to_geojson(&mut client, &header, &mut fileout).await
+    /// # }
+    pub async fn to_geojson<W: Write>(
+        &mut self,
+        client: &mut BufferedHttpClient<'_>,
+        header: &Header<'_>,
+        mut out: &mut W,
+    ) -> std::result::Result<(), std::io::Error> {
+        features_to_geojson_begin(header, out)?;
+        let mut cnt = 0;
+        while let Ok(feature) = self.next(client).await {
+            if cnt > 0 {
+                out.write(b",\n")?;
+            }
+            feature.to_geojson(&mut out, &header, header.geometry_type());
+            cnt += 1;
+        }
+        features_to_geojson_end(out)
     }
 }

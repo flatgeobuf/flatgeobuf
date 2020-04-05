@@ -23,6 +23,21 @@ while let Ok(feature) = freader.next(&mut file) {
 }
 ```
 
+With async HTTP client:
+```rust
+use flatgeobuf::*;
+
+let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+let header = hreader.header();
+
+let mut freader = HttpFeatureReader::select_all(&header, hreader.header_len()).await?;
+while let Ok(feature) = freader.next(&mut client).await {
+    let props = feature.properties_map(&header);
+    println!("{}", props["name"]);
+}
+```
+
 See [documentation](https://docs.rs/flatgeobuf/) and [tests](tests/) for more examples.
 
 ## Run tests and benchmarks

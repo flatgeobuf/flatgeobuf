@@ -76,20 +76,57 @@
 //! let geometry = feature.geometry().unwrap();
 //! geometry.parse(&mut coord_printer, header.geometry_type());
 //! ```
+//!
+//! ## Reading FlatGeobuf via HTTP
+//!
+//! ```rust
+//! use flatgeobuf::*;
+//!
+//! # async fn read_fbg() -> std::result::Result<(), std::io::Error> {
+//! let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
+//! let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
+//! let header = hreader.header();
+//!
+//! let mut freader = HttpFeatureReader::select_bbox(
+//!     &mut client,
+//!     &header,
+//!     hreader.header_len(),
+//!     8.8,
+//!     47.2,
+//!     9.5,
+//!     55.3,
+//! )
+//! .await?;
+//! while let Ok(feature) = freader.next(&mut client).await {
+//!     let props = feature.properties_map(&header);
+//!     println!("{}", props["name"]);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
 
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;
+mod file_reader;
 mod geojson;
+mod geometry_reader;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod header_generated;
+mod http_reader;
 mod packed_r_tree;
-mod reader;
+mod properties_reader;
+mod svg;
 
 pub use feature_generated::flat_geobuf::*;
+pub use file_reader::*;
 pub use geojson::*;
+pub use geometry_reader::*;
 pub use header_generated::flat_geobuf::*;
+pub use http_reader::*;
 pub use packed_r_tree::*;
-pub use reader::*;
+pub use properties_reader::*;
+pub use svg::*;
 
 pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];

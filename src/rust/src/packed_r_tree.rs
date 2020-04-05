@@ -1,12 +1,14 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
+use crate::http_reader::BufferedHttpClient;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
 
 #[derive(Clone, PartialEq, Debug)]
+#[repr(C)]
 /// R-Tree node
 pub struct NodeItem {
     min_x: f64, // double
@@ -296,6 +298,22 @@ impl PackedRTree {
         }
     }
 
+    async fn read_http(&mut self, client: &mut BufferedHttpClient<'_>, index_begin: usize) {
+        let min_req_size = self.size();
+        let mut pos = index_begin;
+        for i in 0..self.num_nodes {
+            let bytes = client
+                .get(pos, size_of::<NodeItem>(), min_req_size)
+                .await
+                .unwrap();
+            let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
+            let n: NodeItem = unsafe { std::mem::transmute(*p) };
+            self.node_items[i] = n.clone();
+            self.extent.expand(&n);
+            pos += size_of::<NodeItem>();
+        }
+    }
+
     pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> PackedRTree {
         let mut tree = PackedRTree {
             extent: extent.clone(),
@@ -324,6 +342,25 @@ impl PackedRTree {
         };
         tree.init(node_size);
         tree.read_data(data);
+        tree
+    }
+
+    pub async fn from_http(
+        client: &mut BufferedHttpClient<'_>,
+        index_begin: usize,
+        num_items: usize,
+        node_size: u16,
+    ) -> PackedRTree {
+        let mut tree = PackedRTree {
+            extent: NodeItem::create(0),
+            node_items: Vec::new(),
+            num_items: num_items,
+            num_nodes: 0,
+            node_size: 0,
+            level_bounds: Vec::new(),
+        };
+        tree.init(node_size);
+        tree.read_http(client, index_begin).await;
         tree
     }
 
