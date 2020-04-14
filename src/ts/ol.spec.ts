@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import 'mocha'
 
 import { arrayToStream, takeAsync } from './streams/utils'
-import { deserialize, deserializeStream, serialize } from './ol'
+import { deserialize, serialize } from './ol'
 
 import { IFeature } from './generic/feature'
 
@@ -53,7 +53,7 @@ describe('ol module', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
       const stream = arrayToStream(s)
-      const actual = await takeAsync(deserializeStream(stream))
+      const actual = await takeAsync(deserialize(stream) as AsyncGenerator)
       expect(g(actual)).to.equal(g(expected))
     })
 

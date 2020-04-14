@@ -1,6 +1,7 @@
 import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 
 import {
+    IGeoJsonFeatureCollection,
     deserialize as fcDeserialize,
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
@@ -13,17 +14,12 @@ export function serialize(geojson: any) {
     return bytes
 }
 
-export function deserialize(bytes: Uint8Array) {
-    const geojson = fcDeserialize(bytes)
-    return geojson
-}
-
-export function deserializeStream(stream: ReadableStream) {
-    const generator = fcDeserializeStream(stream)
-    return generator
-}
-
-export function deserializeFiltered(url, rect: Rect) {
-    const generator = fcDeserializeFiltered(url, rect)
-    return generator
+export function deserialize(input: Uint8Array | ReadableStream | string, rect?: Rect) :
+    IGeoJsonFeatureCollection | AsyncGenerator {
+    if (input instanceof Uint8Array)
+        return fcDeserialize(input)
+    else if (input instanceof ReadableStream)
+        return fcDeserializeStream(input)
+    else
+        return fcDeserializeFiltered(input, rect)
 }

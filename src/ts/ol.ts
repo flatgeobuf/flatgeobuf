@@ -13,11 +13,9 @@ export function serialize(features: IFeature[]) {
     return bytes
 }
 
-export function deserializeStream(stream: ReadableStream) {
-    return fcDeserializeStream(stream)
-}
-
-export function deserialize(bytes: Uint8Array) {
-    const features = fcDeserialize(bytes)
-    return features
+export function deserialize(input: Uint8Array | ReadableStream) {
+    if (input instanceof ReadableStream)
+        return fcDeserializeStream(input)
+    else
+        return fcDeserialize(input)
 }

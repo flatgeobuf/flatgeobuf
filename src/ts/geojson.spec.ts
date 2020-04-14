@@ -16,9 +16,10 @@ global['TextEncoder'] = TextEncoder
 
 import { arrayToStream, takeAsync } from './streams/utils'
 
-import { deserialize, deserializeStream, deserializeFiltered, serialize } from './geojson'
+import { deserialize, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 import { Rect } from './packedrtree'
+import { IGeoJsonFeatureCollection } from './geojson/featurecollection'
 
 function makeFeatureCollection(wkt: string, properties?: any) {
   return makeFeatureCollectionFromArray([wkt], properties)
@@ -52,7 +53,7 @@ describe('geojson module', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
       const stream = arrayToStream(s)
-      const actual = await takeAsync(deserializeStream(stream))
+      const actual = await takeAsync(deserialize(stream) as AsyncGenerator)
       expect(actual).to.deep.equal(expected.features)
     })
 
@@ -97,7 +98,7 @@ describe('geojson module', () => {
       const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`)
       const s = serialize(expected)
       const stream = arrayToStream(s)
-      const actual = await takeAsync(deserializeStream(stream))
+      const actual = await takeAsync(deserialize(stream) as AsyncGenerator)
       expect(actual).to.deep.equal(expected.features)
     })
 
@@ -227,7 +228,7 @@ describe('geojson module', () => {
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes)
+      const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(179)
       for (let f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
@@ -235,7 +236,7 @@ describe('geojson module', () => {
 
     it('Should parse countries fgb produced from GDAL', async () => {
       const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 }
-      const features = await takeAsync(deserializeFiltered('http://127.0.0.1:8000/test/data/countries.fgb', r))
+      const features = await takeAsync(deserialize('http://127.0.0.1:8000/test/data/countries.fgb', r) as AsyncGenerator)
       expect(features.length).to.eq(3)
       for (let f of features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
@@ -243,7 +244,7 @@ describe('geojson module', () => {
 
     /*it('Should parse countries fgb produced from GDAL', async () => {
       const r: Rect = { minX: 665612, minY: 6169484, maxX: 665612, maxY: 6169484 }
-      const features = await takeAsync(deserializeFiltered('https://storage.googleapis.com/flatgeobuf/JORDSTYKKE.fgb', r))
+      const features = await takeAsync(deserialize('https://storage.googleapis.com/flatgeobuf/JORDSTYKKE.fgb', r))
       expect(features.length).to.eq(2)
       for (let f of features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
@@ -252,7 +253,7 @@ describe('geojson module', () => {
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes)
+      const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(179)
       for (let f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
@@ -261,7 +262,7 @@ describe('geojson module', () => {
     it('Should parse UScounties fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/UScounties.fgb')
       const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes)
+      const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(3221)
       for (let f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)

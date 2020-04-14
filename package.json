@@ -5,12 +5,14 @@
   "scripts": {
     "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
     "pretest": "ws &",
-    "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm -t 20000 src/**/*.spec.ts"
+    "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm -t 20000 src/**/*.spec.ts",
+    "typedoc": "typedoc --options config/typedoc.json src/ts"
   },
   "files": [
     "lib/**/*",
     "dist/**/*"
   ],
+  "main": "lib/flatgeobuf.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bjornharrtell/flatgeobuf.git"
@@ -45,6 +47,7 @@
     "stream-buffers": "3.0.2",
     "ts-node": "8.6.2",
     "tslint": "6.1.0",
+    "typedoc": "0.17.4",
     "typescript": "3.8.3",
     "web-streams-polyfill": "2.1.0"
   }
