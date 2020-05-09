@@ -18,63 +18,78 @@
 //! # use std::fs::File;
 //! # use std::io::BufReader;
 //!
-//! # fn read_fbg() -> std::result::Result<(), std::io::Error> {
-//! let mut file = BufReader::new(File::open("countries.fgb")?);
-//! let hreader = HeaderReader::read(&mut file)?;
-//! let header = hreader.header();
-//!
-//! let mut freader = FeatureReader::select_bbox(&mut file, &header, 8.8, 47.2, 9.5, 55.3)?;
-//! while let Ok(feature) = freader.next(&mut file) {
-//!     let props = feature.properties_map(&header);
+//! # fn read_fbg() -> geozero::error::Result<()> {
+//! let mut filein = BufReader::new(File::open("countries.fgb")?);
+//! let mut fgb = FgbReader::open(&mut filein)?;
+//! fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+//! while let Some(feature) = fgb.next()? {
+//!     let props = feature.properties()?;
 //!     println!("{}", props["name"]);
 //! }
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! ## Zero-copy feature access
-//!
-//! ```rust
-//! # use flatgeobuf::*;
-//! # use std::fs::File;
-//! # use std::io::BufReader;
-//! # let fgb = File::open("../../test/data/countries.fgb").unwrap();
-//! # let mut reader = BufReader::new(fgb);
-//! # let hreader = HeaderReader::read(&mut reader).unwrap();
-//! # let header = hreader.header();
-//! # let mut freader = FeatureReader::select_all(&mut reader, &header).unwrap();
-//! # let feature = freader.next(&mut reader).unwrap();
-//! let _ = feature.iter_properties(&header, |i, n, v| {
-//!     println!("columnidx: {} name: {} value: {:?}", i, n, v);
-//!     false // don't abort
-//! });
-//! ```
-//!
 //! ## Zero-copy geometry reader
 //!
-//! Geometries can be accessed by implementing the `GeomReader` trait.
+//! Geometries can be accessed by implementing the `GeomProcessor` trait.
 //!
 //! ```rust
+//! use geozero::{GeomProcessor, error::Result};
 //! # use flatgeobuf::*;
 //! # use std::fs::File;
 //! # use std::io::BufReader;
+//!
 //! struct CoordPrinter;
 //!
-//! impl GeomReader for CoordPrinter {
-//!     fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
+//! impl GeomProcessor for CoordPrinter {
+//!     fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
 //!         println!("({} {})", x, y);
+//!         Ok(())
 //!     }
 //! }
 //!
-//! # let fgb = File::open("../../test/data/countries.fgb").unwrap();
-//! # let mut reader = BufReader::new(fgb);
-//! # let hreader = HeaderReader::read(&mut reader).unwrap();
-//! # let header = hreader.header();
-//! # let mut freader = FeatureReader::select_all(&mut reader, &header).unwrap();
-//! # let feature = freader.next(&mut reader).unwrap();
+//! # fn read_fbg() -> geozero::error::Result<()> {
+//! # let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+//! # let mut fgb = FgbReader::open(&mut filein)?;
+//! # let geometry_type = fgb.header().geometry_type();
+//! # fgb.select_all()?;
+//! # let feature = fgb.next()?.unwrap();
 //! let mut coord_printer = CoordPrinter {};
 //! let geometry = feature.geometry().unwrap();
-//! geometry.parse(&mut coord_printer, header.geometry_type());
+//! geometry.process(&mut coord_printer, geometry_type)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Zero-copy feature access
+//!
+//! Properties can be accessed by implementing the `PropertyProcessor` trait.
+//!
+//! ```rust
+//! use geozero::{PropertyProcessor, ColumnValue, error::Result};
+//! # use flatgeobuf::*;
+//! # use std::fs::File;
+//! # use std::io::BufReader;
+//!
+//! struct PropertyPrinter;
+//!
+//! impl PropertyProcessor for PropertyPrinter {
+//!     fn property(&mut self, i: usize, n: &str, v: &ColumnValue) -> Result<bool> {
+//!         println!("columnidx: {} name: {} value: {:?}", i, n, v);
+//!         Ok(false) // don't abort
+//!     }
+//! }
+//!
+//! # fn read_fbg() -> geozero::error::Result<()> {
+//! # let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+//! # let mut fgb = FgbReader::open(&mut filein)?;
+//! # fgb.select_all()?;
+//! # let feature = fgb.next()?.unwrap();
+//! let mut prop_printer = PropertyPrinter {};
+//! let _ = feature.process_properties(&mut prop_printer)?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Reading FlatGeobuf via HTTP
@@ -82,23 +97,11 @@
 //! ```rust
 //! use flatgeobuf::*;
 //!
-//! # async fn read_fbg() -> std::result::Result<(), std::io::Error> {
-//! let mut client = BufferedHttpClient::new("https://pkg.sourcepole.ch/countries.fgb");
-//! let hreader = HttpHeaderReader::read(&mut client).await.unwrap();
-//! let header = hreader.header();
-//!
-//! let mut freader = HttpFeatureReader::select_bbox(
-//!     &mut client,
-//!     &header,
-//!     hreader.header_len(),
-//!     8.8,
-//!     47.2,
-//!     9.5,
-//!     55.3,
-//! )
-//! .await?;
-//! while let Ok(feature) = freader.next(&mut client).await {
-//!     let props = feature.properties_map(&header);
+//! # async fn read_fbg() -> geozero::error::Result<()> {
+//! let mut fgb = HttpFgbReader::open("https://pkg.sourcepole.ch/countries.fgb").await?;
+//! fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
+//! while let Some(feature) = fgb.next().await? {
+//!     let props = feature.properties()?;
 //!     println!("{}", props["name"]);
 //! }
 //! # Ok(())
@@ -106,27 +109,27 @@
 //! ```
 //!
 
+mod driver;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;
 mod file_reader;
-mod geojson;
 mod geometry_reader;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod header_generated;
+mod http_client;
 mod http_reader;
 mod packed_r_tree;
 mod properties_reader;
-mod svg;
 
+pub use driver::*;
 pub use feature_generated::flat_geobuf::*;
 pub use file_reader::*;
-pub use geojson::*;
 pub use geometry_reader::*;
 pub use header_generated::flat_geobuf::*;
+pub use http_client::*;
 pub use http_reader::*;
 pub use packed_r_tree::*;
 pub use properties_reader::*;
-pub use svg::*;
 
 pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];

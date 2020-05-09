@@ -1,9 +1,11 @@
 use flatgeobuf::*;
+use geozero::error::Result;
+use geozero::{ColumnValue, CoordDimensions, GeomProcessor, PropertyProcessor};
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
 #[test]
-fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
+fn read_file_low_level() -> Result<()> {
     let f = File::open("../../test/data/countries.fgb")?;
     let mut reader = BufReader::new(f);
 
@@ -75,35 +77,57 @@ fn read_file_low_level() -> std::result::Result<(), std::io::Error> {
     Ok(())
 }
 
+#[test]
+fn read_all() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    fgb.select_all()?;
+    let mut cnt = 0;
+    while let Some(feature) = fgb.next()? {
+        let _props = feature.properties()?;
+        let _geometry = feature.geometry().unwrap();
+        cnt += 1
+    }
+    assert_eq!(cnt, 179);
+    Ok(())
+}
+
 struct VertexCounter(u64);
 
-impl GeomReader for VertexCounter {
-    fn pointxy(&mut self, _x: f64, _y: f64, _idx: usize) {
+impl GeomProcessor for VertexCounter {
+    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> Result<()> {
         self.0 += 1;
+        Ok(())
+    }
+}
+
+struct FeatureFinder;
+
+impl PropertyProcessor for FeatureFinder {
+    fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
+        Ok(i == 0 && v == &ColumnValue::String("DNK"))
     }
 }
 
 #[test]
-fn file_reader() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/countries.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
-    assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
-    assert_eq!(header.features_count(), 179);
+fn file_reader() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let geometry_type = fgb.header().geometry_type();
+    assert_eq!(geometry_type, GeometryType::MultiPolygon);
+    assert_eq!(fgb.header().features_count(), 179);
 
-    let mut freader = FeatureReader::select_all(&mut reader, &header)?;
-    assert_eq!(freader.filter_count(), None);
+    let count = fgb.select_all()?;
+    assert_eq!(count, 179);
 
-    while let Ok(feature) = freader.next(&mut reader) {
-        let found = feature.iter_properties(&header, |i, _n, v| {
-            i == 0 && v == ColumnValue::String("DNK")
-        });
-        if found {
+    let mut finder = FeatureFinder {};
+    while let Some(feature) = fgb.next()? {
+        let found = feature.process_properties(&mut finder);
+        if found.is_err() || found.unwrap() {
             break;
         }
     }
-    let feature = freader.cur_feature();
+    let feature = fgb.cur_feature();
     // OGRFeature(countries):46
     //   id (String) = DNK
     //   name (String) = Denmark
@@ -114,10 +138,10 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
     let geometry = feature.geometry().unwrap();
 
     let mut vertex_counter = VertexCounter(0);
-    geometry.parse(&mut vertex_counter, header.geometry_type());
+    geometry.process(&mut vertex_counter, geometry_type)?;
     assert_eq!(vertex_counter.0, 24);
 
-    let props = feature.properties_map(&header);
+    let props = feature.properties()?;
     assert_eq!(props["id"], "DNK".to_string());
     assert_eq!(props["name"], "Denmark".to_string());
 
@@ -125,29 +149,25 @@ fn file_reader() -> std::result::Result<(), std::io::Error> {
 }
 
 #[test]
-fn bbox_file_reader() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/countries.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
+fn bbox_file_reader() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let count = fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+    assert_eq!(count, 6);
 
-    let mut freader = FeatureReader::select_bbox(&mut reader, &header, 8.8, 47.2, 9.5, 55.3)?;
-    assert_eq!(freader.filter_count(), Some(6));
-
-    let feature = freader.next(&mut reader).unwrap();
-    let props = feature.properties_map(&header);
+    let feature = fgb.next()?.unwrap();
+    let props = feature.properties()?;
     assert_eq!(props["name"], "Denmark".to_string());
 
     Ok(())
 }
 
 #[test]
-fn magic_byte() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/states.geojson")?;
-    let mut reader = BufReader::new(f);
+fn magic_byte() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/states.geojson")?);
     assert_eq!(
-        HeaderReader::read(&mut reader).err().unwrap().to_string(),
-        "Magic byte doesn\'t match"
+        FgbReader::open(&mut filein).err().unwrap().to_string(),
+        "geometry format"
     );
 
     Ok(())
@@ -155,16 +175,16 @@ fn magic_byte() -> std::result::Result<(), std::io::Error> {
 
 #[test]
 #[ignore]
-fn point_layer() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/ne_10m_admin_0_country_points.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
-    assert_eq!(header.geometry_type(), GeometryType::Point);
-    assert_eq!(header.features_count(), 250);
+fn point_layer() -> Result<()> {
+    let mut filein = BufReader::new(File::open(
+        "../../test/data/ne_10m_admin_0_country_points.fgb",
+    )?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    assert_eq!(fgb.header().geometry_type(), GeometryType::Point);
+    assert_eq!(fgb.header().features_count(), 250);
 
-    let mut freader = FeatureReader::select_all(&mut reader, &header)?;
-    let feature = freader.next(&mut reader)?;
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::Unknown);
@@ -173,42 +193,44 @@ fn point_layer() -> std::result::Result<(), std::io::Error> {
         (xy.get(0), xy.get(1)),
         (2223639.4731508396, -15878634.348995442)
     );
-    let _props = feature.properties_map(&header);
+    let _props = feature.properties()?;
 
     Ok(())
 }
 
-struct WktLineEmitter {
+struct WktLineWriter {
     wkt: String,
 }
 
-impl GeomReader for WktLineEmitter {
-    fn line_begin(&mut self, _n: usize, _idx: usize) {
+impl GeomProcessor for WktLineWriter {
+    fn linestring_begin(&mut self, _tagged: bool, _n: usize, _idx: usize) -> Result<()> {
         self.wkt.push_str("LINESTRING (");
+        Ok(())
     }
-    fn pointxy(&mut self, x: f64, y: f64, idx: usize) {
+    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
         if idx > 0 {
             self.wkt.push_str(", ");
         }
         self.wkt.push_str(&format!("{} {}", x, y));
+        Ok(())
     }
-    fn line_end(&mut self, _idx: usize) {
+    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
         self.wkt.push_str(")");
+        Ok(())
     }
 }
 
 #[test]
 #[ignore]
-fn line_layer() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/lines.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
-    assert_eq!(header.geometry_type(), GeometryType::LineString);
-    assert_eq!(header.features_count(), 8375);
+fn linestring_layer() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/lines.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let geometry_type = fgb.header().geometry_type();
+    assert_eq!(geometry_type, GeometryType::LineString);
+    assert_eq!(fgb.header().features_count(), 8375);
 
-    let mut freader = FeatureReader::select_all(&mut reader, &header)?;
-    let feature = freader.next(&mut reader)?;
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::Unknown);
@@ -220,42 +242,44 @@ fn line_layer() -> std::result::Result<(), std::io::Error> {
     assert_eq!(line.len(), 7);
     assert_eq!(line[0], (1875038.4476102313, -3269648.6879248763));
 
-    let mut visitor = WktLineEmitter { wkt: String::new() };
-    geometry.parse(&mut visitor, header.geometry_type());
-    assert_eq!(visitor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
+    let mut processor = WktLineWriter { wkt: String::new() };
+    geometry.process(&mut processor, geometry_type)?;
+    assert_eq!(processor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
-    let _props = feature.properties_map(&header);
+    let _props = feature.properties()?;
 
     Ok(())
 }
 
 struct MultiLineGenerator(Vec<Vec<(f64, f64)>>);
 
-impl GeomReader for MultiLineGenerator {
-    fn multiline_begin(&mut self, n: usize, _idx: usize) {
+impl GeomProcessor for MultiLineGenerator {
+    fn multilinestring_begin(&mut self, n: usize, _idx: usize) -> Result<()> {
         self.0.reserve(n);
+        Ok(())
     }
-    fn ring_begin(&mut self, n: usize, _idx: usize) {
+    fn linestring_begin(&mut self, _tagged: bool, n: usize, _idx: usize) -> Result<()> {
         self.0.push(Vec::with_capacity(n));
+        Ok(())
     }
-    fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
+    fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
         let len = self.0.len();
         self.0[len - 1].push((x, y));
+        Ok(())
     }
 }
 
 #[test]
 #[ignore]
-fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/ne_10m_geographic_lines.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
-    assert_eq!(header.geometry_type(), GeometryType::MultiLineString);
-    assert_eq!(header.features_count(), 6);
+fn multilinestring_layer() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/ne_10m_geographic_lines.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    assert_eq!(fgb.header().geometry_type(), GeometryType::MultiLineString);
+    assert_eq!(fgb.header().features_count(), 6);
+    let geometry_type = fgb.header().geometry_type();
 
-    let mut freader = FeatureReader::select_all(&mut reader, &header)?;
-    let feature = freader.next(&mut reader)?;
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::Unknown);
@@ -265,29 +289,29 @@ fn multi_line_layer() -> std::result::Result<(), std::io::Error> {
     }
     assert_eq!(num_vertices, 361);
 
-    let mut visitor = MultiLineGenerator(Vec::new());
-    geometry.parse(&mut visitor, header.geometry_type());
-    assert_eq!(visitor.0.len(), 1);
-    assert_eq!(visitor.0[0].len(), 361);
-    assert_eq!(visitor.0[0][0], (-20037505.025679983, 2692596.21474788));
+    let mut processor = MultiLineGenerator(Vec::new());
+    geometry.process(&mut processor, geometry_type)?;
+    assert_eq!(processor.0.len(), 1);
+    assert_eq!(processor.0[0].len(), 361);
+    assert_eq!(processor.0[0][0], (-20037505.025679983, 2692596.21474788));
 
-    let _props = feature.properties_map(&header);
+    let _props = feature.properties()?;
 
     Ok(())
 }
 
 struct MaxFinder(f64);
 
-impl GeomReader for MaxFinder {
-    fn dimensions(&self) -> Dimensions {
-        Dimensions {
+impl GeomProcessor for MaxFinder {
+    fn dimensions(&self) -> CoordDimensions {
+        CoordDimensions {
             z: true,
             m: false,
             t: false,
             tm: false,
         }
     }
-    fn point(
+    fn coordinate(
         &mut self,
         _x: f64,
         _y: f64,
@@ -296,34 +320,36 @@ impl GeomReader for MaxFinder {
         _t: Option<f64>,
         _tm: Option<u64>,
         _idx: usize,
-    ) {
+    ) -> Result<()> {
         if let Some(z) = z {
             if z > self.0 {
                 self.0 = z
             }
         }
+        Ok(())
     }
 }
 
 #[test]
 #[ignore]
-fn multi_dim() -> std::result::Result<(), std::io::Error> {
-    let f = File::open("../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb")?;
-    let mut reader = BufReader::new(f);
-    let hreader = HeaderReader::read(&mut reader)?;
-    let header = hreader.header();
-    assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
-    assert_eq!(header.hasZ(), true);
-    assert_eq!(header.hasM(), false);
-    assert_eq!(header.hasT(), false);
-    assert_eq!(header.hasTM(), false);
-    assert_eq!(header.features_count(), 87);
+fn multi_dim() -> Result<()> {
+    let mut filein = BufReader::new(File::open(
+        "../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb",
+    )?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let geometry_type = fgb.header().geometry_type();
+    assert_eq!(geometry_type, GeometryType::MultiPolygon);
+    assert_eq!(fgb.header().hasZ(), true);
+    assert_eq!(fgb.header().hasM(), false);
+    assert_eq!(fgb.header().hasT(), false);
+    assert_eq!(fgb.header().hasTM(), false);
+    assert_eq!(fgb.header().features_count(), 87);
 
-    let mut freader = FeatureReader::select_all(&mut reader, &header)?;
-    let feature = freader.next(&mut reader)?;
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
-    assert_eq!(geometry.type_(), header.geometry_type());
+    assert_eq!(geometry.type_(), geometry_type);
     // MULTIPOLYGON Z (((2683312.339 1247968.33 401.7,2683311.496 1247964.044 401.7,2683307.761 1247964.745 401.7,2683309.16 1247973.337 401.7,2683313.003 1247972.616 401.7,2683312.339 1247968.33 401.7),(2683312.339 1247968.33
     // 401.7,2683313.003 1247972.616 401.7,2683313.003 1247972.616 410.5,2683312.339 1247968.33 410.5,2683312.339 1247968.33 401.7),(2683307.761 1247964.745 401.7,2683311.496 1247964.044 401.7,2683311.496 1247964.044 410.5,268330
     // 7.761 1247964.745 410.5,2683307.761 1247964.745 401.7),(2683311.496 1247964.044 401.7,2683312.339 1247968.33 401.7,2683312.339 1247968.33 410.5,2683311.496 1247964.044 410.5,2683311.496 1247964.044 401.7)),((2683309.16 124
@@ -332,10 +358,52 @@ fn multi_dim() -> std::result::Result<(), std::io::Error> {
     // 3 1247972.616 401.7)))
 
     let mut max_finder = MaxFinder(0.0);
-    geometry.parse(&mut max_finder, header.geometry_type());
+    geometry.process(&mut max_finder, geometry_type)?;
     assert_eq!(max_finder.0, 410.5);
 
-    let _props = feature.properties_map(&header);
+    let _props = feature.properties()?;
+
+    Ok(())
+}
+
+struct PropChecker<'a> {
+    expected: Vec<ColumnValue<'a>>,
+}
+
+impl PropertyProcessor for PropChecker<'_> {
+    fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
+        assert_eq!(v, &self.expected[i]);
+        Ok(false)
+    }
+}
+
+#[test]
+fn property_types() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/alldatatypes.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
+    let mut prop_checker = PropChecker {
+        expected: vec![
+            ColumnValue::Byte(-1),
+            ColumnValue::UByte(255),
+            ColumnValue::Bool(true),
+            ColumnValue::Short(-1),
+            ColumnValue::UShort(65535),
+            ColumnValue::Int(-1),
+            ColumnValue::UInt(4294967295),
+            ColumnValue::Long(-1),
+            ColumnValue::ULong(18446744073709551615),
+            ColumnValue::Float(0.0),
+            ColumnValue::Double(0.0),
+            ColumnValue::String("X"),
+            ColumnValue::Json("X"),
+            ColumnValue::DateTime("2020-02-29T12:34:56Z"),
+            ColumnValue::Binary(&[88]),
+        ],
+    };
+    assert!(feature.process_properties(&mut prop_checker).is_ok());
 
     Ok(())
 }

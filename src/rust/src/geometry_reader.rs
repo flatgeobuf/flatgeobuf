@@ -1,310 +1,214 @@
 use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
+use geozero::error::{GeozeroError, Result};
+use geozero::GeomProcessor;
 
-pub struct Dimensions {
-    /// height
-    pub z: bool,
-    /// measurement
-    pub m: bool,
-    /// geodetic decimal year time
-    pub t: bool,
-    /// time nanosecond measurement
-    pub tm: bool,
-}
-
-pub trait GeomReader {
-    /// Additional dimensions requested from reader
-    fn dimensions(&self) -> Dimensions {
-        Dimensions {
-            z: false,
-            m: false,
-            t: false,
-            tm: false,
-        }
-    }
-    /// Point without additional dimensions
-    fn pointxy(&mut self, _x: f64, _y: f64, _idx: usize) {}
-    /// Point with additional dimensions
-    fn point(
-        &mut self,
-        _x: f64,
-        _y: f64,
-        _z: Option<f64>,
-        _m: Option<f64>,
-        _t: Option<f64>,
-        _tm: Option<u64>,
-        _idx: usize,
-    ) {
-    }
-    fn point_begin(&mut self, _idx: usize) {}
-    fn point_end(&mut self) {}
-    fn multipoint_begin(&mut self, _size: usize, _idx: usize) {}
-    fn multipoint_end(&mut self) {}
-    fn line_begin(&mut self, _size: usize, _idx: usize) {}
-    fn line_end(&mut self, _idx: usize) {}
-    fn multiline_begin(&mut self, _size: usize, _idx: usize) {}
-    fn multiline_end(&mut self) {}
-    fn ring_begin(&mut self, _size: usize, _idx: usize) {}
-    fn ring_end(&mut self, _idx: usize) {}
-    fn poly_begin(&mut self, _size: usize, _idx: usize) {}
-    fn poly_end(&mut self, _idx: usize) {}
-    fn subpoly_begin(&mut self, _size: usize, _idx: usize) {}
-    fn subpoly_end(&mut self, _idx: usize) {}
-    fn multipoly_begin(&mut self, _size: usize, _idx: usize) {}
-    fn multipoly_end(&mut self) {}
-}
-
-pub struct DebugReader;
-
-impl GeomReader for DebugReader {
-    fn pointxy(&mut self, x: f64, y: f64, _idx: usize) {
-        print!("pointxy({} {}) ", x, y);
-    }
-    fn point_begin(&mut self, _idx: usize) {
-        print!("point_begin ");
-    }
-    fn point_end(&mut self) {
-        println!("point_end ");
-    }
-    fn multipoint_begin(&mut self, _size: usize, _idx: usize) {
-        print!("multipoint_begin ");
-    }
-    fn multipoint_end(&mut self) {
-        println!("multipoint_end ");
-    }
-    fn line_begin(&mut self, _size: usize, _idx: usize) {
-        print!("line_begin ");
-    }
-    fn line_end(&mut self, _idx: usize) {
-        println!("line_end ");
-    }
-    fn multiline_begin(&mut self, _size: usize, _idx: usize) {
-        print!("multiline_begin ");
-    }
-    fn multiline_end(&mut self) {
-        println!("multiline_end ");
-    }
-    fn ring_begin(&mut self, _size: usize, _idx: usize) {
-        print!("ring_begin ");
-    }
-    fn ring_end(&mut self, _idx: usize) {
-        println!("ring_end ");
-    }
-    fn poly_begin(&mut self, _size: usize, _idx: usize) {
-        print!("poly_begin ");
-    }
-    fn poly_end(&mut self, _idx: usize) {
-        println!("poly_end ");
-    }
-    fn subpoly_begin(&mut self, _size: usize, _idx: usize) {
-        print!("subpoly_begin ");
-    }
-    fn subpoly_end(&mut self, _idx: usize) {
-        println!("subpoly_end ");
-    }
-    fn multipoly_begin(&mut self, _size: usize, _idx: usize) {
-        print!("multipoly_begin ");
-    }
-    fn multipoly_end(&mut self) {
-        println!("multipoly_end ");
-    }
-}
-
-pub fn is_collection(geometry_type: GeometryType) -> bool {
-    match geometry_type {
+pub fn is_collection(geometry_type: GeometryType) -> Result<bool> {
+    let coll = match geometry_type {
         GeometryType::Point
         | GeometryType::MultiPoint
         | GeometryType::LineString
         | GeometryType::MultiLineString
         | GeometryType::Polygon => false,
         GeometryType::MultiPolygon | GeometryType::GeometryCollection => true,
-        _ => panic!("is_collection: Unknown geometry type"),
-    }
+        _ => Err(GeozeroError::Geometry(
+            "is_collection: Unknown geometry type".to_string(),
+        ))?,
+    };
+    Ok(coll)
 }
 
-fn multi_dim<R: GeomReader>(reader: &mut R) -> bool {
-    reader.dimensions().z
-        || reader.dimensions().m
-        || reader.dimensions().t
-        || reader.dimensions().tm
+fn multi_dim<P: GeomProcessor>(processor: &mut P) -> bool {
+    processor.dimensions().z
+        || processor.dimensions().m
+        || processor.dimensions().t
+        || processor.dimensions().tm
 }
 
-fn read_point_multi_dim<R: GeomReader>(
-    reader: &mut R,
+fn read_coordinate<P: GeomProcessor>(
+    processor: &mut P,
     geometry: &Geometry,
     offset: usize,
     idx: usize,
-) {
-    let xy = geometry.xy().unwrap();
-    let z = if reader.dimensions().z {
-        Some(geometry.z().unwrap().get(offset))
+) -> Result<()> {
+    let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    let z = if processor.dimensions().z {
+        geometry.z().and_then(|dim| Some(dim.get(offset)))
     } else {
         None
     };
-    let m = if reader.dimensions().m {
-        Some(geometry.m().unwrap().get(offset))
+    let m = if processor.dimensions().m {
+        geometry.m().and_then(|dim| Some(dim.get(offset)))
     } else {
         None
     };
-    let t = if reader.dimensions().t {
-        Some(geometry.t().unwrap().get(offset))
+    let t = if processor.dimensions().t {
+        geometry.t().and_then(|dim| Some(dim.get(offset)))
     } else {
         None
     };
-    let tm = if reader.dimensions().tm {
-        Some(geometry.tm().unwrap().get(offset))
+    let tm = if processor.dimensions().tm {
+        geometry.tm().and_then(|dim| Some(dim.get(offset)))
     } else {
         None
     };
-    reader.point(xy.get(offset * 2), xy.get(offset * 2 + 1), z, m, t, tm, idx);
+    processor.coordinate(xy.get(offset * 2), xy.get(offset * 2 + 1), z, m, t, tm, idx)
 }
 
-fn read_points<R: GeomReader>(reader: &mut R, geometry: &Geometry, offset: usize, length: usize) {
-    let xy = geometry.xy().unwrap();
-    let multi = multi_dim(reader);
+fn read_coords<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    offset: usize,
+    length: usize,
+) -> Result<()> {
+    let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    let multi = multi_dim(processor);
     for i in (offset..offset + length).step_by(2) {
         if multi {
-            read_point_multi_dim(reader, geometry, i / 2, (i - offset) / 2);
+            read_coordinate(processor, geometry, i / 2, (i - offset) / 2)?;
         } else {
-            reader.pointxy(xy.get(i), xy.get(i + 1), (i - offset) / 2);
+            processor.xy(xy.get(i), xy.get(i + 1), (i - offset) / 2)?;
         }
     }
+    Ok(())
 }
 
-fn read_multi_line_part<R: GeomReader>(
-    reader: &mut R,
+fn read_multilinestring_part<P: GeomProcessor>(
+    processor: &mut P,
     geometry: &Geometry,
     offset: usize,
     length: usize,
     idx: usize,
-) {
-    reader.ring_begin(length / 2, idx);
-    read_points(reader, geometry, offset, length);
-    reader.ring_end(idx);
+) -> Result<()> {
+    processor.linestring_begin(false, length / 2, idx)?;
+    read_coords(processor, geometry, offset, length)?;
+    processor.linestring_end(false, idx)
 }
 
-fn read_multi_line<R: GeomReader>(reader: &mut R, geometry: &Geometry, idx: usize) {
-    if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
+fn read_multiline<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    idx: usize,
+) -> Result<()> {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
         if let Some(xy) = geometry.xy() {
-            reader.multiline_begin(1, idx);
-            read_multi_line_part(reader, geometry, 0, xy.len(), 0);
-            reader.multiline_end();
+            processor.multilinestring_begin(1, idx)?;
+            read_multilinestring_part(processor, geometry, 0, xy.len(), 0)?;
+            processor.multilinestring_end(idx)?;
         }
     } else {
-        let ends = geometry.ends().unwrap();
-        reader.multiline_begin(ends.len() / 2, idx);
+        let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
+        processor.multilinestring_begin(ends.len() / 2, idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
-            read_multi_line_part(
-                reader,
+            read_multilinestring_part(
+                processor,
                 geometry,
                 offset as usize,
                 (end - offset) as usize,
                 i,
-            );
+            )?;
             offset = end;
         }
-        reader.multiline_end();
+        processor.multilinestring_end(idx)?;
     }
+    Ok(())
 }
 
-fn read_polygon<R: GeomReader>(reader: &mut R, geometry: &Geometry, subpoly: bool, idx: usize) {
-    let xy = geometry.xy().unwrap();
-    if geometry.ends().is_none() || geometry.ends().unwrap().len() < 2 {
-        if subpoly {
-            reader.subpoly_begin(1, idx);
-        } else {
-            reader.poly_begin(1, idx);
-        }
-        reader.ring_begin(xy.len(), 0);
-        read_points(reader, geometry, 0, xy.len());
-        reader.ring_end(0);
-        if subpoly {
-            reader.subpoly_end(idx);
-        } else {
-            reader.poly_end(idx);
-        }
+fn read_polygon<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    tagged: bool,
+    idx: usize,
+) -> Result<()> {
+    let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+        processor.polygon_begin(tagged, 1, idx)?;
+        processor.linestring_begin(false, xy.len(), 0)?;
+        read_coords(processor, geometry, 0, xy.len())?;
+        processor.linestring_end(false, 0)?;
+        processor.polygon_end(tagged, idx)?;
     } else {
-        let ends = geometry.ends().unwrap();
-        if subpoly {
-            reader.subpoly_begin(ends.len() / 2, idx);
-        } else {
-            reader.poly_begin(ends.len() / 2, idx);
-        }
+        let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
+        processor.polygon_begin(tagged, ends.len() / 2, idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
             let length = (end - offset) as usize;
-            reader.ring_begin(length / 2, i);
-            read_points(reader, geometry, offset as usize, length);
-            reader.ring_end(i);
+            processor.linestring_begin(false, length / 2, i)?;
+            read_coords(processor, geometry, offset as usize, length)?;
+            processor.linestring_end(false, i)?;
             offset = end;
         }
-        if subpoly {
-            reader.subpoly_end(idx);
-        } else {
-            reader.poly_end(idx);
-        }
+        processor.polygon_end(tagged, idx)?;
     }
+    Ok(())
 }
 
-fn read_multi_polygon<R: GeomReader>(reader: &mut R, geometry: &Geometry) {
-    let parts = geometry.parts().unwrap();
-    reader.multipoly_begin(parts.len(), 0);
+fn read_multi_polygon<P: GeomProcessor>(processor: &mut P, geometry: &Geometry) -> Result<()> {
+    let parts = geometry.parts().ok_or(GeozeroError::GeometryFormat)?;
+    processor.multipolygon_begin(parts.len(), 0)?;
     for i in 0..parts.len() {
         let part = parts.get(i);
-        read_polygon(reader, &part, true, i);
+        read_polygon(processor, &part, false, i)?;
     }
-    reader.multipoly_end();
+    processor.multipolygon_end(0)
 }
 
-pub fn read_geometry<R: GeomReader>(
-    reader: &mut R,
+pub fn read_geometry<P: GeomProcessor>(
+    processor: &mut P,
     geometry: &Geometry,
     geometry_type: GeometryType,
-) {
-    if !is_collection(geometry_type) {
-        let xy = geometry.xy().unwrap();
+) -> Result<()> {
+    if !is_collection(geometry_type)? {
+        let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
         match geometry_type {
             GeometryType::Point => {
-                reader.point_begin(0);
-                if multi_dim(reader) {
-                    read_point_multi_dim(reader, geometry, 0, 0);
+                processor.point_begin(0)?;
+                if multi_dim(processor) {
+                    read_coordinate(processor, geometry, 0, 0)?;
                 } else {
-                    reader.pointxy(xy.get(0), xy.get(1), 0);
+                    processor.xy(xy.get(0), xy.get(1), 0)?;
                 }
-                reader.point_end();
+                processor.point_end(0)?;
             }
             GeometryType::MultiPoint => {
-                reader.multipoint_begin(xy.len() / 2, 0);
-                read_points(reader, geometry, 0, xy.len());
-                reader.multipoint_end();
+                processor.multipoint_begin(xy.len() / 2, 0)?;
+                read_coords(processor, geometry, 0, xy.len())?;
+                processor.multipoint_end(0)?;
             }
             GeometryType::LineString => {
-                reader.line_begin(xy.len() / 2, 0);
-                read_points(reader, geometry, 0, xy.len());
-                reader.line_end(0);
+                processor.linestring_begin(true, xy.len() / 2, 0)?;
+                read_coords(processor, geometry, 0, xy.len())?;
+                processor.linestring_end(true, 0)?;
             }
             GeometryType::MultiLineString => {
-                read_multi_line(reader, geometry, 0);
+                read_multiline(processor, geometry, 0)?;
             }
             GeometryType::Polygon => {
-                read_polygon(reader, geometry, false, 0);
+                read_polygon(processor, geometry, true, 0)?;
             }
-            _ => panic!("read_geometry: Unknown geometry type"),
+            _ => Err(GeozeroError::Geometry(
+                "read_geometry: Unknown geometry type".to_string(),
+            ))?,
         }
     }
     match geometry_type {
         GeometryType::MultiPolygon => {
-            read_multi_polygon(reader, geometry);
+            read_multi_polygon(processor, geometry)?;
         }
         _ => {} // panic!("read_geometry: Unknown geometry type"),
     }
+    Ok(())
 }
 
 impl Geometry<'_> {
-    pub fn parse<R: GeomReader>(&self, reader: &mut R, geometry_type: GeometryType) {
-        read_geometry(reader, self, geometry_type);
+    pub fn process<P: GeomProcessor>(
+        &self,
+        processor: &mut P,
+        geometry_type: GeometryType,
+    ) -> Result<()> {
+        read_geometry(processor, self, geometry_type)
     }
 }
