@@ -1,4 +1,4 @@
-namespace FlatGeobuf;
+//namespace FlatGeobuf;
 
 // Geometry type enumeration 
 // NOTE: Same as WKB 2D geometry type enumeration
