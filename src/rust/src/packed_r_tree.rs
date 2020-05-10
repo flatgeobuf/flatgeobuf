@@ -1,9 +1,12 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
-use crate::http_reader::BufferedHttpClient;
-use std::collections::HashMap;
-use std::io::{Read, Write};
+// use crate::http_reader::BufferedHttpClient;
+use crate::http_client::BufferedHttpClient;
+use geozero::error::{GeozeroError, Result};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
 
@@ -88,6 +91,58 @@ impl NodeItem {
     // {
     //     return std::vector<double> { min_x, min_y, max_x, max_y };
     // }
+}
+
+/// Read full capacity of vec from data stream
+fn read_node_vec(node_items: &mut Vec<NodeItem>, data: &mut dyn Read) -> Result<()> {
+    let num_nodes = node_items.capacity();
+    let buf = unsafe {
+        std::slice::from_raw_parts_mut(
+            node_items.as_mut_ptr() as *mut u8,
+            num_nodes * size_of::<NodeItem>(),
+        )
+    };
+    data.read_exact(buf)?;
+    unsafe {
+        node_items.set_len(num_nodes);
+    }
+    Ok(())
+}
+
+/// Read partial item vec from data stream
+fn read_node_items<R: Read + Seek>(
+    data: &mut R,
+    base: u64,
+    node_index: usize,
+    length: usize,
+) -> Result<Vec<NodeItem>> {
+    let mut node_items = Vec::with_capacity(length);
+    data.seek(SeekFrom::Start(
+        base + (node_index * size_of::<NodeItem>()) as u64,
+    ))?;
+    read_node_vec(&mut node_items, data)?;
+    Ok(node_items)
+}
+
+/// Read partial item vec from http
+async fn read_http_node_items(
+    client: &mut BufferedHttpClient,
+    min_req_size: usize,
+    base: usize,
+    node_index: usize,
+    length: usize,
+) -> Result<Vec<NodeItem>> {
+    let begin = base + node_index * size_of::<NodeItem>();
+    let len = length * size_of::<NodeItem>();
+    let bytes = client.get(begin, len, min_req_size).await?;
+
+    let mut node_items = Vec::with_capacity(length);
+    let buf = unsafe { std::slice::from_raw_parts_mut(node_items.as_mut_ptr() as *mut u8, len) };
+    buf.clone_from_slice(&bytes);
+    unsafe {
+        node_items.set_len(length);
+    }
+    Ok(node_items)
 }
 
 #[derive(Debug)]
@@ -219,13 +274,18 @@ pub struct PackedRTree {
 impl PackedRTree {
     pub const DEFAULT_NODE_SIZE: u16 = 16;
 
-    fn init(&mut self, node_size: u16) {
+    fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(self.num_items > 0, "Cannot create empty tree");
         self.node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
         self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
-        self.num_nodes = self.level_bounds.first().unwrap().1;
-        self.node_items = vec![NodeItem::create(0); self.num_nodes];
+        self.num_nodes = self
+            .level_bounds
+            .first()
+            .ok_or(GeozeroError::GeometryIndex)?
+            .1;
+        self.node_items = vec![NodeItem::create(0); self.num_nodes]; // Quite slow!
+        Ok(())
     }
 
     fn generate_level_bounds(num_items: usize, node_size: u16) -> Vec<(usize, usize)> {
@@ -250,7 +310,7 @@ impl PackedRTree {
             }
         }
         // bounds per level in reversed storage order (top-down)
-        let mut level_offsets: Vec<usize> = Vec::new();
+        let mut level_offsets: Vec<usize> = Vec::with_capacity(level_num_nodes.len());
         n = num_nodes;
         for size in &level_num_nodes {
             level_offsets.push(n - size);
@@ -258,7 +318,7 @@ impl PackedRTree {
         }
         level_offsets.reverse();
         level_num_nodes.reverse();
-        let mut level_bounds = Vec::new();
+        let mut level_bounds = Vec::with_capacity(level_num_nodes.len());
         for i in 0..level_num_nodes.len() {
             level_bounds.push((level_offsets[i], level_offsets[i] + level_num_nodes[i]));
         }
@@ -286,35 +346,33 @@ impl PackedRTree {
         }
     }
 
-    fn read_data(&mut self, data: &mut dyn Read) {
-        let mut n = NodeItem::create(0);
-        let buf: &mut [u8] = unsafe {
-            std::slice::from_raw_parts_mut(&mut n as *mut _ as *mut u8, size_of::<NodeItem>())
-        };
-        for i in 0..self.num_nodes {
-            data.read_exact(buf).unwrap();
-            self.node_items[i] = n.clone();
-            self.extent.expand(&n);
+    fn read_data(&mut self, data: &mut dyn Read) -> Result<()> {
+        read_node_vec(&mut self.node_items, data)?;
+        for node in &self.node_items {
+            self.extent.expand(&node)
         }
+        Ok(())
     }
 
-    async fn read_http(&mut self, client: &mut BufferedHttpClient<'_>, index_begin: usize) {
-        let min_req_size = self.size();
+    async fn read_http(
+        &mut self,
+        client: &mut BufferedHttpClient,
+        index_begin: usize,
+    ) -> Result<()> {
+        let min_req_size = self.size(); // read full index at once
         let mut pos = index_begin;
         for i in 0..self.num_nodes {
-            let bytes = client
-                .get(pos, size_of::<NodeItem>(), min_req_size)
-                .await
-                .unwrap();
+            let bytes = client.get(pos, size_of::<NodeItem>(), min_req_size).await?;
             let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
             let n: NodeItem = unsafe { std::mem::transmute(*p) };
             self.node_items[i] = n.clone();
             self.extent.expand(&n);
             pos += size_of::<NodeItem>();
         }
+        Ok(())
     }
 
-    pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> PackedRTree {
+    pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
         let mut tree = PackedRTree {
             extent: extent.clone(),
             node_items: Vec::new(),
@@ -323,34 +381,36 @@ impl PackedRTree {
             node_size: 0,
             level_bounds: Vec::new(),
         };
-        tree.init(node_size);
+        tree.init(node_size)?;
         for i in 0..tree.num_items {
             tree.node_items[(tree.num_nodes - tree.num_items + i)] = nodes[i].clone();
         }
         tree.generate_nodes();
-        tree
+        Ok(tree)
     }
 
-    pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> PackedRTree {
+    pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
+        let node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
+        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
-            node_items: Vec::new(),
-            num_items: num_items,
-            num_nodes: 0,
-            node_size: 0,
-            level_bounds: Vec::new(),
+            node_items: Vec::with_capacity(num_nodes),
+            num_items,
+            num_nodes,
+            node_size,
+            level_bounds,
         };
-        tree.init(node_size);
-        tree.read_data(data);
-        tree
+        tree.read_data(data)?;
+        Ok(tree)
     }
 
     pub async fn from_http(
-        client: &mut BufferedHttpClient<'_>,
+        client: &mut BufferedHttpClient,
         index_begin: usize,
         num_items: usize,
         node_size: u16,
-    ) -> PackedRTree {
+    ) -> Result<PackedRTree> {
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::new(),
@@ -359,19 +419,29 @@ impl PackedRTree {
             node_size: 0,
             level_bounds: Vec::new(),
         };
-        tree.init(node_size);
-        tree.read_http(client, index_begin).await;
-        tree
+        tree.init(node_size)?;
+        tree.read_http(client, index_begin).await?;
+        Ok(tree)
     }
 
-    pub fn search(&self, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Vec<SearchResultItem> {
-        let leaf_nodes_offset = self.level_bounds.first().unwrap().0;
+    pub fn search(
+        &self,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> Result<Vec<SearchResultItem>> {
+        let leaf_nodes_offset = self
+            .level_bounds
+            .first()
+            .ok_or(GeozeroError::GeometryIndex)?
+            .0;
         let n = NodeItem::new(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
         let mut queue = HashMap::new(); // C++: std::unordered_map
         queue.insert(0, self.level_bounds.len() - 1);
         while queue.len() != 0 {
-            let next = queue.iter().next().unwrap();
+            let next = queue.iter().next().ok_or(GeozeroError::GeometryIndex)?;
             let node_index = *next.0;
             let level = *next.1;
             queue.remove(&node_index);
@@ -397,47 +467,116 @@ impl PackedRTree {
                 }
             }
         }
-        results
+        Ok(results)
     }
 
-    // std::vector<SearchResultItem> PackedRTree::streamSearch(
-    //     const uint64_t num_items, const uint16_t node_size, const NodeItem& item,
-    //     const std::function<void(uint8_t *, size_t, size_t)> &readNode)
-    // {
-    //     auto level_bounds = generate_level_bounds(num_items, node_size);
-    //     uint64_t leaf_nodes_offset = level_bounds.front().first;
-    //     uint64_t num_nodes = level_bounds.front().second;
-    //     std::vector<NodeItem> node_items;
-    //     node_items.reserve(node_size);
-    //     uint8_t *nodesBuf = reinterpret_cast<uint8_t *>(node_items.data());
-    //     // use ordered search queue to make index traversal in sequential order
-    //     std::map<uint64_t, uint64_t> queue;
-    //     std::vector<SearchResultItem> results;
-    //     queue.insert(std::pair<uint64_t, uint64_t>(0, level_bounds.size() - 1));
-    //     while(queue.size() != 0) {
-    //         auto next = queue.begin();
-    //         uint64_t node_index = next->first;
-    //         uint64_t level = next->second;
-    //         queue.erase(next);
-    //         bool is_leaf_node = node_index >= num_nodes - num_items;
-    //         // find the end index of the node
-    //         uint64_t end = std::min(static_cast<uint64_t>(node_index + node_size), level_bounds[static_cast<size_t>(level)].second);
-    //         uint64_t length = end - node_index;
-    //         readNode(nodesBuf, static_cast<size_t>(node_index * sizeof(NodeItem)), static_cast<size_t>(length * sizeof(NodeItem)));
-    //         // search through child nodes
-    //         for (uint64_t pos = node_index; pos < end; pos++) {
-    //             uint64_t nodePos = pos - node_index;
-    //             auto node_item = node_items[static_cast<size_t>(nodePos)];
-    //             if (!item.intersects(node_item))
-    //                 continue;
-    //             if (is_leaf_node)
-    //                 results.push_back({ node_item.offset, pos - leaf_nodes_offset });
-    //             else
-    //                 queue.insert(std::pair<uint64_t, uint64_t>(node_item.offset, level - 1));
-    //         }
-    //     }
-    //     return results;
-    // }
+    pub fn stream_search<R: Read + Seek>(
+        data: &mut R,
+        num_items: usize,
+        node_size: u16,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> Result<Vec<SearchResultItem>> {
+        let item = NodeItem::new(min_x, min_y, max_x, max_y);
+        let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
+        let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
+        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
+
+        // current position must be start of index
+        let index_base = data.seek(SeekFrom::Current(0))?;
+
+        // use ordered search queue to make index traversal in sequential order
+        let mut queue = BinaryHeap::new();
+        queue.push(Reverse((0, level_bounds.len() - 1)));
+        let mut results = Vec::new();
+
+        while queue.len() != 0 {
+            let next = queue.pop().ok_or(GeozeroError::GeometryIndex)?.0;
+            let node_index = next.0;
+            let level = next.1;
+            let is_leaf_node = node_index >= num_nodes - num_items;
+            // find the end index of the node
+            let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
+            let length = end - node_index;
+            let node_items = read_node_items(data, index_base, node_index, length)?;
+            // search through child nodes
+            for pos in node_index..end {
+                let node_pos = pos - node_index;
+                let node_item = &node_items[node_pos];
+                if !item.intersects(&node_item) {
+                    continue;
+                }
+                if is_leaf_node {
+                    results.push(SearchResultItem {
+                        offset: node_item.offset as usize,
+                        index: pos - leaf_nodes_offset,
+                    });
+                } else {
+                    queue.push(Reverse((node_item.offset as usize, level - 1)));
+                }
+            }
+        }
+        // Skip rest of index
+        data.seek(SeekFrom::Start(
+            index_base + (num_nodes * size_of::<NodeItem>()) as u64,
+        ))?;
+        Ok(results)
+    }
+
+    pub async fn http_stream_search(
+        client: &mut BufferedHttpClient,
+        index_begin: usize,
+        num_items: usize,
+        node_size: u16,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> Result<Vec<SearchResultItem>> {
+        let item = NodeItem::new(min_x, min_y, max_x, max_y);
+        let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
+        let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
+        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
+
+        // read full index at once, if < 1MB
+        let min_req_size = cmp::min(num_nodes * size_of::<NodeItem>(), 1_048_576);
+
+        // use ordered search queue to make index traversal in sequential order
+        let mut queue = BinaryHeap::new();
+        queue.push(Reverse((0, level_bounds.len() - 1)));
+        let mut results = Vec::new();
+
+        while queue.len() != 0 {
+            let next = queue.pop().ok_or(GeozeroError::GeometryIndex)?.0;
+            let node_index = next.0;
+            let level = next.1;
+            let is_leaf_node = node_index >= num_nodes - num_items;
+            // find the end index of the node
+            let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
+            let length = end - node_index;
+            let node_items =
+                read_http_node_items(client, min_req_size, index_begin, node_index, length).await?;
+            // search through child nodes
+            for pos in node_index..end {
+                let node_pos = pos - node_index;
+                let node_item = &node_items[node_pos];
+                if !item.intersects(&node_item) {
+                    continue;
+                }
+                if is_leaf_node {
+                    results.push(SearchResultItem {
+                        offset: node_item.offset as usize,
+                        index: pos - leaf_nodes_offset,
+                    });
+                } else {
+                    queue.push(Reverse((node_item.offset as usize, level - 1)));
+                }
+            }
+        }
+        Ok(results)
+    }
 
     pub fn size(&self) -> usize {
         self.num_nodes * size_of::<NodeItem>()
@@ -479,8 +618,46 @@ impl PackedRTree {
     }
 }
 
+mod inspect {
+    use super::*;
+    use geozero::{ColumnValue, FeatureProcessor};
+
+    impl PackedRTree {
+        pub fn process_index<P: FeatureProcessor>(&self, processor: &mut P) -> Result<()> {
+            processor.dataset_begin(Some("PackedRTree"))?;
+            let mut fid = 0;
+            for (levelno, level) in self.level_bounds.iter().rev().enumerate() {
+                for pos in level.0..level.1 {
+                    let node = &self.node_items[pos];
+                    processor.feature_begin(fid)?;
+                    processor.properties_begin()?;
+                    let _ =
+                        processor.property(0, "levelno", &ColumnValue::ULong(levelno as u64))?;
+                    let _ = processor.property(1, "pos", &ColumnValue::ULong(pos as u64))?;
+                    let _ = processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
+                    processor.properties_end()?;
+                    processor.geometry_begin()?;
+                    processor.polygon_begin(true, 1, 0)?;
+                    processor.linestring_begin(false, 5, 0)?;
+                    processor.xy(node.min_x, node.min_y, 0)?;
+                    processor.xy(node.min_x, node.max_y, 1)?;
+                    processor.xy(node.max_x, node.max_y, 2)?;
+                    processor.xy(node.max_x, node.min_y, 3)?;
+                    processor.xy(node.min_x, node.min_y, 4)?;
+                    processor.linestring_end(false, 0)?;
+                    processor.polygon_end(true, 0)?;
+                    processor.geometry_end()?;
+                    processor.feature_end(fid)?;
+                    fid += 1;
+                }
+            }
+            processor.dataset_end()
+        }
+    }
+}
+
 #[test]
-fn tree_2items() {
+fn tree_2items() -> Result<()> {
     let mut nodes = Vec::new();
     nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
     nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
@@ -496,14 +673,15 @@ fn tree_2items() {
     }
     assert!(nodes[1].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
     assert!(nodes[0].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
-    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE);
-    let list = tree.search(0.0, 0.0, 1.0, 1.0);
+    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+    let list = tree.search(0.0, 0.0, 1.0, 1.0)?;
     assert_eq!(list.len(), 1);
     assert!(nodes[list[0].index].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
+    Ok(())
 }
 
 #[test]
-fn tree_19items_roundtrip_stream_search() {
+fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let mut nodes = Vec::new();
     nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
     nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
@@ -531,8 +709,8 @@ fn tree_19items_roundtrip_stream_search() {
         node.offset = offset as u64;
         offset += size_of::<NodeItem>();
     }
-    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE);
-    let list = tree.search(102.0, 102.0, 103.0, 103.0);
+    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+    let list = tree.search(102.0, 102.0, 103.0, 103.0)?;
     assert_eq!(list.len(), 4);
     for i in 0..list.len() {
         assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
@@ -540,33 +718,39 @@ fn tree_19items_roundtrip_stream_search() {
     let mut tree_data: Vec<u8> = Vec::new();
     let res = tree.stream_write(&mut tree_data);
     assert!(res.is_ok());
-    assert_eq!(tree_data.len(), (nodes.len() + 3) * 40);
+    assert_eq!(tree_data.len(), (nodes.len() + 3) * size_of::<NodeItem>());
     assert_eq!(size_of::<NodeItem>(), 40);
 
     let tree2 = PackedRTree::from_buf(
         &mut &tree_data[..],
         nodes.len(),
         PackedRTree::DEFAULT_NODE_SIZE,
-    );
-    let list = tree2.search(102.0, 102.0, 103.0, 103.0);
+    )?;
+    let list = tree2.search(102.0, 102.0, 103.0, 103.0)?;
     assert_eq!(list.len(), 4);
     for i in 0..list.len() {
         assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
     }
 
-    // auto readNode = [data] (uint8_t *buf, uint32_t i, uint32_t s) {
-    //     //std::cout << "i: " << i << std::endl;
-    //     std::copy(data + i, data + i + s, buf);
-    // };
-    // auto list3 = PackedRTree::streamSearch(nodes.size(), 16, {102, 102, 103, 103}, readNode);
-    // REQUIRE(list3.size() == 4);
-    // for (uint32_t i = 0; i < list3.size(); i++) {
-    //     REQUIRE(nodes[list3[i].index].intersects({102, 102, 103, 103}) == true);
-    // }
+    let mut reader = std::io::Cursor::new(&tree_data);
+    let list = PackedRTree::stream_search(
+        &mut reader,
+        nodes.len(),
+        PackedRTree::DEFAULT_NODE_SIZE,
+        102.0,
+        102.0,
+        103.0,
+        103.0,
+    )?;
+    assert_eq!(list.len(), 4);
+    for i in 0..list.len() {
+        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
+    }
+    Ok(())
 }
 
 #[test]
-fn tree_100_000_items_in_denmark() {
+fn tree_100_000_items_in_denmark() -> Result<()> {
     use rand::distributions::{Distribution, Uniform};
 
     let unifx = Uniform::from(466379..708929);
@@ -582,8 +766,8 @@ fn tree_100_000_items_in_denmark() {
 
     let extent = calc_extent(&nodes);
     hilbert_sort(&mut nodes);
-    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE);
-    let list = tree.search(690407.0, 6063692.0, 811682.0, 6176467.0);
+    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+    let list = tree.search(690407.0, 6063692.0, 811682.0, 6176467.0)?;
 
     for i in 0..list.len() {
         assert!(nodes[list[i].index]
@@ -594,7 +778,41 @@ fn tree_100_000_items_in_denmark() {
     let res = tree.stream_write(&mut tree_data);
     assert!(res.is_ok());
 
-    // auto list2 = PackedRTree::streamSearch(nodes.size(), 16, {690407, 6063692, 811682, 6176467}, readNode);
-    // for (uint64_t i = 0; i < list2.size(); i++)
-    //     CHECK(nodes[list2[i].index].intersects({690407, 6063692, 811682, 6176467}) == true);
+    let mut reader = std::io::Cursor::new(&tree_data);
+    let list2 = PackedRTree::stream_search(
+        &mut reader,
+        nodes.len(),
+        PackedRTree::DEFAULT_NODE_SIZE,
+        690407.0,
+        6063692.0,
+        811682.0,
+        6176467.0,
+    )?;
+    assert_eq!(list2.len(), list.len());
+    for i in 0..list2.len() {
+        assert!(nodes[list2[i].index]
+            .intersects(&NodeItem::new(690407.0, 6063692.0, 811682.0, 6176467.0)));
+    }
+    Ok(())
+}
+
+#[test]
+fn tree_processing() -> Result<()> {
+    use geozero_core::geojson::GeoJsonWriter;
+    use std::io::BufWriter;
+    use tempfile::tempfile;
+
+    let mut nodes = Vec::new();
+    nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
+    nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
+    let extent = calc_extent(&nodes);
+    let mut offset = 0;
+    for mut node in &mut nodes {
+        node.offset = offset as u64;
+        offset += size_of::<NodeItem>();
+    }
+    let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+    let mut fout = BufWriter::new(tempfile()?);
+    tree.process_index(&mut GeoJsonWriter::new(&mut fout))?;
+    Ok(())
 }
