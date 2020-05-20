@@ -9,7 +9,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 function handleResponse(response) {
     // use flatgeobuf JavaScript API to iterate stream into results (features as geojson)
     // NOTE: would be more efficient with a special purpose Leaflet deserializer
-    let it = flatgeobuf.deserializeStream(response.body)
+    let it = flatgeobuf.deserialize(response.body)
     // handle result
     function handleResult(result) {
         if (!result.done) {
@@ -21,5 +21,5 @@ function handleResponse(response) {
 }
 
 // using fetch API to get readable stream
-fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.1.0/test/data/UScounties.fgb')
+fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.2.1/test/data/UScounties.fgb')
     .then(handleResponse)

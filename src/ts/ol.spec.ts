@@ -10,7 +10,9 @@ import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 
+global['ReadableStream'] = ReadableStream
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
 

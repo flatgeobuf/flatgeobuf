@@ -1,5 +1,3 @@
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
-
 import {
     IGeoJsonFeatureCollection,
     deserialize as fcDeserialize,

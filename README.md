@@ -74,9 +74,9 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 #### Prebuilt bundles (intended for browser usage)
 
-* [flatgeobuf.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf.min.js) (contains the generic module)
-* [flatgeobuf-geojson.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf-geojson.min.js) (contains the geojson module)
-* [flatgeobuf-ol.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf-ol.min.js) (contains the ol module)
+* [flatgeobuf.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf.min.js) (contains the generic module)
+* [flatgeobuf-geojson.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-geojson.min.js) (contains the geojson module)
+* [flatgeobuf-ol.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-ol.min.js) (contains the ol module)
 
 ## TODO
 

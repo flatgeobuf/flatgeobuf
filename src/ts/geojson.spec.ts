@@ -9,7 +9,9 @@ import { readFileSync } from 'fs'
 import { TextDecoder, TextEncoder } from 'util'
 
 import fetch from 'node-fetch'
+import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 
+global['ReadableStream'] = ReadableStream
 global['fetch'] = fetch
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
