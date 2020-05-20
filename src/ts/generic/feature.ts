@@ -7,8 +7,8 @@ import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, parseGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
 export interface IFeature {
-    getGeometry(): ISimpleGeometry
-    getProperties(): any
+    getGeometry?(): ISimpleGeometry
+    getProperties?(): any
 }
 
 export interface ICreateFeature {

@@ -4,5 +4,11 @@
     "exclude": [
         "**/*.spec.ts"
     ],
+    "inputFiles": "src/ts/flatgeobuf.ts",
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "stripInternal": true,
+    "excludeNotExported": true,
+    "excludeExternals": true,
     "readme": "none"
 }

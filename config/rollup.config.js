@@ -20,6 +20,15 @@ const plugins = [
 ]
 
 export default [{
+  input: 'lib/generic.js',
+  output: {
+    file: 'dist/flatgeobuf.min.js',
+    format: 'umd',
+    name: 'flatgeobuf',
+    sourcemap: true
+  },
+  plugins
+},{
   input: 'lib/geojson.js',
   output: {
     file: 'dist/flatgeobuf-geojson.min.js',

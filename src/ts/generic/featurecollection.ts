@@ -1,5 +1,4 @@
 import { flatbuffers } from 'flatbuffers'
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 import slice from 'slice-source/index.js'
 
 import ColumnMeta from '../ColumnMeta'
@@ -11,9 +10,8 @@ import HeaderMeta from '../HeaderMeta'
 import { buildFeature, IFeature } from './feature'
 import { toGeometryType } from './geometry'
 import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
-import { IGeoJsonFeature } from '../geojson/feature'
 
-export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature | IGeoJsonFeature
+export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature
 type ReadFn = (size: number) => Promise<ArrayBuffer>
 type SeekFn = (offset: number) => Promise<void>
 
@@ -75,7 +73,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) {
     return features
 }
 
-export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn) {
+export function deserializeStream(stream: any, fromFeature: FromFeatureFn) {
     const reader = slice(stream)
     const read: ReadFn = async size => await reader.slice(size)
     return deserializeInternal(read, undefined, undefined, fromFeature)
@@ -146,9 +144,8 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         offset += treeSize
     }
     let feature
-    while ((feature = await readFeature(read, headerMeta, fromFeature))) {
+    while ((feature = await readFeature(read, headerMeta, fromFeature)))
         yield feature
-    }
 }
 
 async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn) {
