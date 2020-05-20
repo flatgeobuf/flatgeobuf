@@ -26,7 +26,6 @@
   "dependencies": {
     "flatbuffers": "1.12.0",
     "slice-source": "0.4.1",
-    "web-streams-polyfill": "2.1.1",
     "stream-buffers": "3.0.2"
   },
   "peerDependencies": {
@@ -52,6 +51,7 @@
     "ts-node": "8.10.1",
     "tslint": "6.1.2",
     "typedoc": "0.17.7",
-    "typescript": "3.9.3"
+    "typescript": "3.9.3",
+    "web-streams-polyfill": "2.1.1"
   }
 }
