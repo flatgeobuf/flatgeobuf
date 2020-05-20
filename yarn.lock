@@ -795,10 +795,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.5.tgz#96ec3b0afafd64a4ccea9107b75bf8489f0e5765"
   integrity sha512-3ySmiBYJPqgjiHA7oEaIo2Rzz0HrOZ7yrNO5HWyaE5q0lQ3BppDZ3N53Miz8bw2I7gh1/zir2MGVZBvpb1zq9g==
 
-"@types/node@14.0.1":
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.0.1.tgz#5d93e0a099cd0acd5ef3d5bde3c086e1f49ff68c"
-  integrity sha512-FAYBGwC+W6F9+huFIDtn43cpy7+SzG+atzRiTfdp3inUKL2hXnd4rG8hylJLIh4+hqrQy1P17kvJByE/z825hA==
+"@types/node@14.0.4":
+  version "14.0.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.0.4.tgz#43a63fc5edce226bed106b31b875165256271107"
+  integrity sha512-k3NqigXWRzQZVBDS5D1U70A5E8Qk4Kh+Ha/x4M8Bt9pF0X05eggfnC9+63Usc9Q928hRUIpIhTQaXsZwZBl4Ew==
 
 "@types/resolve@0.0.8":
   version "0.0.8"
@@ -1938,12 +1938,12 @@ load-module@^3.0.0:
   dependencies:
     array-back "^4.0.1"
 
-local-web-server@4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/local-web-server/-/local-web-server-4.0.0.tgz#e2c22316f91854e57325249c3b1c3624958225f6"
-  integrity sha512-i6ESE41af9QbspV1VvN3fRHHpl5w7T4QxIhg3JzzQWYg6tPEzPklx+y9sTJiD5lY6vY82NZUmzhr28FZo+KctA==
+local-web-server@4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/local-web-server/-/local-web-server-4.1.0.tgz#2941314e5237018ee9a68f146d4286535120625e"
+  integrity sha512-3raBVkuPHzzSDCFRbY/SfHx1JKShmckCkpzwhIBsOj/jQ3QLOL6e79wUrfoXhtTav+2/rDfYmZqXafAIKohIyQ==
   dependencies:
-    lws "^3.0.0"
+    lws "^3.1.0"
     lws-basic-auth "^2.0.0"
     lws-blacklist "^3.0.0"
     lws-body-parser "^2.0.0"
@@ -1956,7 +1956,7 @@ local-web-server@4.0.0:
     lws-mime "^2.0.0"
     lws-range "^3.0.0"
     lws-request-monitor "^2.0.0"
-    lws-rewrite "^3.0.0"
+    lws-rewrite "^3.0.1"
     lws-spa "^3.0.0"
     lws-static "^2.0.0"
     node-version-matches "^2.0.1"
@@ -2101,7 +2101,7 @@ lws-request-monitor@^2.0.0:
   dependencies:
     byte-size "^6.2.0"
 
-lws-rewrite@^3.0.0:
+lws-rewrite@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/lws-rewrite/-/lws-rewrite-3.0.1.tgz#6687b77594f239bf1265a1a766c8a9bb4a136731"
   integrity sha512-F1zL6sj5O57io/acNO+3rfj/C0+g9eiwCTc28mBiprYChBUVAn/SZLS8stIoFFOfpPubVGUdU7gbhVeSaNyg+w==
@@ -2127,10 +2127,10 @@ lws-static@^2.0.0:
   dependencies:
     koa-static "^5.0.0"
 
-lws@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/lws/-/lws-3.0.0.tgz#b73720201b549c303e171b22e0e0f0e3d126ef00"
-  integrity sha512-R59IRnPG6U4kCipzgK7IHw90FJ1ZARLd8ZeUoUJleHACFSvin/FpPII3neW8dlhhAAMKUvYd/xWJzq8tknH4qw==
+lws@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/lws/-/lws-3.1.0.tgz#e1e06c2f7229f0c2cc6b399801ef0239dd4906ae"
+  integrity sha512-I8rTgZxz8OJL0hjdlDxs6WpcVG7WSyalVHPQXXK+WPNVjm3KhkT5gV0Qmsgm2FRLbRUp15tso80xmDxMsyt7zA==
   dependencies:
     ansi-escape-sequences "^5.1.2"
     array-back "^4.0.1"
@@ -2142,7 +2142,8 @@ lws@^3.0.0:
     load-module "^3.0.0"
     lodash.assignwith "^4.2.0"
     node-version-matches "^2.0.1"
-    open "^7.0.2"
+    open "^7.0.4"
+    qrcode-terminal "^0.12.0"
     reduce-flatten "^3.0.0"
     typical "^6.0.0"
     walk-back "^4.0.0"
@@ -2375,10 +2376,10 @@ only@~0.0.2:
   resolved "https://registry.yarnpkg.com/only/-/only-0.0.2.tgz#2afde84d03e50b9a8edc444e30610a70295edfb4"
   integrity sha1-Kv3oTQPlC5qO3EROMGEKcCle37Q=
 
-open@^7.0.2:
-  version "7.0.3"
-  resolved "https://registry.yarnpkg.com/open/-/open-7.0.3.tgz#db551a1af9c7ab4c7af664139930826138531c48"
-  integrity sha512-sP2ru2v0P290WFfv49Ap8MF6PkzGNnGlAwHweB4WR4mr5d2d0woiCluUeJ218w7/+PmoBy9JmYgD5A4mLcWOFA==
+open@^7.0.4:
+  version "7.0.4"
+  resolved "https://registry.yarnpkg.com/open/-/open-7.0.4.tgz#c28a9d315e5c98340bf979fdcb2e58664aa10d83"
+  integrity sha512-brSA+/yq+b08Hsr4c8fsEW2CRzk1BmfN3SAK/5VCHQ9bdoZJ4qa/+AfR0xHjlbbZUyPkUHs1b8x1RqdyZdkVqQ==
   dependencies:
     is-docker "^2.0.0"
     is-wsl "^2.1.1"
@@ -2507,6 +2508,11 @@ protocol-buffers-schema@^3.3.1:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/protocol-buffers-schema/-/protocol-buffers-schema-3.4.0.tgz#2f0ea31ca96627d680bf2fefae7ebfa2b6453eae"
   integrity sha512-G/2kcamPF2S49W5yaMGdIpkG6+5wZF0fzBteLKgEHjbNzqjZQ85aAs1iJGto31EJaSTkNvHs5IXuHSaTLWBAiA==
+
+qrcode-terminal@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/qrcode-terminal/-/qrcode-terminal-0.12.0.tgz#bb5b699ef7f9f0505092a3748be4464fe71b5819"
+  integrity sha512-EXtzRZmC+YGmGlDFbXKxQiMZNwCLEO6BANKXG4iCtSIM0yqc/pappSx3RIKr4r0uh5JsBckOXeKrB3Iz7mdQpQ==
 
 qs@^6.5.2:
   version "6.9.4"
@@ -2679,10 +2685,10 @@ rollup-pluginutils@^2.8.1, rollup-pluginutils@^2.8.2:
   dependencies:
     estree-walker "^0.6.1"
 
-rollup@2.10.0:
-  version "2.10.0"
-  resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.10.0.tgz#73332273fa177cd85c1042659dee6f103761be0d"
-  integrity sha512-7BmpEfUN9P6esJzWIn3DmR//90mW6YwYB1t3y48LpF8ITpYtL8s1kEirMKqUu44dVH/6a/rs0EuwYVL3FuRDoA==
+rollup@2.10.5:
+  version "2.10.5"
+  resolved "https://registry.yarnpkg.com/rollup/-/rollup-2.10.5.tgz#a2e6735fbcbd64453f8aa5d7b5ec1b421974f92c"
+  integrity sha512-05WRM/tjmPYwhOBvm/G9Qwa/HnAqn0TK0XxLDLQzoM4XdSmKjPBvhBl+U+Q/C6VJsucljyTQjGkZD503mjbPQg==
   optionalDependencies:
     fsevents "~2.1.2"
 
@@ -3042,10 +3048,10 @@ typedoc-default-themes@^0.10.1:
   dependencies:
     lunr "^2.3.8"
 
-typedoc@0.17.6:
-  version "0.17.6"
-  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.17.6.tgz#cab87a72c10e05429016d659a4c3071a5a3ffb61"
-  integrity sha512-pQiYnhG3yJk7939cv2n8uFoTsSgy5Hfiw0dgOQYa9nT9Ya1013dMctQdAXMj8JbNu7KhcauQyq9Zql9D/TziLw==
+typedoc@0.17.7:
+  version "0.17.7"
+  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.17.7.tgz#70797401140403a5f91589ed3f4f24c03841bf7a"
+  integrity sha512-PEnzjwQAGjb0O8a6VDE0lxyLAadqNujN5LltsTUhZETolRMiIJv6Ox+Toa8h0XhKHqAOh8MOmB0eBVcWz6nuAw==
   dependencies:
     fs-extra "^8.1.0"
     handlebars "^4.7.6"
@@ -3058,10 +3064,10 @@ typedoc@0.17.6:
     shelljs "^0.8.4"
     typedoc-default-themes "^0.10.1"
 
-typescript@3.9.2:
-  version "3.9.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.2.tgz#64e9c8e9be6ea583c54607677dd4680a1cf35db9"
-  integrity sha512-q2ktq4n/uLuNNShyayit+DTobV2ApPEo/6so68JaD5ojvc/6GClBipedB9zNWYxRSAlZXAe405Rlijzl6qDiSw==
+typescript@3.9.3:
+  version "3.9.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.3.tgz#d3ac8883a97c26139e42df5e93eeece33d610b8a"
+  integrity sha512-D/wqnB2xzNFIcoBG9FG8cXRDjiqSTbG2wd8DMZeQyJlP1vfTkIxH4GKveWaEBYySKIg+USu+E+EDIR47SqnaMQ==
 
 typical@^4.0.0:
   version "4.0.0"
