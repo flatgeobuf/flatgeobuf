@@ -4,7 +4,7 @@ import { terser } from 'rollup-plugin-terser'
 
 const plugins = [
   resolve({
-    only: ['flatbuffers', 'slice-source']
+    resolveOnly: ['flatbuffers', 'slice-source', 'web-streams-polyfill']
   }),
   babel({
     exclude: 'node_modules/**',
