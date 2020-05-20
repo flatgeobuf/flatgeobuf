@@ -66,11 +66,23 @@ As performance is highly data dependent I've also made similar tests on a larger
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
 
+## Documentation
+
+### JavaScript
+
+* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/modules/_flatgeobuf_.html)
+
+#### Prebuilt bundles (intended for browser usage)
+
+* [flatgeobuf.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf.min.js) (contains the generic module)
+* [flatgeobuf-geojson.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf-geojson.min.js) (contains the geojson module)
+* [flatgeobuf-ol.min.js](https://unpkg.com/browse/flatgeobuf/dist/flatgeobuf-ol.min.js) (contains the ol module)
+
 ## TODO
 
 * Java index support
-* C langauge support
-* Go langauge support
+* C language support
+* Go language support
 
 ## FAQ
 
