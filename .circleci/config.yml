@@ -28,6 +28,9 @@ jobs:
       - run:
           name: Run tests
           command: yarn test
+      - run:
+          name: Run build
+          command: yarn build
 
   test-cpp:
     executor: node
