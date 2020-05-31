@@ -152,17 +152,17 @@ public class GeometryConversions {
 
         if (geometryClass == org.locationtech.jts.geom.Geometry.class)
             return GeometryType.Unknown;
-        else if (geometryClass.isAssignableFrom(MultiPoint.class))
+        else if (MultiPoint.class.isAssignableFrom(geometryClass))
             return GeometryType.MultiPoint;
-        else if (geometryClass.isAssignableFrom(Point.class))
+        else if (Point.class.isAssignableFrom(geometryClass))
             return GeometryType.Point;
-        else if (geometryClass.isAssignableFrom(MultiLineString.class))
+        else if (MultiLineString.class.isAssignableFrom(geometryClass))
             return GeometryType.MultiLineString;
-        else if (geometryClass.isAssignableFrom(LineString.class))
+        else if (LineString.class.isAssignableFrom(geometryClass))
             return GeometryType.LineString;
-        else if (geometryClass.isAssignableFrom(MultiPolygon.class))
+        else if (MultiPolygon.class.isAssignableFrom(geometryClass))
             return GeometryType.MultiPolygon;
-        else if (geometryClass.isAssignableFrom(Polygon.class))
+        else if (Polygon.class.isAssignableFrom(geometryClass))
             return GeometryType.Polygon;
         else
             throw new RuntimeException("Unknown geometry type");
