@@ -20,7 +20,7 @@ const plugins = [
 ]
 
 export default [{
-  input: 'lib/generic.js',
+  input: './lib/generic.js',
   output: {
     file: 'dist/flatgeobuf.min.js',
     format: 'umd',
@@ -29,7 +29,7 @@ export default [{
   },
   plugins
 },{
-  input: 'lib/geojson.js',
+  input: './lib/geojson.js',
   output: {
     file: 'dist/flatgeobuf-geojson.min.js',
     format: 'umd',
@@ -38,7 +38,7 @@ export default [{
   },
   plugins
 }, {
-  input: 'lib/ol.js',
+  input: './lib/ol.js',
   external: [
     'ol/Feature',
     'ol/geom/Point',

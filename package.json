@@ -45,7 +45,7 @@
     "local-web-server": "4.2.0",
     "mocha": "7.2.0",
     "node-fetch": "2.6.0",
-    "rollup": "2.10.9",
+    "rollup": "2.12.0",
     "rollup-plugin-babel": "4.4.0",
     "rollup-plugin-terser": "6.1.0",
     "ts-node": "8.10.2",
