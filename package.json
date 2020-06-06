@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
@@ -45,7 +45,7 @@
     "chai": "4.2.0",
     "eslint": "^7.2.0",
     "esm": "3.2.25",
-    "jsts": "2.2.3",
+    "jsts": "2.3.0",
     "local-web-server": "4.2.0",
     "mocha": "7.2.0",
     "node-fetch": "2.6.0",

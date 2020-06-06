@@ -21,13 +21,13 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType): ISimpl
             case GeometryType.Point:
                 return new Point(xy)
             case GeometryType.MultiPoint:
-                return new MultiPoint(xy, GeometryLayout.XY)
+                return new MultiPoint(xy, 'XY' as GeometryLayout)
             case GeometryType.LineString:
-                return new LineString(xy, GeometryLayout.XY)
+                return new LineString(xy, 'XY' as GeometryLayout)
             case GeometryType.MultiLineString:
-                return new MultiLineString(xy, GeometryLayout.XY, olEnds)
+                return new MultiLineString(xy, 'XY' as GeometryLayout, olEnds)
             case GeometryType.Polygon:
-                return new Polygon(xy, GeometryLayout.XY, olEnds)
+                return new Polygon(xy, 'XY' as GeometryLayout, olEnds)
         }
     } else if (type === GeometryType.MultiPolygon) {
         const mp = new MultiPolygon([])
