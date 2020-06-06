@@ -13,6 +13,7 @@ import {
 import { toGeometryType } from '../generic/geometry'
 import { Rect } from '../packedrtree'
 import { buildFeature } from '../generic/feature'
+import { HeaderMetaFn } from '../generic'
 
 export interface IGeoJsonFeatureCollection {
     type: string,
@@ -38,20 +39,20 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection): Uint8Ar
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array): IGeoJsonFeatureCollection {
-    const features = genericDeserialize(bytes, (f, h) => fromFeature(f, h))
+export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IGeoJsonFeatureCollection {
+    const features = genericDeserialize(bytes, (f, h) => fromFeature(f, h), headerMetaFn)
     return {
         type: 'FeatureCollection',
         features,
     } as IGeoJsonFeatureCollection
 }
 
-export function deserializeStream(stream: ReadableStream): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
+export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
+    return genericDeserializeStream(stream, (f, h) => fromFeature(f, h), headerMetaFn)
 }
 
-export function deserializeFiltered(url: string, rect: Rect): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h))
+export function deserializeFiltered(url: string, rect: Rect, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
+    return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h), headerMetaFn)
 }
 
 function valueToType(value: boolean | number | string | unknown): ColumnType {

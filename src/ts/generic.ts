@@ -7,9 +7,15 @@ import {
 
 import { Rect } from './packedrtree'
 import { IFeature } from './generic/feature'
+import HeaderMeta from './HeaderMeta'
 
-export function deserialize(input: Uint8Array | ReadableStream | string, fromFeature: FromFeatureFn, rect?: Rect) :
-    any[] | AsyncGenerator<IFeature> {
+export type HeaderMetaFn = (headerMeta: HeaderMeta) => never
+
+export function deserialize(
+    input: Uint8Array | ReadableStream | string,
+    fromFeature: FromFeatureFn,
+    rect?: Rect) : any[] | AsyncGenerator<IFeature>
+{
     if (input instanceof Uint8Array)
         return deserializeArray(input, fromFeature)
     else if (input instanceof ReadableStream)

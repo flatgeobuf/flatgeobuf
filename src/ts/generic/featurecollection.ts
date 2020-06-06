@@ -11,6 +11,7 @@ import { buildFeature, IFeature } from './feature'
 import { toGeometryType } from './geometry'
 import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
 import { parseGeometry } from './geometry'
+import { HeaderMetaFn } from '../generic'
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature
 type ReadFn = (size: number) => Promise<ArrayBuffer>
@@ -39,7 +40,7 @@ export function serialize(features: IFeature[]) : Uint8Array {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) : IFeature[] {
+export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) : IFeature[] {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
 
@@ -55,6 +56,9 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) : IFe
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns, 0)
+
+    if (headerMetaFn)
+        headerMetaFn(headerMeta)
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
 
@@ -74,15 +78,15 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn) : IFe
     return features
 }
 
-export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn)
+export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
     : AsyncGenerator<IFeature>
 {
     const reader = slice(stream)
     const read: ReadFn = async size => await reader.slice(size)
-    return deserializeInternal(read, undefined, undefined, fromFeature)
+    return deserializeInternal(read, undefined, undefined, fromFeature, headerMetaFn)
 }
 
-export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn)
+export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
     : AsyncGenerator<IFeature>
 {
     let offset = 0
@@ -97,10 +101,10 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFe
         return arrayBuffer
     }
     const seek: SeekFn = async newoffset => { offset = newoffset }
-    return deserializeInternal(read, seek, rect, fromFeature)
+    return deserializeInternal(read, seek, rect, fromFeature, headerMetaFn)
 }
 
-async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, fromFeature: FromFeatureFn) :
+async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) :
     AsyncGenerator<IFeature>
 {
     let offset = 0
@@ -124,6 +128,9 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
     const headerMeta = new HeaderMeta(header.geometryType(), columns, count)
+
+    if (headerMetaFn)
+        headerMetaFn(headerMeta)
 
     const indexNodeSize = header.indexNodeSize()
     if (indexNodeSize > 0) {
