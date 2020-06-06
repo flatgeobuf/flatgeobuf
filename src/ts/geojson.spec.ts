@@ -178,6 +178,14 @@ describe('geojson module', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('Number with decimals', () => {
+      const expected = makeFeatureCollection('POINT(1 1)', {
+        test: 1.1,
+      })
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
     it('NumberTwoAttribs', () => {
       const expected = makeFeatureCollection('POINT(1 1)', {
         test1: 1,

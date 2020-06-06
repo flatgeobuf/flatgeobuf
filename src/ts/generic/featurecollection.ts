@@ -181,7 +181,7 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
 }
 
 export function buildHeader(header: HeaderMeta): Uint8Array {
-    const builder = new flatbuffers.Builder(0)
+    const builder = new flatbuffers.Builder()
 
     let columnOffsets = null
     if (header.columns)
