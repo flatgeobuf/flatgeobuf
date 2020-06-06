@@ -6,9 +6,10 @@ import {
 } from './generic/featurecollection'
 
 import { Rect } from './packedrtree'
+import { IFeature } from './generic/feature'
 
 export function deserialize(input: Uint8Array | ReadableStream | string, fromFeature: FromFeatureFn, rect?: Rect) :
-    any[] | AsyncGenerator {
+    any[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array)
         return deserializeArray(input, fromFeature)
     else if (input instanceof ReadableStream)

@@ -2,13 +2,14 @@ import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
-import { Feature, Geometry } from '../feature_generated'
+import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, parseGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
 
 export interface IFeature {
     getGeometry?(): ISimpleGeometry
     getProperties?(): any
+    setProperties?(properties: Record<string, unknown>): any
 }
 
 export interface ICreateFeature {
@@ -19,7 +20,7 @@ export function fromFeature(
         feature: Feature,
         header: HeaderMeta,
         createGeometry: ICreateGeometry,
-        createFeature: ICreateFeature) {
+        createFeature: ICreateFeature): IFeature {
     const columns = header.columns
     const geometry = feature.geometry()
     const simpleGeometry = createGeometry(geometry, header.geometryType)
@@ -27,7 +28,7 @@ export function fromFeature(
     return createFeature(simpleGeometry, properties)
 }
 
-export function buildFeature(feature: IFeature, header: HeaderMeta) {
+export function buildFeature(feature: IFeature, header: HeaderMeta): Uint8Array {
     const columns = header.columns
     const builder = new flatbuffers.Builder(0)
     const propertiesArray = new Uint8Array(100000)
@@ -66,16 +67,12 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
                     view.setBigInt64(offset, BigInt(value), true)
                     offset += 8
                     break
-                case ColumnType.Long:
-                    view.setBigUint64(offset, BigInt(value), true)
-                    offset += 8
-                    break
                 case ColumnType.Double:
                     view.setFloat64(offset, value as number, true)
                     offset += 8
                     break
                 case ColumnType.DateTime:
-                case ColumnType.String:
+                case ColumnType.String: {
                     const str = value as string
                     const encoder = new TextEncoder()
                     const stringArray = encoder.encode(str)
@@ -84,6 +81,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
                     propertiesArray.set(stringArray, offset)
                     offset += stringArray.length
                     break
+                }
                 default:
                     throw new Error('Unknown type ' + column.type)
             }
@@ -101,17 +99,17 @@ export function buildFeature(feature: IFeature, header: HeaderMeta) {
         Feature.addProperties(builder, propertiesOffset)
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
-    return builder.asUint8Array()
+    return builder.asUint8Array() as Uint8Array
 }
 
-export function parseProperties(feature: Feature, columns: ColumnMeta[]) {
+export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> {
     if (!columns || columns.length === 0)
         return
     const array = feature.propertiesArray()
     const view = new DataView(array.buffer, array.byteOffset)
     const length = feature.propertiesLength()
     let offset = 0
-    const properties: any = {}
+    const properties: Record<string, unknown> = {}
     while (offset < length) {
         const i = view.getUint16(offset, true)
         offset += 2

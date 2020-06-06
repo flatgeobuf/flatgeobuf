@@ -6,12 +6,12 @@ import {
     serialize as fcSerialize
 } from './ol/featurecollection'
 
-export function serialize(features: IFeature[]) {
+export function serialize(features: IFeature[]): Uint8Array {
     const bytes = fcSerialize(features)
     return bytes
 }
 
-export function deserialize(input: Uint8Array | ReadableStream) {
+export function deserialize(input: Uint8Array | ReadableStream) : AsyncGenerator<IFeature> | IFeature[] {
     if (input instanceof ReadableStream)
         return fcDeserializeStream(input)
     else

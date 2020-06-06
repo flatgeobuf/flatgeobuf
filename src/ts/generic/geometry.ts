@@ -10,7 +10,7 @@ export interface IParsedGeometry {
 }
 
 export interface ISimpleGeometry {
-    getFlatCoordinates(): number[]
+    getFlatCoordinates?(): number[]
     getType(): string
 }
 
@@ -31,7 +31,7 @@ export interface ICreateGeometry {
     (geometry: Geometry, type: GeometryType): ISimpleGeometry;
 }
 
-export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry) {
+export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry): any {
     const { xy, ends, parts, type } = parsedGeometry
 
     if (parts) {
@@ -61,7 +61,7 @@ export function flat(a: any[]): number[] {
         Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
 }
 
-export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
+export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IParsedGeometry {
     let xy: number[] = null
     let ends: number[] = null
     let parts: IParsedGeometry[] = null
@@ -89,14 +89,14 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType) {
     } as IParsedGeometry
 }
 
-export function pairFlatCoordinates(coordinates: Float64Array) {
+export function pairFlatCoordinates(coordinates: Float64Array): number[][] {
     const newArray: number[][] = []
     for (let i = 0; i < coordinates.length; i += 2)
         newArray.push([coordinates[i], coordinates[i + 1]])
     return newArray
 }
 
-export function toGeometryType(name: string) {
+export function toGeometryType(name: string): GeometryType {
     const type: GeometryType = (GeometryType as any)[name]
     return type
 }

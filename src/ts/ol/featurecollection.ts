@@ -11,6 +11,6 @@ export function deserialize(bytes: Uint8Array): IFeature[] {
     return genericDeserialize(bytes, (f, h) => fromFeature(f, h))
 }
 
-export function deserializeStream(stream: any) {
+export function deserializeStream(stream: ReadableStream): AsyncGenerator<any, void, unknown> {
     return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
 }

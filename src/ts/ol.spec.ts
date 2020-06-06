@@ -21,11 +21,11 @@ const geojson = new GeoJSON()
 
 const g = (features: any) => geojson.writeFeatures(features)
 
-function makeFeatureCollection(wkt: string, properties?: any) {
-  return makeFeatureCollectionFromArray([wkt], properties)
+function makeFeatureCollection(wkt: string/*, properties?: any*/) {
+  return makeFeatureCollectionFromArray([wkt]/*, properties*/)
 }
 
-function makeFeatureCollectionFromArray(wkts: string[], properties?: any) : IFeature[] {
+function makeFeatureCollectionFromArray(wkts: string[]/*, properties?: any*/) : IFeature[] {
   const geometries = wkts.map(wkt => format.readGeometry(wkt))
   const features = geometries.map(geometry => {
     const f = new Feature({ geometry })

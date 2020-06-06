@@ -1,3 +1,6 @@
+/* eslint-env browser */
+/* global L, flatgeobuf */
+
 // basic OSM Leaflet map
 let map = L.map('map').setView([41.505, -80.09], 4)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

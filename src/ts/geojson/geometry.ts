@@ -9,12 +9,12 @@ export interface IGeoJsonGeometry {
     geometries?: IGeoJsonGeometry[]
 }
 
-export function parseGeometry(geometry: IGeoJsonGeometry) {
+export function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
     const cs = geometry.coordinates
     let xy: number[] = null
     let ends: number[] = null
     let parts: IParsedGeometry[] = null
-    let type: GeometryType = toGeometryType(geometry.type)
+    const type: GeometryType = toGeometryType(geometry.type)
     let end = 0
     switch (geometry.type) {
         case 'Point':
@@ -25,17 +25,19 @@ export function parseGeometry(geometry: IGeoJsonGeometry) {
             xy = flat(cs as number[][])
             break
         case 'MultiLineString':
-        case 'Polygon':
+        case 'Polygon': {
             const css = cs as number[][][]
             xy = flat(css)
             if (css.length > 1)
                 ends = css.map(c => end += c.length)
             break
-        case 'MultiPolygon':
+        }
+        case 'MultiPolygon': {
             const csss = cs as number[][][][]
             const geometries = csss.map(coordinates => ({ type: 'Polygon', coordinates }))
             parts = geometries.map(parseGeometry)
             break
+        }
         case 'GeometryCollection':
             parts = geometry.geometries.map(parseGeometry)
             break
@@ -52,7 +54,7 @@ function extractParts(xy: Float64Array, ends: Uint32Array) {
     if (!ends || ends.length === 0)
         return [pairFlatCoordinates(xy)]
     let s = 0
-    let xySlices = Array.from(ends)
+    const xySlices = Array.from(ends)
         .map(e => xy.slice(s, s = e << 1))
     return xySlices
         .map(cs => pairFlatCoordinates(cs))
@@ -73,7 +75,7 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
     }
 }
 
-export function fromGeometry(geometry: Geometry, type: GeometryType) {
+export function fromGeometry(geometry: Geometry, type: GeometryType): IGeoJsonGeometry {
     if (type == GeometryType.GeometryCollection) {
         const geometries = []
         for (let i = 0; i < geometry.partsLength(); i++) {
@@ -84,7 +86,7 @@ export function fromGeometry(geometry: Geometry, type: GeometryType) {
         return {
             type: GeometryType[type],
             geometries
-        }
+        } as IGeoJsonGeometry
     } else if (type == GeometryType.MultiPolygon) {
         const geometries = []
         for (let i = 0; i < geometry.partsLength(); i++) {
@@ -94,7 +96,7 @@ export function fromGeometry(geometry: Geometry, type: GeometryType) {
         return {
             type: GeometryType[type],
             coordinates: geometries.map(g => g.coordinates)
-        }
+        } as IGeoJsonGeometry
     }
     const coordinates = toGeoJsonCoordinates(geometry, type)
     return {

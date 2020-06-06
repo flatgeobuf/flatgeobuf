@@ -7,7 +7,7 @@ export interface Rect {
     maxY: number
 }
 
-export function calcTreeSize(numItems: number, nodeSize: number) {
+export function calcTreeSize(numItems: number, nodeSize: number): number {
     nodeSize = Math.min(Math.max(+nodeSize, 2), 65535)
     let n = numItems
     let numNodes = n
@@ -37,7 +37,7 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     // bounds per level in reversed storage order (top-down)
     const levelOffsets = []
     n = numNodes
-    for (let size of levelNumNodes) {
+    for (const size of levelNumNodes) {
         levelOffsets.push(n - size)
         n -= size
     }
@@ -52,7 +52,12 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
 
 type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
 
-export async function* streamSearch(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFn) {
+export async function* streamSearch(
+    numItems: number,
+    nodeSize: number,
+    rect: Rect,
+    readNode: ReadNodeFn): AsyncGenerator<number[], void, unknown>
+{
     const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[leafNodesOffset,numNodes]] = levelBounds

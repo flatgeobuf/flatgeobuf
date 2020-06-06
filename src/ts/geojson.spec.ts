@@ -1,5 +1,3 @@
-/// <reference path="geojson.spec.d.ts" />
-
 import { expect } from 'chai'
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
@@ -232,7 +230,7 @@ describe('geojson module', () => {
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(179)
-      for (let f of geojson.features)
+      for (const f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
@@ -240,7 +238,7 @@ describe('geojson module', () => {
       const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 }
       const features = await takeAsync(deserialize('http://127.0.0.1:8000/test/data/countries.fgb', r) as AsyncGenerator)
       expect(features.length).to.eq(3)
-      for (let f of features)
+      for (const f of features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
@@ -257,7 +255,7 @@ describe('geojson module', () => {
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(179)
-      for (let f of geojson.features)
+      for (const f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
@@ -266,7 +264,7 @@ describe('geojson module', () => {
       const bytes = new Uint8Array(buffer)
       const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
       expect(geojson.features.length).to.eq(3221)
-      for (let f of geojson.features)
+      for (const f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 

@@ -4,7 +4,7 @@ import { ReadableStreamBuffer } from 'stream-buffers'
 
 import { Readable } from 'stream'
 
-export function arrayToStream (array: ArrayBuffer) {
+export function arrayToStream(array: ArrayBuffer) : ReadableStream {
     const myReadableStreamBuffer = new ReadableStreamBuffer({
         frequency: 10,   // in milliseconds.
         chunkSize: 2048  // in bytes.
@@ -18,8 +18,8 @@ export function arrayToStream (array: ArrayBuffer) {
     return webReader
 }
 
-export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infinity) {
-  const result = [];
+export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infinity): Promise<any[]> {
+  const result = []
   const iterator = asyncIterable[Symbol.asyncIterator]()
   while (result.length < count) {
     const { value, done } = await iterator.next()
@@ -31,8 +31,8 @@ export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infin
 }
 
 function nodeToWeb(nodeStream: Readable) {
-    var destroyed = false
-    var listeners = {}
+    let destroyed = false
+    const listeners = {}
   
     function start (controller: ReadableStreamDefaultController) {
       listeners['data'] = onData
@@ -40,7 +40,7 @@ function nodeToWeb(nodeStream: Readable) {
       listeners['end'] = onDestroy
       listeners['close'] = onDestroy
       listeners['error'] = onDestroy
-      for (var name in listeners)
+      for (const name in listeners)
         nodeStream.on(name, listeners[name])
   
       nodeStream.pause()
@@ -57,7 +57,7 @@ function nodeToWeb(nodeStream: Readable) {
           return
         destroyed = true
   
-        for (var name in listeners)
+        for (const name in listeners)
           nodeStream.removeListener(name, listeners[name])
   
         if (err) controller.error(err)
@@ -74,7 +74,7 @@ function nodeToWeb(nodeStream: Readable) {
     function cancel() {
       destroyed = true
   
-      for (var name in listeners)
+      for (const name in listeners)
         nodeStream.removeListener(name, listeners[name])
   
       nodeStream.push(null)

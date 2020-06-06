@@ -1,14 +1,14 @@
 import { flatbuffers } from 'flatbuffers'
 
 import ColumnType from '../ColumnType'
-import { Feature, Geometry } from '../feature_generated'
+import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { parseGeometry, fromGeometry, IGeoJsonGeometry } from './geometry'
 import { parseProperties, IFeature } from '../generic/feature'
 import { buildGeometry } from '../generic/geometry'
 
 export interface IGeoJsonProperties {
-    [key: string]: boolean | number | string | object
+    [key: string]: boolean | number | string | any
 }
 
 export interface IGeoJsonFeature extends IFeature {
@@ -17,7 +17,7 @@ export interface IGeoJsonFeature extends IFeature {
     properties?: IGeoJsonProperties
 }
 
-export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
+export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta): Uint8Array {
     const columns = header.columns
 
     const builder = new flatbuffers.Builder(0)
@@ -58,15 +58,11 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
                     view.setBigInt64(offset, BigInt(value), true)
                     offset += 8
                     break
-                case ColumnType.Long:
-                    view.setBigUint64(offset, BigInt(value), true)
-                    offset += 8
-                    break
                 case ColumnType.Double:
                     view.setFloat64(offset, value as number, true)
                     offset += 8
                     break
-                case ColumnType.String:
+                case ColumnType.String: {
                     const str = value as string
                     const encoder = new TextEncoder()
                     const stringArray = encoder.encode(str)
@@ -75,6 +71,7 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
                     propertiesArray.set(stringArray, offset)
                     offset += stringArray.length
                     break
+                }
                 default:
                     throw new Error('Unknown type')
             }
@@ -91,21 +88,18 @@ export function buildFeature(feature: IGeoJsonFeature, header: HeaderMeta) {
         Feature.addProperties(builder, propertiesOffset)
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
-    return builder.asUint8Array()
+    return builder.asUint8Array() as Uint8Array
 }
 
-export function fromFeature(feature: Feature, header: HeaderMeta) {
+export function fromFeature(feature: Feature, header: HeaderMeta): IGeoJsonFeature {
     const columns = header.columns
-    let geojsonGeometry
-    const geometry = feature.geometry()
-    geojsonGeometry = fromGeometry(geometry, header.geometryType)
-    const geojsonProperties = parseProperties(feature, columns)
+    const geometry = fromGeometry(feature.geometry(), header.geometryType)
+    const properties = parseProperties(feature, columns)
     const geoJsonfeature: IGeoJsonFeature = {
         type: 'Feature',
-        geometry: geojsonGeometry,
+        geometry
     }
-    if (geojsonProperties)
-        geoJsonfeature.properties = geojsonProperties
-
+    if (properties)
+        geoJsonfeature.properties = properties
     return geoJsonfeature
 }

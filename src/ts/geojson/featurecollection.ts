@@ -17,7 +17,7 @@ export interface IGeoJsonFeatureCollection {
     features?: IGeoJsonFeature[]
 }
 
-export function serialize(featurecollection: IGeoJsonFeatureCollection) {
+export function serialize(featurecollection: IGeoJsonFeatureCollection): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection)
     const header = buildHeader(headerMeta)
     const features: Uint8Array[] = featurecollection.features
@@ -36,7 +36,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection) {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array) {
+export function deserialize(bytes: Uint8Array): IGeoJsonFeatureCollection {
     const features = genericDeserialize(bytes, (f, h) => fromFeature(f, h))
     return {
         type: 'FeatureCollection',
@@ -44,15 +44,15 @@ export function deserialize(bytes: Uint8Array) {
     } as IGeoJsonFeatureCollection
 }
 
-export function deserializeStream(stream: any) {
+export function deserializeStream(stream: ReadableStream): AsyncGenerator<any, void, unknown> {
     return genericDeserializeStream(stream, (f, h) => fromFeature(f, h))
 }
 
-export function deserializeFiltered(url: string, rect: Rect) {
+export function deserializeFiltered(url: string, rect: Rect): AsyncGenerator<any, void, unknown> {
     return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h))
 }
 
-function valueToType(value: boolean | number | string | object): ColumnType {
+function valueToType(value: boolean | number | string | unknown): ColumnType {
     if (typeof value === 'boolean')
         return ColumnType.Bool
     else if (typeof value === 'number')
@@ -76,10 +76,6 @@ function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) {
     if (properties)
         columns = Object.keys(properties)
             .map(k => new ColumnMeta(k, valueToType(properties[k])))
-
-    const geometryTypeNamesSet = new Set()
-    for (const f of featurecollection.features)
-        geometryTypeNamesSet.add(feature.geometry.type)
 
     const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length)
 

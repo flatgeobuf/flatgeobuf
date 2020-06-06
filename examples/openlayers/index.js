@@ -1,3 +1,6 @@
+/* eslint-env browser */
+/* global ol, flatgeobuf */
+
 const source = new ol.source.Vector({
     loader: async function () {
         const response = await fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.2.1/test/data/UScounties.fgb')
