@@ -2,7 +2,8 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import HeaderMeta from '../HeaderMeta'
 
-import { buildFeature, fromFeature, IGeoJsonFeature } from './feature'
+import { fromFeature, IGeoJsonFeature } from './feature'
+import { parseGeometry } from './geometry'
 import {
     magicbytes,
     buildHeader,
@@ -11,6 +12,7 @@ import {
     deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
 import { Rect } from '../packedrtree'
+import { buildFeature } from '../generic/feature'
 
 export interface IGeoJsonFeatureCollection {
     type: string,
@@ -21,7 +23,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection): Uint8Ar
     const headerMeta = introspectHeaderMeta(featurecollection)
     const header = buildHeader(headerMeta)
     const features: Uint8Array[] = featurecollection.features
-        .map(f => buildFeature(f, headerMeta))
+        .map(f => buildFeature(parseGeometry(f.geometry), f.properties, headerMeta))
     const featuresLength = features
         .map(f => f.length)
         .reduce((a, b) => a + b)

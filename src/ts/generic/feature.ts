@@ -4,7 +4,7 @@ import ColumnMeta from '../ColumnMeta'
 import ColumnType from '../ColumnType'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
-import { buildGeometry, parseGeometry, ISimpleGeometry, ICreateGeometry } from './geometry'
+import { buildGeometry, ISimpleGeometry, ICreateGeometry, IParsedGeometry } from './geometry'
 
 export interface IFeature {
     getGeometry?(): ISimpleGeometry
@@ -14,6 +14,10 @@ export interface IFeature {
 
 export interface ICreateFeature {
     (geometry: ISimpleGeometry, properties: any): IFeature;
+}
+
+export interface IProperties {
+    [key: string]: boolean | number | string | any
 }
 
 export function fromFeature(
@@ -28,7 +32,7 @@ export function fromFeature(
     return createFeature(simpleGeometry, properties)
 }
 
-export function buildFeature(feature: IFeature, header: HeaderMeta): Uint8Array {
+export function buildFeature(geometry: IParsedGeometry, properties: IProperties, header: HeaderMeta): Uint8Array {
     const columns = header.columns
     const builder = new flatbuffers.Builder(0)
     const propertiesArray = new Uint8Array(100000)
@@ -37,7 +41,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta): Uint8Array 
         const view = new DataView(propertiesArray.buffer)
         for (let i = 0; i < columns.length; i++) {
             const column = columns[i]
-            const value = feature.getProperties()[column.name]
+            const value = properties[column.name]
             if (value === null)
                 continue
             view.setUint16(offset, i, true)
@@ -92,7 +96,7 @@ export function buildFeature(feature: IFeature, header: HeaderMeta): Uint8Array 
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(builder, propertiesArray.slice(0, offset))
 
-    const geometryOffset = buildGeometry(builder, parseGeometry(feature.getGeometry(), header.geometryType))
+    const geometryOffset = buildGeometry(builder, geometry)
     Feature.start(builder)
     Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)

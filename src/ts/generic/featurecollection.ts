@@ -10,6 +10,7 @@ import HeaderMeta from '../HeaderMeta'
 import { buildFeature, IFeature } from './feature'
 import { toGeometryType } from './geometry'
 import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
+import { parseGeometry } from './geometry'
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature
 type ReadFn = (size: number) => Promise<ArrayBuffer>
@@ -23,7 +24,7 @@ export function serialize(features: IFeature[]) : Uint8Array {
     const headerMeta = introspectHeaderMeta(features)
     const header = buildHeader(headerMeta)
     const featureBuffers: Uint8Array[] = features
-        .map(f => buildFeature(f, headerMeta))
+        .map(f => buildFeature(parseGeometry(f.getGeometry(), headerMeta.geometryType), f.getProperties(), headerMeta))
     const featuresLength = featureBuffers
         .map(f => f.length)
         .reduce((a, b) => a + b)
