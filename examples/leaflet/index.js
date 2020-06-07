@@ -8,11 +8,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map)
 
+// handle headermeta when available
+function handleHeaderMeta(headerMeta) {
+    const header = document.getElementById('header')
+    const formatter = new JSONFormatter(headerMeta, 10)
+    header.appendChild(formatter.render())
+}
+
 // handle ReadableStream response
 function handleResponse(response) {
     // use flatgeobuf JavaScript API to iterate stream into results (features as geojson)
     // NOTE: would be more efficient with a special purpose Leaflet deserializer
-    let it = flatgeobuf.deserialize(response.body)
+    let it = flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)
     // handle result
     function handleResult(result) {
         if (!result.done) {
