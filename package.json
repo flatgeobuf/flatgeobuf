@@ -5,7 +5,6 @@
   "scripts": {
     "build": "tsc -p config/tsconfig.json && rollup -c config/rollup.config.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "pretest": "ws &",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --options config/typedoc.json"
   },

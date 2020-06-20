@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
+import LocalWebServer = require('local-web-server')
 
 import { readFileSync } from 'fs'
 import { TextDecoder, TextEncoder } from 'util'
@@ -39,6 +40,17 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
 }
 
 describe('geojson module', () => {
+
+  let lws
+
+  before(() => {    
+    lws = LocalWebServer.create(undefined)
+  })
+
+  after(() => {    
+    if (lws)
+      lws.server.close()
+  })
 
   describe('Geometry roundtrips', () => {
 
