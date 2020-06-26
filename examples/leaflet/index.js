@@ -1,5 +1,5 @@
 /* eslint-env browser */
-/* global L, flatgeobuf */
+/* global L, flatgeobuf, JSONFormatter */
 
 // basic OSM Leaflet map
 let map = L.map('map').setView([41.505, -80.09], 4)
