@@ -40,7 +40,7 @@ export function serialize(featurecollection: IGeoJsonFeatureCollection): Uint8Ar
 }
 
 export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IGeoJsonFeatureCollection {
-    const features = genericDeserialize(bytes, (f, h) => fromFeature(f, h), headerMetaFn)
+    const features = genericDeserialize(bytes, fromFeature, headerMetaFn)
     return {
         type: 'FeatureCollection',
         features,
