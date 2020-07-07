@@ -48,11 +48,11 @@ export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IGe
 }
 
 export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeStream(stream, (f, h) => fromFeature(f, h), headerMetaFn)
+    return genericDeserializeStream(stream, fromFeature, headerMetaFn)
 }
 
 export function deserializeFiltered(url: string, rect: Rect, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, (f, h) => fromFeature(f, h), headerMetaFn)
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn)
 }
 
 function valueToType(value: boolean | number | string | unknown): ColumnType {
