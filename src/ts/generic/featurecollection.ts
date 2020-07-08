@@ -2,6 +2,7 @@ import { flatbuffers } from 'flatbuffers'
 import slice from 'slice-source/index.js'
 
 import ColumnMeta from '../ColumnMeta'
+import CrsMeta from '../CrsMeta'
 import ColumnType from '../ColumnType'
 import { Header, Column } from '../header_generated'
 import { Feature } from '../feature_generated'
@@ -55,7 +56,9 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
         const column = header.columns(j)
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0)
+    const crs = header.crs()
+    const crsMeta = new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt())
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta)
 
     if (headerMetaFn)
         headerMetaFn(headerMeta)
@@ -127,7 +130,9 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         const column = header.columns(j)
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, count)
+    const crs = header.crs()
+    const crsMeta = new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt())
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, count, crsMeta)
 
     if (headerMetaFn)
         headerMetaFn(headerMeta)

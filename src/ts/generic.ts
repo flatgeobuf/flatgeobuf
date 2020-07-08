@@ -9,7 +9,7 @@ import { Rect } from './packedrtree'
 import { IFeature } from './generic/feature'
 import HeaderMeta from './HeaderMeta'
 
-export type HeaderMetaFn = (headerMeta: HeaderMeta) => never
+export type HeaderMetaFn = (headerMeta: HeaderMeta) => void
 
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
