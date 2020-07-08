@@ -21,6 +21,7 @@ import { deserialize, serialize } from './geojson'
 import { IGeoJsonFeature } from './geojson/feature'
 import { Rect } from './packedrtree'
 import { IGeoJsonFeatureCollection } from './geojson/featurecollection'
+import HeaderMeta from './HeaderMeta'
 
 function makeFeatureCollection(wkt: string, properties?: any) {
   return makeFeatureCollectionFromArray([wkt], properties)
@@ -248,7 +249,9 @@ describe('geojson module', () => {
     it('Should parse countries fgb produced from GDAL', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
+      let headerMeta: HeaderMeta
+      const geojson = deserialize(bytes, undefined, (header: HeaderMeta) => headerMeta = header) as IGeoJsonFeatureCollection
+      expect(headerMeta.crs.code).to.eq(4326)
       expect(geojson.features.length).to.eq(179)
       for (const f of geojson.features)
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
