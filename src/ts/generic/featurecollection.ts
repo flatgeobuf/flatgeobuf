@@ -57,7 +57,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
     const crs = header.crs()
-    const crsMeta = new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt())
+    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
     const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta)
 
     if (headerMetaFn)
@@ -131,7 +131,7 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         columns.push(new ColumnMeta(column.name(), column.type()))
     }
     const crs = header.crs()
-    const crsMeta = new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt())
+    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
     const headerMeta = new HeaderMeta(header.geometryType(), columns, count, crsMeta)
 
     if (headerMetaFn)
