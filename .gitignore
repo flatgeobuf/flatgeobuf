@@ -9,4 +9,3 @@ package-lock.json
 /lib
 /.vs
 /src/net/.vs/FlatGeobuf
-.vscode

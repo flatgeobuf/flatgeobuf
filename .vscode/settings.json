@@ -1,0 +1,8 @@
+{
+    "mochaExplorer.debuggerConfig": "",
+    "mochaExplorer.files": "src/**/*.spec.ts",
+    "mochaExplorer.require": ["ts-node/register", "esm"],
+    "mochaExplorer.env": {
+        "TS_NODE_PROJECT": "config/tsconfig.test.json"
+    }
+}
