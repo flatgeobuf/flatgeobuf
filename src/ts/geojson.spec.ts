@@ -62,6 +62,13 @@ describe('geojson module', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('Point 3D', () => {
+      const expected = makeFeatureCollection('POINT Z(1.2 -2.1 10)')
+      const s = serialize(expected)
+      const actual = deserialize(s)
+      expect(actual).to.deep.equal(expected)
+    })
+
     it('Point via stream', async () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
@@ -84,6 +91,12 @@ describe('geojson module', () => {
 
     it('LineString', () => {
       const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)')
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('LineString 3D', () => {
+      const expected = makeFeatureCollection('LINESTRING Z(1.2 -2.1 1.1, 2.4 -4.8 1.2)')
       const actual = deserialize(serialize(expected))
       expect(actual).to.deep.equal(expected)
     })
@@ -122,6 +135,13 @@ describe('geojson module', () => {
       expect(actual).to.deep.equal(expected)
     })
 
+    it('PolygonWithHole 3D', () => {
+      const expected = makeFeatureCollection(`POLYGON Z((35 10 3, 45 45 4, 15 40 5, 10 20 6, 35 10 7),
+ (20 30 3, 35 35 4, 30 20 5, 20 30 6))`)
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
     it('MultiPolygon', () => {
       const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`)
@@ -153,6 +173,12 @@ describe('geojson module', () => {
 
     it('GeometryCollection', () => {
       const expected = makeFeatureCollection(`GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`)
+      const actual = deserialize(serialize(expected))
+      expect(actual).to.deep.equal(expected)
+    })
+
+    it('GeometryCollection 3D', () => {
+      const expected = makeFeatureCollection(`GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`)
       const actual = deserialize(serialize(expected))
       expect(actual).to.deep.equal(expected)
     })

@@ -4,6 +4,7 @@ import { Geometry } from '../feature_generated'
 
 export interface IParsedGeometry {
     xy: number[],
+    z: number[],
     ends: number[],
     parts: IParsedGeometry[],
     type: GeometryType
@@ -32,7 +33,7 @@ export interface ICreateGeometry {
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry): any {
-    const { xy, ends, parts, type } = parsedGeometry
+    const { xy, z, ends, parts, type } = parsedGeometry
 
     if (parts) {
         const partOffsets = parts.map(part => buildGeometry(builder, part))
@@ -42,7 +43,10 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
         return Geometry.end(builder)
     }
 
-    const coordsOffset = Geometry.createXyVector(builder, xy)
+    const xyOffset = Geometry.createXyVector(builder, xy)
+    let zOffset: number = null
+    if (z)
+        zOffset = Geometry.createZVector(builder, z)
 
     let endsOffset: number = null
     if (ends)
@@ -51,14 +55,32 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     Geometry.start(builder)
     if (endsOffset)
         Geometry.addEnds(builder, endsOffset)
-    Geometry.addXy(builder, coordsOffset)
+    Geometry.addXy(builder, xyOffset)
+    if (zOffset)
+        Geometry.addZ(builder, zOffset)
     Geometry.addType(builder, type)
     return Geometry.end(builder)
 }
 
-export function flat(a: any[]): number[] {
+/*export function flat2(a: any[]): number[] {
     return a.reduce((acc, val) =>
         Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
+}*/
+
+export function flat(a: any[], xy: number[], z: number[]): number[] {
+    if (a.length === 0)
+        return
+    if (Array.isArray(a[0])) {
+        for (const sa of a)
+            flat(sa, xy, z)
+    } else {
+        if (a.length === 2)
+            xy.push(...a)
+        else {
+            xy.push(a[0], a[1])
+            z.push(a[2])
+        }
+    }
 }
 
 export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IParsedGeometry {
@@ -89,10 +111,15 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IP
     } as IParsedGeometry
 }
 
-export function pairFlatCoordinates(coordinates: Float64Array): number[][] {
+export function pairFlatCoordinates(xy: Float64Array, z: Float64Array): number[][] {
     const newArray: number[][] = []
-    for (let i = 0; i < coordinates.length; i += 2)
-        newArray.push([coordinates[i], coordinates[i + 1]])
+    for (let i = 0; i < xy.length; i += 2) {
+        const a = [xy[i], xy[i + 1]]
+        if (z)
+            a.push(z[i >> 1])
+        newArray.push(a)
+    }
+        
     return newArray
 }
 
