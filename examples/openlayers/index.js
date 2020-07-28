@@ -3,7 +3,7 @@
 
 const source = new ol.source.Vector({
     loader: async function () {
-        const response = await fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.2.1/test/data/UScounties.fgb')
+        const response = await fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.5.0/test/data/UScounties.fgb')
         for await (let feature of flatgeobuf.deserialize(response.body)) {
             feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
             this.addFeature(feature)
