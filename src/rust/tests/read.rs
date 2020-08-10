@@ -253,6 +253,7 @@ fn linestring_layer() -> Result<()> {
 }
 
 #[test]
+#[ignore]
 fn geomcollection_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open(
         "../../test/data/gdal_sample_v1.2_nonlinear/geomcollection2d.fgb",
@@ -277,6 +278,53 @@ fn geomcollection_layer() -> Result<()> {
     );
 
     let _props = feature.properties()?;
+
+    Ok(())
+}
+
+fn read_layer_geometry(fname: &str) -> Result<String> {
+    let mut filein = BufReader::new(File::open(&format!("../../test/data/{}", fname))?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let geometry_type = fgb.header().geometry_type();
+
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
+    assert!(feature.geometry().is_some());
+    let geometry = feature.geometry().unwrap();
+
+    let mut wkt_data: Vec<u8> = Vec::new();
+    let mut processor = WktWriter::new(&mut wkt_data);
+    geometry.process(&mut processor, geometry_type)?;
+    Ok(std::str::from_utf8(&wkt_data).unwrap().to_string())
+}
+
+#[test]
+#[ignore]
+fn curve_layers() -> Result<()> {
+    assert_eq!(
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/circularstring.fgb")?,
+        "CIRCULARSTRING(0 0,1 1,2 0)"
+    );
+
+    assert_eq!(
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/compoundcurve.fgb")?,
+        "COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0))"
+    );
+
+    assert_eq!(
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multicurve.fgb")?,
+        "MULTICURVE(CIRCULARSTRING(0 0,1 1,2 0))"
+    );
+
+    assert_eq!(
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/curvepolygon.fgb")?,
+        "CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0)))"
+    );
+
+    assert_eq!(
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multisurface.fgb")?,
+        "MULTISURFACE(CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0))))"
+    );
 
     Ok(())
 }
