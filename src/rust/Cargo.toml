@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 description = "FlatGeobuf for Rust."
@@ -20,7 +20,7 @@ reqwest = "0.10"
 bytes = "0.5"
 
 [dev-dependencies]
-geozero-core = "0.3"
+geozero-core = "0.5"
 rand = "0.7"
 hex = "0.4"
 criterion = "0.3"
