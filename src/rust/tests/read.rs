@@ -282,7 +282,7 @@ fn geomcollection_layer() -> Result<()> {
     Ok(())
 }
 
-fn read_layer_geometry(fname: &str) -> Result<String> {
+fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
     let mut filein = BufReader::new(File::open(&format!("../../test/data/{}", fname))?);
     let mut fgb = FgbReader::open(&mut filein)?;
     let geometry_type = fgb.header().geometry_type();
@@ -294,6 +294,7 @@ fn read_layer_geometry(fname: &str) -> Result<String> {
 
     let mut wkt_data: Vec<u8> = Vec::new();
     let mut processor = WktWriter::new(&mut wkt_data);
+    processor.dims.z = with_z;
     geometry.process(&mut processor, geometry_type)?;
     Ok(std::str::from_utf8(&wkt_data).unwrap().to_string())
 }
@@ -302,28 +303,47 @@ fn read_layer_geometry(fname: &str) -> Result<String> {
 #[ignore]
 fn curve_layers() -> Result<()> {
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/circularstring.fgb")?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/circularstring.fgb", false)?,
         "CIRCULARSTRING(0 0,1 1,2 0)"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/compoundcurve.fgb")?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/compoundcurve.fgb", false)?,
         "COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multicurve.fgb")?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multicurve.fgb", false)?,
         "MULTICURVE(CIRCULARSTRING(0 0,1 1,2 0))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/curvepolygon.fgb")?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/curvepolygon.fgb", false)?,
         "CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0)))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multisurface.fgb")?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multisurface.fgb", false)?,
         "MULTISURFACE(CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0))))"
+    );
+
+    Ok(())
+}
+
+#[test]
+// #[ignore]
+fn surface_layers() -> Result<()> {
+    assert_eq!(
+        &read_layer_geometry("surface/polyhedralsurface.fgb", true)?,
+        "POLYHEDRALSURFACE(((0 0 0,0 0 1,0 1 1,0 1 0,0 0 0)),((0 0 0,0 1 0,1 1 0,1 0 0,0 0 0)),((0 0 0,1 0 0,1 0 1,0 0 1,0 0 0)),((1 1 0,1 1 1,1 0 1,1 0 0,1 1 0)),((0 1 0,0 1 1,1 1 1,1 1 0,0 1 0)),((0 0 1,1 0 1,1 1 1,0 1 1,0 0 1)))"
+    );
+    assert_eq!(
+        &read_layer_geometry("surface/tin.fgb", true)?,
+        "TIN(((0 0 0,0 0 1,0 1 0,0 0 0)),((0 0 0,0 1 0,1 1 0,0 0 0)))"
+    );
+    assert_eq!(
+        &read_layer_geometry("surface/triangle.fgb", true)?,
+        "TRIANGLE((0 0,0 9,9 0,0 0))"
     );
 
     Ok(())
