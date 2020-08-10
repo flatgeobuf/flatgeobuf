@@ -331,7 +331,7 @@ fn curve_layers() -> Result<()> {
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn surface_layers() -> Result<()> {
     assert_eq!(
         &read_layer_geometry("surface/polyhedralsurface.fgb", true)?,
