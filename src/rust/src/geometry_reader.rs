@@ -70,7 +70,7 @@ fn read_multilinestring_part<P: GeomProcessor>(
     processor.linestring_end(false, idx)
 }
 
-fn read_multiline<P: GeomProcessor>(
+fn read_multilinestring<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
     idx: usize,
@@ -97,6 +97,52 @@ fn read_multiline<P: GeomProcessor>(
             offset = end;
         }
         processor.multilinestring_end(idx)?;
+    }
+    Ok(())
+}
+
+fn read_triangle<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    tagged: bool,
+    idx: usize,
+) -> Result<()> {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+        if let Some(xy) = geometry.xy() {
+            processor.triangle_begin(tagged, 1, idx)?;
+            read_multilinestring_part(processor, geometry, 0, xy.len(), 0)?;
+            processor.triangle_end(tagged, idx)?;
+        }
+    } else {
+        let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
+        let mut offset = 0;
+        for i in 0..ends.len() {
+            processor.triangle_begin(tagged, 1, i)?;
+            let end = ends.get(i) << 1;
+            read_multilinestring_part(
+                processor,
+                geometry,
+                offset as usize,
+                (end - offset) as usize,
+                0,
+            )?;
+            offset = end;
+            processor.triangle_end(tagged, i)?;
+        }
+    }
+    Ok(())
+}
+
+fn read_tin<P: GeomProcessor>(processor: &mut P, geometry: &Geometry, idx: usize) -> Result<()> {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+        processor.tin_begin(1, idx)?;
+        read_triangle(processor, geometry, false, 0)?;
+        processor.tin_end(idx)?;
+    } else {
+        let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
+        processor.tin_begin(ends.len() / 2, idx)?;
+        read_triangle(processor, geometry, false, 0)?;
+        processor.tin_end(idx)?;
     }
     Ok(())
 }
@@ -195,20 +241,6 @@ fn read_compoundcurve<P: GeomProcessor>(
     )
 }
 
-fn read_multicurve<P: GeomProcessor>(
-    processor: &mut P,
-    geometry: &Geometry,
-    idx: usize,
-) -> Result<()> {
-    read_curve(
-        processor,
-        GeomProcessor::multicurve_begin,
-        GeomProcessor::multicurve_end,
-        geometry,
-        idx,
-    )
-}
-
 fn read_curvepolygon<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -223,34 +255,21 @@ fn read_curvepolygon<P: GeomProcessor>(
     )
 }
 
-fn read_multisurface<P: GeomProcessor>(
+fn read_multipolygon_type<P: GeomProcessor>(
     processor: &mut P,
-    geometry: &Geometry,
-    idx: usize,
-) -> Result<()> {
-    read_curve(
-        processor,
-        GeomProcessor::multisurface_begin,
-        GeomProcessor::multisurface_end,
-        geometry,
-        idx,
-    )
-}
-
-fn read_multipolygon<P: GeomProcessor>(
-    processor: &mut P,
+    fn_begin: fn(&mut P, size: usize, idx: usize) -> Result<()>,
+    fn_end: fn(&mut P, idx: usize) -> Result<()>,
     geometry: &Geometry,
     idx: usize,
 ) -> Result<()> {
     let parts = geometry.parts().ok_or(GeozeroError::GeometryFormat)?;
-    processor.multipolygon_begin(parts.len(), idx)?;
+    fn_begin(processor, parts.len(), idx)?;
     for i in 0..parts.len() {
         let part = parts.get(i);
         read_polygon(processor, &part, false, i)?;
     }
-    processor.multipolygon_end(idx)
+    fn_end(processor, idx)
 }
-
 fn read_geometrycollection<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -270,6 +289,12 @@ pub fn read_geometry<P: GeomProcessor>(
     geometry: &Geometry,
     geometry_type: GeometryType,
 ) -> Result<()> {
+    let geometry_type = if geometry_type == GeometryType::Unknown {
+        // per feature geometry type
+        geometry.type_()
+    } else {
+        geometry_type
+    };
     read_geometry_n(processor, geometry, geometry_type, 0)
 }
 
@@ -312,10 +337,16 @@ fn read_geometry_n<P: GeomProcessor>(
             read_compoundcurve(processor, geometry, idx)?;
         }
         GeometryType::MultiLineString => {
-            read_multiline(processor, geometry, idx)?;
+            read_multilinestring(processor, geometry, idx)?;
         }
         GeometryType::MultiCurve => {
-            read_multicurve(processor, geometry, idx)?;
+            read_curve(
+                processor,
+                GeomProcessor::multicurve_begin,
+                GeomProcessor::multicurve_end,
+                geometry,
+                idx,
+            )?;
         }
         GeometryType::Polygon => {
             read_polygon(processor, geometry, true, idx)?;
@@ -324,10 +355,37 @@ fn read_geometry_n<P: GeomProcessor>(
             read_curvepolygon(processor, geometry, idx)?;
         }
         GeometryType::MultiPolygon => {
-            read_multipolygon(processor, geometry, idx)?;
+            read_multipolygon_type(
+                processor,
+                GeomProcessor::multipolygon_begin,
+                GeomProcessor::multipolygon_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::PolyhedralSurface => {
+            read_multipolygon_type(
+                processor,
+                GeomProcessor::polyhedralsurface_begin,
+                GeomProcessor::polyhedralsurface_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::TIN => {
+            read_tin(processor, geometry, idx)?;
+        }
+        GeometryType::Triangle => {
+            read_triangle(processor, geometry, true, idx)?;
         }
         GeometryType::MultiSurface => {
-            read_multisurface(processor, geometry, idx)?;
+            read_curve(
+                processor,
+                GeomProcessor::multisurface_begin,
+                GeomProcessor::multisurface_end,
+                geometry,
+                idx,
+            )?;
         }
         GeometryType::GeometryCollection => {
             read_geometrycollection(processor, geometry, idx)?;
