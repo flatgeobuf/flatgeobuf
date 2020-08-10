@@ -126,6 +126,7 @@ mod inspect {
 
     impl FgbReader<'_> {
         /// Process R-Tree index for debugging purposes
+        #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
             let features_count = self.header().features_count() as usize;
             let index_node_size = self.header().index_node_size();

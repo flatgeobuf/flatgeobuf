@@ -1,6 +1,7 @@
 use flatgeobuf::*;
 use geozero::error::Result;
 use geozero::{ColumnValue, CoordDimensions, GeomProcessor, PropertyProcessor};
+use geozero_core::wkt::WktWriter;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
@@ -245,6 +246,35 @@ fn linestring_layer() -> Result<()> {
     let mut processor = WktLineWriter { wkt: String::new() };
     geometry.process(&mut processor, geometry_type)?;
     assert_eq!(processor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
+
+    let _props = feature.properties()?;
+
+    Ok(())
+}
+
+#[test]
+fn geomcollection_layer() -> Result<()> {
+    let mut filein = BufReader::new(File::open(
+        "../../test/data/gdal_sample_v1.2_nonlinear/geomcollection2d.fgb",
+    )?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let geometry_type = fgb.header().geometry_type();
+    assert_eq!(geometry_type, GeometryType::GeometryCollection);
+    assert_eq!(fgb.header().features_count(), 1);
+
+    let _count = fgb.select_all()?;
+    let feature = fgb.next()?.unwrap();
+    assert!(feature.geometry().is_some());
+    let geometry = feature.geometry().unwrap();
+    assert_eq!(geometry.type_(), GeometryType::GeometryCollection);
+
+    let mut wkt_data: Vec<u8> = Vec::new();
+    let mut processor = WktWriter::new(&mut wkt_data);
+    geometry.process(&mut processor, geometry_type)?;
+    assert_eq!(
+        std::str::from_utf8(&wkt_data).unwrap(),
+        "GEOMETRYCOLLECTION(POINT(0 1),LINESTRING(2 3,4 5),POLYGON((0 0,0 10,10 10,10 0,0 0),(1 1,1 9,9 9,9 1,1 1)),MULTIPOINT(0 1,2 3),MULTILINESTRING((0 1,2 3),(4 5,6 7)),MULTIPOLYGON(((0 0,0 10,10 10,10 0,0 0),(1 1,1 9,9 9,9 1,1 1)),((-9 0,-9 10,-1 10,-1 0,-9 0))))"
+    );
 
     let _props = feature.properties()?;
 

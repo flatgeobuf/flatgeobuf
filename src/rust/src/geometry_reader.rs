@@ -3,21 +3,6 @@ use crate::header_generated::flat_geobuf::*;
 use geozero::error::{GeozeroError, Result};
 use geozero::GeomProcessor;
 
-pub fn is_collection(geometry_type: GeometryType) -> Result<bool> {
-    let coll = match geometry_type {
-        GeometryType::Point
-        | GeometryType::MultiPoint
-        | GeometryType::LineString
-        | GeometryType::MultiLineString
-        | GeometryType::Polygon => false,
-        GeometryType::MultiPolygon | GeometryType::GeometryCollection => true,
-        _ => Err(GeozeroError::Geometry(
-            "is_collection: Unknown geometry type".to_string(),
-        ))?,
-    };
-    Ok(coll)
-}
-
 fn multi_dim<P: GeomProcessor>(processor: &mut P) -> bool {
     processor.dimensions().z
         || processor.dimensions().m
@@ -124,12 +109,14 @@ fn read_polygon<P: GeomProcessor>(
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
     if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+        // single ring
         processor.polygon_begin(tagged, 1, idx)?;
         processor.linestring_begin(false, xy.len(), 0)?;
         read_coords(processor, geometry, 0, xy.len())?;
         processor.linestring_end(false, 0)?;
         processor.polygon_end(tagged, idx)?;
     } else {
+        // multiple rings
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
         processor.polygon_begin(tagged, ends.len() / 2, idx)?;
         let mut offset = 0;
@@ -146,14 +133,32 @@ fn read_polygon<P: GeomProcessor>(
     Ok(())
 }
 
-fn read_multi_polygon<P: GeomProcessor>(processor: &mut P, geometry: &Geometry) -> Result<()> {
+fn read_multipolygon<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    idx: usize,
+) -> Result<()> {
     let parts = geometry.parts().ok_or(GeozeroError::GeometryFormat)?;
-    processor.multipolygon_begin(parts.len(), 0)?;
+    processor.multipolygon_begin(parts.len(), idx)?;
     for i in 0..parts.len() {
         let part = parts.get(i);
         read_polygon(processor, &part, false, i)?;
     }
-    processor.multipolygon_end(0)
+    processor.multipolygon_end(idx)
+}
+
+fn read_geometrycollection<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    idx: usize,
+) -> Result<()> {
+    let parts = geometry.parts().ok_or(GeozeroError::GeometryFormat)?;
+    processor.geometrycollection_begin(parts.len(), idx)?;
+    for i in 0..parts.len() {
+        let part = parts.get(i);
+        read_geometry_n(processor, &part, part.type_(), i)?;
+    }
+    processor.geometrycollection_end(idx)
 }
 
 pub fn read_geometry<P: GeomProcessor>(
@@ -161,44 +166,56 @@ pub fn read_geometry<P: GeomProcessor>(
     geometry: &Geometry,
     geometry_type: GeometryType,
 ) -> Result<()> {
-    if !is_collection(geometry_type)? {
-        let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-        match geometry_type {
-            GeometryType::Point => {
-                processor.point_begin(0)?;
-                if multi_dim(processor) {
-                    read_coordinate(processor, geometry, 0, 0)?;
-                } else {
-                    processor.xy(xy.get(0), xy.get(1), 0)?;
-                }
-                processor.point_end(0)?;
-            }
-            GeometryType::MultiPoint => {
-                processor.multipoint_begin(xy.len() / 2, 0)?;
-                read_coords(processor, geometry, 0, xy.len())?;
-                processor.multipoint_end(0)?;
-            }
-            GeometryType::LineString => {
-                processor.linestring_begin(true, xy.len() / 2, 0)?;
-                read_coords(processor, geometry, 0, xy.len())?;
-                processor.linestring_end(true, 0)?;
-            }
-            GeometryType::MultiLineString => {
-                read_multiline(processor, geometry, 0)?;
-            }
-            GeometryType::Polygon => {
-                read_polygon(processor, geometry, true, 0)?;
-            }
-            _ => Err(GeozeroError::Geometry(
-                "read_geometry: Unknown geometry type".to_string(),
-            ))?,
-        }
-    }
+    read_geometry_n(processor, geometry, geometry_type, 0)
+}
+
+fn read_geometry_n<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    geometry_type: GeometryType,
+    idx: usize,
+) -> Result<()> {
     match geometry_type {
-        GeometryType::MultiPolygon => {
-            read_multi_polygon(processor, geometry)?;
+        GeometryType::Point => {
+            processor.point_begin(idx)?;
+            if multi_dim(processor) {
+                read_coordinate(processor, geometry, 0, 0)?;
+            } else {
+                let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+                processor.xy(xy.get(0), xy.get(1), 0)?;
+            }
+            processor.point_end(idx)?;
         }
-        _ => {} // panic!("read_geometry: Unknown geometry type"),
+        GeometryType::MultiPoint => {
+            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+            processor.multipoint_begin(xy.len() / 2, idx)?;
+            read_coords(processor, geometry, 0, xy.len())?;
+            processor.multipoint_end(idx)?;
+        }
+        GeometryType::LineString => {
+            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+            processor.linestring_begin(true, xy.len() / 2, idx)?;
+            read_coords(processor, geometry, 0, xy.len())?;
+            processor.linestring_end(true, idx)?;
+        }
+        GeometryType::MultiLineString => {
+            read_multiline(processor, geometry, idx)?;
+        }
+        GeometryType::Polygon => {
+            read_polygon(processor, geometry, true, idx)?;
+        }
+        GeometryType::MultiPolygon => {
+            read_multipolygon(processor, geometry, idx)?;
+        }
+        GeometryType::GeometryCollection => {
+            read_geometrycollection(processor, geometry, idx)?;
+        }
+        _ => {
+            return Err(GeozeroError::Geometry(format!(
+                "Unknown geometry type {:?}",
+                geometry_type
+            )))
+        }
     }
     Ok(())
 }

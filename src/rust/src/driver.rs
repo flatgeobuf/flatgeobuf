@@ -8,9 +8,7 @@ pub struct Driver<'a>(FgbReader<'a>);
 
 impl<'a> Reader<'a> for Driver<'a> {
     fn open<R: 'a + ReadSeek>(reader: &'a mut R, _opts: &OpenOpts) -> Result<Self> {
-        Ok(Driver {
-            0: FgbReader::open(reader)?,
-        })
+        Ok(Driver(FgbReader::open(reader)?))
     }
 
     fn select(&mut self, opts: &SelectOpts) -> Result<()> {
@@ -33,9 +31,7 @@ pub struct HttpDriver(HttpFgbReader);
 #[async_trait]
 impl HttpReader for HttpDriver {
     async fn open(url: String, _opts: &OpenOpts) -> Result<Self> {
-        Ok(HttpDriver {
-            0: HttpFgbReader::open(&url).await?,
-        })
+        Ok(HttpDriver(HttpFgbReader::open(&url).await?))
     }
 
     async fn select(&mut self, opts: &SelectOpts) -> Result<()> {
