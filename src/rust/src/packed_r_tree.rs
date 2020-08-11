@@ -587,10 +587,10 @@ impl PackedRTree {
         assert!(num_items > 0, "Cannot create empty tree");
         let node_size_min = cmp::min(cmp::max(node_size, 2), 65535) as usize;
         // limit so that resulting size in bytes can be represented by uint64_t
-        assert!(
-            num_items <= 1 << 56,
-            "Number of items must be less than 2^56"
-        );
+        // assert!(
+        //     num_items <= 1 << 56,
+        //     "Number of items must be less than 2^56"
+        // );
         let mut n = num_items;
         let mut num_nodes = n;
         loop {
