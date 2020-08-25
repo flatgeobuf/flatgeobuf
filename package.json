@@ -32,16 +32,16 @@
     "ol": "^6.4.3"
   },
   "devDependencies": {
-    "@babel/core": "7.11.1",
+    "@babel/core": "7.11.4",
     "@babel/preset-env": "7.11.0",
     "@rollup/plugin-babel": "5.2.0",
     "@rollup/plugin-node-resolve": "9.0.0",
     "@types/chai": "4.2.12",
-    "@types/mocha": "8.0.2",
-    "@types/node": "14.0.27",
+    "@types/mocha": "8.0.3",
+    "@types/node": "14.6.0",
     "@types/ol": "6.3.1",
-    "@typescript-eslint/eslint-plugin": "3.9.0",
-    "@typescript-eslint/parser": "3.9.0",
+    "@typescript-eslint/eslint-plugin": "3.10.1",
+    "@typescript-eslint/parser": "3.10.1",
     "chai": "4.2.0",
     "eslint": "7.7.0",
     "esm": "3.2.25",
@@ -50,11 +50,11 @@
     "mocha": "8.1.1",
     "node-fetch": "2.6.0",
     "ol": "6.4.3",
-    "rollup": "2.26.2",
+    "rollup": "2.26.5",
     "rollup-plugin-terser": "7.0.0",
-    "ts-node": "8.10.2",
+    "ts-node": "9.0.0",
     "typedoc": "0.18.0",
-    "typescript": "3.9.7",
+    "typescript": "4.0.2",
     "web-streams-polyfill": "3.0.0"
   }
 }
