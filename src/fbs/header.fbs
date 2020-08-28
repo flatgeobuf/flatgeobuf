@@ -51,6 +51,7 @@ table Column {
   scale: int = -1;              // Column values expected scale (-1 = unknown) as defined by SQL
   nullable: bool = true;        // Column values expected nullability
   unique: bool = false;         // Column values expected uniqueness
+  primary_key: bool = false;    // Indicates this column have been (part) of primary key
 }
 
 table Crs {
