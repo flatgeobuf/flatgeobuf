@@ -44,6 +44,13 @@ enum ColumnType: ubyte {
 table Column {
   name: string (required);      // Column name
   type: ColumnType;             // Column type
+  title: string;                // Column title
+  description: string;          // Column description (intended for free form long text)
+  width: int = -1;              // Column values expected width (-1 = unknown) (currently only used to indicate the number of characters in strings)
+  precision: int = -1;          // Column values expected precision (-1 = unknown) as defined by SQL
+  scale: int = -1;              // Column values expected scale (-1 = unknown) as defined by SQL
+  nullable: bool = true;        // Column values expected nullability
+  unique: bool = false;         // Column values expected uniqueness
 }
 
 table Crs {
@@ -52,6 +59,7 @@ table Crs {
   name: string;                 // Human readable name of this SRS
   description: string;          // Human readable description of this SRS
   wkt: string;                  // Well-known Text Representation of the Spatial Reference System
+  code_string: string;          // Text ID of the Spatial Reference System assigned by the organization (rarely used)
 }
 
 table Header {
@@ -66,6 +74,9 @@ table Header {
   features_count: ulong;        // Number of features in the dataset (0 = unknown)
   index_node_size: ushort = 16; // Index node size (0 = no index)
   crs: Crs;                     // Spatial Reference System
+  title: string;                // Dataset title
+  description: string;          // Dataset description (intended for free form long text)
+  metadata: string;             // Dataset metadata (intended for arbitrary but structured metadata fx. JSON)
 }
 
 root_type Header;
