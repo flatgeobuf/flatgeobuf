@@ -14,7 +14,8 @@ const plugins = [
         browsers: ['>2%', 'not dead', 'not ie 11']
       }
     }]],
-    babelrc: false
+    babelrc: false,
+    babelHelpers: 'bundled'
   }),
   terser()
 ]
