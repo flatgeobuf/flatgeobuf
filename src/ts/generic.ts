@@ -27,3 +27,8 @@ export function deserialize(
 export { 
     serialize
 } from './generic/featurecollection'
+
+export { 
+    GeometryType,
+    ColumnType
+} from './header_generated'
