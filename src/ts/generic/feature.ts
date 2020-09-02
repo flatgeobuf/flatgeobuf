@@ -1,7 +1,7 @@
 import { flatbuffers } from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
-import ColumnType from '../ColumnType'
+import { ColumnType } from '../header_generated'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, ISimpleGeometry, ICreateGeometry, IParsedGeometry } from './geometry'

@@ -3,8 +3,7 @@ import slice from 'slice-source/index.js'
 
 import ColumnMeta from '../ColumnMeta'
 import CrsMeta from '../CrsMeta'
-import ColumnType from '../ColumnType'
-import { Header, Column } from '../header_generated'
+import { Header, Column, ColumnType } from '../header_generated'
 import { Feature } from '../feature_generated'
 import HeaderMeta from '../HeaderMeta'
 
