@@ -18,19 +18,55 @@ public final class Column extends Table {
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 1); }
   public int type() { int o = __offset(6); return o != 0 ? bb.get(o + bb_pos) & 0xFF : 0; }
+  public String title() { int o = __offset(8); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer titleAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
+  public ByteBuffer titleInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
+  public String description() { int o = __offset(10); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer descriptionAsByteBuffer() { return __vector_as_bytebuffer(10, 1); }
+  public ByteBuffer descriptionInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 1); }
+  public int width() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : -1; }
+  public int precision() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : -1; }
+  public int scale() { int o = __offset(16); return o != 0 ? bb.getInt(o + bb_pos) : -1; }
+  public boolean nullable() { int o = __offset(18); return o != 0 ? 0!=bb.get(o + bb_pos) : true; }
+  public boolean unique() { int o = __offset(20); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+  public boolean primaryKey() { int o = __offset(22); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
 
   public static int createColumn(FlatBufferBuilder builder,
       int nameOffset,
-      int type) {
-    builder.startTable(2);
+      int type,
+      int titleOffset,
+      int descriptionOffset,
+      int width,
+      int precision,
+      int scale,
+      boolean nullable,
+      boolean unique,
+      boolean primary_key) {
+    builder.startTable(10);
+    Column.addScale(builder, scale);
+    Column.addPrecision(builder, precision);
+    Column.addWidth(builder, width);
+    Column.addDescription(builder, descriptionOffset);
+    Column.addTitle(builder, titleOffset);
     Column.addName(builder, nameOffset);
+    Column.addPrimaryKey(builder, primary_key);
+    Column.addUnique(builder, unique);
+    Column.addNullable(builder, nullable);
     Column.addType(builder, type);
     return Column.endColumn(builder);
   }
 
-  public static void startColumn(FlatBufferBuilder builder) { builder.startTable(2); }
+  public static void startColumn(FlatBufferBuilder builder) { builder.startTable(10); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
   public static void addType(FlatBufferBuilder builder, int type) { builder.addByte(1, (byte)type, (byte)0); }
+  public static void addTitle(FlatBufferBuilder builder, int titleOffset) { builder.addOffset(2, titleOffset, 0); }
+  public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(3, descriptionOffset, 0); }
+  public static void addWidth(FlatBufferBuilder builder, int width) { builder.addInt(4, width, -1); }
+  public static void addPrecision(FlatBufferBuilder builder, int precision) { builder.addInt(5, precision, -1); }
+  public static void addScale(FlatBufferBuilder builder, int scale) { builder.addInt(6, scale, -1); }
+  public static void addNullable(FlatBufferBuilder builder, boolean nullable) { builder.addBoolean(7, nullable, true); }
+  public static void addUnique(FlatBufferBuilder builder, boolean unique) { builder.addBoolean(8, unique, false); }
+  public static void addPrimaryKey(FlatBufferBuilder builder, boolean primaryKey) { builder.addBoolean(9, primaryKey, false); }
   public static int endColumn(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 4);  // name

@@ -78,9 +78,9 @@ function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) : He
     let columns: ColumnMeta[] | null = null
     if (properties)
         columns = Object.keys(properties)
-            .map(k => new ColumnMeta(k, valueToType(properties[k])))
+            .map(k => new ColumnMeta(k, valueToType(properties[k]), null, null, -1, -1, -1, true, false, false))
 
-    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length, null)
+    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length, null, null, null, null)
 
     return headerMeta
 }

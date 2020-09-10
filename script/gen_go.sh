@@ -1,2 +1,2 @@
 #!/bin/bash
-flatc --go -o src/go src/fbs/*.fbs
+./flatc --go -o src/go src/fbs/*.fbs

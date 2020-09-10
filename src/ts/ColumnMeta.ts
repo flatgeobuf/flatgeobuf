@@ -20,12 +20,19 @@ const arrayTypeMap = {
 }
 
 export default class ColumnMeta {
-    name: string
-    type: ColumnType
     arrayType: any
-    constructor(name: string, type: ColumnType) {
-        this.name = name
-        this.type = type
-        this.arrayType = arrayTypeMap[type] as any
+    constructor(
+        public name: string,
+        public type: ColumnType,
+        public title: string,
+        public description: string,
+        public width: number,
+        public precision: number,
+        public scale: number,
+        public nullable: boolean,
+        public unique: boolean,
+        public primary_key: boolean
+        ) {
+        this.arrayType = arrayTypeMap[type]
     }
 }

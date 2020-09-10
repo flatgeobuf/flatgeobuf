@@ -63,11 +63,11 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
             throw new Error('Column unexpectedly missing')
         if (!column.name())
             throw new Error('Column name unexpectedly missing')
-        columns.push(new ColumnMeta(column.name() as string, column.type()))
+        columns.push(new ColumnMeta(column.name(), column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
     }
     const crs = header.crs()
-    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta)
+    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt(), crs.codeString()) : null)
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta, header.title(), header.description(), header.metadata())
 
     if (headerMetaFn)
         headerMetaFn(headerMeta)
@@ -141,11 +141,11 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect
             throw new Error('Unexpected missing column')
         if (!column.name())
             throw new Error('Unexpected missing column name')
-        columns.push(new ColumnMeta(column.name() as string, column.type()))
+        columns.push(new ColumnMeta(column.name(), column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
     }
     const crs = header.crs()
-    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, count, crsMeta)
+    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt(), crs.codeString()) : null)
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta, header.title(), header.description(), header.metadata())
 
     if (headerMetaFn)
         headerMetaFn(headerMeta)
@@ -254,8 +254,8 @@ function introspectHeaderMeta(features: IFeature[]) {
     let columns: ColumnMeta[] | null = null
     if (properties)
         columns = Object.keys(properties).filter(key => key !== 'geometry')
-            .map(k => new ColumnMeta(k, valueToType(properties[k])))
+            .map(k => new ColumnMeta(k, valueToType(properties[k]), null, null, -1, -1, -1, true, false, false))
 
-    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length, null)
+    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length, null, null, null, null)
     return headerMeta
 }

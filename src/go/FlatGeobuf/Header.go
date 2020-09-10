@@ -63,13 +63,13 @@ func (rcv *Header) MutateEnvelope(j int, n float64) bool {
 func (rcv *Header) GeometryType() GeometryType {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
-		return rcv._tab.GetByte(o + rcv._tab.Pos)
+		return GeometryType(rcv._tab.GetByte(o + rcv._tab.Pos))
 	}
 	return 0
 }
 
 func (rcv *Header) MutateGeometryType(n GeometryType) bool {
-	return rcv._tab.MutateByteSlot(8, n)
+	return rcv._tab.MutateByteSlot(8, byte(n))
 }
 
 func (rcv *Header) HasZ() bool {
@@ -177,8 +177,32 @@ func (rcv *Header) Crs(obj *Crs) *Crs {
 	return nil
 }
 
+func (rcv *Header) Title() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(26))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *Header) Description() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(28))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *Header) Metadata() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(30))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func HeaderStart(builder *flatbuffers.Builder) {
-	builder.StartObject(11)
+	builder.StartObject(14)
 }
 func HeaderAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -189,8 +213,8 @@ func HeaderAddEnvelope(builder *flatbuffers.Builder, envelope flatbuffers.UOffse
 func HeaderStartEnvelopeVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(8, numElems, 8)
 }
-func HeaderAddGeometryType(builder *flatbuffers.Builder, geometryType byte) {
-	builder.PrependByteSlot(2, geometryType, 0)
+func HeaderAddGeometryType(builder *flatbuffers.Builder, geometryType GeometryType) {
+	builder.PrependByteSlot(2, byte(geometryType), 0)
 }
 func HeaderAddHasZ(builder *flatbuffers.Builder, hasZ bool) {
 	builder.PrependBoolSlot(3, hasZ, false)
@@ -218,6 +242,15 @@ func HeaderAddIndexNodeSize(builder *flatbuffers.Builder, indexNodeSize uint16) 
 }
 func HeaderAddCrs(builder *flatbuffers.Builder, crs flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(10, flatbuffers.UOffsetT(crs), 0)
+}
+func HeaderAddTitle(builder *flatbuffers.Builder, title flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(11, flatbuffers.UOffsetT(title), 0)
+}
+func HeaderAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(12, flatbuffers.UOffsetT(description), 0)
+}
+func HeaderAddMetadata(builder *flatbuffers.Builder, metadata flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(13, flatbuffers.UOffsetT(metadata), 0)
 }
 func HeaderEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

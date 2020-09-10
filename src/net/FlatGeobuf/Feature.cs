@@ -6,56 +6,58 @@ namespace FlatGeobuf
 {
 
 using global::System;
+using global::System.Collections.Generic;
 using global::FlatBuffers;
 
 public struct Feature : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
   public static Feature GetRootAsFeature(ByteBuffer _bb) { return GetRootAsFeature(_bb, new Feature()); }
   public static Feature GetRootAsFeature(ByteBuffer _bb, Feature obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
+  public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public Feature __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public Geometry? Geometry { get { int o = __p.__offset(4); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public FlatGeobuf.Geometry? Geometry { get { int o = __p.__offset(4); return o != 0 ? (FlatGeobuf.Geometry?)(new FlatGeobuf.Geometry()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
   public byte Properties(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.Get(__p.__vector(o) + j * 1) : (byte)0; }
   public int PropertiesLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetPropertiesBytes() { return __p.__vector_as_span(6); }
+  public Span<byte> GetPropertiesBytes() { return __p.__vector_as_span<byte>(6, 1); }
 #else
   public ArraySegment<byte>? GetPropertiesBytes() { return __p.__vector_as_arraysegment(6); }
 #endif
   public byte[] GetPropertiesArray() { return __p.__vector_as_array<byte>(6); }
-  public Column? Columns(int j) { int o = __p.__offset(8); return o != 0 ? (Column?)(new Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public FlatGeobuf.Column? Columns(int j) { int o = __p.__offset(8); return o != 0 ? (FlatGeobuf.Column?)(new FlatGeobuf.Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ColumnsLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 
-  public static Offset<Feature> CreateFeature(FlatBufferBuilder builder,
-      Offset<Geometry> geometryOffset = default(Offset<Geometry>),
+  public static Offset<FlatGeobuf.Feature> CreateFeature(FlatBufferBuilder builder,
+      Offset<FlatGeobuf.Geometry> geometryOffset = default(Offset<FlatGeobuf.Geometry>),
       VectorOffset propertiesOffset = default(VectorOffset),
       VectorOffset columnsOffset = default(VectorOffset)) {
-    builder.StartObject(3);
+    builder.StartTable(3);
     Feature.AddColumns(builder, columnsOffset);
     Feature.AddProperties(builder, propertiesOffset);
     Feature.AddGeometry(builder, geometryOffset);
     return Feature.EndFeature(builder);
   }
 
-  public static void StartFeature(FlatBufferBuilder builder) { builder.StartObject(3); }
-  public static void AddGeometry(FlatBufferBuilder builder, Offset<Geometry> geometryOffset) { builder.AddOffset(0, geometryOffset.Value, 0); }
+  public static void StartFeature(FlatBufferBuilder builder) { builder.StartTable(3); }
+  public static void AddGeometry(FlatBufferBuilder builder, Offset<FlatGeobuf.Geometry> geometryOffset) { builder.AddOffset(0, geometryOffset.Value, 0); }
   public static void AddProperties(FlatBufferBuilder builder, VectorOffset propertiesOffset) { builder.AddOffset(1, propertiesOffset.Value, 0); }
   public static VectorOffset CreatePropertiesVector(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte(data[i]); return builder.EndVector(); }
   public static VectorOffset CreatePropertiesVectorBlock(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
   public static void StartPropertiesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
   public static void AddColumns(FlatBufferBuilder builder, VectorOffset columnsOffset) { builder.AddOffset(2, columnsOffset.Value, 0); }
-  public static VectorOffset CreateColumnsVector(FlatBufferBuilder builder, Offset<Column>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
-  public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreateColumnsVector(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartColumnsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static Offset<Feature> EndFeature(FlatBufferBuilder builder) {
-    int o = builder.EndObject();
-    return new Offset<Feature>(o);
+  public static Offset<FlatGeobuf.Feature> EndFeature(FlatBufferBuilder builder) {
+    int o = builder.EndTable();
+    return new Offset<FlatGeobuf.Feature>(o);
   }
-  public static void FinishFeatureBuffer(FlatBufferBuilder builder, Offset<Feature> offset) { builder.Finish(offset.Value); }
-  public static void FinishSizePrefixedFeatureBuffer(FlatBufferBuilder builder, Offset<Feature> offset) { builder.FinishSizePrefixed(offset.Value); }
+  public static void FinishFeatureBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Feature> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFeatureBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Feature> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

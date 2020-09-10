@@ -70,8 +70,16 @@ func (rcv *Crs) Wkt() []byte {
 	return nil
 }
 
+func (rcv *Crs) CodeString() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func CrsStart(builder *flatbuffers.Builder) {
-	builder.StartObject(5)
+	builder.StartObject(6)
 }
 func CrsAddOrg(builder *flatbuffers.Builder, org flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(org), 0)
@@ -87,6 +95,9 @@ func CrsAddDescription(builder *flatbuffers.Builder, description flatbuffers.UOf
 }
 func CrsAddWkt(builder *flatbuffers.Builder, wkt flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(wkt), 0)
+}
+func CrsAddCodeString(builder *flatbuffers.Builder, codeString flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(codeString), 0)
 }
 func CrsEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

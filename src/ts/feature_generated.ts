@@ -103,10 +103,80 @@ type():ColumnType {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+title():string|null
+title(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+title(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 8);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+description():string|null
+description(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+description(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 10);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @returns number
+ */
+width():number {
+  var offset = this.bb!.__offset(this.bb_pos, 12);
+  return offset ? this.bb!.readInt32(this.bb_pos + offset) : -1;
+};
+
+/**
+ * @returns number
+ */
+precision():number {
+  var offset = this.bb!.__offset(this.bb_pos, 14);
+  return offset ? this.bb!.readInt32(this.bb_pos + offset) : -1;
+};
+
+/**
+ * @returns number
+ */
+scale():number {
+  var offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? this.bb!.readInt32(this.bb_pos + offset) : -1;
+};
+
+/**
+ * @returns boolean
+ */
+nullable():boolean {
+  var offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : true;
+};
+
+/**
+ * @returns boolean
+ */
+unique():boolean {
+  var offset = this.bb!.__offset(this.bb_pos, 20);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
+};
+
+/**
+ * @returns boolean
+ */
+primaryKey():boolean {
+  var offset = this.bb!.__offset(this.bb_pos, 22);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(2);
+  builder.startObject(10);
 };
 
 /**
@@ -127,6 +197,70 @@ static addType(builder:flatbuffers.Builder, type:ColumnType) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset titleOffset
+ */
+static addTitle(builder:flatbuffers.Builder, titleOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, titleOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset descriptionOffset
+ */
+static addDescription(builder:flatbuffers.Builder, descriptionOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(3, descriptionOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number width
+ */
+static addWidth(builder:flatbuffers.Builder, width:number) {
+  builder.addFieldInt32(4, width, -1);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number precision
+ */
+static addPrecision(builder:flatbuffers.Builder, precision:number) {
+  builder.addFieldInt32(5, precision, -1);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number scale
+ */
+static addScale(builder:flatbuffers.Builder, scale:number) {
+  builder.addFieldInt32(6, scale, -1);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param boolean nullable
+ */
+static addNullable(builder:flatbuffers.Builder, nullable:boolean) {
+  builder.addFieldInt8(7, +nullable, +true);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param boolean unique
+ */
+static addUnique(builder:flatbuffers.Builder, unique:boolean) {
+  builder.addFieldInt8(8, +unique, +false);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param boolean primaryKey
+ */
+static addPrimaryKey(builder:flatbuffers.Builder, primaryKey:boolean) {
+  builder.addFieldInt8(9, +primaryKey, +false);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -135,10 +269,18 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:ColumnType):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:ColumnType, titleOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, width:number, precision:number, scale:number, nullable:boolean, unique:boolean, primaryKey:boolean):flatbuffers.Offset {
   Column.start(builder);
   Column.addName(builder, nameOffset);
   Column.addType(builder, type);
+  Column.addTitle(builder, titleOffset);
+  Column.addDescription(builder, descriptionOffset);
+  Column.addWidth(builder, width);
+  Column.addPrecision(builder, precision);
+  Column.addScale(builder, scale);
+  Column.addNullable(builder, nullable);
+  Column.addUnique(builder, unique);
+  Column.addPrimaryKey(builder, primaryKey);
   return Column.end(builder);
 }
 }
@@ -232,10 +374,21 @@ wkt(optionalEncoding?:any):string|Uint8Array|null {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+codeString():string|null
+codeString(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+codeString(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 14);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(5);
+  builder.startObject(6);
 };
 
 /**
@@ -280,6 +433,14 @@ static addWkt(builder:flatbuffers.Builder, wktOffset:flatbuffers.Offset) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset codeStringOffset
+ */
+static addCodeString(builder:flatbuffers.Builder, codeStringOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(5, codeStringOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -287,13 +448,14 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset, code:number, nameOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, wktOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, orgOffset:flatbuffers.Offset, code:number, nameOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, wktOffset:flatbuffers.Offset, codeStringOffset:flatbuffers.Offset):flatbuffers.Offset {
   Crs.start(builder);
   Crs.addOrg(builder, orgOffset);
   Crs.addCode(builder, code);
   Crs.addName(builder, nameOffset);
   Crs.addDescription(builder, descriptionOffset);
   Crs.addWkt(builder, wktOffset);
+  Crs.addCodeString(builder, codeStringOffset);
   return Crs.end(builder);
 }
 }
@@ -454,10 +616,43 @@ crs(obj?:Crs):Crs|null {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+title():string|null
+title(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+title(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 26);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+description():string|null
+description(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+description(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 28);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+metadata():string|null
+metadata(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+metadata(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 30);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(11);
+  builder.startObject(14);
 };
 
 /**
@@ -592,6 +787,30 @@ static addCrs(builder:flatbuffers.Builder, crsOffset:flatbuffers.Offset) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset titleOffset
+ */
+static addTitle(builder:flatbuffers.Builder, titleOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(11, titleOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset descriptionOffset
+ */
+static addDescription(builder:flatbuffers.Builder, descriptionOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(12, descriptionOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset metadataOffset
+ */
+static addMetadata(builder:flatbuffers.Builder, metadataOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(13, metadataOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -599,7 +818,7 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, hasTM:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, indexNodeSize:number, crsOffset:flatbuffers.Offset):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelopeOffset:flatbuffers.Offset, geometryType:GeometryType, hasZ:boolean, hasM:boolean, hasT:boolean, hasTM:boolean, columnsOffset:flatbuffers.Offset, featuresCount:flatbuffers.Long, indexNodeSize:number, crsOffset:flatbuffers.Offset, titleOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, metadataOffset:flatbuffers.Offset):flatbuffers.Offset {
   Header.start(builder);
   Header.addName(builder, nameOffset);
   Header.addEnvelope(builder, envelopeOffset);
@@ -612,6 +831,9 @@ static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, envelo
   Header.addFeaturesCount(builder, featuresCount);
   Header.addIndexNodeSize(builder, indexNodeSize);
   Header.addCrs(builder, crsOffset);
+  Header.addTitle(builder, titleOffset);
+  Header.addDescription(builder, descriptionOffset);
+  Header.addMetadata(builder, metadataOffset);
   return Header.end(builder);
 }
 }

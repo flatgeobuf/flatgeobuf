@@ -37,6 +37,15 @@ public final class Header extends Table {
   public int indexNodeSize() { int o = __offset(22); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 16; }
   public Crs crs() { return crs(new Crs()); }
   public Crs crs(Crs obj) { int o = __offset(24); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public String title() { int o = __offset(26); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer titleAsByteBuffer() { return __vector_as_bytebuffer(26, 1); }
+  public ByteBuffer titleInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 26, 1); }
+  public String description() { int o = __offset(28); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer descriptionAsByteBuffer() { return __vector_as_bytebuffer(28, 1); }
+  public ByteBuffer descriptionInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 28, 1); }
+  public String metadata() { int o = __offset(30); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer metadataAsByteBuffer() { return __vector_as_bytebuffer(30, 1); }
+  public ByteBuffer metadataInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 30, 1); }
 
   public static int createHeader(FlatBufferBuilder builder,
       int nameOffset,
@@ -49,9 +58,15 @@ public final class Header extends Table {
       int columnsOffset,
       long features_count,
       int index_node_size,
-      int crsOffset) {
-    builder.startTable(11);
+      int crsOffset,
+      int titleOffset,
+      int descriptionOffset,
+      int metadataOffset) {
+    builder.startTable(14);
     Header.addFeaturesCount(builder, features_count);
+    Header.addMetadata(builder, metadataOffset);
+    Header.addDescription(builder, descriptionOffset);
+    Header.addTitle(builder, titleOffset);
     Header.addCrs(builder, crsOffset);
     Header.addColumns(builder, columnsOffset);
     Header.addEnvelope(builder, envelopeOffset);
@@ -65,7 +80,7 @@ public final class Header extends Table {
     return Header.endHeader(builder);
   }
 
-  public static void startHeader(FlatBufferBuilder builder) { builder.startTable(11); }
+  public static void startHeader(FlatBufferBuilder builder) { builder.startTable(14); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
   public static void addEnvelope(FlatBufferBuilder builder, int envelopeOffset) { builder.addOffset(1, envelopeOffset, 0); }
   public static int createEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
@@ -81,6 +96,9 @@ public final class Header extends Table {
   public static void addFeaturesCount(FlatBufferBuilder builder, long featuresCount) { builder.addLong(8, featuresCount, 0L); }
   public static void addIndexNodeSize(FlatBufferBuilder builder, int indexNodeSize) { builder.addShort(9, (short)indexNodeSize, (short)16); }
   public static void addCrs(FlatBufferBuilder builder, int crsOffset) { builder.addOffset(10, crsOffset, 0); }
+  public static void addTitle(FlatBufferBuilder builder, int titleOffset) { builder.addOffset(11, titleOffset, 0); }
+  public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(12, descriptionOffset, 0); }
+  public static void addMetadata(FlatBufferBuilder builder, int metadataOffset) { builder.addOffset(13, metadataOffset, 0); }
   public static int endHeader(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;
