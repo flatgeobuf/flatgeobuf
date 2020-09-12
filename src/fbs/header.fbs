@@ -60,7 +60,7 @@ table Crs {
   name: string;                 // Human readable name of this SRS
   description: string;          // Human readable description of this SRS
   wkt: string;                  // Well-known Text Representation of the Spatial Reference System
-  code_string: string;          // Text ID of the Spatial Reference System assigned by the organization (rarely used)
+  code_string: string;          // Text ID of the Spatial Reference System assigned by the organization in the (rare) case when it is not an integer and thus cannot be set into code
 }
 
 table Header {
