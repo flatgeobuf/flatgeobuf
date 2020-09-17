@@ -1,15 +1,15 @@
 {
     "compilerOptions": {
-        "module": "ES6",
+        "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
         "strict": true,
         "declaration": true,
-        "outDir": "../lib",
+        "outDir": "../lib/cjs",
         "sourceMap": true,
-        "target": "ESNext",
+        "target": "ES5",
         "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true
     },

@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "module": "ES6",
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "strict": true,
+        "declaration": true,
+        "outDir": "../lib/mjs",
+        "sourceMap": true,
+        "target": "ES2020",
+        "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
+        "allowSyntheticDefaultImports": true
+    },
+    "include": [
+        "../src/ts"
+    ],
+    "exclude": [
+        "../node_modules",
+        "../**/*.spec.ts"
+    ],
+    "typedocOptions": {
+        "out": "dist/doc",
+        "tsconfig": "config/tsconfig.json",
+        "exclude": [
+            "**/*.spec.ts"
+        ],
+        "inputFiles": "src/ts/flatgeobuf.ts",
+        "readme": "none"
+    }
+}
