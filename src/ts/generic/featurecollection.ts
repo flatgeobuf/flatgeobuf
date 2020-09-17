@@ -1,5 +1,5 @@
 import { flatbuffers } from 'flatbuffers'
-import slice from 'slice-source'
+import * as slice from 'slice-source'
 
 import ColumnMeta from '../ColumnMeta'
 import CrsMeta from '../CrsMeta'
