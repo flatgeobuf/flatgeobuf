@@ -1,4 +1,4 @@
-declare module 'slice-source/index.js' {
+declare module 'slice-source' {
     function slice(source: ReadableStream | ReadableStreamReader | SliceSource): SliceSource;
 
     interface SliceChunk {
