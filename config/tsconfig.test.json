@@ -6,7 +6,9 @@
         "preserveConstEnums": true,
         "outFile": "./test.js",
         "sourceMap": true,
-        "target": "ES6"
+        "target": "ES6",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
     },
     "include": [
         "src/**/*"

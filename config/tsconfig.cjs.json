@@ -11,7 +11,8 @@
         "sourceMap": true,
         "target": "ES5",
         "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
     },
     "include": [
         "../src/ts"
