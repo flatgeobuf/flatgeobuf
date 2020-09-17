@@ -25,7 +25,13 @@ export function serialize(features: IFeature[]) : Uint8Array {
     const headerMeta = introspectHeaderMeta(features)
     const header = buildHeader(headerMeta)
     const featureBuffers: Uint8Array[] = features
-        .map(f => buildFeature(parseGeometry(f.getGeometry(), headerMeta.geometryType), f.getProperties(), headerMeta))
+        .map(f => {
+            if (!f.getGeometry)
+                throw new Error('Missing getGeometry implementation')
+            if (!f.getProperties)
+                throw new Error('Missing getProperties implementation')
+            return buildFeature(parseGeometry(f.getGeometry(), headerMeta.geometryType), f.getProperties(), headerMeta)
+        })
     const featuresLength = featureBuffers
         .map(f => f.length)
         .reduce((a, b) => a + b)
@@ -53,7 +59,11 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     const columns: ColumnMeta[] = []
     for (let j = 0; j < header.columnsLength(); j++) {
         const column = header.columns(j)
-        columns.push(new ColumnMeta(column.name(), column.type()))
+        if (!column)
+            throw new Error('Column unexpectedly missing')
+        if (!column.name())
+            throw new Error('Column name unexpectedly missing')
+        columns.push(new ColumnMeta(column.name() as string, column.type()))
     }
     const crs = header.crs()
     const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
@@ -106,7 +116,7 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFe
     return deserializeInternal(read, seek, rect, fromFeature, headerMetaFn)
 }
 
-async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) :
+async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect: Rect | undefined, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) :
     AsyncGenerator<IFeature>
 {
     let offset = 0
@@ -127,7 +137,11 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
     const columns: ColumnMeta[] = []
     for (let j = 0; j < header.columnsLength(); j++) {
         const column = header.columns(j)
-        columns.push(new ColumnMeta(column.name(), column.type()))
+        if (!column)
+            throw new Error('Unexpected missing column')
+        if (!column.name())
+            throw new Error('Unexpected missing column name')
+        columns.push(new ColumnMeta(column.name() as string, column.type()))
     }
     const crs = header.crs()
     const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt()) : null)
@@ -137,7 +151,7 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         headerMetaFn(headerMeta)
 
     const indexNodeSize = header.indexNodeSize()
-    if (indexNodeSize > 0) {
+    if (indexNodeSize > 0 && seek) {
         const treeSize = calcTreeSize(count, indexNodeSize)
         if (rect) {
             const readNode = async (treeOffset: number, size: number) => {
@@ -150,7 +164,9 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
             offset += treeSize
             for await (const foundOffset of foundOffsets) {
                 await seek(offset + foundOffset)
-                yield await readFeature(read, headerMeta, fromFeature)
+                const feature = await readFeature(read, headerMeta, fromFeature)
+                if (feature)
+                    yield feature
             }
             return
         } else {
@@ -161,17 +177,17 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn, rect: Rect, from
         }
         offset += treeSize
     }
-    let feature : IFeature
+    let feature : IFeature | undefined
     while ((feature = await readFeature(read, headerMeta, fromFeature)))
         yield feature
 }
 
 async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn)
-    : Promise<IFeature>
+    : Promise<IFeature | undefined>
 {
     let bytes = new Uint8Array(await read(4))
     if (bytes.byteLength === 0)
-        return null
+        return
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
     bytes = new Uint8Array(await read(featureLength))
@@ -231,15 +247,15 @@ function valueToType(value: boolean | number | string): ColumnType {
 
 function introspectHeaderMeta(features: IFeature[]) {
     const feature = features[0]
-    const geometry = feature.getGeometry()
-    const geometryType = geometry.getType()
-    const properties = feature.getProperties()
+    const geometry = feature.getGeometry ? feature.getGeometry() : undefined
+    const geometryType = geometry ? geometry.getType() : undefined
+    const properties = feature.getProperties ? feature.getProperties() : {}
 
-    let columns: ColumnMeta[] = null
+    let columns: ColumnMeta[] | null = null
     if (properties)
         columns = Object.keys(properties).filter(key => key !== 'geometry')
             .map(k => new ColumnMeta(k, valueToType(properties[k])))
 
-    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length)
+    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length, null)
     return headerMeta
 }

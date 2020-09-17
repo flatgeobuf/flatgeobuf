@@ -44,11 +44,11 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     }
 
     const xyOffset = Geometry.createXyVector(builder, xy)
-    let zOffset: number = null
+    let zOffset: number | undefined
     if (z)
         zOffset = Geometry.createZVector(builder, z)
 
-    let endsOffset: number = null
+    let endsOffset: number | undefined
     if (ends)
         endsOffset = Geometry.createEndsVector(builder, ends)
 
@@ -67,7 +67,7 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
         Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
 }*/
 
-export function flat(a: any[], xy: number[], z: number[]): number[] {
+export function flat(a: any[], xy: number[], z: number[]): number[] | undefined {
     if (a.length === 0)
         return
     if (Array.isArray(a[0])) {
@@ -84,16 +84,18 @@ export function flat(a: any[], xy: number[], z: number[]): number[] {
 }
 
 export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IParsedGeometry {
-    let xy: number[] = null
-    let ends: number[] = null
-    let parts: IParsedGeometry[] = null
+    let xy: number[] | undefined
+    let ends: number[] | undefined
+    let parts: IParsedGeometry[] | undefined
     if (type === GeometryType.MultiLineString) {
-        xy = geometry.getFlatCoordinates()
+        if (geometry.getFlatCoordinates)
+            xy = geometry.getFlatCoordinates()
         const mlsEnds = (geometry as IMultiLineString).getEnds()
         if (mlsEnds.length > 1)
             ends = mlsEnds.map(e => e >> 1)
     } else if (type === GeometryType.Polygon) {
-        xy = geometry.getFlatCoordinates()
+        if (geometry.getFlatCoordinates)
+            xy = geometry.getFlatCoordinates()
         const pEnds = (geometry as IPolygon).getEnds()
         if (pEnds.length > 1)
             ends = pEnds.map(e => e >> 1)
@@ -101,7 +103,8 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IP
         const mp = (geometry as IMultiPolygon)
         parts = mp.getPolygons().map(p => parseGeometry(p, GeometryType.Polygon))
     } else {
-        xy = geometry.getFlatCoordinates()
+        if (geometry.getFlatCoordinates)
+            xy = geometry.getFlatCoordinates()
     }
     return {
         xy,
@@ -111,7 +114,7 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IP
     } as IParsedGeometry
 }
 
-export function pairFlatCoordinates(xy: Float64Array, z: Float64Array): number[][] {
+export function pairFlatCoordinates(xy: Float64Array, z: Float64Array | undefined): number[][] {
     const newArray: number[][] = []
     for (let i = 0; i < xy.length; i += 2) {
         const a = [xy[i], xy[i + 1]]
@@ -123,7 +126,9 @@ export function pairFlatCoordinates(xy: Float64Array, z: Float64Array): number[]
     return newArray
 }
 
-export function toGeometryType(name: string): GeometryType {
+export function toGeometryType(name: string | undefined): GeometryType {
+    if (!name)
+        return GeometryType.Unknown
     const type: GeometryType = (GeometryType as any)[name]
     return type
 }

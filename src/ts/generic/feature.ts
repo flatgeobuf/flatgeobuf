@@ -30,8 +30,12 @@ export function fromFeature(
         createFeature: ICreateFeature): IFeature {
     const columns = header.columns
     const geometry = feature.geometry()
+    if (!geometry)
+        throw new Error('Missing geometry')
     const simpleGeometry = createGeometry(geometry, header.geometryType)
-    const properties = parseProperties(feature, columns)
+    let properties: any
+    if (columns)
+        properties = parseProperties(feature, columns as ColumnMeta[])
     return createFeature(simpleGeometry, properties)
 }
 
@@ -84,7 +88,7 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     return builder.asUint8Array() as Uint8Array
 }
 
-function concat(resultConstructor, ...arrays) : Uint8Array {
+function concat(resultConstructor: any, ...arrays : any[]) : Uint8Array {
     let totalLength = 0
     for (const arr of arrays)
         totalLength += arr.byteLength
@@ -100,10 +104,12 @@ function concat(resultConstructor, ...arrays) : Uint8Array {
     return result
 }
 
-export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> {
+export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> | undefined {
     if (!columns || columns.length === 0)
         return
     const array = feature.propertiesArray()
+    if (!array)
+        throw new Error('Properties array unexpectedly null')
     const view = new DataView(array.buffer, array.byteOffset)
     const length = feature.propertiesLength()
     let offset = 0

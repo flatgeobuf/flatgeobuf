@@ -61,7 +61,7 @@ export async function* streamSearch(
     const { minX, minY, maxX, maxY } = rect
     const levelBounds = generateLevelBounds(numItems, nodeSize)
     const [[leafNodesOffset,numNodes]] = levelBounds
-    const queue = []
+    const queue: any[] = []
     queue.push([0, levelBounds.length - 1])
     while (queue.length !== 0) {
         const [nodeIndex, level] = queue.pop()

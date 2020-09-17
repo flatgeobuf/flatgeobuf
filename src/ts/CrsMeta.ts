@@ -1,11 +1,11 @@
 
 export default class CrsMeta {
-    org: string
+    org: string | null
     code: number
-    name: string
-    description: string
-    wkt: string
-    constructor(org: string, code: number, name: string, description: string, wkt: string) {
+    name: string | null
+    description: string | null
+    wkt: string | null
+    constructor(org: string | null, code: number, name: string | null, description: string | null, wkt: string | null) {
         this.org = org
         this.code = code
         this.name = name

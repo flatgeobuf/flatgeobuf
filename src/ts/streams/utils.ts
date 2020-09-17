@@ -13,7 +13,7 @@ export function arrayToStream(array: ArrayBuffer) : ReadableStream {
     myReadableStreamBuffer.put(Buffer.from(array))
     myReadableStreamBuffer.stop()
 
-    const webReader = nodeToWeb(myReadableStreamBuffer)
+    const webReader = nodeToWeb(myReadableStreamBuffer as any)
 
     return webReader
 }
@@ -30,9 +30,9 @@ export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infin
   return result
 }
 
-function nodeToWeb(nodeStream: Readable) {
+export function nodeToWeb(nodeStream: Readable) : ReadableStream {
     let destroyed = false
-    const listeners = {}
+    const listeners: any = {}
   
     function start (controller: ReadableStreamDefaultController) {
       listeners['data'] = onData

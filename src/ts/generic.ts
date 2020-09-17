@@ -21,7 +21,7 @@ export function deserialize(
     else if (input instanceof ReadableStream)
         return deserializeStream(input, fromFeature)
     else
-        return deserializeFiltered(input, rect, fromFeature)
+        return deserializeFiltered(input, rect as Rect, fromFeature)
 }
 
 export { 

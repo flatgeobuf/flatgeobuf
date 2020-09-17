@@ -34,5 +34,5 @@ export function deserialize(
     else if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn)
     else
-        return fcDeserializeFiltered(input, rect, headerMetaFn)
+        return fcDeserializeFiltered(input, rect as Rect, headerMetaFn)
 }

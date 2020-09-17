@@ -14,7 +14,7 @@ import GeometryLayout from 'ol/geom/GeometryLayout'
 export function createGeometryOl(geometry: Geometry, type: GeometryType): ISimpleGeometry {
     const xyArray = geometry.xyArray()
     if (xyArray) {
-        const xy = Array.from(geometry.xyArray())
+        const xy = Array.from(geometry.xyArray() as ArrayLike<number>)
         const ends = geometry.endsArray()
         const olEnds = ends ? Array.from(ends.map(e => e << 1)) : [xy.length]
         switch (type) {
@@ -32,7 +32,7 @@ export function createGeometryOl(geometry: Geometry, type: GeometryType): ISimpl
     } else if (type === GeometryType.MultiPolygon) {
         const mp = new MultiPolygon([])
         for (let i = 0; i < geometry.partsLength(); i++)
-            mp.appendPolygon(createGeometryOl(geometry.parts(i), GeometryType.Polygon) as Polygon)
+            mp.appendPolygon(createGeometryOl(geometry.parts(i) as Geometry, GeometryType.Polygon) as Polygon)
         return mp
     }
     throw new Error('Unknown type')

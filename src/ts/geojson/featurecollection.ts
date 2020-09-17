@@ -12,19 +12,19 @@ import {
     deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
 import { toGeometryType } from '../generic/geometry'
 import { Rect } from '../packedrtree'
-import { buildFeature } from '../generic/feature'
+import { buildFeature, IProperties } from '../generic/feature'
 import { HeaderMetaFn } from '../generic'
 
 export interface IGeoJsonFeatureCollection {
     type: string,
-    features?: IGeoJsonFeature[]
+    features: IGeoJsonFeature[]
 }
 
 export function serialize(featurecollection: IGeoJsonFeatureCollection): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection)
     const header = buildHeader(headerMeta)
     const features: Uint8Array[] = featurecollection.features
-        .map(f => buildFeature(parseGeometry(f.geometry), f.properties, headerMeta))
+        .map(f => buildFeature(parseGeometry(f.geometry), f.properties as IProperties, headerMeta))
     const featuresLength = features
         .map(f => f.length)
         .reduce((a, b) => a + b)
@@ -71,16 +71,16 @@ function valueToType(value: boolean | number | string | unknown): ColumnType {
         throw new Error(`Unknown type (value '${value}')`)
 }
 
-function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) {
+function introspectHeaderMeta(featurecollection: IGeoJsonFeatureCollection) : HeaderMeta {
     const feature = featurecollection.features[0]
     const properties = feature.properties
 
-    let columns: ColumnMeta[] = null
+    let columns: ColumnMeta[] | null = null
     if (properties)
         columns = Object.keys(properties)
             .map(k => new ColumnMeta(k, valueToType(properties[k])))
 
-    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length)
+    const headerMeta = new HeaderMeta(toGeometryType(feature.geometry.type), columns, featurecollection.features.length, null)
 
     return headerMeta
 }

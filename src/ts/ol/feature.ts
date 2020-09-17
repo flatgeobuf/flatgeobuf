@@ -9,7 +9,7 @@ import { ISimpleGeometry } from '../generic/geometry'
 
 export function createFeatureOl(geometry: ISimpleGeometry, properties: Record<string, unknown>): IFeature {
     const feature = new OLFeature(geometry) as IFeature
-    if (properties)
+    if (properties && feature.setProperties)
         feature.setProperties(properties)
     return feature
 }

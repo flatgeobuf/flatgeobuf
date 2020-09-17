@@ -11,7 +11,12 @@ const arrayTypeMap = {
     [ColumnType.UInt]: Uint32Array,
     [ColumnType.Long]: BigUint64Array,
     [ColumnType.ULong]: BigUint64Array,
-    [ColumnType.Double]: Float64Array
+    [ColumnType.Float]: Float64Array,
+    [ColumnType.Double]: Float64Array,
+    [ColumnType.String]: String,
+    [ColumnType.Json]: String,
+    [ColumnType.DateTime]: String,
+    [ColumnType.Binary]: String,
 }
 
 export default class ColumnMeta {
@@ -21,6 +26,6 @@ export default class ColumnMeta {
     constructor(name: string, type: ColumnType) {
         this.name = name
         this.type = type
-        this.arrayType = arrayTypeMap[type]
+        this.arrayType = arrayTypeMap[type] as any
     }
 }

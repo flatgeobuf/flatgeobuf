@@ -1,0 +1,1 @@
+declare module 'slice-source/index.js'

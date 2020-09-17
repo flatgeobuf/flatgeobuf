@@ -2,9 +2,11 @@
     "compilerOptions": {
         "module": "ES6",
         "moduleResolution": "node",
-        "noImplicitAny": false,
+        "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
+        "strict": true,
+        "declaration": true,
         "outDir": "../lib",
         "sourceMap": true,
         "target": "ESNext"
@@ -15,5 +17,6 @@
     "exclude": [
         "../node_modules",
         "../**/*.spec.ts"
-    ]
+    ],
+    "typeRoots": [ "./src/ts/types", "./node_modules/@types"]
 }
