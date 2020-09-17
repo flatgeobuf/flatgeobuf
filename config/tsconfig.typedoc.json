@@ -2,16 +2,14 @@
     "compilerOptions": {
         "module": "ES6",
         "moduleResolution": "node",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
-        "strict": true,
-        "declaration": true,
+        "strict": false,
         "outDir": "../lib",
         "sourceMap": true,
         "target": "ESNext",
-        "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
-        "allowSyntheticDefaultImports": true
+        "typeRoots": [ "./src/ts/types", "./node_modules/@types"]
     },
     "include": [
         "../src/ts"
