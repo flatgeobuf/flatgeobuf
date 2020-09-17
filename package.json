@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "3.6.1",
+  "version": "3.6.2",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "tsc -p config/tsconfig.mjs.json && tsc -p config/tsconfig.cjs.json && rollup -c config/rollup.config.js",
@@ -13,6 +13,7 @@
     "dist/**/*"
   ],
   "main": "lib/cjs/flatgeobuf.js",
+  "types": "lib/cjs/flatgeobuf.d.ts",
   "module": "lib/mjs/flatgeobuf.js",
   "repository": {
     "type": "git",
