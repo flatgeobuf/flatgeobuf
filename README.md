@@ -70,10 +70,10 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ## Supported applications / libraries
 
-* [GDAL (3.1+)](https://gdal.org)
-* [GeoServer (2.17+)](http://geoserver.org)
-* [QGIS (3.16+)](https://qgis.org)
-* [Geo Data Viewer (Visual Studio Code extension) (2.3+)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer)
+* [GDAL](https://gdal.org) (3.1 and forward)
+* [GeoServer](http://geoserver.org) (2.17 and forward)
+* [QGIS](https://qgis.org) (3.16 and forward, not yet released)
+* [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
 
 ## Documentation
 
