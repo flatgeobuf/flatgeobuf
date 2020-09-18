@@ -63,7 +63,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ## Features
 
-* Reference implementation for JavaScript, TypeScript, C++, Java and Rust
+* Reference implementation for JavaScript, TypeScript, C++, C#, Java and Rust
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
