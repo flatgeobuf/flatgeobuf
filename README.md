@@ -68,6 +68,12 @@ As performance is highly data dependent I've also made similar tests on a larger
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
 
+## Supported applications / libraries
+
+* [GDAL 3.1+](https://gdal.org)
+* [QGIS 3.16+](https://qgis.org)
+* [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer)
+
 ## Documentation
 
 ### TypeScript / JavaScript
