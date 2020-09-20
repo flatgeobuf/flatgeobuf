@@ -24,21 +24,21 @@ enum GeometryType: ubyte {
 }
 
 enum ColumnType: ubyte {
-  Byte,
-  UByte,
-  Bool,
-  Short,
-  UShort,
-  Int,
-  UInt,
-  Long,
-  ULong,
-  Float,
-  Double,
-  String,
-  Json,
-  DateTime,
-  Binary
+  Byte,                         // Signed 8-bit integer
+  UByte,                        // Unsigned 8-bit integer
+  Bool,                         // Boolean
+  Short,                        // Signed 16-bit integer
+  UShort,                       // Unsigned 16-bit integer
+  Int,                          // Signed 32-bit integer
+  UInt,                         // Unsigned 32-bit integer
+  Long,                         // Signed 64-bit integer
+  ULong,                        // Unsigned 64-bit integer
+  Float,                        // Single precision floating point number
+  Double,                       // Double precision floating point number
+  String,                       // UTF8 string
+  Json,                         // General JSON type intended to be application specific
+  DateTime,                     // ISO 8601 date time
+  Binary                        // General binary type intended to be application specific
 }
 
 table Column {
@@ -52,6 +52,7 @@ table Column {
   nullable: bool = true;        // Column values expected nullability
   unique: bool = false;         // Column values expected uniqueness
   primary_key: bool = false;    // Indicates this column has been (part of) a primary key
+  metadata: string;             // Column metadata (intended to be application specific and suggested to be structured fx. JSON)
 }
 
 table Crs {
@@ -77,7 +78,7 @@ table Header {
   crs: Crs;                     // Spatial Reference System
   title: string;                // Dataset title
   description: string;          // Dataset description (intended for free form long text)
-  metadata: string;             // Dataset metadata (intended for arbitrary but structured metadata fx. JSON)
+  metadata: string;             // Dataset metadata (intended to be application specific and suggested to be structured fx. JSON)
 }
 
 root_type Header;
