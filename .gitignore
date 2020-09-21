@@ -1,6 +1,7 @@
 node_modules
 yarn-error.log
 package-lock.json
+/src/c/include/flatcc
 /src/cpp/include/flatbuffers
 /src/cpp/include/mapbox
 /src/cpp/include/rapidjson
