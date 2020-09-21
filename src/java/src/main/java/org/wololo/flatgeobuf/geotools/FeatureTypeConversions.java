@@ -104,7 +104,7 @@ public class FeatureTypeConversions {
         int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
-            return Column.createColumn(builder, nameOffset, type, 0, 0, -1, -1, -1, true, false, false);
+            return Column.createColumn(builder, nameOffset, type, 0, 0, -1, -1, -1, true, false, false, 0);
         }).toArray();
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
