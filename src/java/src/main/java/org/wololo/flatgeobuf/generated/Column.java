@@ -30,6 +30,9 @@ public final class Column extends Table {
   public boolean nullable() { int o = __offset(18); return o != 0 ? 0!=bb.get(o + bb_pos) : true; }
   public boolean unique() { int o = __offset(20); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public boolean primaryKey() { int o = __offset(22); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+  public String metadata() { int o = __offset(24); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer metadataAsByteBuffer() { return __vector_as_bytebuffer(24, 1); }
+  public ByteBuffer metadataInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 24, 1); }
 
   public static int createColumn(FlatBufferBuilder builder,
       int nameOffset,
@@ -41,8 +44,10 @@ public final class Column extends Table {
       int scale,
       boolean nullable,
       boolean unique,
-      boolean primary_key) {
-    builder.startTable(10);
+      boolean primary_key,
+      int metadataOffset) {
+    builder.startTable(11);
+    Column.addMetadata(builder, metadataOffset);
     Column.addScale(builder, scale);
     Column.addPrecision(builder, precision);
     Column.addWidth(builder, width);
@@ -56,7 +61,7 @@ public final class Column extends Table {
     return Column.endColumn(builder);
   }
 
-  public static void startColumn(FlatBufferBuilder builder) { builder.startTable(10); }
+  public static void startColumn(FlatBufferBuilder builder) { builder.startTable(11); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
   public static void addType(FlatBufferBuilder builder, int type) { builder.addByte(1, (byte)type, (byte)0); }
   public static void addTitle(FlatBufferBuilder builder, int titleOffset) { builder.addOffset(2, titleOffset, 0); }
@@ -67,6 +72,7 @@ public final class Column extends Table {
   public static void addNullable(FlatBufferBuilder builder, boolean nullable) { builder.addBoolean(7, nullable, true); }
   public static void addUnique(FlatBufferBuilder builder, boolean unique) { builder.addBoolean(8, unique, false); }
   public static void addPrimaryKey(FlatBufferBuilder builder, boolean primaryKey) { builder.addBoolean(9, primaryKey, false); }
+  public static void addMetadata(FlatBufferBuilder builder, int metadataOffset) { builder.addOffset(10, metadataOffset, 0); }
   public static int endColumn(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 4);  // name

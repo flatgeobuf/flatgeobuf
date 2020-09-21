@@ -176,7 +176,8 @@ struct Column FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SCALE = 16,
     VT_NULLABLE = 18,
     VT_UNIQUE = 20,
-    VT_PRIMARY_KEY = 22
+    VT_PRIMARY_KEY = 22,
+    VT_METADATA = 24
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -208,6 +209,9 @@ struct Column FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool primary_key() const {
     return GetField<uint8_t>(VT_PRIMARY_KEY, 0) != 0;
   }
+  const flatbuffers::String *metadata() const {
+    return GetPointer<const flatbuffers::String *>(VT_METADATA);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffsetRequired(verifier, VT_NAME) &&
@@ -223,6 +227,8 @@ struct Column FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_NULLABLE) &&
            VerifyField<uint8_t>(verifier, VT_UNIQUE) &&
            VerifyField<uint8_t>(verifier, VT_PRIMARY_KEY) &&
+           VerifyOffset(verifier, VT_METADATA) &&
+           verifier.VerifyString(metadata()) &&
            verifier.EndTable();
   }
 };
@@ -261,6 +267,9 @@ struct ColumnBuilder {
   void add_primary_key(bool primary_key) {
     fbb_.AddElement<uint8_t>(Column::VT_PRIMARY_KEY, static_cast<uint8_t>(primary_key), 0);
   }
+  void add_metadata(flatbuffers::Offset<flatbuffers::String> metadata) {
+    fbb_.AddOffset(Column::VT_METADATA, metadata);
+  }
   explicit ColumnBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -285,8 +294,10 @@ inline flatbuffers::Offset<Column> CreateColumn(
     int32_t scale = -1,
     bool nullable = true,
     bool unique = false,
-    bool primary_key = false) {
+    bool primary_key = false,
+    flatbuffers::Offset<flatbuffers::String> metadata = 0) {
   ColumnBuilder builder_(_fbb);
+  builder_.add_metadata(metadata);
   builder_.add_scale(scale);
   builder_.add_precision(precision);
   builder_.add_width(width);
@@ -311,10 +322,12 @@ inline flatbuffers::Offset<Column> CreateColumnDirect(
     int32_t scale = -1,
     bool nullable = true,
     bool unique = false,
-    bool primary_key = false) {
+    bool primary_key = false,
+    const char *metadata = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto title__ = title ? _fbb.CreateString(title) : 0;
   auto description__ = description ? _fbb.CreateString(description) : 0;
+  auto metadata__ = metadata ? _fbb.CreateString(metadata) : 0;
   return FlatGeobuf::CreateColumn(
       _fbb,
       name__,
@@ -326,7 +339,8 @@ inline flatbuffers::Offset<Column> CreateColumnDirect(
       scale,
       nullable,
       unique,
-      primary_key);
+      primary_key,
+      metadata__);
 }
 
 struct Crs FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

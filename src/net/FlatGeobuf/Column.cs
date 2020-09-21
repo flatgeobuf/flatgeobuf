@@ -47,6 +47,13 @@ public struct Column : IFlatbufferObject
   public bool Nullable { get { int o = __p.__offset(18); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)true; } }
   public bool Unique { get { int o = __p.__offset(20); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
   public bool PrimaryKey { get { int o = __p.__offset(22); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
+  public string Metadata { get { int o = __p.__offset(24); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetMetadataBytes() { return __p.__vector_as_span<byte>(24, 1); }
+#else
+  public ArraySegment<byte>? GetMetadataBytes() { return __p.__vector_as_arraysegment(24); }
+#endif
+  public byte[] GetMetadataArray() { return __p.__vector_as_array<byte>(24); }
 
   public static Offset<FlatGeobuf.Column> CreateColumn(FlatBufferBuilder builder,
       StringOffset nameOffset = default(StringOffset),
@@ -58,8 +65,10 @@ public struct Column : IFlatbufferObject
       int scale = -1,
       bool nullable = true,
       bool unique = false,
-      bool primary_key = false) {
-    builder.StartTable(10);
+      bool primary_key = false,
+      StringOffset metadataOffset = default(StringOffset)) {
+    builder.StartTable(11);
+    Column.AddMetadata(builder, metadataOffset);
     Column.AddScale(builder, scale);
     Column.AddPrecision(builder, precision);
     Column.AddWidth(builder, width);
@@ -73,7 +82,7 @@ public struct Column : IFlatbufferObject
     return Column.EndColumn(builder);
   }
 
-  public static void StartColumn(FlatBufferBuilder builder) { builder.StartTable(10); }
+  public static void StartColumn(FlatBufferBuilder builder) { builder.StartTable(11); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(0, nameOffset.Value, 0); }
   public static void AddType(FlatBufferBuilder builder, FlatGeobuf.ColumnType type) { builder.AddByte(1, (byte)type, 0); }
   public static void AddTitle(FlatBufferBuilder builder, StringOffset titleOffset) { builder.AddOffset(2, titleOffset.Value, 0); }
@@ -84,6 +93,7 @@ public struct Column : IFlatbufferObject
   public static void AddNullable(FlatBufferBuilder builder, bool nullable) { builder.AddBool(7, nullable, true); }
   public static void AddUnique(FlatBufferBuilder builder, bool unique) { builder.AddBool(8, unique, false); }
   public static void AddPrimaryKey(FlatBufferBuilder builder, bool primaryKey) { builder.AddBool(9, primaryKey, false); }
+  public static void AddMetadata(FlatBufferBuilder builder, StringOffset metadataOffset) { builder.AddOffset(10, metadataOffset.Value, 0); }
   public static Offset<FlatGeobuf.Column> EndColumn(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     builder.Required(o, 4);  // name

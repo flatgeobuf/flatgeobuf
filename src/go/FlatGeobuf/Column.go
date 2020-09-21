@@ -134,8 +134,16 @@ func (rcv *Column) MutatePrimaryKey(n bool) bool {
 	return rcv._tab.MutateBoolSlot(22, n)
 }
 
+func (rcv *Column) Metadata() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(24))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func ColumnStart(builder *flatbuffers.Builder) {
-	builder.StartObject(10)
+	builder.StartObject(11)
 }
 func ColumnAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -166,6 +174,9 @@ func ColumnAddUnique(builder *flatbuffers.Builder, unique bool) {
 }
 func ColumnAddPrimaryKey(builder *flatbuffers.Builder, primaryKey bool) {
 	builder.PrependBoolSlot(9, primaryKey, false)
+}
+func ColumnAddMetadata(builder *flatbuffers.Builder, metadata flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(10, flatbuffers.UOffsetT(metadata), 0)
 }
 func ColumnEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

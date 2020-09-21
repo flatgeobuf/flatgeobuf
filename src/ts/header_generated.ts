@@ -173,10 +173,21 @@ primaryKey():boolean {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+metadata():string|null
+metadata(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+metadata(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 24);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static start(builder:flatbuffers.Builder) {
-  builder.startObject(10);
+  builder.startObject(11);
 };
 
 /**
@@ -261,6 +272,14 @@ static addPrimaryKey(builder:flatbuffers.Builder, primaryKey:boolean) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset metadataOffset
+ */
+static addMetadata(builder:flatbuffers.Builder, metadataOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(10, metadataOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static end(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -269,7 +288,7 @@ static end(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:ColumnType, titleOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, width:number, precision:number, scale:number, nullable:boolean, unique:boolean, primaryKey:boolean):flatbuffers.Offset {
+static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:ColumnType, titleOffset:flatbuffers.Offset, descriptionOffset:flatbuffers.Offset, width:number, precision:number, scale:number, nullable:boolean, unique:boolean, primaryKey:boolean, metadataOffset:flatbuffers.Offset):flatbuffers.Offset {
   Column.start(builder);
   Column.addName(builder, nameOffset);
   Column.addType(builder, type);
@@ -281,6 +300,7 @@ static create(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset, type:C
   Column.addNullable(builder, nullable);
   Column.addUnique(builder, unique);
   Column.addPrimaryKey(builder, primaryKey);
+  Column.addMetadata(builder, metadataOffset);
   return Column.end(builder);
 }
 }
