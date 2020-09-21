@@ -252,13 +252,31 @@ impl<'a> Column<'a> {
         _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
         args: &'args ColumnArgs<'args>) -> flatbuffers::WIPOffset<Column<'bldr>> {
       let mut builder = ColumnBuilder::new(_fbb);
+      if let Some(x) = args.metadata { builder.add_metadata(x); }
+      builder.add_scale(args.scale);
+      builder.add_precision(args.precision);
+      builder.add_width(args.width);
+      if let Some(x) = args.description { builder.add_description(x); }
+      if let Some(x) = args.title { builder.add_title(x); }
       if let Some(x) = args.name { builder.add_name(x); }
+      builder.add_primary_key(args.primary_key);
+      builder.add_unique(args.unique);
+      builder.add_nullable(args.nullable);
       builder.add_type_(args.type_);
       builder.finish()
     }
 
     pub const VT_NAME: flatbuffers::VOffsetT = 4;
     pub const VT_TYPE_: flatbuffers::VOffsetT = 6;
+    pub const VT_TITLE: flatbuffers::VOffsetT = 8;
+    pub const VT_DESCRIPTION: flatbuffers::VOffsetT = 10;
+    pub const VT_WIDTH: flatbuffers::VOffsetT = 12;
+    pub const VT_PRECISION: flatbuffers::VOffsetT = 14;
+    pub const VT_SCALE: flatbuffers::VOffsetT = 16;
+    pub const VT_NULLABLE: flatbuffers::VOffsetT = 18;
+    pub const VT_UNIQUE: flatbuffers::VOffsetT = 20;
+    pub const VT_PRIMARY_KEY: flatbuffers::VOffsetT = 22;
+    pub const VT_METADATA: flatbuffers::VOffsetT = 24;
 
   #[inline]
   pub fn name(&self) -> &'a str {
@@ -268,11 +286,56 @@ impl<'a> Column<'a> {
   pub fn type_(&self) -> ColumnType {
     self._tab.get::<ColumnType>(Column::VT_TYPE_, Some(ColumnType::Byte)).unwrap()
   }
+  #[inline]
+  pub fn title(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Column::VT_TITLE, None)
+  }
+  #[inline]
+  pub fn description(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Column::VT_DESCRIPTION, None)
+  }
+  #[inline]
+  pub fn width(&self) -> i32 {
+    self._tab.get::<i32>(Column::VT_WIDTH, Some(-1)).unwrap()
+  }
+  #[inline]
+  pub fn precision(&self) -> i32 {
+    self._tab.get::<i32>(Column::VT_PRECISION, Some(-1)).unwrap()
+  }
+  #[inline]
+  pub fn scale(&self) -> i32 {
+    self._tab.get::<i32>(Column::VT_SCALE, Some(-1)).unwrap()
+  }
+  #[inline]
+  pub fn nullable(&self) -> bool {
+    self._tab.get::<bool>(Column::VT_NULLABLE, Some(true)).unwrap()
+  }
+  #[inline]
+  pub fn unique(&self) -> bool {
+    self._tab.get::<bool>(Column::VT_UNIQUE, Some(false)).unwrap()
+  }
+  #[inline]
+  pub fn primary_key(&self) -> bool {
+    self._tab.get::<bool>(Column::VT_PRIMARY_KEY, Some(false)).unwrap()
+  }
+  #[inline]
+  pub fn metadata(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Column::VT_METADATA, None)
+  }
 }
 
 pub struct ColumnArgs<'a> {
     pub name: Option<flatbuffers::WIPOffset<&'a  str>>,
     pub type_: ColumnType,
+    pub title: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub description: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub width: i32,
+    pub precision: i32,
+    pub scale: i32,
+    pub nullable: bool,
+    pub unique: bool,
+    pub primary_key: bool,
+    pub metadata: Option<flatbuffers::WIPOffset<&'a  str>>,
 }
 impl<'a> Default for ColumnArgs<'a> {
     #[inline]
@@ -280,6 +343,15 @@ impl<'a> Default for ColumnArgs<'a> {
         ColumnArgs {
             name: None, // required field
             type_: ColumnType::Byte,
+            title: None,
+            description: None,
+            width: -1,
+            precision: -1,
+            scale: -1,
+            nullable: true,
+            unique: false,
+            primary_key: false,
+            metadata: None,
         }
     }
 }
@@ -295,6 +367,42 @@ impl<'a: 'b, 'b> ColumnBuilder<'a, 'b> {
   #[inline]
   pub fn add_type_(&mut self, type_: ColumnType) {
     self.fbb_.push_slot::<ColumnType>(Column::VT_TYPE_, type_, ColumnType::Byte);
+  }
+  #[inline]
+  pub fn add_title(&mut self, title: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Column::VT_TITLE, title);
+  }
+  #[inline]
+  pub fn add_description(&mut self, description: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Column::VT_DESCRIPTION, description);
+  }
+  #[inline]
+  pub fn add_width(&mut self, width: i32) {
+    self.fbb_.push_slot::<i32>(Column::VT_WIDTH, width, -1);
+  }
+  #[inline]
+  pub fn add_precision(&mut self, precision: i32) {
+    self.fbb_.push_slot::<i32>(Column::VT_PRECISION, precision, -1);
+  }
+  #[inline]
+  pub fn add_scale(&mut self, scale: i32) {
+    self.fbb_.push_slot::<i32>(Column::VT_SCALE, scale, -1);
+  }
+  #[inline]
+  pub fn add_nullable(&mut self, nullable: bool) {
+    self.fbb_.push_slot::<bool>(Column::VT_NULLABLE, nullable, true);
+  }
+  #[inline]
+  pub fn add_unique(&mut self, unique: bool) {
+    self.fbb_.push_slot::<bool>(Column::VT_UNIQUE, unique, false);
+  }
+  #[inline]
+  pub fn add_primary_key(&mut self, primary_key: bool) {
+    self.fbb_.push_slot::<bool>(Column::VT_PRIMARY_KEY, primary_key, false);
+  }
+  #[inline]
+  pub fn add_metadata(&mut self, metadata: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Column::VT_METADATA, metadata);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> ColumnBuilder<'a, 'b> {
@@ -341,6 +449,7 @@ impl<'a> Crs<'a> {
         _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
         args: &'args CrsArgs<'args>) -> flatbuffers::WIPOffset<Crs<'bldr>> {
       let mut builder = CrsBuilder::new(_fbb);
+      if let Some(x) = args.code_string { builder.add_code_string(x); }
       if let Some(x) = args.wkt { builder.add_wkt(x); }
       if let Some(x) = args.description { builder.add_description(x); }
       if let Some(x) = args.name { builder.add_name(x); }
@@ -354,6 +463,7 @@ impl<'a> Crs<'a> {
     pub const VT_NAME: flatbuffers::VOffsetT = 8;
     pub const VT_DESCRIPTION: flatbuffers::VOffsetT = 10;
     pub const VT_WKT: flatbuffers::VOffsetT = 12;
+    pub const VT_CODE_STRING: flatbuffers::VOffsetT = 14;
 
   #[inline]
   pub fn org(&self) -> Option<&'a str> {
@@ -375,6 +485,10 @@ impl<'a> Crs<'a> {
   pub fn wkt(&self) -> Option<&'a str> {
     self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Crs::VT_WKT, None)
   }
+  #[inline]
+  pub fn code_string(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Crs::VT_CODE_STRING, None)
+  }
 }
 
 pub struct CrsArgs<'a> {
@@ -383,6 +497,7 @@ pub struct CrsArgs<'a> {
     pub name: Option<flatbuffers::WIPOffset<&'a  str>>,
     pub description: Option<flatbuffers::WIPOffset<&'a  str>>,
     pub wkt: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub code_string: Option<flatbuffers::WIPOffset<&'a  str>>,
 }
 impl<'a> Default for CrsArgs<'a> {
     #[inline]
@@ -393,6 +508,7 @@ impl<'a> Default for CrsArgs<'a> {
             name: None,
             description: None,
             wkt: None,
+            code_string: None,
         }
     }
 }
@@ -420,6 +536,10 @@ impl<'a: 'b, 'b> CrsBuilder<'a, 'b> {
   #[inline]
   pub fn add_wkt(&mut self, wkt: flatbuffers::WIPOffset<&'b  str>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Crs::VT_WKT, wkt);
+  }
+  #[inline]
+  pub fn add_code_string(&mut self, code_string: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Crs::VT_CODE_STRING, code_string);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> CrsBuilder<'a, 'b> {
@@ -466,6 +586,9 @@ impl<'a> Header<'a> {
         args: &'args HeaderArgs<'args>) -> flatbuffers::WIPOffset<Header<'bldr>> {
       let mut builder = HeaderBuilder::new(_fbb);
       builder.add_features_count(args.features_count);
+      if let Some(x) = args.metadata { builder.add_metadata(x); }
+      if let Some(x) = args.description { builder.add_description(x); }
+      if let Some(x) = args.title { builder.add_title(x); }
       if let Some(x) = args.crs { builder.add_crs(x); }
       if let Some(x) = args.columns { builder.add_columns(x); }
       if let Some(x) = args.envelope { builder.add_envelope(x); }
@@ -490,6 +613,9 @@ impl<'a> Header<'a> {
     pub const VT_FEATURES_COUNT: flatbuffers::VOffsetT = 20;
     pub const VT_INDEX_NODE_SIZE: flatbuffers::VOffsetT = 22;
     pub const VT_CRS: flatbuffers::VOffsetT = 24;
+    pub const VT_TITLE: flatbuffers::VOffsetT = 26;
+    pub const VT_DESCRIPTION: flatbuffers::VOffsetT = 28;
+    pub const VT_METADATA: flatbuffers::VOffsetT = 30;
 
   #[inline]
   pub fn name(&self) -> Option<&'a str> {
@@ -535,6 +661,18 @@ impl<'a> Header<'a> {
   pub fn crs(&self) -> Option<Crs<'a>> {
     self._tab.get::<flatbuffers::ForwardsUOffset<Crs<'a>>>(Header::VT_CRS, None)
   }
+  #[inline]
+  pub fn title(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Header::VT_TITLE, None)
+  }
+  #[inline]
+  pub fn description(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Header::VT_DESCRIPTION, None)
+  }
+  #[inline]
+  pub fn metadata(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Header::VT_METADATA, None)
+  }
 }
 
 pub struct HeaderArgs<'a> {
@@ -549,6 +687,9 @@ pub struct HeaderArgs<'a> {
     pub features_count: u64,
     pub index_node_size: u16,
     pub crs: Option<flatbuffers::WIPOffset<Crs<'a >>>,
+    pub title: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub description: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub metadata: Option<flatbuffers::WIPOffset<&'a  str>>,
 }
 impl<'a> Default for HeaderArgs<'a> {
     #[inline]
@@ -565,6 +706,9 @@ impl<'a> Default for HeaderArgs<'a> {
             features_count: 0,
             index_node_size: 16,
             crs: None,
+            title: None,
+            description: None,
+            metadata: None,
         }
     }
 }
@@ -618,6 +762,18 @@ impl<'a: 'b, 'b> HeaderBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Crs>>(Header::VT_CRS, crs);
   }
   #[inline]
+  pub fn add_title(&mut self, title: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Header::VT_TITLE, title);
+  }
+  #[inline]
+  pub fn add_description(&mut self, description: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Header::VT_DESCRIPTION, description);
+  }
+  #[inline]
+  pub fn add_metadata(&mut self, metadata: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Header::VT_METADATA, metadata);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> HeaderBuilder<'a, 'b> {
     let start = _fbb.start_table();
     HeaderBuilder {
@@ -653,4 +809,5 @@ pub fn finish_header_buffer<'a, 'b>(
 pub fn finish_size_prefixed_header_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Header<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }
-} // pub mod FlatGeobuf
+}  // pub mod FlatGeobuf
+
