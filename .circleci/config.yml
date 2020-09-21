@@ -10,6 +10,9 @@ executors:
   net:
     docker:
       - image: mcr.microsoft.com/dotnet/core/sdk:3.1
+  rust:
+    docker:
+      - image: circleci/rust:1.46.0
 
 jobs:
   test-ts:
@@ -74,6 +77,12 @@ jobs:
           key: v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
       - run: cd src/net && ./fetch.sh && dotnet test
 
+  test-rust:
+    executor: rust
+    steps:
+      - checkout
+      - run: cd src/rust && cargo test
+
 workflows:
   main:
     jobs:
@@ -81,3 +90,4 @@ workflows:
       - test-cpp
       - test-java
       - test-net
+      - test-rust
