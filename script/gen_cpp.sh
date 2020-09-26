@@ -1,2 +1,2 @@
 #!/bin/bash
-flatc --cpp --scoped-enums -o src/cpp src/fbs/*.fbs
+./flatc --cpp --scoped-enums -o src/cpp src/fbs/*.fbs

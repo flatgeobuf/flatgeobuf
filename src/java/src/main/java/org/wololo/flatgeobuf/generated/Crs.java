@@ -27,14 +27,19 @@ public final class Crs extends Table {
   public String wkt() { int o = __offset(12); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer wktAsByteBuffer() { return __vector_as_bytebuffer(12, 1); }
   public ByteBuffer wktInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 1); }
+  public String codeString() { int o = __offset(14); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer codeStringAsByteBuffer() { return __vector_as_bytebuffer(14, 1); }
+  public ByteBuffer codeStringInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
 
   public static int createCrs(FlatBufferBuilder builder,
       int orgOffset,
       int code,
       int nameOffset,
       int descriptionOffset,
-      int wktOffset) {
-    builder.startTable(5);
+      int wktOffset,
+      int code_stringOffset) {
+    builder.startTable(6);
+    Crs.addCodeString(builder, code_stringOffset);
     Crs.addWkt(builder, wktOffset);
     Crs.addDescription(builder, descriptionOffset);
     Crs.addName(builder, nameOffset);
@@ -43,12 +48,13 @@ public final class Crs extends Table {
     return Crs.endCrs(builder);
   }
 
-  public static void startCrs(FlatBufferBuilder builder) { builder.startTable(5); }
+  public static void startCrs(FlatBufferBuilder builder) { builder.startTable(6); }
   public static void addOrg(FlatBufferBuilder builder, int orgOffset) { builder.addOffset(0, orgOffset, 0); }
   public static void addCode(FlatBufferBuilder builder, int code) { builder.addInt(1, code, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(2, nameOffset, 0); }
   public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(3, descriptionOffset, 0); }
   public static void addWkt(FlatBufferBuilder builder, int wktOffset) { builder.addOffset(4, wktOffset, 0); }
+  public static void addCodeString(FlatBufferBuilder builder, int codeStringOffset) { builder.addOffset(5, codeStringOffset, 0); }
   public static int endCrs(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;

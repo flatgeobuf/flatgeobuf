@@ -2,22 +2,76 @@
 
 package FlatGeobuf
 
-type GeometryType = byte
+import "strconv"
+
+type GeometryType byte
+
 const (
-	GeometryTypePoint GeometryType = 0
-	GeometryTypeMultiPoint GeometryType = 1
-	GeometryTypeLineString GeometryType = 2
-	GeometryTypeMultiLineString GeometryType = 3
-	GeometryTypePolygon GeometryType = 4
-	GeometryTypeMultiPolygon GeometryType = 5
+	GeometryTypeUnknown            GeometryType = 0
+	GeometryTypePoint              GeometryType = 1
+	GeometryTypeLineString         GeometryType = 2
+	GeometryTypePolygon            GeometryType = 3
+	GeometryTypeMultiPoint         GeometryType = 4
+	GeometryTypeMultiLineString    GeometryType = 5
+	GeometryTypeMultiPolygon       GeometryType = 6
+	GeometryTypeGeometryCollection GeometryType = 7
+	GeometryTypeCircularString     GeometryType = 8
+	GeometryTypeCompoundCurve      GeometryType = 9
+	GeometryTypeCurvePolygon       GeometryType = 10
+	GeometryTypeMultiCurve         GeometryType = 11
+	GeometryTypeMultiSurface       GeometryType = 12
+	GeometryTypeCurve              GeometryType = 13
+	GeometryTypeSurface            GeometryType = 14
+	GeometryTypePolyhedralSurface  GeometryType = 15
+	GeometryTypeTIN                GeometryType = 16
+	GeometryTypeTriangle           GeometryType = 17
 )
 
 var EnumNamesGeometryType = map[GeometryType]string{
-	GeometryTypePoint:"Point",
-	GeometryTypeMultiPoint:"MultiPoint",
-	GeometryTypeLineString:"LineString",
-	GeometryTypeMultiLineString:"MultiLineString",
-	GeometryTypePolygon:"Polygon",
-	GeometryTypeMultiPolygon:"MultiPolygon",
+	GeometryTypeUnknown:            "Unknown",
+	GeometryTypePoint:              "Point",
+	GeometryTypeLineString:         "LineString",
+	GeometryTypePolygon:            "Polygon",
+	GeometryTypeMultiPoint:         "MultiPoint",
+	GeometryTypeMultiLineString:    "MultiLineString",
+	GeometryTypeMultiPolygon:       "MultiPolygon",
+	GeometryTypeGeometryCollection: "GeometryCollection",
+	GeometryTypeCircularString:     "CircularString",
+	GeometryTypeCompoundCurve:      "CompoundCurve",
+	GeometryTypeCurvePolygon:       "CurvePolygon",
+	GeometryTypeMultiCurve:         "MultiCurve",
+	GeometryTypeMultiSurface:       "MultiSurface",
+	GeometryTypeCurve:              "Curve",
+	GeometryTypeSurface:            "Surface",
+	GeometryTypePolyhedralSurface:  "PolyhedralSurface",
+	GeometryTypeTIN:                "TIN",
+	GeometryTypeTriangle:           "Triangle",
 }
 
+var EnumValuesGeometryType = map[string]GeometryType{
+	"Unknown":            GeometryTypeUnknown,
+	"Point":              GeometryTypePoint,
+	"LineString":         GeometryTypeLineString,
+	"Polygon":            GeometryTypePolygon,
+	"MultiPoint":         GeometryTypeMultiPoint,
+	"MultiLineString":    GeometryTypeMultiLineString,
+	"MultiPolygon":       GeometryTypeMultiPolygon,
+	"GeometryCollection": GeometryTypeGeometryCollection,
+	"CircularString":     GeometryTypeCircularString,
+	"CompoundCurve":      GeometryTypeCompoundCurve,
+	"CurvePolygon":       GeometryTypeCurvePolygon,
+	"MultiCurve":         GeometryTypeMultiCurve,
+	"MultiSurface":       GeometryTypeMultiSurface,
+	"Curve":              GeometryTypeCurve,
+	"Surface":            GeometryTypeSurface,
+	"PolyhedralSurface":  GeometryTypePolyhedralSurface,
+	"TIN":                GeometryTypeTIN,
+	"Triangle":           GeometryTypeTriangle,
+}
+
+func (v GeometryType) String() string {
+	if s, ok := EnumNamesGeometryType[v]; ok {
+		return s
+	}
+	return "GeometryType(" + strconv.FormatInt(int64(v), 10) + ")"
+}

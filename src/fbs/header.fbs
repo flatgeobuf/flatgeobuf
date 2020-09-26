@@ -24,26 +24,35 @@ enum GeometryType: ubyte {
 }
 
 enum ColumnType: ubyte {
-  Byte,
-  UByte,
-  Bool,
-  Short,
-  UShort,
-  Int,
-  UInt,
-  Long,
-  ULong,
-  Float,
-  Double,
-  String,
-  Json,
-  DateTime,
-  Binary
+  Byte,                         // Signed 8-bit integer
+  UByte,                        // Unsigned 8-bit integer
+  Bool,                         // Boolean
+  Short,                        // Signed 16-bit integer
+  UShort,                       // Unsigned 16-bit integer
+  Int,                          // Signed 32-bit integer
+  UInt,                         // Unsigned 32-bit integer
+  Long,                         // Signed 64-bit integer
+  ULong,                        // Unsigned 64-bit integer
+  Float,                        // Single precision floating point number
+  Double,                       // Double precision floating point number
+  String,                       // UTF8 string
+  Json,                         // General JSON type intended to be application specific
+  DateTime,                     // ISO 8601 date time
+  Binary                        // General binary type intended to be application specific
 }
 
 table Column {
   name: string (required);      // Column name
   type: ColumnType;             // Column type
+  title: string;                // Column title
+  description: string;          // Column description (intended for free form long text)
+  width: int = -1;              // Column values expected width (-1 = unknown) (currently only used to indicate the number of characters in strings)
+  precision: int = -1;          // Column values expected precision (-1 = unknown) as defined by SQL
+  scale: int = -1;              // Column values expected scale (-1 = unknown) as defined by SQL
+  nullable: bool = true;        // Column values expected nullability
+  unique: bool = false;         // Column values expected uniqueness
+  primary_key: bool = false;    // Indicates this column has been (part of) a primary key
+  metadata: string;             // Column metadata (intended to be application specific and suggested to be structured fx. JSON)
 }
 
 table Crs {
@@ -52,6 +61,7 @@ table Crs {
   name: string;                 // Human readable name of this SRS
   description: string;          // Human readable description of this SRS
   wkt: string;                  // Well-known Text Representation of the Spatial Reference System
+  code_string: string;          // Text ID of the Spatial Reference System assigned by the organization in the (rare) case when it is not an integer and thus cannot be set into code
 }
 
 table Header {
@@ -66,6 +76,9 @@ table Header {
   features_count: ulong;        // Number of features in the dataset (0 = unknown)
   index_node_size: ushort = 16; // Index node size (0 = no index)
   crs: Crs;                     // Spatial Reference System
+  title: string;                // Dataset title
+  description: string;          // Dataset description (intended for free form long text)
+  metadata: string;             // Dataset metadata (intended to be application specific and suggested to be structured fx. JSON)
 }
 
 root_type Header;

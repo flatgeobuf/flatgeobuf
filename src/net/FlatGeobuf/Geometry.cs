@@ -6,21 +6,23 @@ namespace FlatGeobuf
 {
 
 using global::System;
+using global::System.Collections.Generic;
 using global::FlatBuffers;
 
 public struct Geometry : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
   public static Geometry GetRootAsGeometry(ByteBuffer _bb) { return GetRootAsGeometry(_bb, new Geometry()); }
   public static Geometry GetRootAsGeometry(ByteBuffer _bb, Geometry obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
+  public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public Geometry __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public uint Ends(int j) { int o = __p.__offset(4); return o != 0 ? __p.bb.GetUint(__p.__vector(o) + j * 4) : (uint)0; }
   public int EndsLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetEndsBytes() { return __p.__vector_as_span(4); }
+  public Span<uint> GetEndsBytes() { return __p.__vector_as_span<uint>(4, 4); }
 #else
   public ArraySegment<byte>? GetEndsBytes() { return __p.__vector_as_arraysegment(4); }
 #endif
@@ -28,7 +30,7 @@ public struct Geometry : IFlatbufferObject
   public double Xy(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int XyLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetXyBytes() { return __p.__vector_as_span(6); }
+  public Span<double> GetXyBytes() { return __p.__vector_as_span<double>(6, 8); }
 #else
   public ArraySegment<byte>? GetXyBytes() { return __p.__vector_as_arraysegment(6); }
 #endif
@@ -36,7 +38,7 @@ public struct Geometry : IFlatbufferObject
   public double Z(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int ZLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetZBytes() { return __p.__vector_as_span(8); }
+  public Span<double> GetZBytes() { return __p.__vector_as_span<double>(8, 8); }
 #else
   public ArraySegment<byte>? GetZBytes() { return __p.__vector_as_arraysegment(8); }
 #endif
@@ -44,7 +46,7 @@ public struct Geometry : IFlatbufferObject
   public double M(int j) { int o = __p.__offset(10); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int MLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetMBytes() { return __p.__vector_as_span(10); }
+  public Span<double> GetMBytes() { return __p.__vector_as_span<double>(10, 8); }
 #else
   public ArraySegment<byte>? GetMBytes() { return __p.__vector_as_arraysegment(10); }
 #endif
@@ -52,7 +54,7 @@ public struct Geometry : IFlatbufferObject
   public double T(int j) { int o = __p.__offset(12); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int TLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetTBytes() { return __p.__vector_as_span(12); }
+  public Span<double> GetTBytes() { return __p.__vector_as_span<double>(12, 8); }
 #else
   public ArraySegment<byte>? GetTBytes() { return __p.__vector_as_arraysegment(12); }
 #endif
@@ -60,25 +62,25 @@ public struct Geometry : IFlatbufferObject
   public ulong Tm(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUlong(__p.__vector(o) + j * 8) : (ulong)0; }
   public int TmLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetTmBytes() { return __p.__vector_as_span(14); }
+  public Span<ulong> GetTmBytes() { return __p.__vector_as_span<ulong>(14, 8); }
 #else
   public ArraySegment<byte>? GetTmBytes() { return __p.__vector_as_arraysegment(14); }
 #endif
   public ulong[] GetTmArray() { return __p.__vector_as_array<ulong>(14); }
-  public GeometryType Type { get { int o = __p.__offset(16); return o != 0 ? (GeometryType)__p.bb.Get(o + __p.bb_pos) : GeometryType.Unknown; } }
-  public Geometry? Parts(int j) { int o = __p.__offset(18); return o != 0 ? (Geometry?)(new Geometry()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public FlatGeobuf.GeometryType Type { get { int o = __p.__offset(16); return o != 0 ? (FlatGeobuf.GeometryType)__p.bb.Get(o + __p.bb_pos) : FlatGeobuf.GeometryType.Unknown; } }
+  public FlatGeobuf.Geometry? Parts(int j) { int o = __p.__offset(18); return o != 0 ? (FlatGeobuf.Geometry?)(new FlatGeobuf.Geometry()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int PartsLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
 
-  public static Offset<Geometry> CreateGeometry(FlatBufferBuilder builder,
+  public static Offset<FlatGeobuf.Geometry> CreateGeometry(FlatBufferBuilder builder,
       VectorOffset endsOffset = default(VectorOffset),
       VectorOffset xyOffset = default(VectorOffset),
       VectorOffset zOffset = default(VectorOffset),
       VectorOffset mOffset = default(VectorOffset),
       VectorOffset tOffset = default(VectorOffset),
       VectorOffset tmOffset = default(VectorOffset),
-      GeometryType type = GeometryType.Unknown,
+      FlatGeobuf.GeometryType type = FlatGeobuf.GeometryType.Unknown,
       VectorOffset partsOffset = default(VectorOffset)) {
-    builder.StartObject(8);
+    builder.StartTable(8);
     Geometry.AddParts(builder, partsOffset);
     Geometry.AddTm(builder, tmOffset);
     Geometry.AddT(builder, tOffset);
@@ -90,7 +92,7 @@ public struct Geometry : IFlatbufferObject
     return Geometry.EndGeometry(builder);
   }
 
-  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartObject(8); }
+  public static void StartGeometry(FlatBufferBuilder builder) { builder.StartTable(8); }
   public static void AddEnds(FlatBufferBuilder builder, VectorOffset endsOffset) { builder.AddOffset(0, endsOffset.Value, 0); }
   public static VectorOffset CreateEndsVector(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddUint(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateEndsVectorBlock(FlatBufferBuilder builder, uint[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
@@ -115,14 +117,14 @@ public struct Geometry : IFlatbufferObject
   public static VectorOffset CreateTmVector(FlatBufferBuilder builder, ulong[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddUlong(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateTmVectorBlock(FlatBufferBuilder builder, ulong[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartTmVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddType(FlatBufferBuilder builder, GeometryType type) { builder.AddByte(6, (byte)type, 0); }
+  public static void AddType(FlatBufferBuilder builder, FlatGeobuf.GeometryType type) { builder.AddByte(6, (byte)type, 0); }
   public static void AddParts(FlatBufferBuilder builder, VectorOffset partsOffset) { builder.AddOffset(7, partsOffset.Value, 0); }
-  public static VectorOffset CreatePartsVector(FlatBufferBuilder builder, Offset<Geometry>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
-  public static VectorOffset CreatePartsVectorBlock(FlatBufferBuilder builder, Offset<Geometry>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreatePartsVector(FlatBufferBuilder builder, Offset<FlatGeobuf.Geometry>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreatePartsVectorBlock(FlatBufferBuilder builder, Offset<FlatGeobuf.Geometry>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartPartsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static Offset<Geometry> EndGeometry(FlatBufferBuilder builder) {
-    int o = builder.EndObject();
-    return new Offset<Geometry>(o);
+  public static Offset<FlatGeobuf.Geometry> EndGeometry(FlatBufferBuilder builder) {
+    int o = builder.EndTable();
+    return new Offset<FlatGeobuf.Geometry>(o);
   }
 };
 
