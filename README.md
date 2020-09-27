@@ -70,11 +70,11 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ## Supported applications / libraries
 
+* [Fiona](https://fiona.readthedocs.io/) (1.8.18 and forward, not yet released)
 * [GDAL](https://gdal.org) (3.1 and forward)
+* [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
 * [GeoServer](http://geoserver.org) (2.17 and forward)
 * [QGIS](https://qgis.org) (3.16 and forward, not yet released)
-* [Fiona](https://fiona.readthedocs.io/) (1.8.18 and forward, not yet released)
-* [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
 
 ## Documentation
 
