@@ -46,15 +46,10 @@ export function serialize(features: IFeature[]) : Uint8Array {
     return uint8
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) : IFeature[] {
-    if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file')
-
-    const bb = new flatbuffers.ByteBuffer(bytes)
-    const headerLength = bb.readUint32(magicbytes.length)
-    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN)
+function parseHeader(bb: flatbuffers.ByteBuffer) : HeaderMeta {
     const header = Header.getRoot(bb)
     const count = header.featuresCount().toFloat64()
+    const indexNodeSize = header.indexNodeSize()
 
     const columns: ColumnMeta[] = []
     for (let j = 0; j < header.columnsLength(); j++) {
@@ -63,20 +58,31 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
             throw new Error('Column unexpectedly missing')
         if (!column.name())
             throw new Error('Column name unexpectedly missing')
-        columns.push(new ColumnMeta(column.name(), column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
+        columns.push(new ColumnMeta(column.name() as string, column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
     }
     const crs = header.crs()
     const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt(), crs.codeString()) : null)
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta, header.title(), header.description(), header.metadata())
+    const headerMeta = new HeaderMeta(header.geometryType(), columns, count, indexNodeSize, crsMeta, header.title(), header.description(), header.metadata())
+    return headerMeta
+}
 
+export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) : IFeature[] {
+    if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
+        throw new Error('Not a FlatGeobuf file')
+
+    const bb = new flatbuffers.ByteBuffer(bytes)
+    const headerLength = bb.readUint32(magicbytes.length)
+    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN)
+    
+    const headerMeta = parseHeader(bb)
     if (headerMetaFn)
         headerMetaFn(headerMeta)
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength
 
-    const indexNodeSize = header.indexNodeSize()
+    const { indexNodeSize, featuresCount } = headerMeta
     if (indexNodeSize > 0)
-        offset += calcTreeSize(count, indexNodeSize)
+        offset += calcTreeSize(featuresCount, indexNodeSize)
 
     const features: IFeature[] = []
     while (offset < bb.capacity()) {
@@ -131,35 +137,21 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect
     bytes = new Uint8Array(await read(headerLength))
     offset += headerLength
     bb = new flatbuffers.ByteBuffer(bytes)
-    const header = Header.getRoot(bb)
-    const count = header.featuresCount().toFloat64()
 
-    const columns: ColumnMeta[] = []
-    for (let j = 0; j < header.columnsLength(); j++) {
-        const column = header.columns(j)
-        if (!column)
-            throw new Error('Unexpected missing column')
-        if (!column.name())
-            throw new Error('Unexpected missing column name')
-        columns.push(new ColumnMeta(column.name(), column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
-    }
-    const crs = header.crs()
-    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt(), crs.codeString()) : null)
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, 0, crsMeta, header.title(), header.description(), header.metadata())
-
+    const headerMeta = parseHeader(bb)
     if (headerMetaFn)
         headerMetaFn(headerMeta)
 
-    const indexNodeSize = header.indexNodeSize()
+    const { indexNodeSize, featuresCount } = headerMeta
     if (indexNodeSize > 0 && seek) {
-        const treeSize = calcTreeSize(count, indexNodeSize)
+        const treeSize = calcTreeSize(featuresCount, indexNodeSize)
         if (rect) {
             const readNode = async (treeOffset: number, size: number) => {
                 await seek(offset + treeOffset)
                 return await read(size)
             }
             const foundOffsets = []
-            for await (const [foundOffset] of treeStreamSearch(count, indexNodeSize, rect, readNode))
+            for await (const [foundOffset] of treeStreamSearch(featuresCount, indexNodeSize, rect, readNode))
                 foundOffsets.push(foundOffset)
             offset += treeSize
             for await (const foundOffset of foundOffsets) {
@@ -256,6 +248,6 @@ function introspectHeaderMeta(features: IFeature[]) {
         columns = Object.keys(properties).filter(key => key !== 'geometry')
             .map(k => new ColumnMeta(k, valueToType(properties[k]), null, null, -1, -1, -1, true, false, false))
 
-    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length, null, null, null, null)
+    const headerMeta = new HeaderMeta(toGeometryType(geometryType), columns, features.length, 0, null, null, null, null)
     return headerMeta
 }

@@ -1,11 +1,11 @@
 
 export default class CrsMeta {
     constructor(
-        public org: string,
+        public org: string | null,
         public code: number,
-        public name: string,
-        public description: string,
-        public wkt: string,
-        public code_string: string) {
+        public name: string | null,
+        public description: string | null,
+        public wkt: string | null,
+        public code_string: string | null) {
     }
 }

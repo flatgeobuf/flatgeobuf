@@ -5,12 +5,13 @@ import { GeometryType } from './header_generated'
 export default class HeaderMeta {
     constructor(
         public geometryType: GeometryType,
-        public columns: ColumnMeta[],
+        public columns: ColumnMeta[] | null,
         public featuresCount: number,
-        public crs: CrsMeta,
-        public title: string,
-        public description: string,
-        public metadata: string,
+        public indexNodeSize: number,
+        public crs: CrsMeta | null,
+        public title: string | null,
+        public description: string | null,
+        public metadata: string | null,
         ) {
     }
 }

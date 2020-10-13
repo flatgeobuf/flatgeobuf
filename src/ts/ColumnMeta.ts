@@ -24,8 +24,8 @@ export default class ColumnMeta {
     constructor(
         public name: string,
         public type: ColumnType,
-        public title: string,
-        public description: string,
+        public title: string | null,
+        public description: string | null,
         public width: number,
         public precision: number,
         public scale: number,
