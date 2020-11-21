@@ -28,7 +28,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <geotools.version>24.0</geotools.version>
+    <geotools.version>24.1</geotools.version>
   </properties>
   <dependencies>
     <dependency>
@@ -45,7 +45,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20190722</version>
+      <version>20201115</version>
       <scope>test</scope>
     </dependency>
     <dependency>
