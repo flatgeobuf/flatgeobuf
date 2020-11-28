@@ -11,6 +11,5 @@ fuzz_target!(|data: &[u8]| {
         Err(_) => return,
     };
     let _ = fgb.header();
-    while let Ok(Some(feature)) = fgb.next() {
-    }
+    while let Ok(Some(_feature)) = fgb.next() {}
 });

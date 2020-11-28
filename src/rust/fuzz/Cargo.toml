@@ -23,3 +23,9 @@ name = "read"
 path = "fuzz_targets/read.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "feature"
+path = "fuzz_targets/feature.rs"
+test = false
+doc = false

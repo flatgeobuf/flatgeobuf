@@ -299,5 +299,4 @@ pub fn finish_feature_buffer<'a, 'b>(
 pub fn finish_size_prefixed_feature_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Feature<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }
-}  // pub mod FlatGeobuf
-
+} // pub mod FlatGeobuf
