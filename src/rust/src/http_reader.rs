@@ -35,7 +35,8 @@ impl HttpFgbReader {
         }
         let bytes = client.get(8, 12, min_req_size).await?;
         let header_size = LittleEndian::read_u32(bytes) as usize;
-        if header_size > HEADER_MAX_BUFFER_SIZE {
+        if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
+            // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
         let bytes = client.get(12, header_size, min_req_size).await?;

@@ -34,7 +34,8 @@ impl<'a> FgbReader<'a> {
         let mut size_buf: [u8; 4] = [0; 4];
         reader.read_exact(&mut size_buf)?;
         let header_size = u32::from_le_bytes(size_buf) as usize;
-        if header_size > HEADER_MAX_BUFFER_SIZE {
+        if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
+            // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
 
