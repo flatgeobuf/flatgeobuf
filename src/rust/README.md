@@ -41,3 +41,9 @@ See [documentation](https://docs.rs/flatgeobuf/) and [tests](tests/) for more ex
     cargo test
 
     cargo bench
+
+## Run fuzzer
+
+    cargo install cargo-fuzz
+
+    cargo +nightly fuzz run read

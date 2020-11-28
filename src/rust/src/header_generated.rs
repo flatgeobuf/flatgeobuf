@@ -809,5 +809,4 @@ pub fn finish_header_buffer<'a, 'b>(
 pub fn finish_size_prefixed_header_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Header<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }
-}  // pub mod FlatGeobuf
-
+} // pub mod FlatGeobuf

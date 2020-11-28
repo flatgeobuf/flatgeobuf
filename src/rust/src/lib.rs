@@ -135,3 +135,5 @@ pub use properties_reader::*;
 
 pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
+
+pub const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;

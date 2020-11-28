@@ -2,7 +2,7 @@ use crate::header_generated::flat_geobuf::*;
 use crate::http_client::BufferedHttpClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::MAGIC_BYTES;
+use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
 use geozero::FeatureProcessor;
@@ -35,6 +35,9 @@ impl HttpFgbReader {
         }
         let bytes = client.get(8, 12, min_req_size).await?;
         let header_size = LittleEndian::read_u32(bytes) as usize;
+        if header_size > HEADER_MAX_BUFFER_SIZE {
+            return Err(GeozeroError::GeometryFormat);
+        }
         let bytes = client.get(12, header_size, min_req_size).await?;
         let header_buf = bytes.to_vec();
 

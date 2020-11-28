@@ -1,7 +1,7 @@
 use crate::header_generated::flat_geobuf::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::MAGIC_BYTES;
+use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureProcessor, ReadSeek};
 use std::io::SeekFrom;
@@ -34,6 +34,9 @@ impl<'a> FgbReader<'a> {
         let mut size_buf: [u8; 4] = [0; 4];
         reader.read_exact(&mut size_buf)?;
         let header_size = u32::from_le_bytes(size_buf) as usize;
+        if header_size > HEADER_MAX_BUFFER_SIZE {
+            return Err(GeozeroError::GeometryFormat);
+        }
 
         let mut header_buf = Vec::with_capacity(header_size);
         header_buf.resize(header_size, 0);
