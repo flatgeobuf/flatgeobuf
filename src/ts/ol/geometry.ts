@@ -11,7 +11,9 @@ import Polygon from 'ol/geom/Polygon'
 import MultiPolygon from 'ol/geom/MultiPolygon'
 import GeometryLayout from 'ol/geom/GeometryLayout'
 
-export function createGeometryOl(geometry: Geometry, type: GeometryType): ISimpleGeometry {
+export function createGeometryOl(geometry: Geometry | null, type: GeometryType): ISimpleGeometry | undefined {
+    if (!geometry)
+        return
     const xyArray = geometry.xyArray()
     if (xyArray) {
         const xy = Array.from(geometry.xyArray() as ArrayLike<number>)

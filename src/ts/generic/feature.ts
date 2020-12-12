@@ -16,7 +16,7 @@ export interface IFeature {
 }
 
 export interface ICreateFeature {
-    (geometry: ISimpleGeometry, properties: any): IFeature;
+    (geometry?: ISimpleGeometry, properties?: Record<string, unknown>): IFeature;
 }
 
 export interface IProperties {
@@ -30,12 +30,8 @@ export function fromFeature(
         createFeature: ICreateFeature): IFeature {
     const columns = header.columns
     const geometry = feature.geometry()
-    if (!geometry)
-        throw new Error('Missing geometry')
     const simpleGeometry = createGeometry(geometry, header.geometryType)
-    let properties: any
-    if (columns)
-        properties = parseProperties(feature, columns as ColumnMeta[])
+    const properties = parseProperties(feature, columns as ColumnMeta[])
     return createFeature(simpleGeometry, properties)
 }
 
@@ -104,16 +100,16 @@ function concat(resultConstructor: any, ...arrays : any[]) : Uint8Array {
     return result
 }
 
-export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> | undefined {
+export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> {
+    const properties: Record<string, unknown> = {}
     if (!columns || columns.length === 0)
-        return
+        return properties
     const array = feature.propertiesArray()
     if (!array)
-        throw new Error('Properties array unexpectedly null')
+        return properties
     const view = new DataView(array.buffer, array.byteOffset)
     const length = feature.propertiesLength()
     let offset = 0
-    const properties: Record<string, unknown> = {}
     while (offset < length) {
         const i = view.getUint16(offset, true)
         offset += 2

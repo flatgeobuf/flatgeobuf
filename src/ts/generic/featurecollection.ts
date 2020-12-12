@@ -101,7 +101,7 @@ export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatu
 {
     const reader = slice(stream)
     const read: ReadFn = async size => await reader.slice(size)
-    return deserializeInternal(read, undefined, undefined, fromFeature, headerMetaFn)
+    return deserializeInternal(fromFeature, read, undefined, undefined, headerMetaFn)
 }
 
 export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
@@ -119,10 +119,10 @@ export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFe
         return arrayBuffer
     }
     const seek: SeekFn = async newoffset => { offset = newoffset }
-    return deserializeInternal(read, seek, rect, fromFeature, headerMetaFn)
+    return deserializeInternal(fromFeature, read, seek, rect, headerMetaFn)
 }
 
-async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect: Rect | undefined, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) :
+async function* deserializeInternal(fromFeature: FromFeatureFn, read: ReadFn, seek?: SeekFn, rect?: Rect, headerMetaFn?: HeaderMetaFn) :
     AsyncGenerator<IFeature>
 {
     let offset = 0
@@ -143,9 +143,9 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect
         headerMetaFn(headerMeta)
 
     const { indexNodeSize, featuresCount } = headerMeta
-    if (indexNodeSize > 0 && seek) {
+    if (indexNodeSize > 0) {
         const treeSize = calcTreeSize(featuresCount, indexNodeSize)
-        if (rect) {
+        if (rect && seek) {
             const readNode = async (treeOffset: number, size: number) => {
                 await seek(offset + treeOffset)
                 return await read(size)
@@ -174,9 +174,7 @@ async function* deserializeInternal(read: ReadFn, seek: SeekFn | undefined, rect
         yield feature
 }
 
-async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn)
-    : Promise<IFeature | undefined>
-{
+async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn): Promise<IFeature | undefined> {
     let bytes = new Uint8Array(await read(4))
     if (bytes.byteLength === 0)
         return
@@ -191,7 +189,7 @@ async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: Fr
     return fromFeature(feature, headerMeta)
 }
 
-function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta) {
+function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     const nameOffset = builder.createString(column.name)
     Column.start(builder)
     Column.addName(builder, nameOffset)

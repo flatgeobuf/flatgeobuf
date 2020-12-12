@@ -29,7 +29,7 @@ export interface IMultiPolygon extends ISimpleGeometry {
 }
 
 export interface ICreateGeometry {
-    (geometry: Geometry, type: GeometryType): ISimpleGeometry;
+    (geometry: Geometry | null, type: GeometryType): ISimpleGeometry | undefined;
 }
 
 export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry): any {
@@ -109,7 +109,7 @@ export function parseGeometry(geometry: ISimpleGeometry, type: GeometryType): IP
     } as IParsedGeometry
 }
 
-export function pairFlatCoordinates(xy: Float64Array, z: Float64Array | undefined): number[][] {
+export function pairFlatCoordinates(xy: Float64Array, z?: Float64Array): number[][] {
     const newArray: number[][] = []
     for (let i = 0; i < xy.length; i += 2) {
         const a = [xy[i], xy[i + 1]]
@@ -120,7 +120,7 @@ export function pairFlatCoordinates(xy: Float64Array, z: Float64Array | undefine
     return newArray
 }
 
-export function toGeometryType(name: string | undefined): GeometryType {
+export function toGeometryType(name?: string): GeometryType {
     if (!name)
         return GeometryType.Unknown
     const type: GeometryType = (GeometryType as any)[name]

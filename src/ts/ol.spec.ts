@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import 'mocha'
+import { readFileSync } from 'fs'
 
 import { arrayToStream, takeAsync } from './streams/utils'
 import { deserialize, serialize } from './ol'
@@ -11,6 +12,7 @@ import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
 import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import SimpleGeometry from 'ol/geom/SimpleGeometry'
 
 global['ReadableStream'] = ReadableStream
 global['TextDecoder'] = TextDecoder
@@ -161,6 +163,34 @@ describe('ol module', () => {
       }
       const actual = deserialize(serialize(geojson.readFeatures(expected)))
       expect(JSON.parse(g(actual))).to.deep.equal(expected)
+    })
+
+    it('Should parse UScounties fgb produced from GDAL array buffer', () => {
+      const buffer = readFileSync('./test/data/UScounties.fgb')
+      const bytes = new Uint8Array(buffer)
+      const features = deserialize(bytes) as Feature[]
+      expect(features.length).to.eq(3221)
+      for (const f of features)
+        expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
+    })
+
+    it('Should parse countries fgb produced from GDAL array buffer', () => {
+      const buffer = readFileSync('./test/data/countries.fgb')
+      const bytes = new Uint8Array(buffer)
+      const features = deserialize(bytes) as Feature[]
+      expect(features.length).to.eq(179)
+      for (const f of features)
+        expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
+    })
+
+    it('Should parse countries fgb produced from GDAL stream', async () => {
+      const buffer = readFileSync('./test/data/countries.fgb')
+      const bytes = new Uint8Array(buffer)
+      const readableStream = arrayToStream(bytes.buffer)
+      const features = await takeAsync(deserialize(readableStream) as AsyncGenerator)
+      expect(features.length).to.eq(179)
+      for (const f of features)
+        expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
     })
 
     it('Bahamas', () => {

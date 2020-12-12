@@ -28,7 +28,7 @@ function makeFeatureCollection(wkt: string, properties?: any) {
 }
 
 function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
-  const reader: any = new WKTReader()
+  const reader: any = new WKTReader(undefined)
   const writer: any = new GeoJSONWriter()
   const geometries = wkts.map(wkt => writer.write(reader.read(wkt)))
   const features = geometries.map(geometry => ({ type: 'Feature', geometry } as IGeoJsonFeature))
@@ -272,7 +272,7 @@ describe('geojson module', () => {
   })
 
   describe('Prepared buffers tests', () => {
-    it('Should parse countries fgb produced from GDAL', () => {
+    it('Should parse countries fgb produced from GDAL byte array', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
       let headerMeta: HeaderMeta
@@ -283,7 +283,7 @@ describe('geojson module', () => {
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
-    it('Should parse countries fgb produced from GDAL', async () => {
+    it('Should parse countries fgb produced from GDAL stream filter', async () => {
       const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 }
       const features = await takeAsync(deserialize('http://127.0.0.1:8000/test/data/countries.fgb', r) as AsyncGenerator)
       expect(features.length).to.eq(3)
@@ -299,13 +299,14 @@ describe('geojson module', () => {
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })*/
 
-    it('Should parse countries fgb produced from GDAL', () => {
+    it('Should parse countries fgb produced from GDAL stream no filter', async () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes) as IGeoJsonFeatureCollection
-      expect(geojson.features.length).to.eq(179)
-      for (const f of geojson.features)
-        expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
+      const readableStream = arrayToStream(bytes.buffer)
+      const features = await takeAsync(deserialize(readableStream) as AsyncGenerator)
+      expect(features.length).to.eq(179)
+      for (const f of features)
+      expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
     it('Should parse UScounties fgb produced from GDAL', () => {
