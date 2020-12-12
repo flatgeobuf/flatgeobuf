@@ -4,6 +4,6 @@
   "main": "index.js",
   "license": "BSD-3-Clause",
   "dependencies": {
-    "flatgeobuf": "3.6.5"
+    "flatgeobuf": "3.7.1"
   }
 }
