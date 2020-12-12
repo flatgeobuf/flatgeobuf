@@ -11,7 +11,7 @@ export default class HeaderMeta {
         public crs: CrsMeta | null,
         public title: string | null,
         public description: string | null,
-        public metadata: string | null,
+        public metadata: string | null
         ) {
     }
 }

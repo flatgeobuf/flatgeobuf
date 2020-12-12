@@ -62,11 +62,6 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     return Geometry.end(builder)
 }
 
-/*export function flat2(a: any[]): number[] {
-    return a.reduce((acc, val) =>
-        Array.isArray(val) ? acc.concat(flat(val)) : acc.concat(val), [])
-}*/
-
 export function flat(a: any[], xy: number[], z: number[]): number[] | undefined {
     if (a.length === 0)
         return
@@ -122,7 +117,6 @@ export function pairFlatCoordinates(xy: Float64Array, z: Float64Array | undefine
             a.push(z[i >> 1])
         newArray.push(a)
     }
-        
     return newArray
 }
 

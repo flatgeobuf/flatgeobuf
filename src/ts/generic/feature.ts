@@ -42,7 +42,7 @@ export function fromFeature(
 export function buildFeature(geometry: IParsedGeometry, properties: IProperties, header: HeaderMeta): Uint8Array {
     const columns = header.columns
     const builder = new flatbuffers.Builder()
-    
+
     const props = []
     if (columns) {
         for (let i = 0; i < columns.length; i++) {

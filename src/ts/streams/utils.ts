@@ -33,7 +33,7 @@ export async function takeAsync(asyncIterable: AsyncIterable<any>, count = Infin
 export function nodeToWeb(nodeStream: Readable) : ReadableStream {
     let destroyed = false
     const listeners: any = {}
-  
+
     function start (controller: ReadableStreamDefaultController) {
       listeners['data'] = onData
       listeners['end'] = onData
@@ -42,45 +42,45 @@ export function nodeToWeb(nodeStream: Readable) : ReadableStream {
       listeners['error'] = onDestroy
       for (const name in listeners)
         nodeStream.on(name, listeners[name])
-  
+
       nodeStream.pause()
-  
+
       function onData(chunk: Buffer) {
         if (destroyed)
           return
         controller.enqueue(chunk)
         nodeStream.pause()
       }
-  
+
       function onDestroy(err: Error) {
         if (destroyed)
           return
         destroyed = true
-  
+
         for (const name in listeners)
           nodeStream.removeListener(name, listeners[name])
-  
+
         if (err) controller.error(err)
         else controller.close()
       }
     }
-  
+
     function pull() {
       if (destroyed)
         return
       nodeStream.resume()
     }
-  
+
     function cancel() {
       destroyed = true
-  
+
       for (const name in listeners)
         nodeStream.removeListener(name, listeners[name])
-  
+
       nodeStream.push(null)
       nodeStream.pause()
       nodeStream.destroy()
     }
-  
+
     return new ReadableStream({ start: start, pull: pull, cancel: cancel })
   }

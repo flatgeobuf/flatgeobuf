@@ -24,11 +24,11 @@ export function deserialize(
         return deserializeFiltered(input, rect as Rect, fromFeature)
 }
 
-export { 
+export {
     serialize
 } from './generic/featurecollection'
 
-export { 
+export {
     GeometryType,
     ColumnType
 } from './header_generated'

@@ -16,7 +16,7 @@ const arrayTypeMap = {
     [ColumnType.String]: String,
     [ColumnType.Json]: String,
     [ColumnType.DateTime]: String,
-    [ColumnType.Binary]: String,
+    [ColumnType.Binary]: String
 }
 
 export default class ColumnMeta {

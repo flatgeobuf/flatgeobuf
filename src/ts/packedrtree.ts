@@ -23,7 +23,7 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
         throw new Error('Node size must be at least 2')
     if (numItems === 0)
         throw new Error('Number of items must be greater than 0')
-    
+
     // number of nodes per level in bottom-up order
     let n = numItems
     let numNodes = n

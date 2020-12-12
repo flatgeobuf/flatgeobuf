@@ -73,7 +73,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     const bb = new flatbuffers.ByteBuffer(bytes)
     const headerLength = bb.readUint32(magicbytes.length)
     bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN)
-    
+
     const headerMeta = parseHeader(bb)
     if (headerMetaFn)
         headerMetaFn(headerMeta)

@@ -18,7 +18,7 @@ export function serialize(geojson: IGeoJsonFeatureCollection): Uint8Array {
 }
 
 /**
- * 
+ *
  * @param input Input byte array, stream or string
  * @param rect Filter rectangle
  * @param headerMetaFn Callback that will recieve [[HeaderMeta]] when available

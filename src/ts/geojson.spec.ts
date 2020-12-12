@@ -44,11 +44,11 @@ describe('geojson module', () => {
 
   let lws
 
-  before(() => {    
+  before(() => {
     lws = LocalWebServer.create(undefined)
   })
 
-  after(() => {    
+  after(() => {
     if (lws)
       lws.server.close()
   })

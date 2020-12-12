@@ -1,6 +1,6 @@
 import { IFeature } from './generic/feature'
 
-import { 
+import {
     deserialize as fcDeserialize,
     deserializeStream as fcDeserializeStream,
     serialize as fcSerialize
