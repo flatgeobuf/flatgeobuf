@@ -27,13 +27,15 @@ The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in d
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
 * MB: Magic bytes (0x6667620366676200)
-* H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
-* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h))
-* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
+* H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs)), prefixed with the header size as UInt32.
+* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h)). It's size can be calculated by the number of features and the node size of the tree, both stored in the Header.
+* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s), each feature prefixed with the feature size as UInt32. Note that the properties of each feature are marked by an UInt16 (?) and in case of String/DateTime/JSON/Binary values, also prefixed with the size as an UInt32.
 
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinates) is aligned to 8 bytes to from the start of the file or feature to allow for direct memory access.
 
 Encoding of any string value is assumed to be UTF-8.
+
+
 
 ## Performance
 
@@ -75,6 +77,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 * [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
 * [GeoServer](http://geoserver.org) (2.17 and forward)
 * [QGIS](https://qgis.org) (3.16 and forward)
+* [Julia package](https://github.com/evetion/FlatGeobuf.jl)
 
 ## Documentation
 
