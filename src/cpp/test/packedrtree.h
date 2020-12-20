@@ -8,6 +8,24 @@ using namespace FlatGeobuf;
 
 TEST_CASE("PackedRTree")
 {
+    SECTION("PackedRTree 2 item one dimension")
+    {
+        std::vector<NodeItem> nodes;
+        nodes.push_back({0, 0, 0, 0});
+        nodes.push_back({0, 0, 0, 0});
+        NodeItem extent = calcExtent(nodes);
+        REQUIRE(nodes[0].intersects({0, 0, 0, 0}) == true);
+        hilbertSort(nodes);
+        uint64_t offset = 0;
+        for (auto &node : nodes)
+            node.offset = offset += sizeof(NodeItem);
+        REQUIRE(nodes[0].intersects({0, 0, 0, 0}) == true);
+        PackedRTree tree(nodes, extent);
+        auto list = tree.search(0, 0, 0, 0);
+        REQUIRE(list.size() == 2);
+        REQUIRE(nodes[list[0].index].intersects({0, 0, 0, 0}) == true);
+    }
+
     SECTION("PackedRTree 2 items 2")
     {
         std::vector<NodeItem> nodes;
