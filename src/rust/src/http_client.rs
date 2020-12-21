@@ -59,26 +59,33 @@ impl BufferedHttpClient {
             head: 0,
         }
     }
+
     pub async fn get(&mut self, begin: usize, length: usize, min_req_size: usize) -> Result<&[u8]> {
-        let tail = self.head + self.buf.len();
-        if begin + length > tail || begin < self.head {
+        // If we don't already have the data, we download it
+        if begin + length > self.tail() || begin < self.head {
             // Remove bytes before new begin
-            if begin > self.head && begin < tail {
+            if begin > self.head && begin < self.tail() {
                 let _ = self.buf.split_to(begin - self.head);
                 self.head = begin;
-            } else if begin >= tail || begin < self.head {
+            } else if begin >= self.tail() || begin < self.head {
                 self.buf.clear();
                 self.head = begin;
             }
 
             // Read additional bytes
-            let range_begin = max(begin, tail);
-            let range_length = max(begin + length - range_begin, min_req_size);
+            let range_begin = max(begin, self.tail());
+            debug!("http_client#get begin: {}, tail: {}, length: {}, range_begin: {}, min_req_size: {}", begin, self.tail(), length, range_begin, min_req_size);
+            let range_length = max(length - (range_begin - begin), min_req_size);
             let bytes = self.http_client.get(range_begin, range_length).await?;
             self.buf.put(bytes);
         }
+
         let lower = begin - self.head;
         let upper = begin + length - self.head;
         Ok(&self.buf[lower..upper])
+    }
+
+    fn tail(&self) -> usize {
+        self.head + self.buf.len()
     }
 }
