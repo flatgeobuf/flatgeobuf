@@ -73,9 +73,12 @@ async fn http_err_async() {
     );
     let url = "http://wrong.sourcepole.ch/countries.fgb";
     let fgb = HttpFgbReader::open(url).await;
-    assert_eq!(fgb.err()
-            .unwrap()
-            .to_string(), "http error `error sending request for url (http://wrong.sourcepole.ch/countries.fgb): error trying to connect: dns error: failed to lookup address information: Name or service not known`".to_string());
+    let error_text = fgb.err().unwrap().to_string();
+    let expected_error_text = "error trying to connect";
+    assert!(
+        error_text.contains(expected_error_text),
+        format!("expected to find {} in {}", expected_error_text, error_text)
+    );
 }
 
 #[test]
