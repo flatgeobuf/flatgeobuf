@@ -6,6 +6,8 @@ use std::str;
 struct HttpClient {
     client: reqwest::Client,
     url: String,
+    requests_ever_made: usize,
+    bytes_ever_requested: usize,
 }
 
 impl HttpClient {
@@ -13,13 +15,22 @@ impl HttpClient {
         HttpClient {
             client: reqwest::Client::new(),
             url: url.to_string(),
+            requests_ever_made: 0,
+            bytes_ever_requested: 0,
         }
     }
-    async fn get(&self, begin: usize, length: usize) -> Result<Bytes> {
+    async fn get(&mut self, begin: usize, length: usize) -> Result<Bytes> {
+        self.requests_ever_made += 1;
+        self.bytes_ever_requested += length;
+        let range = format!("bytes={}-{}", begin, begin + length - 1);
+        debug!(
+            "request: #{}, bytes: (this_request: {}, ever: {}), Range: {}",
+            self.requests_ever_made, length, self.bytes_ever_requested, range
+        );
         let response = self
             .client
             .get(&self.url)
-            .header("Range", format!("bytes={}-{}", begin, begin + length - 1))
+            .header("Range", range)
             .send()
             .await
             .map_err(|e| GeozeroError::HttpError(e.to_string()))?;
