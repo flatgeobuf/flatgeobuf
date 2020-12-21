@@ -5,7 +5,7 @@
 use crate::http_client::BufferedHttpClient;
 use geozero::error::{GeozeroError, Result};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
@@ -539,25 +539,40 @@ impl PackedRTree {
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
+        debug!("http_stream_search - index_begin: {}, num_items: {}, node_size: {}, level_bounds: {:?}, GPS bounds:[({}, {}), ({},{})]", index_begin, num_items, node_size, &level_bounds, min_x, min_y, max_x, max_y);
 
-        // read full index at once, if < 1MB
-        let min_req_size = cmp::min(num_nodes * size_of::<NodeItem>(), 1_048_576);
+        let min_req_size = cmp::min(num_nodes * size_of::<NodeItem>(), 256 * 1024);
 
-        // use ordered search queue to make index traversal in sequential order
-        let mut queue = BinaryHeap::new();
-        queue.push(Reverse((0, level_bounds.len() - 1)));
+        #[derive(Debug, PartialEq, Eq)]
+        struct NodeRange {
+            level: usize,
+            nodes: std::ops::Range<usize>,
+        }
+
+        let mut queue = VecDeque::new();
+        queue.push_back(NodeRange {
+            nodes: 0..1,
+            level: level_bounds.len() - 1,
+        });
         let mut results = Vec::new();
 
-        while queue.len() != 0 {
-            let next = queue.pop().ok_or(GeozeroError::GeometryIndex)?.0;
-            let node_index = next.0;
-            let level = next.1;
-            let is_leaf_node = node_index >= num_nodes - num_items;
-            // find the end index of the node
-            let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
+        while let Some(next) = queue.pop_front() {
+            debug!(
+                "popped node: {:?},  remaining queue len: {}",
+                next,
+                queue.len()
+            );
+            let node_index = next.nodes.start;
+            let is_leaf_node = node_index >= leaf_nodes_offset;
+            // find the end index of the nodes
+            let end = cmp::min(
+                next.nodes.end + node_size as usize,
+                level_bounds[next.level].1,
+            );
             let length = end - node_index;
             let node_items =
                 read_http_node_items(client, min_req_size, index_begin, node_index, length).await?;
+
             // search through child nodes
             for pos in node_index..end {
                 let node_pos = pos - node_index;
@@ -570,8 +585,41 @@ impl PackedRTree {
                         offset: node_item.offset as usize,
                         index: pos - leaf_nodes_offset,
                     });
-                } else {
-                    queue.push(Reverse((node_item.offset as usize, level - 1)));
+                    continue;
+                }
+
+                // spend this many extra bytes if it means we'll eliminate an extra request
+                let combine_request_threshold = 256 * 1024 / size_of::<NodeItem>();
+
+                match (queue.back_mut(), node_item.offset as usize) {
+                    (Some(mut head), offset)
+                        if head.level == next.level - 1
+                            && offset < head.nodes.end + combine_request_threshold =>
+                    {
+                        debug_assert!(head.nodes.end < offset);
+                        head.nodes.end = offset;
+                    }
+                    (Some(head), offset) if head.level == next.level - 1 => {
+                        debug!("creating new NodeRange for offset: {} rather than merging with distant NodeRange: {:?}", offset, head);
+                        debug_assert!(head.nodes.end < offset);
+                        let node_range = NodeRange {
+                            nodes: offset..(offset + 1),
+                            level: next.level - 1,
+                        };
+                        queue.push_back(node_range);
+                    }
+                    _ => {
+                        let node_range = NodeRange {
+                            nodes: (node_item.offset as usize)..(node_item.offset as usize + 1),
+                            level: next.level - 1,
+                        };
+                        debug!(
+                            "pushing new level for NodeRange: {:?} onto Queue with head: {:?}",
+                            &node_range,
+                            queue.back()
+                        );
+                        queue.push_back(node_range);
+                    }
                 }
             }
         }

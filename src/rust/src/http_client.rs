@@ -74,7 +74,6 @@ impl BufferedHttpClient {
 
             // Read additional bytes
             let range_begin = max(begin, self.tail());
-            debug!("http_client#get begin: {}, tail: {}, length: {}, range_begin: {}, min_req_size: {}", begin, self.tail(), length, range_begin, min_req_size);
             let range_length = max(length - (range_begin - begin), min_req_size);
             let bytes = self.http_client.get(range_begin, range_length).await?;
             self.buf.put(bytes);
