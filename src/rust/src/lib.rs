@@ -109,6 +109,9 @@
 //! ```
 //!
 
+#[macro_use]
+extern crate log;
+
 #[cfg(not(target_arch = "wasm32"))]
 mod driver;
 #[allow(dead_code, unused_imports, non_snake_case)]

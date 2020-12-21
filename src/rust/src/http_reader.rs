@@ -27,6 +27,7 @@ pub struct HttpFgbReader {
 
 impl HttpFgbReader {
     pub async fn open(url: &str) -> Result<HttpFgbReader> {
+        trace!("starting: opening http reader, reading header");
         let mut client = BufferedHttpClient::new(&url);
         let min_req_size = 512;
         let bytes = client.get(0, 8, min_req_size).await?;
@@ -42,6 +43,7 @@ impl HttpFgbReader {
         let bytes = client.get(12, header_size, min_req_size).await?;
         let header_buf = bytes.to_vec();
 
+        trace!("completed: opening http reader");
         Ok(HttpFgbReader {
             client,
             pos: 0,
@@ -80,6 +82,7 @@ impl HttpFgbReader {
         max_x: f64,
         max_y: f64,
     ) -> Result<usize> {
+        trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         let count = header.features_count() as usize;
@@ -100,6 +103,7 @@ impl HttpFgbReader {
         self.pos = self.feature_base;
         self.count = list.len();
         self.item_filter = Some(list);
+        trace!("completed: select_bbox");
         Ok(self.count)
     }
     /// Number of selected features
