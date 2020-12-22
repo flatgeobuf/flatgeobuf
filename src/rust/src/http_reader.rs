@@ -38,14 +38,14 @@ impl HttpFgbReader {
             // The actual branching factor will be in the header, but since we don't have the header
             // yet we guess. The consequence of getting this wrong isn't catastrophic, it just means
             // we may be fetching slightly more than we need or that we make an extra request later.
-            let assumed_branching_factor: usize = 16;
+            let assumed_branching_factor = PackedRTree::DEFAULT_NODE_SIZE as usize;
 
             // NOTE: each layer is exponentially larger
             let prefetched_layers: u32 = 3;
 
-            (0..prefetched_layers).map(|i| {
-                assumed_branching_factor.pow(i) * std::mem::size_of::<NodeItem>()
-            }).sum()
+            (0..prefetched_layers)
+                .map(|i| assumed_branching_factor.pow(i) * std::mem::size_of::<NodeItem>() as usize)
+                .sum()
         };
 
         // In reality, the header is probably less than half this size, but better to overshoot and
