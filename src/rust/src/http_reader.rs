@@ -2,7 +2,7 @@ use crate::header_generated::flat_geobuf::*;
 use crate::http_client::BufferedHttpClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
+use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
 use geozero::FeatureProcessor;
@@ -29,7 +29,31 @@ impl HttpFgbReader {
     pub async fn open(url: &str) -> Result<HttpFgbReader> {
         trace!("starting: opening http reader, reading header");
         let mut client = BufferedHttpClient::new(&url);
-        let min_req_size = 512;
+
+        // Because we use a buffered HTTP reader, anything extra we fetch here can
+        // be utilized to skip subsequent fetches.
+        // Immediately following the header is the optional spatial index, we deliberately fetch
+        // a small part of that to skip subsequent requests
+        let prefetch_index_bytes: usize = {
+            // The actual branching factor will be in the header, but since we don't have the header
+            // yet we guess. The consequence of getting this wrong isn't catastrophic, it just means
+            // we may be fetching slightly more than we need or that we make an extra request later.
+            let assumed_branching_factor: usize = 16;
+
+            // NOTE: each layer is exponentially larger
+            let prefetched_layers: u32 = 3;
+
+            (0..prefetched_layers).map(|i| {
+                assumed_branching_factor.pow(i) * std::mem::size_of::<NodeItem>()
+            }).sum()
+        };
+
+        // In reality, the header is probably less than half this size, but better to overshoot and
+        // fetch an extra kb rather than have to issue a second request.
+        let assumed_header_size = 2024;
+        let min_req_size = assumed_header_size + prefetch_index_bytes;
+        debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
+
         let bytes = client.get(0, 8, min_req_size).await?;
         if bytes != MAGIC_BYTES {
             return Err(GeozeroError::GeometryFormat);
