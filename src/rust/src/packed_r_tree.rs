@@ -538,10 +538,7 @@ impl PackedRTree {
         let item = NodeItem::new(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
-        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
         debug!("http_stream_search - index_begin: {}, num_items: {}, node_size: {}, level_bounds: {:?}, GPS bounds:[({}, {}), ({},{})]", index_begin, num_items, node_size, &level_bounds, min_x, min_y, max_x, max_y);
-
-        let min_req_size = cmp::min(num_nodes * size_of::<NodeItem>(), 256 * 1024);
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
@@ -571,7 +568,7 @@ impl PackedRTree {
             );
             let length = end - node_index;
             let node_items =
-                read_http_node_items(client, min_req_size, index_begin, node_index, length).await?;
+                read_http_node_items(client, 0, index_begin, node_index, length).await?;
 
             // search through child nodes
             for pos in node_index..end {
