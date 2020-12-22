@@ -1,8 +1,7 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
-// use crate::http_reader::BufferedHttpClient;
-use crate::http_client::BufferedHttpClient;
+use crate::http_client::BufferedHttpRangeClient;
 use geozero::error::{GeozeroError, Result};
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
@@ -126,7 +125,7 @@ fn read_node_items<R: Read + Seek>(
 
 /// Read partial item vec from http
 async fn read_http_node_items(
-    client: &mut BufferedHttpClient,
+    client: &mut BufferedHttpRangeClient,
     min_req_size: usize,
     base: usize,
     node_index: usize,
@@ -134,7 +133,7 @@ async fn read_http_node_items(
 ) -> Result<Vec<NodeItem>> {
     let begin = base + node_index * size_of::<NodeItem>();
     let len = length * size_of::<NodeItem>();
-    let bytes = client.get(begin, len, min_req_size).await?;
+    let bytes = client.get_range(begin, len, min_req_size).await?;
 
     let mut node_items = Vec::with_capacity(length);
     let buf = unsafe { std::slice::from_raw_parts_mut(node_items.as_mut_ptr() as *mut u8, len) };
@@ -356,13 +355,15 @@ impl PackedRTree {
 
     async fn read_http(
         &mut self,
-        client: &mut BufferedHttpClient,
+        client: &mut BufferedHttpRangeClient,
         index_begin: usize,
     ) -> Result<()> {
         let min_req_size = self.size(); // read full index at once
         let mut pos = index_begin;
         for i in 0..self.num_nodes {
-            let bytes = client.get(pos, size_of::<NodeItem>(), min_req_size).await?;
+            let bytes = client
+                .get_range(pos, size_of::<NodeItem>(), min_req_size)
+                .await?;
             let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
             let n: NodeItem = unsafe { std::mem::transmute(*p) };
             self.node_items[i] = n.clone();
@@ -406,7 +407,7 @@ impl PackedRTree {
     }
 
     pub async fn from_http(
-        client: &mut BufferedHttpClient,
+        client: &mut BufferedHttpRangeClient,
         index_begin: usize,
         num_items: usize,
         node_size: u16,
@@ -526,7 +527,7 @@ impl PackedRTree {
     }
 
     pub async fn http_stream_search(
-        client: &mut BufferedHttpClient,
+        client: &mut BufferedHttpRangeClient,
         index_begin: usize,
         num_items: usize,
         node_size: u16,

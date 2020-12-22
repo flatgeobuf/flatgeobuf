@@ -1,5 +1,5 @@
 use crate::header_generated::flat_geobuf::*;
-use crate::http_client::BufferedHttpClient;
+use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
@@ -9,7 +9,7 @@ use geozero::FeatureProcessor;
 
 /// FlatGeobuf dataset HTTP reader
 pub struct HttpFgbReader {
-    client: BufferedHttpClient,
+    client: BufferedHttpRangeClient,
     /// Current read offset
     pos: usize,
     // feature reading requires header access, therefore
@@ -28,7 +28,7 @@ pub struct HttpFgbReader {
 impl HttpFgbReader {
     pub async fn open(url: &str) -> Result<HttpFgbReader> {
         trace!("starting: opening http reader, reading header");
-        let mut client = BufferedHttpClient::new(&url);
+        let mut client = BufferedHttpRangeClient::new(&url);
 
         // Because we use a buffered HTTP reader, anything extra we fetch here can
         // be utilized to skip subsequent fetches.
@@ -54,17 +54,17 @@ impl HttpFgbReader {
         let min_req_size = assumed_header_size + prefetch_index_bytes;
         debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
 
-        let bytes = client.get(0, 8, min_req_size).await?;
+        let bytes = client.get_range(0, 8, min_req_size).await?;
         if bytes != MAGIC_BYTES {
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get(8, 12, min_req_size).await?;
+        let bytes = client.get_range(8, 12, min_req_size).await?;
         let header_size = LittleEndian::read_u32(bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get(12, header_size, min_req_size).await?;
+        let bytes = client.get_range(12, header_size, min_req_size).await?;
         let header_buf = bytes.to_vec();
 
         trace!("completed: opening http reader");
@@ -145,12 +145,12 @@ impl HttpFgbReader {
             self.pos = self.feature_base + item.offset;
         }
         self.feat_no += 1;
-        let bytes = self.client.get(self.pos, 4, min_req_size).await?;
+        let bytes = self.client.get_range(self.pos, 4, min_req_size).await?;
         self.pos += 4;
         let feature_size = LittleEndian::read_u32(bytes) as usize;
         let bytes = self
             .client
-            .get(self.pos, feature_size, min_req_size)
+            .get_range(self.pos, feature_size, min_req_size)
             .await?;
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
         self.pos += feature_size;

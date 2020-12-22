@@ -3,23 +3,24 @@ use geozero::error::{GeozeroError, Result};
 use std::cmp::max;
 use std::str;
 
-struct HttpClient {
+/// HTTP client for HTTP Range requests (https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests)
+struct HttpRangeClient {
     client: reqwest::Client,
     url: String,
     requests_ever_made: usize,
     bytes_ever_requested: usize,
 }
 
-impl HttpClient {
+impl HttpRangeClient {
     fn new(url: &str) -> Self {
-        HttpClient {
+        HttpRangeClient {
             client: reqwest::Client::new(),
             url: url.to_string(),
             requests_ever_made: 0,
             bytes_ever_requested: 0,
         }
     }
-    async fn get(&mut self, begin: usize, length: usize) -> Result<Bytes> {
+    async fn get_range(&mut self, begin: usize, length: usize) -> Result<Bytes> {
         self.requests_ever_made += 1;
         self.bytes_ever_requested += length;
         let range = format!("bytes={}-{}", begin, begin + length - 1);
@@ -44,24 +45,41 @@ impl HttpClient {
     }
 }
 
-pub struct BufferedHttpClient {
-    http_client: HttpClient,
+/// HTTP client for HTTP Range requests with a buffer optimized for sequential requests
+pub struct BufferedHttpRangeClient {
+    http_client: HttpRangeClient,
     buf: BytesMut,
     /// Lower index of buffer relative to input stream
     head: usize,
 }
 
-impl BufferedHttpClient {
+impl BufferedHttpRangeClient {
     pub fn new(url: &str) -> Self {
-        BufferedHttpClient {
-            http_client: HttpClient::new(url),
+        BufferedHttpRangeClient {
+            http_client: HttpRangeClient::new(url),
             buf: BytesMut::new(),
             head: 0,
         }
     }
 
-    pub async fn get(&mut self, begin: usize, length: usize, min_req_size: usize) -> Result<&[u8]> {
-        // If we don't already have the data, we download it
+    pub async fn get_range(
+        &mut self,
+        begin: usize,
+        length: usize,
+        min_req_size: usize,
+    ) -> Result<&[u8]> {
+        //
+        //            head  begin    tail
+        //       +------+-----+---+---+------------+
+        // File  |      |     |   |   |            |
+        //       +------+-----+---+---+------------+
+        // buf          |     |   |   |
+        //              +-----+---+---+
+        // Request            |   |
+        //                    +---+
+        //                    length
+
+        // Download additional bytes if requested range is not in buffer
         if begin + length > self.tail() || begin < self.head {
             // Remove bytes before new begin
             if begin > self.head && begin < self.tail() {
@@ -72,13 +90,17 @@ impl BufferedHttpClient {
                 self.head = begin;
             }
 
-            // Read additional bytes
+            // Read additional bytes into buffer
             let range_begin = max(begin, self.tail());
             let range_length = max(begin + length - range_begin, min_req_size);
-            let bytes = self.http_client.get(range_begin, range_length).await?;
+            let bytes = self
+                .http_client
+                .get_range(range_begin, range_length)
+                .await?;
             self.buf.put(bytes);
         }
 
+        // Return slice from buffer
         let lower = begin - self.head;
         let upper = begin + length - self.head;
         Ok(&self.buf[lower..upper])
