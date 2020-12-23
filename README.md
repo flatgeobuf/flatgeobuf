@@ -16,6 +16,8 @@ Goals are to be suitable for large volumes of static data, significantly faster 
 
 The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
 
+FlatGeobuf is open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)).
+
 ## Examples
 
 * [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
