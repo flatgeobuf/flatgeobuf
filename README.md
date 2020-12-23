@@ -1,6 +1,6 @@
 # ![layout](logo.svg) FlatGeobuf
 
-[![CircleCI](https://img.shields.io/circleci/build/github/bjornharrtell/flatgeobuf.svg)](https://circleci.com/gh/bjornharrtell/flatgeobuf)
+[![CircleCI](https://img.shields.io/circleci/build/github/flatgeobuf/flatgeobuf.svg)](https://circleci.com/gh/flatgeobuf/flatgeobuf)
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
 [![Maven Central](https://img.shields.io/maven-central/v/org.wololo/flatgeobuf.svg)](https://search.maven.org/artifact/org.wololo/flatgeobuf)
 [![Nuget](https://img.shields.io/nuget/v/FlatGeobuf)](https://www.nuget.org/packages/FlatGeobuf/)
@@ -19,17 +19,17 @@ The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in d
 ## Examples
 
 * [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
-* [OpenLayers example](https://bjornharrtell.github.io/flatgeobuf/examples/openlayers)
-* [Leaflet example](https://bjornharrtell.github.io/flatgeobuf/examples/leaflet)
+* [OpenLayers example](https://flatgeobuf.org/examples/openlayers)
+* [Leaflet example](https://flatgeobuf.org/examples/leaflet)
 
 ## Specification
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
 * MB: Magic bytes (0x6667620366676200)
-* H: Header (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/header.fbs))
-* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/cpp/packedrtree.h))
-* DATA: Features (variable size [flatbuffer](https://github.com/bjornharrtell/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
+* H: Header (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/header.fbs))
+* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/cpp/packedrtree.h))
+* DATA: Features (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinates) is aligned to 8 bytes to from the start of the file or feature to allow for direct memory access.
 
