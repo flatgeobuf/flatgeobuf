@@ -31,5 +31,5 @@ function handleResponse(response) {
 }
 
 // using fetch API to get readable stream
-fetch('https://raw.githubusercontent.com/bjornharrtell/flatgeobuf/3.7.1/test/data/UScounties.fgb')
+fetch('http://flatgeobuf.org/test/data/UScounties.fgb')
     .then(handleResponse)
