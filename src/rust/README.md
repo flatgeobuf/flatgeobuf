@@ -1,6 +1,6 @@
 # FlatGeobuf for Rust
 
-Rust implementation of [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/).
+Rust implementation of [FlatGeobuf](https://flatgeobuf.org/).
 
 FlatGeobuf is a performant binary encoding for geographic data based on
 [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection
