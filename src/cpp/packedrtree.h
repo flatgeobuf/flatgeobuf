@@ -68,7 +68,7 @@ struct SearchResultItem {
 std::ostream& operator << (std::ostream& os, NodeItem const& value);
 
 uint32_t hilbert(uint32_t x, uint32_t y);
-uint32_t hilbert(const NodeItem &n, uint32_t hilbertMax, const double minX, const double minY, const double maxX, const double maxY, const double width, const double height);
+uint32_t hilbert(const NodeItem &n, uint32_t hilbertMax, const double minX, const double minY, const double width, const double height);
 void hilbertSort(std::vector<std::shared_ptr<Item>> &items);
 void hilbertSort(std::vector<NodeItem> &items);
 NodeItem calcExtent(const std::vector<std::shared_ptr<Item>> &items);

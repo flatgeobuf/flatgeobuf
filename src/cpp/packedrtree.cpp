@@ -127,7 +127,7 @@ uint32_t hilbert(uint32_t x, uint32_t y)
     return value;
 }
 
-uint32_t hilbert(const NodeItem &r, uint32_t hilbertMax, const double minX, const double minY, const double maxX, const double maxY, const double width, const double height)
+uint32_t hilbert(const NodeItem &r, uint32_t hilbertMax, const double minX, const double minY, const double width, const double height)
 {
     uint32_t x = 0;
     uint32_t y = 0;
@@ -147,13 +147,11 @@ void hilbertSort(std::vector<std::shared_ptr<Item>> &items)
     NodeItem extent = calcExtent(items);
     const double minX = extent.minX;
     const double minY = extent.minY;
-    const double maxX = extent.maxX;
-    const double maxY = extent.maxY;
     const double width = extent.width();
     const double height = extent.height();
-    std::sort(items.begin(), items.end(), [minX, minY, maxX, maxY, width, height] (std::shared_ptr<Item> a, std::shared_ptr<Item> b) {
-        uint32_t ha = hilbert(a->nodeItem, hilbertMax, minX, minY, maxX, maxY, width, height);
-        uint32_t hb = hilbert(b->nodeItem, hilbertMax, minX, minY, maxX, maxY, width, height);
+    std::sort(items.begin(), items.end(), [minX, minY, width, height] (std::shared_ptr<Item> a, std::shared_ptr<Item> b) {
+        uint32_t ha = hilbert(a->nodeItem, hilbertMax, minX, minY, width, height);
+        uint32_t hb = hilbert(b->nodeItem, hilbertMax, minX, minY, width, height);
         return ha > hb;
     });
 }
@@ -163,13 +161,11 @@ void hilbertSort(std::vector<NodeItem> &items)
     NodeItem extent = calcExtent(items);
     const double minX = extent.minX;
     const double minY = extent.minY;
-    const double maxX = extent.maxX;
-    const double maxY = extent.maxY;
     const double width = extent.width();
     const double height = extent.height();
-    std::sort(items.begin(), items.end(), [minX, minY, maxX, maxY, width, height] (const NodeItem &a, const NodeItem &b) {
-        uint32_t ha = hilbert(a, hilbertMax, minX, minY, maxX, maxY, width, height);
-        uint32_t hb = hilbert(b, hilbertMax, minX, minY, maxX, maxY, width, height);
+    std::sort(items.begin(), items.end(), [minX, minY, width, height] (const NodeItem &a, const NodeItem &b) {
+        uint32_t ha = hilbert(a, hilbertMax, minX, minY, width, height);
+        uint32_t hb = hilbert(b, hilbertMax, minX, minY, width, height);
         return ha > hb;
     });
 }
