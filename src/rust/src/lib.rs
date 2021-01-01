@@ -127,6 +127,7 @@ mod properties_reader;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use driver::*;
+pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use feature_generated::flat_geobuf::*;
 pub use file_reader::*;
 pub use geometry_reader::*;

@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "0.4.0"
+version = "0.4.1-pre"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 description = "FlatGeobuf for Rust."
@@ -19,6 +19,7 @@ async-trait = "0.1"
 reqwest = "0.10"
 bytes = "0.5"
 log = "0.4"
+fallible-streaming-iterator = "0.1.9"
 
 [dev-dependencies]
 geozero-core = "0.5"

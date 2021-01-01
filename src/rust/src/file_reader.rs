@@ -2,6 +2,7 @@ use crate::header_generated::flat_geobuf::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
+use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureProcessor, ReadSeek};
 use std::io::SeekFrom;
@@ -91,24 +92,6 @@ impl<'a> FgbReader<'a> {
     pub fn features_count(&self) -> usize {
         self.count
     }
-    /// Read next feature
-    pub fn next(&mut self) -> Result<Option<&FgbFeature>> {
-        if self.feat_no >= self.count {
-            return Ok(None);
-        }
-        if let Some(filter) = &self.item_filter {
-            let item = &filter[self.feat_no];
-            self.reader
-                .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
-        }
-        self.feat_no += 1;
-        let mut size_buf: [u8; 4] = [0; 4];
-        self.reader.read_exact(&mut size_buf)?;
-        let feature_size = u32::from_le_bytes(size_buf);
-        self.fbs.feature_buf.resize(feature_size as usize, 0);
-        self.reader.read_exact(&mut self.fbs.feature_buf)?;
-        Ok(Some(&self.fbs))
-    }
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
@@ -122,6 +105,71 @@ impl<'a> FgbReader<'a> {
             cnt += 1;
         }
         out.dataset_end()
+    }
+}
+
+/// `FallibleStreamingIterator` differs from the standard library's `Iterator`
+/// in two ways:
+/// * each call to `next` can fail.
+/// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
+///   reset or finalized.
+///
+/// While these iterators cannot be used with Rust `for` loops, `while let`
+/// loops offer a similar level of ergonomics:
+/// ```rust
+/// use flatgeobuf::*;
+/// # use std::fs::File;
+/// # use std::io::BufReader;
+///
+/// # fn read_fbg() -> geozero::error::Result<()> {
+/// # let mut filein = BufReader::new(File::open("countries.fgb")?);
+/// # let mut fgb = FgbReader::open(&mut filein)?;
+/// # fgb.select_all()?;
+/// while let Some(feature) = fgb.next()? {
+///     let props = feature.properties()?;
+///     println!("{}", props["name"]);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+impl<'a> FallibleStreamingIterator for FgbReader<'a> {
+    type Error = GeozeroError;
+    type Item = FgbFeature;
+
+    fn advance(&mut self) -> Result<()> {
+        if self.feat_no >= self.count {
+            self.feat_no = self.count + 1;
+            return Ok(());
+        }
+        if let Some(filter) = &self.item_filter {
+            let item = &filter[self.feat_no];
+            self.reader
+                .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
+        }
+        self.feat_no += 1;
+        let mut size_buf: [u8; 4] = [0; 4];
+        self.reader.read_exact(&mut size_buf)?;
+        let feature_size = u32::from_le_bytes(size_buf);
+        self.fbs.feature_buf.resize(feature_size as usize, 0);
+        self.reader.read_exact(&mut self.fbs.feature_buf)?;
+        Ok(())
+    }
+
+    fn get(&self) -> Option<&FgbFeature> {
+        if self.feat_no > self.count {
+            None
+        } else {
+            Some(&self.fbs)
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.feat_no >= self.count {
+            (0, Some(0))
+        } else {
+            let remaining = self.count - self.feat_no;
+            (remaining, Some(remaining))
+        }
     }
 }
 
