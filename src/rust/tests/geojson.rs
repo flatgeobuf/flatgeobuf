@@ -41,8 +41,7 @@ fn num_properties() -> Result<()> {
 }
 
 async fn http_json_async() -> Result<()> {
-    let url =
-        "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
+    let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
     fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
 

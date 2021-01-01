@@ -3,8 +3,7 @@ use geozero::error::Result;
 use tokio::runtime::Runtime;
 
 async fn http_read_async() -> Result<()> {
-    let url =
-        "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
+    let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(fgb.header().features_count(), 179);
@@ -21,8 +20,7 @@ fn http_read() {
 }
 
 async fn http_bbox_read_async() -> Result<()> {
-    let url =
-        "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
+    let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(fgb.header().features_count(), 179);
@@ -64,8 +62,7 @@ fn http_bbox_big() {
 }
 
 async fn http_err_async() {
-    let url =
-        "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/wrong.fgb";
+    let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/wrong.fgb";
     let fgb = HttpFgbReader::open(url).await;
     assert_eq!(
         fgb.err().unwrap().to_string(),
