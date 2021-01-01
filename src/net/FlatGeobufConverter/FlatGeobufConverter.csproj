@@ -6,8 +6,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NetTopologySuite" Version="1.15.1" />
-    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="1.15.0" />
     <PackageReference Include="System.Linq" Version="4.3.0" />
   </ItemGroup>
 

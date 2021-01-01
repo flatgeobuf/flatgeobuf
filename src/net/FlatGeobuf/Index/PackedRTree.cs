@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using GeoAPI.Geometries;
+using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.Index
 {
@@ -36,7 +36,7 @@ namespace FlatGeobuf.Index
                 throw new Exception("Node size must be at least 2");
             if (numItems == 0)
                 throw new Exception("Number of items must be greater than 0");
-            
+
             // number of nodes per level in bottom-up order
             var n = numItems;
             var numNodes = n;

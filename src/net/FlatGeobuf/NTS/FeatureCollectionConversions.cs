@@ -6,7 +6,7 @@ using System.IO;
 using FlatBuffers;
 using NetTopologySuite.Features;
 using FlatGeobuf.Index;
-using GeoAPI.Geometries;
+using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.NTS
 {
@@ -26,16 +26,14 @@ namespace FlatGeobuf.NTS
 
     public static class FeatureCollectionConversions {
         public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
-            var featureFirst = fc.Features.First();
+            var featureFirst = fc.First();
             if (columns == null && featureFirst.Attributes != null)
                     columns = featureFirst.Attributes.GetNames()
                         .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
                         .ToList();
-            using (var memoryStream = new MemoryStream())
-            {
-                Serialize(memoryStream, fc.Features, geometryType, dimensions, columns);
-                return memoryStream.ToArray();
-            }
+            using var memoryStream = new MemoryStream();
+            Serialize(memoryStream, fc, geometryType, dimensions, columns);
+            return memoryStream.ToArray();
         }
 
         public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
@@ -81,7 +79,7 @@ namespace FlatGeobuf.NTS
 
             var headerSize = reader.ReadInt32();
             var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
-            
+
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
             var geometryType = header.GeometryType;

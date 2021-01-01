@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 using NetTopologySuite.Geometries;
-using GeoAPI.Geometries;
 
 namespace FlatGeobuf.Tests.GeoJson
 {

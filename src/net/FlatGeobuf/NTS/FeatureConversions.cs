@@ -5,7 +5,7 @@ using NetTopologySuite.Features;
 using FlatBuffers;
 using System.Text;
 using System.IO;
-using GeoAPI.Geometries;
+using NTSGeometry = NetTopologySuite.Geometries.Geometry;
 
 namespace FlatGeobuf.NTS
 {
@@ -42,7 +42,7 @@ namespace FlatGeobuf.NTS
                             writer.Write((long) value);
                             break;
                         case ColumnType.Double:
-                            writer.Write((double) value);                        
+                            writer.Write((double) value);
                             break;
                         case ColumnType.String:
                             var bytes = Encoding.UTF8.GetBytes((string) value);
@@ -59,18 +59,18 @@ namespace FlatGeobuf.NTS
             if (memoryStream.Position > 0)
                 propertiesOffset = Feature.CreatePropertiesVector(builder, memoryStream.ToArray());
 
-            var geometryOffset = default(Offset<Geometry>);
+            Offset<Geometry> geometryOffset;
             if (go.gos != null && go.gos.Length > 0) {
                 var partOffsets = new Offset<Geometry>[go.gos.Length];
                 for (int i = 0; i < go.gos.Length; i++) {
                     var goPart = go.gos[i];
-                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, default(VectorOffset));
+                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default, default, default, default, go.type, default);
                     partOffsets[i] = partOffset;
                 }
                 var partsOffset = Geometry.CreatePartsVector(builder, partOffsets);
-                geometryOffset = Geometry.CreateGeometry(builder, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, partsOffset);
+                geometryOffset = Geometry.CreateGeometry(builder, default, default, default, default, default, default, go.type, partsOffset);
             } else {
-                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default(VectorOffset), default(VectorOffset), default(VectorOffset), default(VectorOffset), go.type, default(VectorOffset));
+                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default, default, default, default, go.type, default);
             }
             Feature.StartFeature(builder);
 
@@ -102,31 +102,43 @@ namespace FlatGeobuf.NTS
                     switch (type)
                     {
                         case ColumnType.Bool:
-                            attributesTable.AddAttribute(name, reader.ReadBoolean());
+                            attributesTable.Add(name, reader.ReadBoolean());
+                            break;
+                        case ColumnType.Short:
+                            attributesTable.Add(name, reader.ReadInt16());
                             break;
                         case ColumnType.Int:
-                            attributesTable.AddAttribute(name, reader.ReadInt32());
+                            attributesTable.Add(name, reader.ReadInt32());
                             break;
                         case ColumnType.Long:
-                            attributesTable.AddAttribute(name, reader.ReadInt64());
+                            attributesTable.Add(name, reader.ReadInt64());
                             break;
                         case ColumnType.Double:
-                            attributesTable.AddAttribute(name, reader.ReadDouble());
+                            attributesTable.Add(name, reader.ReadDouble());
                             break;
+                        case ColumnType.DateTime:
                         case ColumnType.String:
                             int len = reader.ReadInt32();
                             var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int) memoryStream.Position, len);
                             memoryStream.Position += len;
-                            attributesTable.AddAttribute(name, str);
+                            attributesTable.Add(name, str);
                             break;
-                        default: throw new ApplicationException("Unknown type");
+                        default: throw new Exception($"Unknown type {type}");
                     }
                 }
             }
 
-            IGeometry geometry = null;
-            if (feature.Geometry.HasValue)
+            NTSGeometry geometry = null;
+            try
+            {
+                if (feature.Geometry.HasValue)
                 geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType);
+            }
+            catch (ArgumentException)
+            {
+
+            }
+
             var f = new NetTopologySuite.Features.Feature(geometry, attributesTable);
             return f;
         }

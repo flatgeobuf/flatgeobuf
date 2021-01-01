@@ -3,8 +3,8 @@ using System.IO;
 using NetTopologySuite.IO;
 using NetTopologySuite.Features;
 using FlatGeobuf.NTS;
-using GeoAPI.Geometries;
 using System.Linq;
+using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.Tests.NTS
 {

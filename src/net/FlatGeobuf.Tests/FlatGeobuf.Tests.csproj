@@ -11,8 +11,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.3.2" />
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
-    <PackageReference Include="NetTopologySuite" Version="1.15.1" />
-    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="1.15.0" />
     <ProjectReference Include="..\FlatGeobuf\FlatGeobuf.csproj" />
   </ItemGroup>
 
