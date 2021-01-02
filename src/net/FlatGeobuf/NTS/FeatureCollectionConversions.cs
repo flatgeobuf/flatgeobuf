@@ -72,13 +72,7 @@ namespace FlatGeobuf.NTS
 
         public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null) {
             var reader = new BinaryReader(stream);
-
-            var magicBytes = reader.ReadBytes(8);
-            if (!magicBytes.SequenceEqual(Constants.MagicBytes))
-                throw new Exception("Not a FlatGeobuf file");
-
-            var headerSize = reader.ReadInt32();
-            var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
+            var header = Helpers.ReadHeader(stream, out var headerSize);
 
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
