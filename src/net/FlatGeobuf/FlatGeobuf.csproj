@@ -1,18 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>3.1.3</VersionPrefix>
+    <VersionPrefix>3.8.0</VersionPrefix>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\FlatBuffers\FlatBuffers.Core.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NetTopologySuite" Version="2.1.0" />
     <PackageReference Include="NetTopologySuite.Features" Version="2.1.0" />
     <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
-    <PackageReference Include="System.Linq" Version="4.3.0" />
   </ItemGroup>
 
   <PropertyGroup>
