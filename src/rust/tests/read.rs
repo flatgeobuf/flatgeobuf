@@ -102,12 +102,35 @@ impl GeomProcessor for VertexCounter {
     }
 }
 
-struct FeatureFinder;
+struct FeatureFinder(bool);
 
 impl PropertyProcessor for FeatureFinder {
     fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
-        Ok(i == 0 && v == &ColumnValue::String("DNK"))
+        self.0 = i == 0 && v == &ColumnValue::String("DNK");
+        Ok(i <= 0)
     }
+}
+
+#[test]
+fn filter() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    fgb.select_all()?;
+    let mut cnt = 0;
+    let mut finder = FeatureFinder { 0: false };
+    while let Some(feature) = fgb
+        .by_ref()
+        .filter(|feat| {
+            feat.process_properties(&mut finder).ok();
+            finder.0
+        })
+        .next()?
+    {
+        let _geometry = feature.geometry().unwrap();
+        cnt += 1
+    }
+    assert_eq!(cnt, 1);
+    Ok(())
 }
 
 #[test]
@@ -121,30 +144,26 @@ fn file_reader() -> Result<()> {
     let count = fgb.select_all()?;
     assert_eq!(count, 179);
 
-    let mut finder = FeatureFinder {};
-    while let Some(feature) = fgb.next()? {
-        let found = feature.process_properties(&mut finder);
-        if found.is_err() || found.unwrap() {
-            break;
-        }
+    if let Some(feature) = fgb.find(|feat| feat.properties().unwrap()["id"] == "DNK")? {
+        // OGRFeature(countries):46
+        //   id (String) = DNK
+        //   name (String) = Denmark
+        //   MULTIPOLYGON (((12.690006 55.609991,12.089991 54.800015,11.043543 55.364864,10.903914 55.779955,12.370904 56.111407,12.690006 55.609991)),((10.912182 56.458621,1
+        // 0.667804 56.081383,10.369993 56.190007,9.649985 55.469999,9.921906 54.983104,9.282049 54.830865,8.526229 54.962744,8.120311 55.517723,8.089977 56.540012,8.256582 5
+        // 6.809969,8.543438 57.110003,9.424469 57.172066,9.775559 57.447941,10.580006 57.730017,10.546106 57.215733,10.25 56.890016,10.369993 56.609982,10.912182 56.458621))
+        // )
+        let geometry = feature.geometry().unwrap();
+
+        let mut vertex_counter = VertexCounter(0);
+        geometry.process(&mut vertex_counter, geometry_type)?;
+        assert_eq!(vertex_counter.0, 24);
+
+        let props = feature.properties()?;
+        assert_eq!(props["id"], "DNK".to_string());
+        assert_eq!(props["name"], "Denmark".to_string());
+    } else {
+        assert!(false, "find failed");
     }
-    let feature = fgb.cur_feature();
-    // OGRFeature(countries):46
-    //   id (String) = DNK
-    //   name (String) = Denmark
-    //   MULTIPOLYGON (((12.690006 55.609991,12.089991 54.800015,11.043543 55.364864,10.903914 55.779955,12.370904 56.111407,12.690006 55.609991)),((10.912182 56.458621,1
-    // 0.667804 56.081383,10.369993 56.190007,9.649985 55.469999,9.921906 54.983104,9.282049 54.830865,8.526229 54.962744,8.120311 55.517723,8.089977 56.540012,8.256582 5
-    // 6.809969,8.543438 57.110003,9.424469 57.172066,9.775559 57.447941,10.580006 57.730017,10.546106 57.215733,10.25 56.890016,10.369993 56.609982,10.912182 56.458621))
-    // )
-    let geometry = feature.geometry().unwrap();
-
-    let mut vertex_counter = VertexCounter(0);
-    geometry.process(&mut vertex_counter, geometry_type)?;
-    assert_eq!(vertex_counter.0, 24);
-
-    let props = feature.properties()?;
-    assert_eq!(props["id"], "DNK".to_string());
-    assert_eq!(props["name"], "Denmark".to_string());
 
     Ok(())
 }
