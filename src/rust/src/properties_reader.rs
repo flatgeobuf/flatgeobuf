@@ -2,7 +2,10 @@ use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
-use geozero::{ColumnValue, FeatureProcessor, PropertyProcessor};
+use geozero::{
+    ColumnValue, FeatureProcessor, PropertyProcessor, PropertyReadType, PropertyReader,
+    PropertyReaderIdx,
+};
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::str;
@@ -225,6 +228,27 @@ impl FgbFeature {
             }
         }
         Ok(finish)
+    }
+    /// Get property value by name
+    pub fn property<T: PropertyReadType>(&self, name: &str) -> Option<T> {
+        let mut reader = PropertyReader { name, value: None };
+        if self.process_properties(&mut reader).is_ok() {
+            reader.value
+        } else {
+            None
+        }
+    }
+    /// Get property value by number
+    pub fn property_n<T: PropertyReadType>(&self, n: usize) -> Option<T> {
+        let mut reader = PropertyReaderIdx {
+            idx: n,
+            value: None,
+        };
+        if self.process_properties(&mut reader).is_ok() {
+            reader.value
+        } else {
+            None
+        }
     }
     /// Return all properties in a HashMap
     /// Use `process_properties` for zero-copy access

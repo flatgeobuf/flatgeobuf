@@ -106,8 +106,13 @@ struct FeatureFinder(bool);
 
 impl PropertyProcessor for FeatureFinder {
     fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
-        self.0 = i == 0 && v == &ColumnValue::String("DNK");
-        Ok(i <= 0)
+        // name == "id"
+        if i == 0 {
+            self.0 = v == &ColumnValue::String("DNK");
+            Ok(true) // finish
+        } else {
+            Ok(false)
+        }
     }
 }
 
@@ -144,7 +149,7 @@ fn file_reader() -> Result<()> {
     let count = fgb.select_all()?;
     assert_eq!(count, 179);
 
-    if let Some(feature) = fgb.find(|feat| feat.properties().unwrap()["id"] == "DNK")? {
+    if let Some(feature) = fgb.find(|feat| feat.property("id") == Some("DNK".to_string()))? {
         // OGRFeature(countries):46
         //   id (String) = DNK
         //   name (String) = Denmark
