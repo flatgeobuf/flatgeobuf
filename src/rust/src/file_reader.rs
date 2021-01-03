@@ -4,7 +4,7 @@ use crate::properties_reader::FgbFeature;
 use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
-use geozero::{FeatureProcessor, ReadSeek};
+use geozero::{FeatureAccess, FeatureProcessor, ReadSeek};
 use std::io::SeekFrom;
 
 /// FlatGeobuf dataset reader

@@ -127,7 +127,6 @@ mod properties_reader;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use driver::*;
-pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use feature_generated::flat_geobuf::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
@@ -136,6 +135,10 @@ pub use http_client::*;
 pub use http_reader::*;
 pub use packed_r_tree::*;
 pub use properties_reader::*;
+
+// Re-export used traits
+pub use fallible_streaming_iterator::FallibleStreamingIterator;
+pub use geozero::{FeatureAccess, FeatureGeometry, FeatureProperties};
 
 pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];

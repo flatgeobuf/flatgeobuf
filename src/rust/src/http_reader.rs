@@ -5,7 +5,7 @@ use crate::properties_reader::FgbFeature;
 use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
-use geozero::FeatureProcessor;
+use geozero::{FeatureAccess, FeatureProcessor};
 
 /// FlatGeobuf dataset HTTP reader
 pub struct HttpFgbReader {

@@ -2,11 +2,8 @@ use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
-use geozero::{
-    ColumnValue, FeatureProcessor, PropertyProcessor, PropertyReadType, PropertyReader,
-    PropertyReaderIdx,
-};
-use std::collections::HashMap;
+use geozero::{ColumnValue, GeomProcessor, PropertyProcessor};
+
 use std::mem::size_of;
 use std::str;
 
@@ -28,23 +25,25 @@ impl FgbFeature {
     pub fn geometry(&self) -> Option<Geometry> {
         self.fbs_feature().geometry()
     }
-    /// Process current feature
-    pub fn process<R: FeatureProcessor>(&self, reader: &mut R, idx: u64) -> Result<()> {
-        reader.feature_begin(idx)?;
-        reader.properties_begin()?;
-        let _ = self.process_properties(reader)?;
-        reader.properties_end()?;
-        reader.geometry_begin()?;
+}
+
+impl geozero::FeatureAccess for FgbFeature {}
+
+impl geozero::FeatureGeometry for FgbFeature {
+    /// Consume and process geometry.
+    fn process_geom<P: GeomProcessor>(&self, processor: &mut P) -> geozero::error::Result<()> {
         let geometry = self
             .fbs_feature()
             .geometry()
             .ok_or(GeozeroError::GeometryFormat)?;
         let geometry_type = self.header().geometry_type();
-        geometry.process(reader, geometry_type)?;
-        reader.geometry_end()?;
-        reader.feature_end(idx)
+        geometry.process(processor, geometry_type)
     }
-    pub fn process_properties<R: PropertyProcessor>(&self, reader: &mut R) -> Result<bool> {
+}
+
+impl geozero::FeatureProperties for FgbFeature {
+    /// Process feature properties.
+    fn process_properties<P: PropertyProcessor>(&self, reader: &mut P) -> Result<bool> {
         let columns_meta = self
             .header()
             .columns()
@@ -228,33 +227,5 @@ impl FgbFeature {
             }
         }
         Ok(finish)
-    }
-    /// Get property value by name
-    pub fn property<T: PropertyReadType>(&self, name: &str) -> Option<T> {
-        let mut reader = PropertyReader { name, value: None };
-        if self.process_properties(&mut reader).is_ok() {
-            reader.value
-        } else {
-            None
-        }
-    }
-    /// Get property value by number
-    pub fn property_n<T: PropertyReadType>(&self, n: usize) -> Option<T> {
-        let mut reader = PropertyReaderIdx {
-            idx: n,
-            value: None,
-        };
-        if self.process_properties(&mut reader).is_ok() {
-            reader.value
-        } else {
-            None
-        }
-    }
-    /// Return all properties in a HashMap
-    /// Use `process_properties` for zero-copy access
-    pub fn properties(&self) -> Result<HashMap<String, String>> {
-        let mut properties = HashMap::new();
-        let _ = self.process_properties(&mut properties)?;
-        Ok(properties)
     }
 }
