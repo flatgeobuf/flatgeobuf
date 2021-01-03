@@ -3,13 +3,6 @@ use crate::header_generated::flat_geobuf::*;
 use geozero::error::{GeozeroError, Result};
 use geozero::GeomProcessor;
 
-fn multi_dim<P: GeomProcessor>(processor: &mut P) -> bool {
-    processor.dimensions().z
-        || processor.dimensions().m
-        || processor.dimensions().t
-        || processor.dimensions().tm
-}
-
 fn read_coordinate<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -47,7 +40,7 @@ fn read_coords<P: GeomProcessor>(
     length: usize,
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-    let multi = multi_dim(processor);
+    let multi = processor.multi_dim();
     for i in (offset..offset + length).step_by(2) {
         if multi {
             read_coordinate(processor, geometry, i / 2, (i - offset) / 2)?;
@@ -307,7 +300,7 @@ fn read_geometry_n<P: GeomProcessor>(
     match geometry_type {
         GeometryType::Point => {
             processor.point_begin(idx)?;
-            if multi_dim(processor) {
+            if processor.multi_dim() {
                 read_coordinate(processor, geometry, 0, 0)?;
             } else {
                 let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
