@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "0.4.1-pre"
+version = "0.4.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 description = "FlatGeobuf for Rust."
@@ -14,7 +14,7 @@ keywords = ["geo", "r-tree", "spatial"]
 [dependencies]
 flatbuffers = "0.6"
 byteorder = "1.3"
-geozero = "0.5"
+geozero = "0.6.0"
 async-trait = "0.1"
 reqwest = "0.10"
 bytes = "0.5"
@@ -22,7 +22,7 @@ log = "0.4"
 fallible-streaming-iterator = "0.1.9"
 
 [dev-dependencies]
-geozero-core = "0.5"
+geozero-core = "0.6.0"
 rand = "0.7"
 hex = "0.4"
 criterion = "0.3"
@@ -36,6 +36,6 @@ harness = false
 name = "geojson"
 harness = false
 
-[patch.crates-io]
+#[patch.crates-io]
 # Patch geozero dependencies (dev only)
-geozero = { path = "../../../../rust/geozero/geozero" }
+#geozero = { path = "../../../../rust/geozero/geozero" }
