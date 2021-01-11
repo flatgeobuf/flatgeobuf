@@ -61,14 +61,12 @@ namespace FlatGeobuf.NTS
 
 
             double[] coordinates = null;
-            if (dimensions == 3)
-            {
+            if (dimensions == 3) {
                 coordinates = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y, c.Z })
                 .ToArray();
-            }
-            else
-            {
+            } 
+            else {
                 coordinates = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y })
                 .ToArray();
@@ -127,8 +125,7 @@ namespace FlatGeobuf.NTS
             return factory.CreatePolygon(shell);
         }
 
-        static Polygon ParseFlatbufPolygon(uint[] ends, double[] coords, byte dimensions)
-        {
+        static Polygon ParseFlatbufPolygon(uint[] ends, double[] coords, byte dimensions) {
             if (ends == null)
                 return ParseFlatbufPolygonSingleRing(coords, dimensions);
             var sequenceFactory = new PackedCoordinateSequenceFactory();
@@ -182,8 +179,7 @@ namespace FlatGeobuf.NTS
             return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
-        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type, byte dimensions = 2)
-        {
+        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type, byte dimensions = 2) {
             var factory = new GeometryFactory();
 
             if (type == GeometryType.Unknown)
