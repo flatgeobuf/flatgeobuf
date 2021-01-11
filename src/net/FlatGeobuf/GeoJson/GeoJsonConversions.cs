@@ -10,8 +10,7 @@ namespace FlatGeobuf
     {
         public static byte[] Serialize(string geojson, byte dimensions = 2)
         {
-            var reader = dimensions == 2 ? new GeoJsonReader() 
-                            : new GeoJsonReader(new GeometryFactory(new PrecisionModel(), 4326), new JsonSerializerSettings(), dimensions);
+            var reader = new GeoJsonReader(new GeometryFactory(new PrecisionModel(), 4326), new JsonSerializerSettings(), dimensions);
             var fc = reader.Read<FeatureCollection>(geojson);
             var bytes = FeatureCollectionConversions.Serialize(fc, GeometryType.Unknown, dimensions);
             return bytes;

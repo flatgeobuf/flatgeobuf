@@ -36,8 +36,7 @@ namespace FlatGeobuf.NTS
             {
                 uint end = 0;
                 MultiLineString mls = (MultiLineString)geometry;
-                if (mls.NumGeometries > 1)
-                {
+                if (mls.NumGeometries > 1) {
                     go.ends = new uint[mls.NumGeometries];
                     for (int i = 0; i < mls.NumGeometries; i++)
                         go.ends[i] = end += (uint)mls.Geometries[i].NumPoints;
@@ -52,8 +51,7 @@ namespace FlatGeobuf.NTS
                 MultiPolygon mp = (MultiPolygon)geometry;
                 int numGeometries = mp.NumGeometries;
                 GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
-                for (int i = 0; i < numGeometries; i++)
-                {
+                for (int i = 0; i < numGeometries; i++) {
                     Polygon p = (Polygon)mp.Geometries[i];
                     gos[i] = BuildGeometry(builder, p, GeometryType.Polygon, dimensions);
                 }
@@ -100,7 +98,7 @@ namespace FlatGeobuf.NTS
             return factory.CreateMultiLineString(new[] { lineString });
         }
 
-        static MultiLineString ParseFlatbufMultiLineString(uint[] ends, double[] coords, byte dimensions)
+        static MultiLineString ParseFlatbufMultiLineString(uint[] ends, double[] coords, byte dimensions) 
         {
             if (ends == null)
                 return ParseFlatbufMultiLineStringSinglePart(coords, dimensions);

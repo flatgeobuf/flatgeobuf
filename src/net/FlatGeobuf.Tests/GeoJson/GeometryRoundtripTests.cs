@@ -10,13 +10,11 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class GeometryRoundtripTests
     {
-        string MakeFeatureCollection(string wkt, int dimensions = 2)
-        {
+        string MakeFeatureCollection(string wkt, int dimensions = 2) {
             return MakeFeatureCollection(new string[] { wkt }, dimensions);
         }
 
-        string MakeFeatureCollection(string[] wkts, int dimensions = 2)
-        {
+        string MakeFeatureCollection(string[] wkts, int dimensions = 2) {
             var fc = new FeatureCollection();
             foreach (var wkt in wkts)
                 fc.Add(MakeFeature(wkt));
