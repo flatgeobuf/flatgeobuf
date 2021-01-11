@@ -132,7 +132,7 @@ namespace FlatGeobuf.NTS
             try
             {
                 if (feature.Geometry.HasValue)
-                geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType);
+                    geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType, dimensions) ;
             }
             catch (ArgumentException)
             {

@@ -61,16 +61,16 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        public static FeatureCollection Deserialize(byte[] bytes) {
+        public static FeatureCollection Deserialize(byte[] bytes, byte dimensions = 2) {
             var fc = new NetTopologySuite.Features.FeatureCollection();
 
-            foreach (var feature in Deserialize(new MemoryStream(bytes)))
+            foreach (var feature in Deserialize(new MemoryStream(bytes), dimensions: dimensions))
                 fc.Add(feature);
 
             return fc;
         }
 
-        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null) {
+        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null, byte dimensions = 2) {
             var reader = new BinaryReader(stream);
             var header = Helpers.ReadHeader(stream, out var headerSize);
 
@@ -111,7 +111,7 @@ namespace FlatGeobuf.NTS
             while (stream.Position < stream.Length)
             {
                 var featureLength = reader.ReadInt32();
-                var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, 2, columns);
+                var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, dimensions, columns);
                 yield return feature;
             }
         }

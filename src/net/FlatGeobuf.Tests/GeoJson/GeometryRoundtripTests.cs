@@ -10,20 +10,24 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class GeometryRoundtripTests
     {
-        string MakeFeatureCollection(string wkt) {
-            return MakeFeatureCollection(new string[] { wkt });
+        string MakeFeatureCollection(string wkt, int dimensions = 2)
+        {
+            return MakeFeatureCollection(new string[] { wkt }, dimensions);
         }
 
-        string MakeFeatureCollection(string[] wkts) {
+        string MakeFeatureCollection(string[] wkts, int dimensions = 2)
+        {
             var fc = new FeatureCollection();
             foreach (var wkt in wkts)
                 fc.Add(MakeFeature(wkt));
+
             var writer = new GeoJsonWriter();
-            var geojson = writer.Write(fc);
+            var geojson = writer.Write(fc, dimensions);
             return geojson;
         }
 
-        NetTopologySuite.Features.Feature MakeFeature(string wkt) {
+        NetTopologySuite.Features.Feature MakeFeature(string wkt)
+        {
             var reader = new WKTReader();
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, null);
@@ -51,6 +55,13 @@ namespace FlatGeobuf.Tests.GeoJson
         {
             var expected = MakeFeatureCollection("MULTIPOINT(10 40, 40 30, 20 20, 30 10)");
             var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
+            AssertJson(expected, actual);
+        }
+        [TestMethod]
+        public void MultiPointWithZ()
+        {
+            var expected = MakeFeatureCollection("MULTIPOINT(10 40 100, 40 30 110, 20 20 110, 30 10 120)", dimensions: 3);
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected, dimensions: 3), dimensions: 3);
             AssertJson(expected, actual);
         }
 
@@ -134,7 +145,8 @@ namespace FlatGeobuf.Tests.GeoJson
             AssertJson(expected, actual);
         }
 
-        private void AssertJson(string expected, string actual) {
+        private void AssertJson(string expected, string actual)
+        {
             var compare = new JTokenComparer(new IndexArrayKeySelector());
             var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
             Assert.AreEqual(ComparisonResult.Identical, result.ComparisonResult);
