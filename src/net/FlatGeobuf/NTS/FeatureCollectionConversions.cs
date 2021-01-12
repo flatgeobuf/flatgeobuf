@@ -49,16 +49,17 @@ namespace FlatGeobuf.NTS
         }
 
         private static ColumnType ToColumnType(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return ColumnType.UByte;
-                case TypeCode.SByte: return ColumnType.Byte;
-                case TypeCode.Boolean: return ColumnType.Bool;
-                case TypeCode.Int32: return ColumnType.Int;
-                case TypeCode.Int64: return ColumnType.Long;
-                case TypeCode.Double: return ColumnType.Double;
-                case TypeCode.String: return ColumnType.String;
-                default: throw new ApplicationException("Unknown type");
-            }
+            return (Type.GetTypeCode(type)) switch
+            {
+                TypeCode.Byte => ColumnType.UByte,
+                TypeCode.SByte => ColumnType.Byte,
+                TypeCode.Boolean => ColumnType.Bool,
+                TypeCode.Int32 => ColumnType.Int,
+                TypeCode.Int64 => ColumnType.Long,
+                TypeCode.Double => ColumnType.Double,
+                TypeCode.String => ColumnType.String,
+                _ => throw new ApplicationException("Unknown type"),
+            };
         }
 
         public static FeatureCollection Deserialize(byte[] bytes) {
@@ -133,8 +134,10 @@ namespace FlatGeobuf.NTS
             Header.AddGeometryType(builder, geometryType);
             if (columnsOffset.HasValue)
                 Header.AddColumns(builder, columnsOffset.Value);
-            //if (index != null)
-            Header.AddIndexNodeSize(builder, 0);
+            if (index != null)
+                Header.AddIndexNodeSize(builder, 16);
+            else
+                Header.AddIndexNodeSize(builder, 0);
             Header.AddFeaturesCount(builder, count);
             var offset = Header.EndHeader(builder);
 

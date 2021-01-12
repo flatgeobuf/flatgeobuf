@@ -16,7 +16,7 @@ namespace FlatGeobuf.NTS
         public VectorOffset coordsOffset = default;
         public VectorOffset endsOffset = default;
         public GeometryOffsets[] gos = null;
-        public GeometryType type { get; set; }
+        public GeometryType Type { get; set; }
     }
 
     public static class GeometryConversions {
@@ -24,7 +24,7 @@ namespace FlatGeobuf.NTS
         {
             var go = new GeometryOffsets
             {
-                type = geometryType
+                Type = geometryType
             };
 
             if (geometry == null)
@@ -42,7 +42,7 @@ namespace FlatGeobuf.NTS
             }
             else if (geometryType == GeometryType.Polygon)
             {
-                go.ends = CreateEnds(geometry as Polygon, dimensions);
+                go.ends = CreateEnds(geometry as Polygon);
             }
             else if (geometryType == GeometryType.MultiPolygon)
             {
@@ -67,7 +67,7 @@ namespace FlatGeobuf.NTS
             return go;
         }
 
-        static uint[] CreateEnds(Polygon polygon, uint dimensions)
+        static uint[] CreateEnds(Polygon polygon)
         {
             var ends = new uint[polygon.NumInteriorRings + 1];
             uint end = (uint) polygon.ExteriorRing.NumPoints;
@@ -188,55 +188,43 @@ namespace FlatGeobuf.NTS
             var ends = geometry.GetEndsArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
 
-            switch (type)
+            return type switch
             {
-                case GeometryType.Point:
-                    return factory.CreatePoint(sequenceFactory.Create(coords, dimensions));
-                case GeometryType.MultiPoint:
-                    return factory.CreateMultiPoint(sequenceFactory.Create(coords, dimensions));
-                case GeometryType.LineString:
-                    return factory.CreateLineString(sequenceFactory.Create(coords, dimensions));
-                case GeometryType.MultiLineString:
-                    return ParseFlatbufMultiLineString(ends, coords, dimensions);
-                case GeometryType.Polygon:
-                    return ParseFlatbufPolygon(ends, coords, dimensions);
+                GeometryType.Point => factory.CreatePoint(sequenceFactory.Create(coords, dimensions)),
+                GeometryType.MultiPoint => factory.CreateMultiPoint(sequenceFactory.Create(coords, dimensions)),
+                GeometryType.LineString => factory.CreateLineString(sequenceFactory.Create(coords, dimensions)),
+                GeometryType.MultiLineString => ParseFlatbufMultiLineString(ends, coords, dimensions),
+                GeometryType.Polygon => ParseFlatbufPolygon(ends, coords, dimensions),
                 //case GeometryType.MultiPolygon:
                 //    return ParseFlatbufMultiPolygon(ends, coords, dimensions);
-                default: throw new ApplicationException("FromFlatbuf: Unsupported geometry type");
-            }
+                _ => throw new ApplicationException("FromFlatbuf: Unsupported geometry type"),
+            };
         }
 
         static Ordinates ConvertDimensions(byte dimensions)
         {
-            switch (dimensions)
+            return dimensions switch
             {
-                case 1: return Ordinates.X;
-                case 2: return Ordinates.XY;
-                case 3: return Ordinates.XYZ;
-                case 4: return Ordinates.XYZM;
-                default: return Ordinates.XY;
-            }
+                1 => Ordinates.X,
+                2 => Ordinates.XY,
+                3 => Ordinates.XYZ,
+                4 => Ordinates.XYZM,
+                _ => Ordinates.XY,
+            };
         }
 
         public static GeometryType ToGeometryType(NTSGeometry geometry)
         {
-            switch (geometry)
+            return geometry switch
             {
-                case Point _:
-                    return GeometryType.Point;
-                case MultiPoint _:
-                    return GeometryType.MultiPoint;
-                case LineString _:
-                    return GeometryType.LineString;
-                case MultiLineString _:
-                    return GeometryType.MultiLineString;
-                case Polygon _:
-                    return GeometryType.Polygon;
-                case MultiPolygon _:
-                    return GeometryType.MultiPolygon;
-                default:
-                    throw new ApplicationException("Unknown or null geometry");
-            }
+                Point _ => GeometryType.Point,
+                MultiPoint _ => GeometryType.MultiPoint,
+                LineString _ => GeometryType.LineString,
+                MultiLineString _ => GeometryType.MultiLineString,
+                Polygon _ => GeometryType.Polygon,
+                MultiPolygon _ => GeometryType.MultiPolygon,
+                _ => throw new ApplicationException("Unknown or null geometry"),
+            };
         }
     }
 }
