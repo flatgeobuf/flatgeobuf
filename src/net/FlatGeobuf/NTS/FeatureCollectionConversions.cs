@@ -60,21 +60,22 @@ namespace FlatGeobuf.NTS
         }
 
         public static ColumnType ToColumnType(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return ColumnType.UByte;
-                case TypeCode.SByte: return ColumnType.Byte;
-                case TypeCode.Boolean: return ColumnType.Bool;
-                case TypeCode.Int16: return ColumnType.Short;
-                case TypeCode.UInt16: return ColumnType.UShort;
-                case TypeCode.Int32: return ColumnType.Int;
-                case TypeCode.UInt32: return ColumnType.UInt;
-                case TypeCode.Int64: return ColumnType.Long;
-                case TypeCode.UInt64: return ColumnType.ULong;
-                case TypeCode.Single: return ColumnType.Float;
-                case TypeCode.Double: return ColumnType.Double;
-                case TypeCode.String: return ColumnType.String;
-                default: throw new ApplicationException("Unknown type");
-            }
+            return (Type.GetTypeCode(type)) switch
+            {
+                TypeCode.Byte => ColumnType.UByte,
+                TypeCode.SByte => ColumnType.Byte,
+                TypeCode.Boolean => ColumnType.Bool,
+                TypeCode.Int16 => ColumnType.Short,
+                TypeCode.UInt16 => ColumnType.UShort,
+                TypeCode.Int32 => ColumnType.Int,
+                TypeCode.UInt32 => ColumnType.UInt,
+                TypeCode.Int64 => ColumnType.Long,
+                TypeCode.UInt64 => ColumnType.ULong,
+                TypeCode.Single => ColumnType.Float,
+                TypeCode.Double => ColumnType.Double,
+                TypeCode.String => ColumnType.String,
+                _ => throw new ApplicationException("Unknown type"),
+            };
         }
 
         public static FeatureCollection Deserialize(byte[] bytes, byte dimensions = 2) {
