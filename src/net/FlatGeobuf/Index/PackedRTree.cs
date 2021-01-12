@@ -72,7 +72,7 @@ namespace FlatGeobuf.Index
             var levelBounds = GenerateLevelBounds(numItems, nodeSize);
             var numNodes = levelBounds.First().End;
             var stack = new Stack<(ulong NodeIndex, int Level)>();
-            stack.Push((0UL, levelBounds.Count() - 1));
+            stack.Push((0UL, levelBounds.Count - 1));
             while (stack.Count != 0) {
                 var (nodeIndex, level) = stack.Pop();
                 var isLeafNode = nodeIndex >= numNodes - numItems;

@@ -19,7 +19,7 @@ namespace FlatGeobuf.NTS
             if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null)
             {
                 var writer = new BinaryWriter(memoryStream, Encoding.UTF8);
-                for (ushort i = 0; i < columns.Count(); i++)
+                for (ushort i = 0; i < columns.Count; i++)
                 {
                     var column = columns[i];
                     var type = column.Type;
