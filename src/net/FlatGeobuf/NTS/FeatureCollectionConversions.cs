@@ -53,8 +53,13 @@ namespace FlatGeobuf.NTS
                 case TypeCode.Byte: return ColumnType.UByte;
                 case TypeCode.SByte: return ColumnType.Byte;
                 case TypeCode.Boolean: return ColumnType.Bool;
+                case TypeCode.Int16: return ColumnType.Short;
+                case TypeCode.UInt16: return ColumnType.UShort;
                 case TypeCode.Int32: return ColumnType.Int;
+                case TypeCode.UInt32: return ColumnType.UInt;
                 case TypeCode.Int64: return ColumnType.Long;
+                case TypeCode.UInt64: return ColumnType.ULong;
+                case TypeCode.Single: return ColumnType.Float;
                 case TypeCode.Double: return ColumnType.Double;
                 case TypeCode.String: return ColumnType.String;
                 default: throw new ApplicationException("Unknown type");

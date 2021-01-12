@@ -35,11 +35,32 @@ namespace FlatGeobuf.NTS
                         case ColumnType.Bool:
                             writer.Write((bool) value);
                             break;
+                        case ColumnType.Byte:
+                            writer.Write((sbyte) value);
+                            break;
+                        case ColumnType.UByte:
+                            writer.Write((byte) value);
+                            break;
+                        case ColumnType.Short:
+                            writer.Write((short) value);
+                            break;
+                        case ColumnType.UShort:
+                            writer.Write((ushort) value);
+                            break;
                         case ColumnType.Int:
                             writer.Write((int) value);
                             break;
+                        case ColumnType.UInt:
+                            writer.Write((uint) value);
+                            break;
                         case ColumnType.Long:
                             writer.Write((long) value);
+                            break;
+                        case ColumnType.ULong:
+                            writer.Write((ulong) value);
+                            break;
+                        case ColumnType.Float:
+                            writer.Write((float) value);
                             break;
                         case ColumnType.Double:
                             writer.Write((double) value);
@@ -104,17 +125,35 @@ namespace FlatGeobuf.NTS
                         case ColumnType.Bool:
                             attributesTable.Add(name, reader.ReadBoolean());
                             break;
+                        case ColumnType.UByte:
+                            attributesTable.Add(name, reader.ReadByte());
+                            break;
+                        case ColumnType.Byte:
+                            attributesTable.Add(name, reader.ReadSByte());
+                            break;
                         case ColumnType.Short:
                             attributesTable.Add(name, reader.ReadInt16());
+                            break;
+                        case ColumnType.UShort:
+                            attributesTable.Add(name, reader.ReadUInt16());
                             break;
                         case ColumnType.Int:
                             attributesTable.Add(name, reader.ReadInt32());
                             break;
+                        case ColumnType.UInt:
+                            attributesTable.Add(name, reader.ReadUInt32());
+                            break;
                         case ColumnType.Long:
                             attributesTable.Add(name, reader.ReadInt64());
                             break;
+                        case ColumnType.ULong:
+                            attributesTable.Add(name, reader.ReadUInt64());
+                            break;
                         case ColumnType.Double:
                             attributesTable.Add(name, reader.ReadDouble());
+                            break;
+                        case ColumnType.Float:
+                            attributesTable.Add(name, reader.ReadSingle());
                             break;
                         case ColumnType.DateTime:
                         case ColumnType.String:
