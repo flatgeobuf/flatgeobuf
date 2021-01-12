@@ -48,6 +48,17 @@ namespace FlatGeobuf.NTS
             }
         }
 
+        public static void WriteHeader(Stream output, GeometryType geometryType, IList<ColumnMeta> columns = null) {
+            output.Write(Constants.MagicBytes);
+            var header = BuildHeader(0, geometryType, columns, null);
+            output.Write(header);
+        }
+        public static void WriteFeature(Stream output, IFeature feature, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+            var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
+            var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
+            output.Write(buffer);
+        }
+
         public static ColumnType ToColumnType(Type type) {
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte: return ColumnType.UByte;
