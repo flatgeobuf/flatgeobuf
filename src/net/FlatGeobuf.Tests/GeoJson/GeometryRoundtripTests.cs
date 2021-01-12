@@ -10,16 +10,16 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class GeometryRoundtripTests
     {
-        string MakeFeatureCollection(string wkt) {
-            return MakeFeatureCollection(new string[] { wkt });
+        string MakeFeatureCollection(string wkt, byte dimensions = 2) {
+            return MakeFeatureCollection(new string[] { wkt }, dimensions);
         }
 
-        string MakeFeatureCollection(string[] wkts) {
+        string MakeFeatureCollection(string[] wkts, byte dimensions = 2) {
             var fc = new FeatureCollection();
             foreach (var wkt in wkts)
                 fc.Add(MakeFeature(wkt));
             var writer = new GeoJsonWriter();
-            var geojson = writer.Write(fc);
+            var geojson = writer.Write(fc, dimensions);
             return geojson;
         }
 
@@ -51,6 +51,14 @@ namespace FlatGeobuf.Tests.GeoJson
         {
             var expected = MakeFeatureCollection("MULTIPOINT(10 40, 40 30, 20 20, 30 10)");
             var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
+            AssertJson(expected, actual);
+        }
+
+        [TestMethod]
+        public void MultiPointZ()
+        {
+            var expected = MakeFeatureCollection("MULTIPOINT(10 40 100, 40 30 110, 20 20 110, 30 10 120)", dimensions: 3);
+            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected, dimensions: 3), dimensions: 3);
             AssertJson(expected, actual);
         }
 

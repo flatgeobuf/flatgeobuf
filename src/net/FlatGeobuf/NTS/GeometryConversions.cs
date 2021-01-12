@@ -57,9 +57,19 @@ namespace FlatGeobuf.NTS
                 return go;
             }
 
-            var coordinates = geometry.Coordinates
+            double[] coordinates = null;
+            if (dimensions == 3)
+            {
+                coordinates = geometry.Coordinates
+                .SelectMany(c => new double[] { c.X, c.Y, c.Z })
+                .ToArray();
+            }
+            else
+            {
+                coordinates = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y })
                 .ToArray();
+            }
             go.coordsOffset = Geometry.CreateXyVector(builder, coordinates);
 
             if (go.ends != null)
@@ -167,8 +177,7 @@ namespace FlatGeobuf.NTS
             return factory.CreateMultiPolygon(polygons.ToArray());
         }
 
-        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type) {
-            byte dimensions = 2;
+        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type, byte dimensions = 2) {
             var factory = new GeometryFactory();
 
             if (type == GeometryType.Unknown)
