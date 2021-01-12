@@ -1,0 +1,2 @@
+[src/net/FlatGeobuf/FlatBuffers/**.cs]
+generated_code = true

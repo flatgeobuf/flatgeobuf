@@ -27,7 +27,6 @@ namespace FlatGeobuf.Tests.GeoJson
         }
 
         NetTopologySuite.Features.Feature MakeFeature(IDictionary<string, object> attributes) {
-            var reader = new GeoJsonReader();
             var attributesTable = new AttributesTable(attributes);
             var factory = new GeometryFactory();
             var point = factory.CreatePoint(new Coordinate(1,1));

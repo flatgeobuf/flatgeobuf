@@ -149,8 +149,10 @@ namespace FlatGeobuf.NTS
             Header.AddGeometryType(builder, geometryType);
             if (columnsOffset.HasValue)
                 Header.AddColumns(builder, columnsOffset.Value);
-            //if (index != null)
-            Header.AddIndexNodeSize(builder, 0);
+            if (index != null)
+                Header.AddIndexNodeSize(builder, 16);
+            else
+                Header.AddIndexNodeSize(builder, 0);
             Header.AddFeaturesCount(builder, count);
             var offset = Header.EndHeader(builder);
 
