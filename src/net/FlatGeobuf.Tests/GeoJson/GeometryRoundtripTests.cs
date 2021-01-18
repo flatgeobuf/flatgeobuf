@@ -53,8 +53,14 @@ namespace FlatGeobuf.Tests.GeoJson
         [TestMethod]
         public void Point()
         {
-
             var expected = "POINT (1.2 -2.1)";
+            var actual = RoundTrip(expected);
+            Assert.AreEqual(expected, actual);
+        }
+
+        public void PointZ()
+        {
+            var expected = "POINT (1.2 -2.1 3.1)";
             var actual = RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
