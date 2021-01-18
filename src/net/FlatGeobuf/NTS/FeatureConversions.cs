@@ -64,13 +64,13 @@ namespace FlatGeobuf.NTS
                 var partOffsets = new Offset<Geometry>[go.gos.Length];
                 for (int i = 0; i < go.gos.Length; i++) {
                     var goPart = go.gos[i];
-                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.coordsOffset, default, default, default, default, go.Type, default);
+                    var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.xyOffset, goPart.zOffset, goPart.mOffset, default, default, go.Type, default);
                     partOffsets[i] = partOffset;
                 }
                 var partsOffset = Geometry.CreatePartsVector(builder, partOffsets);
                 geometryOffset = Geometry.CreateGeometry(builder, default, default, default, default, default, default, go.Type, partsOffset);
             } else {
-                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.coordsOffset, default, default, default, default, go.Type, default);
+                geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.xyOffset, go.zOffset, go.mOffset, default, default, go.Type, default);
             }
             Feature.StartFeature(builder);
 
@@ -132,7 +132,7 @@ namespace FlatGeobuf.NTS
             try
             {
                 if (feature.Geometry.HasValue)
-                geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType);
+                geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType, dimensions);
             }
             catch (ArgumentException)
             {
