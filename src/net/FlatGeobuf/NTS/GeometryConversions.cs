@@ -71,11 +71,11 @@ namespace FlatGeobuf.NTS
                 go.zOffset = Geometry.CreateXyVector(builder, z);
             }
 
-            if (dimensions == 3) {
-                var z = geometry.Coordinates
-                    .SelectMany(c => new double[] { c.Z })
+            if (dimensions == 4) {
+                var m = geometry.Coordinates
+                    .SelectMany(c => new double[] { c.M })
                     .ToArray();
-                go.mOffset = Geometry.CreateXyVector(builder, z);
+                go.mOffset = Geometry.CreateXyVector(builder, m);
             }
 
             if (go.ends != null)
@@ -138,7 +138,7 @@ namespace FlatGeobuf.NTS
             uint offset = 0;
             for (var i = 0; i < ends.Length; i++)
             {
-                var end = ends[i] << 1;
+                var end = ends[i] * dimensions;
                 var ringCoords = coords.Skip((int) offset).Take((int) end).ToArray();
                 var linearRing = factory.CreateLinearRing(sequenceFactory.Create(ringCoords, dimensions));
                 linearRings.Add(linearRing);
@@ -166,9 +166,28 @@ namespace FlatGeobuf.NTS
                     return factory.CreateMultiPolygon(polygons);
             }
 
-            var coords = geometry.GetXyArray();
+            var xy = geometry.GetXyArray();
             var ends = geometry.GetEndsArray();
             var sequenceFactory = new PackedCoordinateSequenceFactory();
+
+            double[] coords;
+            if (dimensions == 3)
+            {
+                var z = geometry.GetZArray();
+                coords = new double[z.Length * dimensions];
+                var ci = 0;
+                for (int i = 0; i < z.Length; i++)
+                {
+                    coords[ci++] = xy[i * 2];
+                    coords[ci++] = xy[(i * 2) + 1];
+                    coords[ci++] = z[i];
+                }
+            }
+            else
+            {
+                coords = xy;
+            }
+
 
             return type switch
             {

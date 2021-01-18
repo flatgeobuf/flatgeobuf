@@ -24,13 +24,13 @@ namespace FlatGeobuf.Tests.NTS
             };
             var geometryType = GeometryConversions.ToGeometryType(f.Geometry);
             byte dimensions = 2;
-            if (double.IsNaN(f.Geometry.Coordinate.Z))
+            if (!double.IsNaN(f.Geometry.Coordinate.Z))
                 dimensions += 1;
-            if (double.IsNaN(f.Geometry.Coordinate.M))
+            if (!double.IsNaN(f.Geometry.Coordinate.M))
                 dimensions += 1;
             var flatgeobuf = FeatureCollectionConversions.Serialize(fc, geometryType, dimensions);
             var fcOut = FeatureCollectionConversions.Deserialize(flatgeobuf);
-            var wktOut = new WKTWriter().Write(fcOut[0].Geometry);
+            var wktOut = new WKTWriter(dimensions).Write(fcOut[0].Geometry);
             return wktOut;
         }
 
@@ -42,9 +42,10 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(expected, actual);
         }
 
+        [TestMethod]
         public void PointZ()
         {
-            var expected = "POINT (1.2 -2.1 3.1)";
+            var expected = "POINT Z(1.2 -2.1 3.1)";
             var actual = RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
@@ -58,18 +59,26 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(expected, actual);
         }
 
-        /*[TestMethod]
+        [TestMethod]
         public void LineStringZ()
         {
-            var expected = "LINESTRING (1.2 -2.1 3.1, 2.4 -4.8 4.2)";
+            var expected = "LINESTRING Z(1.2 -2.1 3.1, 2.4 -4.8 4.2)";
             var actual = RoundTrip(expected);
             Assert.AreEqual(expected, actual);
-        }*/
+        }
 
         [TestMethod]
         public void Polygon()
         {
             var expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
+            var actual = RoundTrip(expected);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void PolygonZ()
+        {
+            var expected = "POLYGON Z((30 10 1, 40 40 2, 20 40 3, 10 20 4, 30 10 5))";
             var actual = RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
