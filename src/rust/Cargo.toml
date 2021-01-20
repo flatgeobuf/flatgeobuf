@@ -12,7 +12,7 @@ license = "ISC"
 keywords = ["geo", "r-tree", "spatial"]
 
 [dependencies]
-flatbuffers = "0.8.2"
+flatbuffers = "0.6"
 byteorder = "1.4.2"
 geozero = "0.6.0"
 async-trait = "0.1.42"
