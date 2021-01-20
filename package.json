@@ -26,7 +26,6 @@
   },
   "homepage": "https://github.com/bjornharrtell/flatgeobuf#readme",
   "dependencies": {
-    "flatbuffers": "1.12.0",
     "slice-source": "0.4.1",
     "stream-buffers": "3.0.2"
   },
@@ -39,7 +38,6 @@
     "@rollup/plugin-babel": "5.2.2",
     "@rollup/plugin-node-resolve": "11.0.0",
     "@types/chai": "4.2.14",
-    "@types/flatbuffers": "1.10.0",
     "@types/mocha": "8.2.0",
     "@types/node": "14.14.12",
     "@types/ol": "6.4.2",

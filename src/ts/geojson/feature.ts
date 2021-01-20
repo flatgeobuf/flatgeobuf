@@ -1,4 +1,5 @@
-import { Feature, Geometry } from '../feature_generated'
+import { Feature } from '../feature'
+import { Geometry } from '../geometry'
 import HeaderMeta from '../HeaderMeta'
 import { fromGeometry, IGeoJsonGeometry } from './geometry'
 import { parseProperties, IFeature } from '../generic/feature'

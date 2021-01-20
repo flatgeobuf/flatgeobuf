@@ -1,6 +1,6 @@
 import ColumnMeta from './ColumnMeta'
 import CrsMeta from './CrsMeta'
-import { GeometryType } from './header_generated'
+import { GeometryType } from './geometry-type'
 
 export default class HeaderMeta {
     constructor(

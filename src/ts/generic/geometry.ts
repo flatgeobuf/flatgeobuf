@@ -1,6 +1,7 @@
-import { flatbuffers } from 'flatbuffers'
-import { GeometryType } from '../header_generated'
-import { Geometry } from '../feature_generated'
+import * as flatbuffers from '../flatbuffers/flatbuffers'
+
+import { GeometryType } from '../geometry-type'
+import { Geometry } from '../geometry'
 
 export interface IParsedGeometry {
     xy: number[],
@@ -38,9 +39,9 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     if (parts) {
         const partOffsets = parts.map(part => buildGeometry(builder, part))
         const partsOffset = Geometry.createPartsVector(builder, partOffsets)
-        Geometry.start(builder)
+        Geometry.startGeometry(builder)
         Geometry.addParts(builder, partsOffset)
-        return Geometry.end(builder)
+        return Geometry.endGeometry(builder)
     }
 
     const xyOffset = Geometry.createXyVector(builder, xy)
@@ -52,14 +53,14 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     if (ends)
         endsOffset = Geometry.createEndsVector(builder, ends)
 
-    Geometry.start(builder)
+    Geometry.startGeometry(builder)
     if (endsOffset)
         Geometry.addEnds(builder, endsOffset)
     Geometry.addXy(builder, xyOffset)
     if (zOffset)
         Geometry.addZ(builder, zOffset)
     Geometry.addType(builder, type)
-    return Geometry.end(builder)
+    return Geometry.endGeometry(builder)
 }
 
 export function flat(a: any[], xy: number[], z: number[]): number[] | undefined {

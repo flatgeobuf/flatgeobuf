@@ -28,6 +28,7 @@ jobs:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
+      - run: cd src/ts && ./fetch.sh
       - run:
           name: Run tests
           command: yarn test

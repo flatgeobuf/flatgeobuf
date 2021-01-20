@@ -1,8 +1,8 @@
-import { flatbuffers } from 'flatbuffers'
+import * as flatbuffers from '../flatbuffers/flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
-import { ColumnType } from '../header_generated'
-import { Feature } from '../feature_generated'
+import { ColumnType } from '../column-type'
+import { Feature } from '../feature'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, ISimpleGeometry, ICreateGeometry, IParsedGeometry } from './geometry'
 
@@ -75,11 +75,11 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
         propertiesOffset = Feature.createPropertiesVector(builder, concat(Uint8Array, ...props))
 
     const geometryOffset = buildGeometry(builder, geometry)
-    Feature.start(builder)
+    Feature.startFeature(builder)
     Feature.addGeometry(builder, geometryOffset)
     if (propertiesOffset)
         Feature.addProperties(builder, propertiesOffset)
-    const featureOffset = Feature.end(builder)
+    const featureOffset = Feature.endFeature(builder)
     builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array() as Uint8Array
 }

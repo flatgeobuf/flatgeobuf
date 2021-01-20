@@ -1,10 +1,12 @@
-import { flatbuffers } from 'flatbuffers'
+import * as flatbuffers from '../flatbuffers/flatbuffers'
 import slice from 'slice-source'
 
 import ColumnMeta from '../ColumnMeta'
 import CrsMeta from '../CrsMeta'
-import { Header, Column, ColumnType } from '../header_generated'
-import { Feature } from '../feature_generated'
+import { Header } from '../header'
+import { Column } from '../column'
+import { ColumnType } from '../column-type'
+import { Feature } from '../feature'
 import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, IFeature } from './feature'
@@ -47,7 +49,7 @@ export function serialize(features: IFeature[]) : Uint8Array {
 }
 
 function parseHeader(bb: flatbuffers.ByteBuffer) : HeaderMeta {
-    const header = Header.getRoot(bb)
+    const header = Header.getRootAsHeader(bb)
     const count = header.featuresCount().toFloat64()
     const indexNodeSize = header.indexNodeSize()
 
@@ -88,7 +90,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset)
         bb.setPosition(offset + SIZE_PREFIX_LEN)
-        const feature = Feature.getRoot(bb)
+        const feature = Feature.getRootAsFeature(bb)
         features.push(fromFeature(feature, headerMeta))
         offset += SIZE_PREFIX_LEN + featureLength
     }
@@ -185,16 +187,16 @@ async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: Fr
     bytesAligned.set(bytes, 4)
     bb = new flatbuffers.ByteBuffer(bytesAligned)
     bb.setPosition(SIZE_PREFIX_LEN)
-    const feature = Feature.getRoot(bb)
+    const feature = Feature.getRootAsFeature(bb)
     return fromFeature(feature, headerMeta)
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     const nameOffset = builder.createString(column.name)
-    Column.start(builder)
+    Column.startColumn(builder)
     Column.addName(builder, nameOffset)
     Column.addType(builder, column.type)
-    return Column.end(builder)
+    return Column.endColumn(builder)
 }
 
 export function buildHeader(header: HeaderMeta): Uint8Array {
@@ -207,14 +209,14 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
 
     const nameOffset = builder.createString('L1')
 
-    Header.start(builder)
+    Header.startHeader(builder)
     Header.addFeaturesCount(builder, new flatbuffers.Long(header.featuresCount, 0))
     Header.addGeometryType(builder, header.geometryType)
     Header.addIndexNodeSize(builder, 0)
     if (columnOffsets)
         Header.addColumns(builder, columnOffsets)
     Header.addName(builder, nameOffset)
-    const offset = Header.end(builder)
+    const offset = Header.endHeader(builder)
     builder.finishSizePrefixed(offset)
     return builder.asUint8Array() as Uint8Array
 }

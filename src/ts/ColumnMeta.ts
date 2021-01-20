@@ -1,5 +1,5 @@
 
-import { ColumnType } from './header_generated'
+import { ColumnType } from './column-type'
 
 const arrayTypeMap = {
     [ColumnType.Byte]: Uint8Array,
