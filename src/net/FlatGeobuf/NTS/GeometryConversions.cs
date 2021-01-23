@@ -135,9 +135,9 @@ namespace FlatGeobuf.NTS
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
             var linearRings = new List<LinearRing>();
-            var coordsSpan = coords.AsSpan();
             uint offset = 0;            
             uint lastEnd = 0;
+            var coordsSpan = coords.AsSpan();
             for (var i = 0; i < ends.Length; i++)
             {
                 var end = (ends[i]- lastEnd) * dimensions;
