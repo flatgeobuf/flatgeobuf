@@ -135,14 +135,18 @@ namespace FlatGeobuf.NTS
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
             var linearRings = new List<LinearRing>();
-            uint offset = 0;
+            uint offset = 0;            
+            uint lastEnd = 0;
+            var coordsSpan = coords.AsSpan();
             for (var i = 0; i < ends.Length; i++)
             {
-                var end = ends[i] * dimensions;
-                var ringCoords = coords.Skip((int) offset).Take((int) end).ToArray();
+                var end = (ends[i]- lastEnd) * dimensions;
+                var ringCoords = coordsSpan.Slice((int)offset, (int)end).ToArray();
                 var linearRing = factory.CreateLinearRing(sequenceFactory.Create(ringCoords, dimensions));
                 linearRings.Add(linearRing);
-                offset = end;
+
+                offset += end;
+                lastEnd = ends[i];
             }
             var shell = linearRings.First();
             var holes = linearRings.Skip(1).ToArray();
