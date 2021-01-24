@@ -126,7 +126,108 @@ public struct Header : IFlatbufferObject
   }
   public static void FinishHeaderBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Header> offset) { builder.Finish(offset.Value); }
   public static void FinishSizePrefixedHeaderBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Header> offset) { builder.FinishSizePrefixed(offset.Value); }
+  public HeaderT UnPack() {
+    var _o = new HeaderT();
+    this.UnPackTo(_o);
+    return _o;
+  }
+  public void UnPackTo(HeaderT _o) {
+    _o.Name = this.Name;
+    _o.Envelope = new List<double>();
+    for (var _j = 0; _j < this.EnvelopeLength; ++_j) {_o.Envelope.Add(this.Envelope(_j));}
+    _o.GeometryType = this.GeometryType;
+    _o.HasZ = this.HasZ;
+    _o.HasM = this.HasM;
+    _o.HasT = this.HasT;
+    _o.HasTM = this.HasTM;
+    _o.Columns = new List<FlatGeobuf.ColumnT>();
+    for (var _j = 0; _j < this.ColumnsLength; ++_j) {_o.Columns.Add(this.Columns(_j).HasValue ? this.Columns(_j).Value.UnPack() : null);}
+    _o.FeaturesCount = this.FeaturesCount;
+    _o.IndexNodeSize = this.IndexNodeSize;
+    _o.Crs = this.Crs.HasValue ? this.Crs.Value.UnPack() : null;
+    _o.Title = this.Title;
+    _o.Description = this.Description;
+    _o.Metadata = this.Metadata;
+  }
+  public static Offset<FlatGeobuf.Header> Pack(FlatBufferBuilder builder, HeaderT _o) {
+    if (_o == null) return default(Offset<FlatGeobuf.Header>);
+    var _name = _o.Name == null ? default(StringOffset) : builder.CreateString(_o.Name);
+    var _envelope = default(VectorOffset);
+    if (_o.Envelope != null) {
+      var __envelope = _o.Envelope.ToArray();
+      _envelope = CreateEnvelopeVector(builder, __envelope);
+    }
+    var _columns = default(VectorOffset);
+    if (_o.Columns != null) {
+      var __columns = new Offset<FlatGeobuf.Column>[_o.Columns.Count];
+      for (var _j = 0; _j < __columns.Length; ++_j) { __columns[_j] = FlatGeobuf.Column.Pack(builder, _o.Columns[_j]); }
+      _columns = CreateColumnsVector(builder, __columns);
+    }
+    var _crs = _o.Crs == null ? default(Offset<FlatGeobuf.Crs>) : FlatGeobuf.Crs.Pack(builder, _o.Crs);
+    var _title = _o.Title == null ? default(StringOffset) : builder.CreateString(_o.Title);
+    var _description = _o.Description == null ? default(StringOffset) : builder.CreateString(_o.Description);
+    var _metadata = _o.Metadata == null ? default(StringOffset) : builder.CreateString(_o.Metadata);
+    return CreateHeader(
+      builder,
+      _name,
+      _envelope,
+      _o.GeometryType,
+      _o.HasZ,
+      _o.HasM,
+      _o.HasT,
+      _o.HasTM,
+      _columns,
+      _o.FeaturesCount,
+      _o.IndexNodeSize,
+      _crs,
+      _title,
+      _description,
+      _metadata);
+  }
 };
+
+public class HeaderT
+{
+  public string Name { get; set; }
+  public List<double> Envelope { get; set; }
+  public FlatGeobuf.GeometryType GeometryType { get; set; }
+  public bool HasZ { get; set; }
+  public bool HasM { get; set; }
+  public bool HasT { get; set; }
+  public bool HasTM { get; set; }
+  public List<FlatGeobuf.ColumnT> Columns { get; set; }
+  public ulong FeaturesCount { get; set; }
+  public ushort IndexNodeSize { get; set; }
+  public FlatGeobuf.CrsT Crs { get; set; }
+  public string Title { get; set; }
+  public string Description { get; set; }
+  public string Metadata { get; set; }
+
+  public HeaderT() {
+    this.Name = null;
+    this.Envelope = null;
+    this.GeometryType = FlatGeobuf.GeometryType.Unknown;
+    this.HasZ = false;
+    this.HasM = false;
+    this.HasT = false;
+    this.HasTM = false;
+    this.Columns = null;
+    this.FeaturesCount = 0;
+    this.IndexNodeSize = 16;
+    this.Crs = null;
+    this.Title = null;
+    this.Description = null;
+    this.Metadata = null;
+  }
+  public static HeaderT DeserializeFromBinary(byte[] fbBuffer) {
+    return Header.GetRootAsHeader(new ByteBuffer(fbBuffer)).UnPack();
+  }
+  public byte[] SerializeToBinary() {
+    var fbb = new FlatBufferBuilder(0x10000);
+    fbb.Finish(Header.Pack(fbb, this).Value);
+    return fbb.DataBuffer.ToSizedArray();
+  }
+}
 
 
 }

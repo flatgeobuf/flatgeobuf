@@ -84,7 +84,55 @@ public struct Crs : IFlatbufferObject
     int o = builder.EndTable();
     return new Offset<FlatGeobuf.Crs>(o);
   }
+  public CrsT UnPack() {
+    var _o = new CrsT();
+    this.UnPackTo(_o);
+    return _o;
+  }
+  public void UnPackTo(CrsT _o) {
+    _o.Org = this.Org;
+    _o.Code = this.Code;
+    _o.Name = this.Name;
+    _o.Description = this.Description;
+    _o.Wkt = this.Wkt;
+    _o.CodeString = this.CodeString;
+  }
+  public static Offset<FlatGeobuf.Crs> Pack(FlatBufferBuilder builder, CrsT _o) {
+    if (_o == null) return default(Offset<FlatGeobuf.Crs>);
+    var _org = _o.Org == null ? default(StringOffset) : builder.CreateString(_o.Org);
+    var _name = _o.Name == null ? default(StringOffset) : builder.CreateString(_o.Name);
+    var _description = _o.Description == null ? default(StringOffset) : builder.CreateString(_o.Description);
+    var _wkt = _o.Wkt == null ? default(StringOffset) : builder.CreateString(_o.Wkt);
+    var _code_string = _o.CodeString == null ? default(StringOffset) : builder.CreateString(_o.CodeString);
+    return CreateCrs(
+      builder,
+      _org,
+      _o.Code,
+      _name,
+      _description,
+      _wkt,
+      _code_string);
+  }
 };
+
+public class CrsT
+{
+  public string Org { get; set; }
+  public int Code { get; set; }
+  public string Name { get; set; }
+  public string Description { get; set; }
+  public string Wkt { get; set; }
+  public string CodeString { get; set; }
+
+  public CrsT() {
+    this.Org = null;
+    this.Code = 0;
+    this.Name = null;
+    this.Description = null;
+    this.Wkt = null;
+    this.CodeString = null;
+  }
+}
 
 
 }

@@ -126,7 +126,101 @@ public struct Geometry : IFlatbufferObject
     int o = builder.EndTable();
     return new Offset<FlatGeobuf.Geometry>(o);
   }
+  public GeometryT UnPack() {
+    var _o = new GeometryT();
+    this.UnPackTo(_o);
+    return _o;
+  }
+  public void UnPackTo(GeometryT _o) {
+    _o.Ends = new List<uint>();
+    for (var _j = 0; _j < this.EndsLength; ++_j) {_o.Ends.Add(this.Ends(_j));}
+    _o.Xy = new List<double>();
+    for (var _j = 0; _j < this.XyLength; ++_j) {_o.Xy.Add(this.Xy(_j));}
+    _o.Z = new List<double>();
+    for (var _j = 0; _j < this.ZLength; ++_j) {_o.Z.Add(this.Z(_j));}
+    _o.M = new List<double>();
+    for (var _j = 0; _j < this.MLength; ++_j) {_o.M.Add(this.M(_j));}
+    _o.T = new List<double>();
+    for (var _j = 0; _j < this.TLength; ++_j) {_o.T.Add(this.T(_j));}
+    _o.Tm = new List<ulong>();
+    for (var _j = 0; _j < this.TmLength; ++_j) {_o.Tm.Add(this.Tm(_j));}
+    _o.Type = this.Type;
+    _o.Parts = new List<FlatGeobuf.GeometryT>();
+    for (var _j = 0; _j < this.PartsLength; ++_j) {_o.Parts.Add(this.Parts(_j).HasValue ? this.Parts(_j).Value.UnPack() : null);}
+  }
+  public static Offset<FlatGeobuf.Geometry> Pack(FlatBufferBuilder builder, GeometryT _o) {
+    if (_o == null) return default(Offset<FlatGeobuf.Geometry>);
+    var _ends = default(VectorOffset);
+    if (_o.Ends != null) {
+      var __ends = _o.Ends.ToArray();
+      _ends = CreateEndsVector(builder, __ends);
+    }
+    var _xy = default(VectorOffset);
+    if (_o.Xy != null) {
+      var __xy = _o.Xy.ToArray();
+      _xy = CreateXyVector(builder, __xy);
+    }
+    var _z = default(VectorOffset);
+    if (_o.Z != null) {
+      var __z = _o.Z.ToArray();
+      _z = CreateZVector(builder, __z);
+    }
+    var _m = default(VectorOffset);
+    if (_o.M != null) {
+      var __m = _o.M.ToArray();
+      _m = CreateMVector(builder, __m);
+    }
+    var _t = default(VectorOffset);
+    if (_o.T != null) {
+      var __t = _o.T.ToArray();
+      _t = CreateTVector(builder, __t);
+    }
+    var _tm = default(VectorOffset);
+    if (_o.Tm != null) {
+      var __tm = _o.Tm.ToArray();
+      _tm = CreateTmVector(builder, __tm);
+    }
+    var _parts = default(VectorOffset);
+    if (_o.Parts != null) {
+      var __parts = new Offset<FlatGeobuf.Geometry>[_o.Parts.Count];
+      for (var _j = 0; _j < __parts.Length; ++_j) { __parts[_j] = FlatGeobuf.Geometry.Pack(builder, _o.Parts[_j]); }
+      _parts = CreatePartsVector(builder, __parts);
+    }
+    return CreateGeometry(
+      builder,
+      _ends,
+      _xy,
+      _z,
+      _m,
+      _t,
+      _tm,
+      _o.Type,
+      _parts);
+  }
 };
+
+public class GeometryT
+{
+  public List<uint> Ends { get; set; }
+  public List<double> Xy { get; set; }
+  public List<double> Z { get; set; }
+  public List<double> M { get; set; }
+  public List<double> T { get; set; }
+  public List<ulong> Tm { get; set; }
+  public FlatGeobuf.GeometryType Type { get; set; }
+  public List<FlatGeobuf.GeometryT> Parts { get; set; }
+
+  public GeometryT() {
+    this.Ends = null;
+    this.Xy = null;
+    this.Z = null;
+    this.M = null;
+    this.T = null;
+    this.Tm = null;
+    this.Type = FlatGeobuf.GeometryType.Unknown;
+    this.Parts = null;
+  }
+}
 
 
 }

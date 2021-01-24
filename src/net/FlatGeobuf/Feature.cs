@@ -58,7 +58,60 @@ public struct Feature : IFlatbufferObject
   }
   public static void FinishFeatureBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Feature> offset) { builder.Finish(offset.Value); }
   public static void FinishSizePrefixedFeatureBuffer(FlatBufferBuilder builder, Offset<FlatGeobuf.Feature> offset) { builder.FinishSizePrefixed(offset.Value); }
+  public FeatureT UnPack() {
+    var _o = new FeatureT();
+    this.UnPackTo(_o);
+    return _o;
+  }
+  public void UnPackTo(FeatureT _o) {
+    _o.Geometry = this.Geometry.HasValue ? this.Geometry.Value.UnPack() : null;
+    _o.Properties = new List<byte>();
+    for (var _j = 0; _j < this.PropertiesLength; ++_j) {_o.Properties.Add(this.Properties(_j));}
+    _o.Columns = new List<FlatGeobuf.ColumnT>();
+    for (var _j = 0; _j < this.ColumnsLength; ++_j) {_o.Columns.Add(this.Columns(_j).HasValue ? this.Columns(_j).Value.UnPack() : null);}
+  }
+  public static Offset<FlatGeobuf.Feature> Pack(FlatBufferBuilder builder, FeatureT _o) {
+    if (_o == null) return default(Offset<FlatGeobuf.Feature>);
+    var _geometry = _o.Geometry == null ? default(Offset<FlatGeobuf.Geometry>) : FlatGeobuf.Geometry.Pack(builder, _o.Geometry);
+    var _properties = default(VectorOffset);
+    if (_o.Properties != null) {
+      var __properties = _o.Properties.ToArray();
+      _properties = CreatePropertiesVector(builder, __properties);
+    }
+    var _columns = default(VectorOffset);
+    if (_o.Columns != null) {
+      var __columns = new Offset<FlatGeobuf.Column>[_o.Columns.Count];
+      for (var _j = 0; _j < __columns.Length; ++_j) { __columns[_j] = FlatGeobuf.Column.Pack(builder, _o.Columns[_j]); }
+      _columns = CreateColumnsVector(builder, __columns);
+    }
+    return CreateFeature(
+      builder,
+      _geometry,
+      _properties,
+      _columns);
+  }
 };
+
+public class FeatureT
+{
+  public FlatGeobuf.GeometryT Geometry { get; set; }
+  public List<byte> Properties { get; set; }
+  public List<FlatGeobuf.ColumnT> Columns { get; set; }
+
+  public FeatureT() {
+    this.Geometry = null;
+    this.Properties = null;
+    this.Columns = null;
+  }
+  public static FeatureT DeserializeFromBinary(byte[] fbBuffer) {
+    return Feature.GetRootAsFeature(new ByteBuffer(fbBuffer)).UnPack();
+  }
+  public byte[] SerializeToBinary() {
+    var fbb = new FlatBufferBuilder(0x10000);
+    fbb.Finish(Feature.Pack(fbb, this).Value);
+    return fbb.DataBuffer.ToSizedArray();
+  }
+}
 
 
 }

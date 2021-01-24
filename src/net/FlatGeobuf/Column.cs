@@ -99,7 +99,74 @@ public struct Column : IFlatbufferObject
     builder.Required(o, 4);  // name
     return new Offset<FlatGeobuf.Column>(o);
   }
+  public ColumnT UnPack() {
+    var _o = new ColumnT();
+    this.UnPackTo(_o);
+    return _o;
+  }
+  public void UnPackTo(ColumnT _o) {
+    _o.Name = this.Name;
+    _o.Type = this.Type;
+    _o.Title = this.Title;
+    _o.Description = this.Description;
+    _o.Width = this.Width;
+    _o.Precision = this.Precision;
+    _o.Scale = this.Scale;
+    _o.Nullable = this.Nullable;
+    _o.Unique = this.Unique;
+    _o.PrimaryKey = this.PrimaryKey;
+    _o.Metadata = this.Metadata;
+  }
+  public static Offset<FlatGeobuf.Column> Pack(FlatBufferBuilder builder, ColumnT _o) {
+    if (_o == null) return default(Offset<FlatGeobuf.Column>);
+    var _name = _o.Name == null ? default(StringOffset) : builder.CreateString(_o.Name);
+    var _title = _o.Title == null ? default(StringOffset) : builder.CreateString(_o.Title);
+    var _description = _o.Description == null ? default(StringOffset) : builder.CreateString(_o.Description);
+    var _metadata = _o.Metadata == null ? default(StringOffset) : builder.CreateString(_o.Metadata);
+    return CreateColumn(
+      builder,
+      _name,
+      _o.Type,
+      _title,
+      _description,
+      _o.Width,
+      _o.Precision,
+      _o.Scale,
+      _o.Nullable,
+      _o.Unique,
+      _o.PrimaryKey,
+      _metadata);
+  }
 };
+
+public class ColumnT
+{
+  public string Name { get; set; }
+  public FlatGeobuf.ColumnType Type { get; set; }
+  public string Title { get; set; }
+  public string Description { get; set; }
+  public int Width { get; set; }
+  public int Precision { get; set; }
+  public int Scale { get; set; }
+  public bool Nullable { get; set; }
+  public bool Unique { get; set; }
+  public bool PrimaryKey { get; set; }
+  public string Metadata { get; set; }
+
+  public ColumnT() {
+    this.Name = null;
+    this.Type = FlatGeobuf.ColumnType.Byte;
+    this.Title = null;
+    this.Description = null;
+    this.Width = -1;
+    this.Precision = -1;
+    this.Scale = -1;
+    this.Nullable = true;
+    this.Unique = false;
+    this.PrimaryKey = false;
+    this.Metadata = null;
+  }
+}
 
 
 }
