@@ -63,7 +63,7 @@ namespace FlatGeobuf.NTS
         }
 
         public static FeatureCollection Deserialize(byte[] bytes) {
-            var fc = new NetTopologySuite.Features.FeatureCollection();
+            var fc = new FeatureCollection();
 
             foreach (var feature in Deserialize(new MemoryStream(bytes)))
                 fc.Add(feature);
@@ -75,27 +75,9 @@ namespace FlatGeobuf.NTS
             var reader = new BinaryReader(stream);
             var header = Helpers.ReadHeader(stream, out var headerSize);
 
-            byte dimensions;
-            if (header.HasZ)
-                dimensions = 3;
-            else if (header.HasM)
-                dimensions = 4;
-            else
-                dimensions = 2;
-
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
             var geometryType = header.GeometryType;
-
-            IList<ColumnMeta> columns = null;
-            if (header.ColumnsLength > 0)
-            {
-                columns = new List<ColumnMeta>();
-                for (int i = 0; i < header.ColumnsLength; i++){
-                    var column = header.Columns(i).Value;
-                    columns.Add(new ColumnMeta() { Name = column.Name, Type = column.Type });
-                }
-            }
 
             if (nodeSize > 0)
             {
@@ -109,7 +91,8 @@ namespace FlatGeobuf.NTS
                     foreach (var item in result) {
                         stream.Seek(offset + (long) size + (long) item.Offset, SeekOrigin.Begin);
                         var featureLength = reader.ReadInt32();
-                        var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, dimensions, columns);
+                        var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
+                        var feature = FeatureConversions.FromByteBuffer(byteBuffer, header);
                         yield return feature;
                     }
                     yield break;
@@ -120,7 +103,8 @@ namespace FlatGeobuf.NTS
             while (stream.Position < stream.Length)
             {
                 var featureLength = reader.ReadInt32();
-                var feature = FeatureConversions.FromByteBuffer(new ByteBuffer(reader.ReadBytes(featureLength)), geometryType, dimensions, columns);
+                var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
+                var feature = FeatureConversions.FromByteBuffer(byteBuffer, header);
                 yield return feature;
             }
         }

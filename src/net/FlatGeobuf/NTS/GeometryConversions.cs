@@ -135,7 +135,7 @@ namespace FlatGeobuf.NTS
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
             var linearRings = new List<LinearRing>();
-            uint offset = 0;            
+            uint offset = 0;
             uint lastEnd = 0;
             var coordsSpan = coords.AsSpan();
             for (var i = 0; i < ends.Length; i++)
@@ -153,7 +153,12 @@ namespace FlatGeobuf.NTS
             return factory.CreatePolygon(shell, holes);
         }
 
-        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type, byte dimensions)
+        public static NTSGeometry FromFlatbuf(Geometry geometry, Header header)
+        {
+            return FromFlatbuf(geometry, header.GeometryType, header);
+        }
+
+        public static NTSGeometry FromFlatbuf(Geometry geometry, GeometryType type, Header header)
         {
             var factory = new GeometryFactory();
 
@@ -166,7 +171,7 @@ namespace FlatGeobuf.NTS
                     int partsLength = geometry.PartsLength;
                     Polygon[] polygons = new Polygon[partsLength];
                     for (int i = 0; i < geometry.PartsLength; i++)
-                        polygons[i] = (Polygon) FromFlatbuf(geometry.Parts(i).Value, GeometryType.Polygon, dimensions);
+                        polygons[i] = (Polygon) FromFlatbuf(geometry.Parts(i).Value, GeometryType.Polygon, header);
                     return factory.CreateMultiPolygon(polygons);
             }
 
@@ -175,8 +180,10 @@ namespace FlatGeobuf.NTS
             var sequenceFactory = new PackedCoordinateSequenceFactory();
 
             double[] coords;
-            if (dimensions == 3)
+            byte dimensions;
+            if (header.HasZ)
             {
+                dimensions = 3;
                 var z = geometry.GetZArray();
                 coords = new double[z.Length * dimensions];
                 var ci = 0;
@@ -189,9 +196,9 @@ namespace FlatGeobuf.NTS
             }
             else
             {
+                dimensions = 2;
                 coords = xy;
             }
-
 
             return type switch
             {

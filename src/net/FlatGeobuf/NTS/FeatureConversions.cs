@@ -83,7 +83,7 @@ namespace FlatGeobuf.NTS
             return builder.DataBuffer.ToSizedArray();
         }
 
-        public static IFeature FromByteBuffer(ByteBuffer bb, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns = null)
+        public static IFeature FromByteBuffer(ByteBuffer bb, Header header)
         {
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
@@ -96,7 +96,7 @@ namespace FlatGeobuf.NTS
                 while (memoryStream.Position < memoryStream.Length)
                 {
                     ushort i = reader.ReadUInt16();
-                    var column = columns[i];
+                    var column = header.Columns(i).Value;
                     var type = column.Type;
                     var name = column.Name;
                     switch (type)
@@ -132,7 +132,7 @@ namespace FlatGeobuf.NTS
             try
             {
                 if (feature.Geometry.HasValue)
-                geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, geometryType, dimensions);
+                    geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, header);
             }
             catch (ArgumentException)
             {
