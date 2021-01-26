@@ -91,11 +91,10 @@ mod http_reader;
 mod packed_r_tree;
 mod properties_reader;
 
-pub use feature_generated::flat_geobuf::*;
+pub use feature_generated::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
-pub use header_generated::flat_geobuf::*;
-#[cfg(feature = "http")]
+pub use header_generated::*;
 pub use http_client::*;
 #[cfg(feature = "http")]
 pub use http_reader::*;

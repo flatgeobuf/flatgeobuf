@@ -1,4 +1,4 @@
-use crate::header_generated::flat_geobuf::*;
+use crate::header_generated::*;
 use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
