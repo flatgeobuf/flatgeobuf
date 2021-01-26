@@ -22,7 +22,7 @@ fn read_file_low_level() -> Result<()> {
     let mut header_buf = vec![0; header_size as usize];
     reader.read_exact(&mut header_buf)?;
 
-    let header = get_root_as_header(&header_buf[..]);
+    let header = root_as_header(&header_buf[..]).unwrap();
     assert_eq!(header.name(), Some("countries"));
     assert!(header.envelope().is_some());
     assert_eq!(
@@ -58,7 +58,7 @@ fn read_file_low_level() -> Result<()> {
     let mut feature_buf = vec![0; feature_size as usize];
     reader.read_exact(&mut feature_buf)?;
 
-    let feature = get_root_as_feature(&feature_buf[..]);
+    let feature = root_as_feature(&feature_buf[..]).unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::MultiPolygon);
