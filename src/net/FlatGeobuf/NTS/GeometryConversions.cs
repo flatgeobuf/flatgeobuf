@@ -106,17 +106,20 @@ namespace FlatGeobuf.NTS
                 return ParseFlatbufMultiLineStringSinglePart(coords, dimensions);
             var sequenceFactory = new PackedCoordinateSequenceFactory();
             var factory = new GeometryFactory(sequenceFactory);
-            var coordsSpan = coords.AsSpan();
+            var coordsSpan = coords.AsSpan();            
+            uint offset = 0;
+            uint lastEnd = 0;
 
             List<LineString> lineStrings = new List<LineString>();
-            uint offset = 0;
             for (var i = 0; i < ends.Length; i++)
             {
-                var end = ends[i] << 1;
-                var lineStringCoords = coordsSpan.Slice((int) offset, (int) (end - offset)).ToArray();
+                var end = (ends[i] - lastEnd) * dimensions;
+                var lineStringCoords = coordsSpan.Slice((int) offset, (int) end).ToArray();
                 var lineString = factory.CreateLineString(sequenceFactory.Create(lineStringCoords, dimensions));
                 lineStrings.Add(lineString);
-                offset = end;
+                
+                offset += end;
+                lastEnd = ends[i];
             }
             return factory.CreateMultiLineString(lineStrings.ToArray());
         }
