@@ -6,6 +6,7 @@ using FlatBuffers;
 using System.Text;
 using System.IO;
 using NTSGeometry = NetTopologySuite.Geometries.Geometry;
+using System.Runtime.InteropServices;
 
 namespace FlatGeobuf.NTS
 {
@@ -85,43 +86,49 @@ namespace FlatGeobuf.NTS
 
         public static IFeature FromByteBuffer(ByteBuffer bb, in Header header)
         {
+            
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
-            var propertiesArray = feature.GetPropertiesArray();
-            if (propertiesArray != null && propertiesArray.Length > 0)
+            if (feature.PropertiesLength != 0)
             {
-                var memoryStream = new MemoryStream(propertiesArray);
-                var reader = new BinaryReader(memoryStream);
                 attributesTable = new AttributesTable();
-                while (memoryStream.Position < memoryStream.Length)
+                int pos = 0;
+                var bytes = feature.GetPropertiesBytes();
+                while (pos < feature.PropertiesLength)
                 {
-                    ushort i = reader.ReadUInt16();
+                    ushort i = MemoryMarshal.Read<ushort>(bytes.Slice(pos, 2));
+                    pos += 2;
                     var column = header.Columns(i).Value;
                     var type = column.Type;
                     var name = column.Name;
                     switch (type)
                     {
                         case ColumnType.Bool:
-                            attributesTable.Add(name, reader.ReadBoolean());
+                            attributesTable.Add(name, MemoryMarshal.Read<bool>(bytes.Slice(pos, 1)));
+                            pos += 1;
                             break;
                         case ColumnType.Short:
-                            attributesTable.Add(name, reader.ReadInt16());
+                            attributesTable.Add(name, MemoryMarshal.Read<short>(bytes.Slice(pos, 2)));
+                            pos += 1;
                             break;
                         case ColumnType.Int:
-                            attributesTable.Add(name, reader.ReadInt32());
+                            attributesTable.Add(name, MemoryMarshal.Read<int>(bytes.Slice(pos, 4)));
+                            pos += 4;
                             break;
                         case ColumnType.Long:
-                            attributesTable.Add(name, reader.ReadInt64());
+                            attributesTable.Add(name, MemoryMarshal.Read<long>(bytes.Slice(pos, 8)));
+                            pos += 8;
                             break;
                         case ColumnType.Double:
-                            attributesTable.Add(name, reader.ReadDouble());
+                            attributesTable.Add(name, MemoryMarshal.Read<double>(bytes.Slice(pos, 8)));
+                            pos += 8;
                             break;
                         case ColumnType.DateTime:
                         case ColumnType.String:
-                            int len = reader.ReadInt32();
-                            var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int) memoryStream.Position, len);
-                            memoryStream.Position += len;
-                            attributesTable.Add(name, str);
+                            int len = MemoryMarshal.Read<int>(bytes.Slice(pos, 4));
+                            pos += 4;
+                            attributesTable.Add(name, Encoding.UTF8.GetString(bytes.Slice(pos, len)));
+                            pos += len;
                             break;
                         default: throw new Exception($"Unknown type {type}");
                     }
