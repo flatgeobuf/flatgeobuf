@@ -119,7 +119,7 @@ namespace FlatGeobuf.NTS
             for (var i = 0; i < context.ends.Length; i++)
             {
                 var end = (int) context.ends[i] - lastEnd;
-                var xyPart = context.xy.AsSpan().Slice(offset, end * 2).ToArray();
+                var xyPart = context.xy.AsSpan().Slice(offset * 2, end * 2).ToArray();
                 var zPart = context.z?.AsSpan().Slice(offset, end).ToArray();
                 var mPart = context.m?.AsSpan().Slice(offset, end).ToArray();
                 var lineString = factory.CreateLineString(context.sequenceFactory.Create(xyPart, zPart, mPart));
@@ -146,7 +146,7 @@ namespace FlatGeobuf.NTS
             for (var i = 0; i < context.ends.Length; i++)
             {
                 var end = (int) context.ends[i] - lastEnd;
-                var xyPart = context.xy.AsSpan().Slice(offset, end * 2).ToArray();
+                var xyPart = context.xy.AsSpan().Slice(offset * 2, end * 2).ToArray();
                 var zPart = context.z?.AsSpan().Slice(offset, end).ToArray();
                 var mPart = context.m?.AsSpan().Slice(offset, end).ToArray();
                 var linearRing = context.factory.CreateLinearRing(context.sequenceFactory.Create(xyPart, zPart, mPart));
