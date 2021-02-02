@@ -84,9 +84,8 @@ namespace FlatGeobuf.NTS
             return builder.DataBuffer.ToSizedArray();
         }
 
-        public static IFeature FromByteBuffer(ByteBuffer bb, in Header header)
+        public static IFeature FromByteBuffer(ByteBuffer bb, ref Header header)
         {
-            
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
             if (feature.PropertiesLength != 0)
@@ -139,7 +138,10 @@ namespace FlatGeobuf.NTS
             try
             {
                 if (feature.Geometry.HasValue)
-                    geometry = GeometryConversions.FromFlatbuf(feature.Geometry.Value, header);
+                {
+                    var geometryCopy = feature.Geometry.Value;
+                    geometry = GeometryConversions.FromFlatbuf(ref geometryCopy, ref header);
+                }
             }
             catch (ArgumentException)
             {

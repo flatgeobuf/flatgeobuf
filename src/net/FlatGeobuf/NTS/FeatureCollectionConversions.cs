@@ -92,7 +92,7 @@ namespace FlatGeobuf.NTS
                         stream.Seek(offset + (long) size + (long) item.Offset, SeekOrigin.Begin);
                         var featureLength = reader.ReadInt32();
                         var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
-                        var feature = FeatureConversions.FromByteBuffer(byteBuffer, header);
+                        var feature = FeatureConversions.FromByteBuffer(byteBuffer, ref header);
                         yield return feature;
                     }
                     yield break;
@@ -104,7 +104,7 @@ namespace FlatGeobuf.NTS
             {
                 var featureLength = reader.ReadInt32();
                 var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
-                var feature = FeatureConversions.FromByteBuffer(byteBuffer, header);
+                var feature = FeatureConversions.FromByteBuffer(byteBuffer, ref header);
                 yield return feature;
             }
         }
