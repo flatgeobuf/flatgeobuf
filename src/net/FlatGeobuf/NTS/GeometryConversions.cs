@@ -62,24 +62,24 @@ namespace FlatGeobuf.NTS
             var xy = geometry.Coordinates
                 .SelectMany(c => new double[] { c.X, c.Y })
                 .ToArray();
-            go.xyOffset = Geometry.CreateXyVector(builder, xy);
+            go.xyOffset = Geometry.CreateXyVectorBlock(builder, xy);
 
             if (dimensions == 3) {
                 var z = geometry.Coordinates
                     .SelectMany(c => new double[] { c.Z })
                     .ToArray();
-                go.zOffset = Geometry.CreateXyVector(builder, z);
+                go.zOffset = Geometry.CreateXyVectorBlock(builder, z);
             }
 
             if (dimensions == 4) {
                 var m = geometry.Coordinates
                     .SelectMany(c => new double[] { c.M })
                     .ToArray();
-                go.mOffset = Geometry.CreateXyVector(builder, m);
+                go.mOffset = Geometry.CreateXyVectorBlock(builder, m);
             }
 
             if (go.ends != null)
-                go.endsOffset = Geometry.CreateEndsVector(builder, go.ends);
+                go.endsOffset = Geometry.CreateEndsVectorBlock(builder, go.ends);
             return go;
         }
 

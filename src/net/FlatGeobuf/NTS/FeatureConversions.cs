@@ -58,7 +58,7 @@ namespace FlatGeobuf.NTS
 
             var propertiesOffset = default(VectorOffset);
             if (memoryStream.Position > 0)
-                propertiesOffset = Feature.CreatePropertiesVector(builder, memoryStream.ToArray());
+                propertiesOffset = Feature.CreatePropertiesVectorBlock(builder, memoryStream.ToArray());
 
             Offset<Geometry> geometryOffset;
             if (go.gos != null && go.gos.Length > 0) {
