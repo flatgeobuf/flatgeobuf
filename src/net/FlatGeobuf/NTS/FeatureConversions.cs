@@ -83,7 +83,7 @@ namespace FlatGeobuf.NTS
             return builder.DataBuffer.ToSizedArray();
         }
 
-        public static IFeature FromByteBuffer(ByteBuffer bb, Header header)
+        public static IFeature FromByteBuffer(ByteBuffer bb, in Header header)
         {
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
