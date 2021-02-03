@@ -93,70 +93,57 @@ namespace FlatGeobuf.NTS
             return ends;
         }
 
-        static MultiLineString ParseFlatbufMultiLineStringSinglePart(GeometryFactory factory, DotSpatialAffineCoordinateSequenceFactory sequenceFactory, ref Geometry geometry)
+        static MultiLineString ParseFlatbufMultiLineStringSinglePart(GeometryFactory factory, int count, int dimension, ref Geometry geometry)
         {
-            var lineString = factory.CreateLineString(CreateCoordinateSequence(sequenceFactory, ref geometry));
+            var lineString = factory.CreateLineString(new FlatGeobufGeometryCoordinateSequence(count, dimension, ref geometry));
             return factory.CreateMultiLineString(new [] { lineString });
         }
 
-        static MultiLineString ParseFlatbufMultiLineString(GeometryFactory factory, DotSpatialAffineCoordinateSequenceFactory sequenceFactory, ref Geometry geometry)
+        static MultiLineString ParseFlatbufMultiLineString(GeometryFactory factory, int count, int dimension, ref Geometry geometry)
         {
             if (geometry.EndsLength == 0)
-                return ParseFlatbufMultiLineStringSinglePart(factory, sequenceFactory, ref geometry);
-            int offset = 0;
-            int lastEnd = 0;
+                return ParseFlatbufMultiLineStringSinglePart(factory, count, dimension, ref geometry);
+            int start = 0;
             var lineStrings = new LineString[geometry.EndsLength];
             for (var i = 0; i < geometry.EndsLength; i++)
             {
-                var end = (int) geometry.Ends(i) - lastEnd;
-                var xyPart = geometry.GetXyBytes().Slice(offset * 2, end * 2).ToArray();
-                var zPart = geometry.ZLength != 0 ? geometry.GetZBytes().Slice(offset, end).ToArray() : null;
-                var mPart = geometry.MLength != 0 ? geometry.GetMBytes().Slice(offset, end).ToArray() : null;
-                var lineString = factory.CreateLineString(sequenceFactory.Create(xyPart, zPart, mPart));
+                var end = (int) geometry.Ends(i);
+                var lineString = factory.CreateLineString(new FlatGeobufGeometryCoordinateSequence(end - start, dimension, ref geometry, start));
                 lineStrings[i] = lineString;
-                offset += end;
-                lastEnd = (int) geometry.Ends(i);
+                start = end;
             }
-            return factory.CreateMultiLineString(lineStrings.ToArray());
+            return factory.CreateMultiLineString(lineStrings);
         }
 
-        static Polygon ParseFlatbufPolygonSingleRing(GeometryFactory factory, DotSpatialAffineCoordinateSequenceFactory sequenceFactory, ref Geometry geometry)
+        static Polygon ParseFlatbufPolygonSingleRing(GeometryFactory factory, int count, int dimension, ref Geometry geometry)
         {
-            var shell = factory.CreateLinearRing(CreateCoordinateSequence(sequenceFactory, ref geometry));
+            var shell = factory.CreateLinearRing(new FlatGeobufGeometryCoordinateSequence(count, dimension, ref geometry));
             return factory.CreatePolygon(shell);
         }
 
-        static Polygon ParseFlatbufPolygon(GeometryFactory factory, DotSpatialAffineCoordinateSequenceFactory sequenceFactory, ref Geometry geometry)
+        static Polygon ParseFlatbufPolygon(GeometryFactory factory, int count, int dimension, ref Geometry geometry)
         {
             if (geometry.EndsLength == 0)
-                return ParseFlatbufPolygonSingleRing(factory, sequenceFactory, ref geometry);
-            var linearRings = new LinearRing[geometry.EndsLength];
-            int offset = 0;
-            int lastEnd = 0;
+                return ParseFlatbufPolygonSingleRing(factory, count, dimension, ref geometry);
+            LinearRing shell = null;
+            var holes = new LinearRing[geometry.EndsLength - 1];
+            int start = 0;
             for (var i = 0; i < geometry.EndsLength; i++)
             {
-                var end = (int) geometry.Ends(i) - lastEnd;
-                var xyPart = geometry.GetXyBytes().Slice(offset * 2, end * 2).ToArray();
-                var zPart = geometry.ZLength != 0 ? geometry.GetZBytes().Slice(offset, end).ToArray() : null;
-                var mPart = geometry.MLength != 0 ? geometry.GetMBytes().Slice(offset, end).ToArray() : null;
-                var linearRing = factory.CreateLinearRing(sequenceFactory.Create(xyPart, zPart, mPart));
-                linearRings[i] = linearRing;
-                offset += end;
-                lastEnd = (int) geometry.Ends(i);
+                var end = (int) geometry.Ends(i);
+                var linearRing = factory.CreateLinearRing(new FlatGeobufGeometryCoordinateSequence(end - start, dimension, ref geometry, start));
+                if (i == 0)
+                    shell = linearRing;
+                else
+                    holes[i - 1] = linearRing;
+                start = end;
             }
-            var shell = linearRings.First();
-            var holes = linearRings.Skip(1).ToArray();
             return factory.CreatePolygon(shell, holes);
         }
 
         public static NTSGeometry FromFlatbuf(ref Geometry geometry, ref Header header)
         {
             return FromFlatbuf(ref geometry, header.GeometryType, ref header);
-        }
-
-        public static CoordinateSequence CreateCoordinateSequence(DotSpatialAffineCoordinateSequenceFactory factory, ref Geometry geometry)
-        {
-            return factory.Create(geometry.GetXyArray(), geometry.GetZArray(), geometry.GetMArray());
         }
 
         public static NTSGeometry FromFlatbuf(ref Geometry geometry, GeometryType type, ref Header header)
@@ -179,38 +166,24 @@ namespace FlatGeobuf.NTS
                     return factory.CreateMultiPolygon(polygons);
             }
 
-            Ordinates ordinates;
-            if (header.HasZ)
-                ordinates = Ordinates.XYZ;
-            else if (header.HasM)
-                ordinates = Ordinates.XYM;
-            else if (header.HasZ && header.HasM)
-                ordinates = Ordinates.XYZM;
-            else
-                ordinates = Ordinates.XY;
+            int count = geometry.XyLength / 2;
 
-            var sequenceFactory = new DotSpatialAffineCoordinateSequenceFactory(ordinates);
+            int dimension;
+            if (header.HasZ)
+                dimension = 3;
+            else if (header.HasZ && header.HasM)
+                dimension = 4;
+            else
+                dimension = 2;
 
             return type switch
             {
-                GeometryType.Point => factory.CreatePoint(CreateCoordinateSequence(sequenceFactory, ref geometry)),
-                GeometryType.MultiPoint => factory.CreateMultiPoint(CreateCoordinateSequence(sequenceFactory, ref geometry)),
-                GeometryType.LineString => factory.CreateLineString(CreateCoordinateSequence(sequenceFactory, ref geometry)),
-                GeometryType.MultiLineString => ParseFlatbufMultiLineString(factory, sequenceFactory, ref geometry),
-                GeometryType.Polygon => ParseFlatbufPolygon(factory, sequenceFactory, ref geometry),
+                GeometryType.Point => factory.CreatePoint(new FlatGeobufGeometryCoordinateSequence(count, dimension, ref geometry)),
+                GeometryType.MultiPoint => factory.CreateMultiPoint(new FlatGeobufGeometryCoordinateSequence(count, dimension, ref geometry)),
+                GeometryType.LineString => factory.CreateLineString(new FlatGeobufGeometryCoordinateSequence(count, dimension, ref geometry)),
+                GeometryType.MultiLineString => ParseFlatbufMultiLineString(factory, count, dimension, ref geometry),
+                GeometryType.Polygon => ParseFlatbufPolygon(factory, count, dimension, ref geometry),
                 _ => throw new ApplicationException("FromFlatbuf: Unsupported geometry type"),
-            };
-        }
-
-        static Ordinates ConvertDimensions(byte dimensions)
-        {
-            return dimensions switch
-            {
-                1 => Ordinates.X,
-                2 => Ordinates.XY,
-                3 => Ordinates.XYZ,
-                4 => Ordinates.XYZM,
-                _ => Ordinates.XY,
             };
         }
 
