@@ -2,16 +2,17 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 using FlatGeobuf.NTS;
+using System.Collections.Generic;
 
 namespace FlatGeobuf.Tests.NTS
 {
     [TestClass]
     public class GeometryRoundtripTests
     {
-        public static NetTopologySuite.Features.Feature MakeFeature(string wkt) {
+        public static NetTopologySuite.Features.Feature MakeFeature(string wkt, Dictionary<string, object> attr = null) {
             var reader = new WKTReader();
             var geometry = reader.Read(wkt);
-            var feature = new NetTopologySuite.Features.Feature(geometry, null);
+            var feature = new NetTopologySuite.Features.Feature(geometry, attr != null ? new AttributesTable(attr) : null);
             return feature;
         }
 

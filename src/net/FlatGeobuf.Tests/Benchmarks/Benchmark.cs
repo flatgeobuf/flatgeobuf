@@ -1,5 +1,4 @@
-using System;
-using System.Security.Cryptography;
+using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using FlatGeobuf.NTS;
@@ -17,15 +16,28 @@ namespace FlatGeobuf.Benchmarks
             public byte[] flatgeobuf;
         }
 
-        public class FlatGeobuf
+        public class Geometry
         {
             GeometryFixture pointFixture;
             GeometryFixture polygonFixture;
+            GeometryFixture pointWithAttributesFixture;
 
-            public FlatGeobuf()
+            public Geometry()
             {
                 var point = GeometryRoundtripTests.MakeFeature("POINT (1.2 -2.1)");
                 var polygon = GeometryRoundtripTests.MakeFeature("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
+
+                var attributes = new Dictionary<string, object>()
+                {
+                    ["test1"] = 1,
+                    ["test2"] = 1.1,
+                    ["test3"] = "test",
+                    ["test4"] = true,
+                    ["test5"] = "teståöä2",
+                    ["test6"] = false,
+                };
+
+                var pointWithAttributes = GeometryRoundtripTests.MakeFeature("POINT (1.2 -2.1)", attributes);
 
                 pointFixture = new GeometryFixture() {
                     fc = GeometryRoundtripTests.MakeFeatureCollection(point),
@@ -40,6 +52,13 @@ namespace FlatGeobuf.Benchmarks
                     dimensions = GeometryRoundtripTests.GetDimensions(polygon.Geometry),
                 };
                 polygonFixture.flatgeobuf = FeatureCollectionConversions.Serialize(polygonFixture.fc, polygonFixture.geometryType, polygonFixture.dimensions);
+
+                pointWithAttributesFixture = new GeometryFixture() {
+                    fc = GeometryRoundtripTests.MakeFeatureCollection(pointWithAttributes),
+                    geometryType = GeometryConversions.ToGeometryType(pointWithAttributes.Geometry),
+                    dimensions = GeometryRoundtripTests.GetDimensions(pointWithAttributes.Geometry),
+                };
+                pointWithAttributesFixture.flatgeobuf = FeatureCollectionConversions.Serialize(pointWithAttributesFixture.fc, pointWithAttributesFixture.geometryType, pointWithAttributesFixture.dimensions);
             }
 
             [Benchmark]
@@ -61,12 +80,18 @@ namespace FlatGeobuf.Benchmarks
             public void DeserializePolygon() {
                 FeatureCollectionConversions.Deserialize(polygonFixture.flatgeobuf);
             }
+
+            [Benchmark]
+            public void SerializePointWithAttributes() {
+                FeatureCollectionConversions.Serialize(pointWithAttributesFixture.fc, pointWithAttributesFixture.geometryType, pointWithAttributesFixture.dimensions);
+            }
+
+            [Benchmark]
+            public void DeserializePointWithAttributes() {
+                FeatureCollectionConversions.Deserialize(pointWithAttributesFixture.flatgeobuf);
+            }
         }
 
-
-        public static void Main(string[] args)
-        {
-            var summary = BenchmarkRunner.Run<FlatGeobuf>();
-        }
+        public static void Main(string[] args) => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
     }
 }

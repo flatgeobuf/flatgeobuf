@@ -142,7 +142,7 @@ namespace FlatGeobuf.Tests.GeoJson
                 ["test3"] = "test",
                 ["test4"] = true,
                 ["test5"] = "teståöä2",
-                ["test6"] = false, 
+                ["test6"] = false,
             };
             var expected = MakeFeatureCollection(attributes);
             var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
