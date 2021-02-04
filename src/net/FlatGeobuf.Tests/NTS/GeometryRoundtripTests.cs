@@ -8,26 +8,38 @@ namespace FlatGeobuf.Tests.NTS
     [TestClass]
     public class GeometryRoundtripTests
     {
-        static NetTopologySuite.Features.Feature MakeFeature(string wkt) {
+        public static NetTopologySuite.Features.Feature MakeFeature(string wkt) {
             var reader = new WKTReader();
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, null);
             return feature;
         }
 
-        static string RoundTrip(string wkt)
+        public static FeatureCollection MakeFeatureCollection(NetTopologySuite.Features.Feature f)
         {
-            var f = MakeFeature(wkt);
             var fc = new FeatureCollection
             {
                 f
             };
-            var geometryType = GeometryConversions.ToGeometryType(f.Geometry);
+            return fc;
+        }
+
+        public static byte GetDimensions(NetTopologySuite.Geometries.Geometry g)
+        {
             byte dimensions = 2;
-            if (!double.IsNaN(f.Geometry.Coordinate.Z))
+            if (!double.IsNaN(g.Coordinate.Z))
                 dimensions += 1;
-            if (!double.IsNaN(f.Geometry.Coordinate.M))
+            if (!double.IsNaN(g.Coordinate.M))
                 dimensions += 1;
+            return dimensions;
+        }
+
+        static string RoundTrip(string wkt)
+        {
+            var f = MakeFeature(wkt);
+            var fc = MakeFeatureCollection(f);
+            var geometryType = GeometryConversions.ToGeometryType(f.Geometry);
+            byte dimensions = GetDimensions(f.Geometry);
             var flatgeobuf = FeatureCollectionConversions.Serialize(fc, geometryType, dimensions);
             var fcOut = FeatureCollectionConversions.Deserialize(flatgeobuf);
             var wktOut = new WKTWriter(dimensions).Write(fcOut[0].Geometry);
