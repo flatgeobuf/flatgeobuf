@@ -7,6 +7,8 @@ using FlatBuffers;
 using NetTopologySuite.Features;
 using FlatGeobuf.Index;
 using NetTopologySuite.Geometries;
+using System.Threading.Tasks;
+using Nito.AsyncEx;
 
 namespace FlatGeobuf.NTS
 {
@@ -37,6 +39,10 @@ namespace FlatGeobuf.NTS
         }
 
         public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
+            AsyncContext.Run(async () => await SerializeAsync(output, features, geometryType, dimensions, columns));
+        }
+
+        public static async ValueTask SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null) {
             output.Write(Constants.MagicBytes);
             var header = BuildHeader(0, geometryType, dimensions, columns, null);
             output.Write(header);
@@ -44,7 +50,7 @@ namespace FlatGeobuf.NTS
             {
                 var featureGeometryType = geometryType == GeometryType.Unknown ? GeometryConversions.ToGeometryType(feature.Geometry) : geometryType;
                 var buffer = FeatureConversions.ToByteBuffer(feature, featureGeometryType, dimensions, columns);
-                output.Write(buffer);
+                await output.WriteAsync(buffer.ToReadOnlyMemory(buffer.Position, buffer.Length - buffer.Position));
             }
         }
 
@@ -109,7 +115,7 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        private static byte[] BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedRTree index)
+        public static byte[] BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedRTree index)
         {
             var builder = new FlatBufferBuilder(4096);
 

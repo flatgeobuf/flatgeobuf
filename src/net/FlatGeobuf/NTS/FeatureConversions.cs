@@ -12,7 +12,7 @@ namespace FlatGeobuf.NTS
 {
     public static class FeatureConversions
     {
-        public static byte[] ToByteBuffer(IFeature feature, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns)
+        public static ByteBuffer ToByteBuffer(IFeature feature, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns)
         {
             var builder = new FlatBufferBuilder(4096);
             var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, dimensions);
@@ -81,7 +81,7 @@ namespace FlatGeobuf.NTS
 
             builder.FinishSizePrefixed(featureOffset.Value);
 
-            return builder.DataBuffer.ToSizedArray();
+            return builder.DataBuffer;
         }
 
         public static IFeature FromByteBuffer(ByteBuffer bb, ref Header header)
