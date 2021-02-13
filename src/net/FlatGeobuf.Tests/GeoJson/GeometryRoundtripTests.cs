@@ -4,6 +4,7 @@ using Json.Comparer;
 using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
+using System.Threading.Tasks;
 
 namespace FlatGeobuf.Tests.GeoJson
 {
@@ -31,10 +32,11 @@ namespace FlatGeobuf.Tests.GeoJson
         }
 
         [TestMethod]
-        public void Point()
+        public async Task Point()
         {
             var expected = MakeFeatureCollection("POINT(1.2 -2.1)");
-            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
+            var bytes = await GeoJsonConversions.SerializeAsync(expected);
+            var actual = GeoJsonConversions.Deserialize(bytes);
             AssertJson(expected, actual);
         }
 
@@ -71,10 +73,11 @@ namespace FlatGeobuf.Tests.GeoJson
         }
 
         [TestMethod]
-        public void MultiLineString()
+        public async Task MultiLineString()
         {
             var expected = MakeFeatureCollection("MULTILINESTRING((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))");
-            var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
+            var bytes = await GeoJsonConversions.SerializeAsync(expected);
+            var actual = GeoJsonConversions.Deserialize(bytes);
             AssertJson(expected, actual);
         }
 

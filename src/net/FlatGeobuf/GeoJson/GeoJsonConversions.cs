@@ -1,4 +1,5 @@
-﻿using FlatGeobuf.NTS;
+﻿using System.Threading.Tasks;
+using FlatGeobuf.NTS;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 
@@ -11,6 +12,14 @@ namespace FlatGeobuf
             var reader = new GeoJsonReader();
             var fc = reader.Read<FeatureCollection>(geojson);
             var bytes = FeatureCollectionConversions.Serialize(fc, GeometryType.Unknown);
+            return bytes;
+        }
+
+        public static async Task<byte[]> SerializeAsync(string geojson)
+        {
+            var reader = new GeoJsonReader();
+            var fc = reader.Read<FeatureCollection>(geojson);
+            var bytes = await FeatureCollectionConversions.SerializeAsync(fc, GeometryType.Unknown);
             return bytes;
         }
 

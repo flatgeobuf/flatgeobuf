@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using NetTopologySuite.Features;
 using FlatBuffers;
 using System.Text;
@@ -12,17 +10,22 @@ namespace FlatGeobuf.NTS
 {
     public static class FeatureConversions
     {
-        public static ByteBuffer ToByteBuffer(IFeature feature, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns)
+        public static ByteBuffer ToByteBuffer(IFeature feature, ref Header header)
         {
-            var builder = new FlatBufferBuilder(4096);
-            var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, dimensions);
+            var builder = new FlatBufferBuilder(1024);
+            GeometryType geometryType;
+            if (header.GeometryType != GeometryType.Unknown)
+                geometryType = header.GeometryType;
+            else
+                geometryType = GeometryConversions.ToGeometryType(feature.Geometry);
+            var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, ref header);
             var memoryStream = new MemoryStream();
-            if (feature.Attributes != null && feature.Attributes.Count > 0 && columns != null)
+            if (feature.Attributes != null && feature.Attributes.Count > 0 && header.ColumnsLength > 0)
             {
                 var writer = new BinaryWriter(memoryStream, Encoding.UTF8);
-                for (ushort i = 0; i < columns.Count(); i++)
+                for (ushort i = 0; i < header.ColumnsLength; i++)
                 {
-                    var column = columns[i];
+                    var column = header.Columns(i).Value;
                     var type = column.Type;
                     var name = column.Name;
                     if (!feature.Attributes.Exists(name))

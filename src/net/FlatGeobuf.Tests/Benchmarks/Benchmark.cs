@@ -1,12 +1,18 @@
 using System.Collections.Generic;
+using System.Linq;
 using BenchmarkDotNet;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
+using FlatBuffers;
 using FlatGeobuf.NTS;
 using FlatGeobuf.Tests.NTS;
+using NetTopologySuite;
 using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Implementation;
 using Perfolizer.Horology;
 
 namespace FlatGeobuf.Benchmarks
@@ -20,14 +26,88 @@ namespace FlatGeobuf.Benchmarks
             public byte[] flatgeobuf;
         }
 
-        public class Geometry
+        public struct FeatureFixture {
+            public FeatureCollection fc;
+            public GeometryType geometryType;
+            public byte dimensions;
+            public byte[] flatgeobuf;
+        }
+
+        //[SimpleJob(RuntimeMoniker.CoreRt31)]
+        //[SimpleJob(RuntimeMoniker.CoreRt50)]
+        public class FeatureConversionRoundtripBenchmark
+        {
+            Header header;
+            NetTopologySuite.Features.Feature feature;
+            ByteBuffer bytes;
+
+            //[Params(2, 20, 200, 20000)]
+            [Params(20000)]
+            public int Vertices;
+
+            //[Params("Default", "Raw", "DotSpatial")]
+            [Params("Raw")]
+            public string Sequence;
+
+            static public LineString MakeLineString(int maxVertices) {
+                var factory = new GeometryFactory();
+                var cs = Enumerable.Range(1, maxVertices).Select(x => new Coordinate(x, 100 + x)).ToArray();
+                var geometry = factory.CreateLineString(cs);
+                return geometry;
+            }
+
+            [GlobalSetup]
+            public void Setup()
+            {
+                if (Sequence == "Raw")
+                {
+                    var ordinateGroups = new[] { Ordinates.XY };
+                    NtsGeometryServices.Instance = new NtsGeometryServices(new RawCoordinateSequenceFactory(ordinateGroups), new PrecisionModel(), 0);
+                }
+                else if (Sequence == "DotSpatial")
+                {
+                    NtsGeometryServices.Instance = new NtsGeometryServices(new DotSpatialAffineCoordinateSequenceFactory(Ordinates.XY), new PrecisionModel(), 0);
+                }
+                var geometryType = GeometryType.LineString;
+                byte dimensions = 2;
+                var headerBuffer = FeatureCollectionConversions.BuildHeader(1, geometryType, dimensions, null, null);
+                headerBuffer.Position += 4;
+                header = Header.GetRootAsHeader(headerBuffer);
+                var geometry = MakeLineString(Vertices);
+                feature = new NetTopologySuite.Features.Feature(geometry, null);
+                bytes = FeatureConversions.ToByteBuffer(feature, ref header);
+                bytes.Position += 4;
+            }
+
+            [Benchmark]
+            public ByteBuffer LineStringSerialize()
+            {
+                return FeatureConversions.ToByteBuffer(feature, ref header);
+            }
+
+            [Benchmark]
+            public int LineStringDeserialize()
+            {
+                var feature = FeatureConversions.FromByteBuffer(bytes, ref header);
+                var cs = feature.Geometry.Coordinates;
+                var ls = feature.Geometry as LineString;
+                int i;
+                for (i = 0; i < ls.CoordinateSequence.Count; i++) {
+                    ls.CoordinateSequence.GetX(i);
+                    ls.CoordinateSequence.GetY(i);
+                }
+                return i;
+            }
+        }
+
+        public class FeatureCollectionConversionsBenchmark
         {
             GeometryFixture pointFixture;
             GeometryFixture polygonFixture;
             GeometryFixture polygonZFixture;
             GeometryFixture pointWithAttributesFixture;
 
-            public Geometry()
+            public FeatureCollectionConversionsBenchmark()
             {
                 var point = GeometryRoundtripTests.MakeFeature("POINT (1.2 -2.1)");
                 var polygon = GeometryRoundtripTests.MakeFeature("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
@@ -117,8 +197,10 @@ namespace FlatGeobuf.Benchmarks
 
         public static void Main(string[] args)
         {
-            var summaryStyle = new BenchmarkDotNet.Reports.SummaryStyle(null, false, SizeUnit.B, TimeUnit.Microsecond);
-            var config = DefaultConfig.Instance.WithSummaryStyle(summaryStyle);
+            //var summaryStyle = new BenchmarkDotNet.Reports.SummaryStyle(null, false, SizeUnit.B, TimeUnit.Microsecond);
+            //var config = DefaultConfig.Instance.WithSummaryStyle(summaryStyle);
+            var config = DefaultConfig.Instance;
+            //var config = new DebugInProcessConfig();
             BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
         }
     }

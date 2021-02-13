@@ -3,6 +3,8 @@ using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 using FlatGeobuf.NTS;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.Tests.NTS
 {
@@ -35,64 +37,92 @@ namespace FlatGeobuf.Tests.NTS
             return dimensions;
         }
 
-        static string RoundTrip(string wkt)
+        static async Task<string> RoundTrip(string wkt)
         {
             var f = MakeFeature(wkt);
             var fc = MakeFeatureCollection(f);
             var geometryType = GeometryConversions.ToGeometryType(f.Geometry);
             byte dimensions = GetDimensions(f.Geometry);
-            var flatgeobuf = FeatureCollectionConversions.Serialize(fc, geometryType, dimensions);
+            var flatgeobuf = await FeatureCollectionConversions.SerializeAsync(fc, geometryType, dimensions);
             var fcOut = FeatureCollectionConversions.Deserialize(flatgeobuf);
             var wktOut = new WKTWriter(dimensions).Write(fcOut[0].Geometry);
             return wktOut;
         }
 
         [TestMethod]
-        public void Point()
+        public async Task PointMutable()
+        {
+            var f = MakeFeature("POINT (1.2 -2.1)");
+            var fc = MakeFeatureCollection(f);
+            var flatgeobuf = await FeatureCollectionConversions.SerializeAsync(fc, GeometryType.Point, 2);
+            var fcOut = FeatureCollectionConversions.Deserialize(flatgeobuf);
+            var point = fcOut[0].Geometry as Point;
+            point.CoordinateSequence.SetOrdinate(0, 0, 0.01);
+            Assert.AreEqual(0.01, point.Coordinate.X);
+        }
+
+        [TestMethod]
+        public async Task Point()
         {
             var expected = "POINT (1.2 -2.1)";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
-        public void PointZ()
+        public async Task PointZ()
         {
             var expected = "POINT Z(1.2 -2.1 3.1)";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
 
 
         [TestMethod]
-        public void LineString()
+        public async Task LineString()
         {
             var expected = "LINESTRING (1.2 -2.1, 2.4 -4.8)";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
-        public void LineStringZ()
+        public async Task LineStringZ()
         {
             var expected = "LINESTRING Z(1.2 -2.1 3.1, 2.4 -4.8 4.2)";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
-        public void Polygon()
+        public async Task Polygon()
         {
             var expected = "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
-        public void PolygonZ()
+        public async Task PolygonWithHole()
+        {
+            var expected = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))";
+            var actual = await RoundTrip(expected);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public async Task PolygonZ()
         {
             var expected = "POLYGON Z((30 10 1, 40 40 2, 20 40 3, 10 20 4, 30 10 5))";
-            var actual = RoundTrip(expected);
+            var actual = await RoundTrip(expected);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public async Task MultiPolygon()
+        {
+            var expected = "MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))";
+            var actual = await RoundTrip(expected);
             Assert.AreEqual(expected, actual);
         }
     }
