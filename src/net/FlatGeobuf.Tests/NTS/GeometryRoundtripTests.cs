@@ -70,6 +70,14 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
+        public async Task MultiPoint()
+        {
+            var expected = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
+            var actual = await RoundTrip(expected);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
         public async Task PointZ()
         {
             var expected = "POINT Z(1.2 -2.1 3.1)";

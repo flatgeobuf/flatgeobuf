@@ -38,15 +38,18 @@ namespace FlatGeobuf.Benchmarks
         public class FeatureConversionRoundtripBenchmark
         {
             Header header;
-            NetTopologySuite.Features.Feature feature;
+            NetTopologySuite.Features.IFeature feature;
             ByteBuffer bytes;
 
             //[Params(2, 20, 200, 20000)]
-            [Params(20000)]
+            [Params(200)]
+            //[Params(20000)]
             public int Vertices;
 
+            //[Params("Default", "Raw", "DotSpatial", "FlatGeobuf")]
             //[Params("Default", "Raw", "DotSpatial")]
-            [Params("Raw")]
+            [Params("FlatGeobuf")]
+            //[Params("Raw")]
             public string Sequence;
 
             static public LineString MakeLineString(int maxVertices) {
@@ -68,6 +71,10 @@ namespace FlatGeobuf.Benchmarks
                 {
                     NtsGeometryServices.Instance = new NtsGeometryServices(new DotSpatialAffineCoordinateSequenceFactory(Ordinates.XY), new PrecisionModel(), 0);
                 }
+                else if (Sequence == "FlatGeobuf")
+                {
+                    NtsGeometryServices.Instance = new NtsGeometryServices(new FlatGeobufCoordinateSequenceFactory(), new PrecisionModel(), 0);
+                }
                 var geometryType = GeometryType.LineString;
                 byte dimensions = 2;
                 var headerBuffer = FeatureCollectionConversions.BuildHeader(1, geometryType, dimensions, null, null);
@@ -77,6 +84,7 @@ namespace FlatGeobuf.Benchmarks
                 feature = new NetTopologySuite.Features.Feature(geometry, null);
                 bytes = FeatureConversions.ToByteBuffer(feature, ref header);
                 bytes.Position += 4;
+                feature = FeatureConversions.FromByteBuffer(bytes, ref header);
             }
 
             [Benchmark]
@@ -89,7 +97,6 @@ namespace FlatGeobuf.Benchmarks
             public int LineStringDeserialize()
             {
                 var feature = FeatureConversions.FromByteBuffer(bytes, ref header);
-                var cs = feature.Geometry.Coordinates;
                 var ls = feature.Geometry as LineString;
                 int i;
                 for (i = 0; i < ls.CoordinateSequence.Count; i++) {
