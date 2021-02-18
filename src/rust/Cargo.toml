@@ -16,7 +16,7 @@ flatbuffers = "0.6"
 byteorder = "1.4.2"
 geozero = "0.6.0"
 async-trait = "0.1.42"
-reqwest = "0.11.0"
+reqwest = { version = "0.11.0", default-features = false }
 bytes = "1.0.1"
 log = "0.4.13"
 fallible-streaming-iterator = "0.1.9"
@@ -28,6 +28,8 @@ hex = "0.4.2"
 criterion = "0.3.3"
 tempfile = "3.2.0"
 tokio = { version = "1.0.2", default-features = false, features = ["rt-multi-thread"] }
+# One test needs SSL support; just use the default system bindings for that.
+reqwest = { version = "0.11.0", default-features = true }
 
 [[bench]]
 name = "read"
