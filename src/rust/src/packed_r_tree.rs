@@ -856,7 +856,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
 
 #[test]
 fn tree_processing() -> Result<()> {
-    use geozero_core::geojson::GeoJsonWriter;
+    use geozero::geojson::GeoJsonWriter;
     use std::io::BufWriter;
     use tempfile::tempfile;
 

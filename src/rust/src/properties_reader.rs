@@ -2,8 +2,8 @@ use crate::feature_generated::flat_geobuf::*;
 use crate::header_generated::flat_geobuf::*;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
+use geozero::GeozeroGeometry;
 use geozero::{ColumnValue, GeomProcessor, PropertyProcessor};
-
 use std::mem::size_of;
 use std::str;
 
@@ -29,15 +29,21 @@ impl FgbFeature {
 
 impl geozero::FeatureAccess for FgbFeature {}
 
-impl geozero::FeatureGeometry for FgbFeature {
-    /// Consume and process geometry.
-    fn process_geom<P: GeomProcessor>(&self, processor: &mut P) -> geozero::error::Result<()> {
+impl GeozeroGeometry for FgbFeature {
+    fn process_geom<P: GeomProcessor>(&self, processor: &mut P) -> Result<()> {
         let geometry = self
             .fbs_feature()
             .geometry()
             .ok_or(GeozeroError::GeometryFormat)?;
         let geometry_type = self.header().geometry_type();
         geometry.process(processor, geometry_type)
+    }
+    fn empty() -> Self {
+        // let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        // let g1 = Geometry::create(&mut fbb, &Default::default());
+        // fbb.finish(g1, None);
+        // g1
+        todo!()
     }
 }
 

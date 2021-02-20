@@ -146,7 +146,7 @@ pub use properties_reader::*;
 
 // Re-export used traits
 pub use fallible_streaming_iterator::FallibleStreamingIterator;
-pub use geozero::{FeatureAccess, FeatureGeometry, FeatureProperties};
+pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
 
 pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
