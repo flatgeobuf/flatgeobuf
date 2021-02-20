@@ -97,6 +97,7 @@
 //! ```rust
 //! use flatgeobuf::*;
 //!
+//! #[cfg(feature = "http")]
 //! # async fn read_fbg() -> geozero::error::Result<()> {
 //! let mut fgb = HttpFgbReader::open("https://pkg.sourcepole.ch/countries.fgb").await?;
 //! fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
@@ -109,6 +110,7 @@
 //! ```
 //!
 
+#[cfg(feature = "http")]
 #[macro_use]
 extern crate log;
 
@@ -120,18 +122,24 @@ mod file_reader;
 mod geometry_reader;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod header_generated;
+#[cfg(feature = "http")]
 mod http_client;
+#[cfg(feature = "http")]
 mod http_reader;
 mod packed_r_tree;
 mod properties_reader;
 
+#[cfg(all(feature = "http", not(target_arch = "wasm32")))]
+pub use driver::http::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use driver::*;
 pub use feature_generated::flat_geobuf::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
 pub use header_generated::flat_geobuf::*;
+#[cfg(feature = "http")]
 pub use http_client::*;
+#[cfg(feature = "http")]
 pub use http_reader::*;
 pub use packed_r_tree::*;
 pub use properties_reader::*;

@@ -1,10 +1,11 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
+#[cfg(feature = "http")]
 use crate::http_client::BufferedHttpRangeClient;
 use geozero::error::{GeozeroError, Result};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::collections::{BinaryHeap, HashMap};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
@@ -124,6 +125,7 @@ fn read_node_items<R: Read + Seek>(
 }
 
 /// Read partial item vec from http
+#[cfg(feature = "http")]
 async fn read_http_node_items(
     client: &mut BufferedHttpRangeClient,
     min_req_size: usize,
@@ -353,6 +355,7 @@ impl PackedRTree {
         Ok(())
     }
 
+    #[cfg(feature = "http")]
     async fn read_http(
         &mut self,
         client: &mut BufferedHttpRangeClient,
@@ -406,6 +409,7 @@ impl PackedRTree {
         Ok(tree)
     }
 
+    #[cfg(feature = "http")]
     pub async fn from_http(
         client: &mut BufferedHttpRangeClient,
         index_begin: usize,
@@ -526,6 +530,7 @@ impl PackedRTree {
         Ok(results)
     }
 
+    #[cfg(feature = "http")]
     pub async fn http_stream_search(
         client: &mut BufferedHttpRangeClient,
         index_begin: usize,
@@ -536,6 +541,8 @@ impl PackedRTree {
         max_x: f64,
         max_y: f64,
     ) -> Result<Vec<SearchResultItem>> {
+        use std::collections::VecDeque;
+
         let item = NodeItem::new(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;

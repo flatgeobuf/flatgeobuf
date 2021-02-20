@@ -11,13 +11,17 @@ documentation = "https://docs.rs/flatgeobuf/"
 license = "ISC"
 keywords = ["geo", "r-tree", "spatial"]
 
+[features]
+default = ["http"]
+http = ["reqwest", "async-trait", "bytes"]
+
 [dependencies]
 flatbuffers = "0.6"
 byteorder = "1.4.2"
 geozero = "0.6.0"
-async-trait = "0.1.42"
-reqwest = { version = "0.11.0", default-features = false }
-bytes = "1.0.1"
+async-trait = { version = "0.1.42", optional = true }
+reqwest = { version = "0.11.0", default-features = false, optional = true }
+bytes = { version = "1.0.1", optional = true }
 log = "0.4.13"
 fallible-streaming-iterator = "0.1.9"
 
@@ -41,3 +45,7 @@ harness = false
 #[patch.crates-io]
 # Patch geozero dependencies (dev only)
 #geozero = { path = "../../../../rust/geozero/geozero" }
+
+[package.metadata.docs.rs]
+all-features = true
+rustc-args = ["--cfg", "docsrs"]
