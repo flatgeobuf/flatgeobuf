@@ -189,7 +189,7 @@ mod inspect {
 
     #[test]
     fn dump_index() -> Result<()> {
-        use geozero_core::geojson::GeoJsonWriter;
+        use geozero::geojson::GeoJsonWriter;
         use std::fs::File;
         use std::io::{BufReader, BufWriter};
 

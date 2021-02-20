@@ -18,7 +18,7 @@ http = ["reqwest", "async-trait", "bytes"]
 [dependencies]
 flatbuffers = "0.6"
 byteorder = "1.4.2"
-geozero = "0.6.0"
+geozero = { version = "0.7.0-pre", default-features = false }
 async-trait = { version = "0.1.42", optional = true }
 reqwest = { version = "0.11.0", default-features = false, optional = true }
 bytes = { version = "1.0.1", optional = true }
@@ -26,7 +26,7 @@ log = "0.4.13"
 fallible-streaming-iterator = "0.1.9"
 
 [dev-dependencies]
-geozero-core = "0.6.1"
+geozero = { version = "0.7.0-pre", default-features = true }
 rand = "0.8.2"
 hex = "0.4.2"
 criterion = "0.3.3"
@@ -42,9 +42,9 @@ harness = false
 name = "geojson"
 harness = false
 
-#[patch.crates-io]
+[patch.crates-io]
 # Patch geozero dependencies (dev only)
-#geozero = { path = "../../../../rust/geozero/geozero" }
+geozero = { path = "../../../../rust/geozero/geozero" }
 
 [package.metadata.docs.rs]
 all-features = true

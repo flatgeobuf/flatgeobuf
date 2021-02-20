@@ -1,7 +1,7 @@
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero_core::svg::SvgWriter;
-use geozero_core::wkt::WktWriter;
+use geozero::svg::SvgWriter;
+use geozero::wkt::WktWriter;
 use std::fs::File;
 use std::io::{BufReader, Write};
 

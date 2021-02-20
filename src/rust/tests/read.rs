@@ -1,7 +1,7 @@
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero::{ColumnValue, CoordDimensions, GeomProcessor, PropertyProcessor};
-use geozero_core::wkt::WktWriter;
+use geozero::wkt::WktWriter;
+use geozero::{ColumnValue, CoordDimensions, GeomProcessor, PropertyProcessor, ToWkt};
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
@@ -223,28 +223,6 @@ fn point_layer() -> Result<()> {
     Ok(())
 }
 
-struct WktLineWriter {
-    wkt: String,
-}
-
-impl GeomProcessor for WktLineWriter {
-    fn linestring_begin(&mut self, _tagged: bool, _n: usize, _idx: usize) -> Result<()> {
-        self.wkt.push_str("LINESTRING (");
-        Ok(())
-    }
-    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
-        if idx > 0 {
-            self.wkt.push_str(", ");
-        }
-        self.wkt.push_str(&format!("{} {}", x, y));
-        Ok(())
-    }
-    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
-        self.wkt.push_str(")");
-        Ok(())
-    }
-}
-
 #[test]
 #[ignore]
 fn linestring_layer() -> Result<()> {
@@ -267,9 +245,7 @@ fn linestring_layer() -> Result<()> {
     assert_eq!(line.len(), 7);
     assert_eq!(line[0], (1875038.4476102313, -3269648.6879248763));
 
-    let mut processor = WktLineWriter { wkt: String::new() };
-    geometry.process(&mut processor, geometry_type)?;
-    assert_eq!(processor.wkt, "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
+    assert_eq!(feature.to_wkt().unwrap(), "LINESTRING (1875038.4476102313 -3269648.6879248763, 1874359.6415041967 -3270196.8129848638, 1874141.0428635243 -3270953.7840121365, 1874440.1778162003 -3271619.4315206874, 1876396.0598222911 -3274138.747656357, 1876442.0805243007 -3275052.60551469, 1874739.312657555 -3275457.333765534)");
 
     let _props = feature.properties()?;
 

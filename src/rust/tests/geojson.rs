@@ -1,6 +1,6 @@
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero_core::geojson::GeoJsonWriter;
+use geozero::geojson::GeoJsonWriter;
 use std::fs::File;
 use std::io::BufReader;
 
