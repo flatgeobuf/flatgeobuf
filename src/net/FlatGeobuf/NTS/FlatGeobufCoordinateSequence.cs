@@ -4,7 +4,6 @@ namespace FlatGeobuf.NTS
 {
     public class FlatGeobufCoordinateSequence : CoordinateSequence
     {
-        private readonly Geometry _geometry;
         private readonly int _offset;
 
         private readonly double[] _xy;
@@ -15,20 +14,6 @@ namespace FlatGeobuf.NTS
         public double[] Z { get { return _z; } }
         public double[] M { get { return _m; } }
 
-        public Geometry Geometry { get { return _geometry; } }
-
-        public FlatGeobufCoordinateSequence(ref Header header, ref Geometry geometry, int end = 0)
-            : base(GetCount(ref geometry, end), GetDimension(ref header), GetMeasures(ref header))
-        {
-            _geometry = geometry;
-            _offset = end > 0 ? (int) geometry.Ends(end - 1) : 0;
-            _xy = _geometry.GetXyArray();
-            if (header.HasZ)
-                _z = _geometry.GetZArray();
-            if (header.HasM)
-                _m = _geometry.GetMArray();
-        }
-
         public FlatGeobufCoordinateSequence(double[] xy, double[] z, double[] m, int offset)
             : base(xy.Length / 2, GetDimension(z, m), m != null ? 1 : 0)
         {
@@ -36,26 +21,6 @@ namespace FlatGeobuf.NTS
             _xy = xy;
             _z = z;
             _m = m;
-        }
-
-        static int GetCount(ref Geometry geometry, int end)
-        {
-            if (geometry.EndsLength == 0)
-                return geometry.XyLength / 2;
-            else if (end > 0)
-                return (int) geometry.Ends(end) - (int) geometry.Ends(end - 1);
-            else
-                return (int) geometry.Ends(0);
-        }
-
-        static int GetDimension(ref Header header)
-        {
-            var dimension = 2;
-            if (header.HasZ)
-                dimension++;
-            if (header.HasM)
-                dimension++;
-            return dimension;
         }
 
         static int GetDimension(double[] z, double[] m)
@@ -66,14 +31,6 @@ namespace FlatGeobuf.NTS
             if (m != null)
                 dimension++;
             return dimension;
-        }
-
-        static int GetMeasures(ref Header header)
-        {
-            if (header.HasM)
-                return 1;
-            else
-                return 0;
         }
 
         public override CoordinateSequence Copy()

@@ -62,10 +62,10 @@ namespace FlatGeobuf.NTS
             var headerBuffer = BuildHeader(0, geometryType, dimensions, columns, null);
             await output.WriteAsync(headerBuffer.ToReadOnlyMemory(headerBuffer.Position, headerBuffer.Length - headerBuffer.Position));
             headerBuffer.Position += 4;
-            var header = Header.GetRootAsHeader(headerBuffer);
+            var header = Header.GetRootAsHeader(headerBuffer).UnPack();
             foreach (var feature in features)
             {
-                var buffer = FeatureConversions.ToByteBuffer(feature, ref header);
+                var buffer = FeatureConversions.ToByteBuffer(feature, header);
                 await output.WriteAsync(buffer.ToReadOnlyMemory(buffer.Position, buffer.Length - buffer.Position));
             }
         }
@@ -98,11 +98,14 @@ namespace FlatGeobuf.NTS
         public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null)
         {
             var reader = new BinaryReader(stream);
-            var header = Helpers.ReadHeader(stream, out var headerSize);
+            var header = Helpers.ReadHeader(stream, out var headerSize).UnPack();
 
             var count = header.FeaturesCount;
             var nodeSize = header.IndexNodeSize;
             var geometryType = header.GeometryType;
+
+            var seqFactory = new FlatGeobufCoordinateSequenceFactory();
+            var factory = new GeometryFactory(seqFactory);
 
             if (nodeSize > 0)
             {
@@ -117,7 +120,7 @@ namespace FlatGeobuf.NTS
                         stream.Seek(offset + (long) size + (long) item.Offset, SeekOrigin.Begin);
                         var featureLength = reader.ReadInt32();
                         var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
-                        var feature = FeatureConversions.FromByteBuffer(byteBuffer, ref header);
+                        var feature = FeatureConversions.FromByteBuffer(factory, seqFactory, byteBuffer, header);
                         yield return feature;
                     }
                     yield break;
@@ -129,7 +132,7 @@ namespace FlatGeobuf.NTS
             {
                 var featureLength = reader.ReadInt32();
                 var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
-                var feature = FeatureConversions.FromByteBuffer(byteBuffer, ref header);
+                var feature = FeatureConversions.FromByteBuffer(factory, seqFactory, byteBuffer, header);
                 yield return feature;
             }
         }

@@ -4,13 +4,13 @@ using FlatBuffers;
 using System.Text;
 using System.IO;
 using NTSGeometry = NetTopologySuite.Geometries.Geometry;
-using System.Runtime.InteropServices;
+using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.NTS
 {
     public static class FeatureConversions
     {
-        public static ByteBuffer ToByteBuffer(IFeature feature, ref Header header)
+        public static ByteBuffer ToByteBuffer(IFeature feature, HeaderT header)
         {
             var builder = new FlatBufferBuilder(1024);
             GeometryType geometryType;
@@ -18,14 +18,14 @@ namespace FlatGeobuf.NTS
                 geometryType = header.GeometryType;
             else
                 geometryType = GeometryConversions.ToGeometryType(feature.Geometry);
-            var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, ref header);
+            var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, header);
             var memoryStream = new MemoryStream();
-            if (feature.Attributes != null && feature.Attributes.Count > 0 && header.ColumnsLength > 0)
+            if (feature.Attributes != null && feature.Attributes.Count > 0 && header.Columns.Count > 0)
             {
                 var writer = new BinaryWriter(memoryStream, Encoding.UTF8);
-                for (ushort i = 0; i < header.ColumnsLength; i++)
+                for (ushort i = 0; i < header.Columns.Count; i++)
                 {
-                    var column = header.Columns(i).Value;
+                    var column = header.Columns[i];
                     var type = column.Type;
                     var name = column.Name;
                     if (!feature.Attributes.Exists(name))
@@ -87,14 +87,54 @@ namespace FlatGeobuf.NTS
             return builder.DataBuffer;
         }
 
-        public static IFeature FromByteBuffer(ByteBuffer bb, ref Header header)
+        public static IFeature FromByteBuffer(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, ByteBuffer bb, HeaderT header)
         {
             var feature = Feature.GetRootAsFeature(bb);
             IAttributesTable attributesTable = null;
             if (feature.PropertiesLength != 0)
             {
+                //attributesTable = new AttributesTable();
+                //attributesTable.Add("natyp_kode_id", 2);
+                
+                var propertiesArray = feature.GetPropertiesArray();
+                var memoryStream = new MemoryStream(propertiesArray);
+                var reader = new BinaryReader(memoryStream);
                 attributesTable = new AttributesTable();
-                int pos = 0;
+                while (memoryStream.Position < memoryStream.Length)
+                {
+                    ushort i = reader.ReadUInt16();
+                    var column = header.Columns[i];
+                    var type = column.Type;
+                    var name = column.Name;
+                    switch (type)
+                    {
+                        case ColumnType.Bool:
+                            attributesTable.Add(name, reader.ReadBoolean());
+                            break;
+                        case ColumnType.Short:
+                            attributesTable.Add(name, reader.ReadInt16());
+                            break;
+                        case ColumnType.Int:
+                            attributesTable.Add(name, reader.ReadInt32());
+                            break;
+                        case ColumnType.Long:
+                            attributesTable.Add(name, reader.ReadInt64());
+                            break;
+                        case ColumnType.Double:
+                            attributesTable.Add(name, reader.ReadDouble());
+                            break;
+                        case ColumnType.DateTime:
+                        case ColumnType.String:
+                            int len = reader.ReadInt32();
+                            var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int) memoryStream.Position, len);
+                            memoryStream.Position += len;
+                            attributesTable.Add(name, str);
+                            break;
+                        default: throw new Exception($"Unknown type {type}");
+                    }
+                }
+
+                /*int pos = 0;
                 var bytes = feature.GetPropertiesBytes();
                 while (pos < feature.PropertiesLength)
                 {
@@ -134,7 +174,7 @@ namespace FlatGeobuf.NTS
                             break;
                         default: throw new Exception($"Unknown type {type}");
                     }
-                }
+                }*/
             }
 
             NTSGeometry geometry = null;
@@ -143,7 +183,7 @@ namespace FlatGeobuf.NTS
                 if (feature.Geometry.HasValue)
                 {
                     var geometryCopy = feature.Geometry.Value;
-                    geometry = GeometryConversions.FromFlatbuf(ref geometryCopy, ref header);
+                    geometry = GeometryConversions.FromFlatbuf(factory, seqFactory, ref geometryCopy, header);
                 }
             }
             catch (ArgumentException)

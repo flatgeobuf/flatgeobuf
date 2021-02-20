@@ -9,14 +9,25 @@ namespace FlatGeobuf.NTS
 {
     public sealed class FlatGeobufCoordinateSequenceFactory : CoordinateSequenceFactory
     {
-        public CoordinateSequence Create(ref Header header, ref Geometry geometry, int offset = 0)
+        public CoordinateSequence Create(HeaderT header, ref Geometry geometry, int end = 0)
         {
-            return new FlatGeobufCoordinateSequence(ref header, ref geometry, offset);
+            var offset = end > 0 ? (int) geometry.Ends(end - 1) : 0;
+            var xy = geometry.GetXyArray();
+            double[] z = null;
+            double[] m = null;
+            if (header.HasZ)
+                z = geometry.GetZArray();
+            if (header.HasM)
+                m = geometry.GetMArray();
+            return new FlatGeobufCoordinateSequence(xy, z, m, offset);
         }
 
         public override CoordinateSequence Create(int size, int dimension, int measures)
         {
-            throw new NotImplementedException();
+            double[] xy = new double[size * 2];
+            double[] z = null;
+            double[] m = null;
+            return new FlatGeobufCoordinateSequence(xy, z, m, 0);
         }
     }
 }
