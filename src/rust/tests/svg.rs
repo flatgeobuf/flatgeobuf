@@ -34,7 +34,7 @@ fn svg_writer<'a, W: Write>(
     svg
 }
 
-trait GeomToGeoJson {
+trait GeomToSvg {
     fn to_svg<'a, W: Write>(
         &self,
         out: &'a mut W,
@@ -43,7 +43,7 @@ trait GeomToGeoJson {
     ) -> Result<()>;
 }
 
-impl GeomToGeoJson for Geometry<'_> {
+impl GeomToSvg for Geometry<'_> {
     fn to_svg<'a, W: Write>(
         &self,
         out: &'a mut W,
@@ -55,7 +55,7 @@ impl GeomToGeoJson for Geometry<'_> {
     }
 }
 
-trait FeatureToGeoJson {
+trait FeatureToSvg {
     fn to_svg<'a, W: Write>(
         &self,
         out: &'a mut W,
@@ -64,7 +64,7 @@ trait FeatureToGeoJson {
     ) -> Result<()>;
 }
 
-impl FeatureToGeoJson for Feature<'_> {
+impl FeatureToSvg for Feature<'_> {
     /// Convert feature to SVG
     fn to_svg<'a, W: Write>(
         &self,
@@ -124,6 +124,7 @@ fn fgb_to_svg() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "http")]
 async fn http_svg_async() -> Result<()> {
     let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
@@ -144,6 +145,7 @@ async fn http_svg_async() -> Result<()> {
 }
 
 #[test]
+#[cfg(feature = "http")]
 fn http_svg() {
     assert!(tokio::runtime::Runtime::new()
         .unwrap()

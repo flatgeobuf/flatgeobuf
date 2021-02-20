@@ -40,6 +40,7 @@ fn num_properties() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "http")]
 async fn http_json_async() -> Result<()> {
     let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
@@ -59,6 +60,7 @@ async fn http_json_async() -> Result<()> {
 }
 
 #[test]
+#[cfg(feature = "http")]
 fn http_json() {
     assert!(tokio::runtime::Runtime::new()
         .unwrap()
