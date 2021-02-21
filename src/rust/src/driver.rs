@@ -1,6 +1,13 @@
 use crate::file_reader::FgbReader;
 use geozero::error::Result;
-use geozero::{FeatureProcessor, OpenOpts, ReadSeek, Reader, SelectOpts};
+use geozero::{GeozeroDatasource, FeatureProcessor, OpenOpts, ReadSeek, Reader, SelectOpts};
+
+impl GeozeroDatasource for FgbReader<'_> {
+    /// Consume and process all selected features.
+    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
+        self.process_features(processor)        
+    }
+}
 
 pub struct Driver<'a>(FgbReader<'a>);
 
