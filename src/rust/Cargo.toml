@@ -20,6 +20,7 @@ flatbuffers = "0.6"
 byteorder = "1.4.2"
 geozero = { version = "0.7.0-pre", default-features = false }
 async-trait = { version = "0.1.42", optional = true }
+# Minimal dependencices without SSL support.
 reqwest = { version = "0.11.0", default-features = false, optional = true }
 bytes = { version = "1.0.1", optional = true }
 log = "0.4.13"

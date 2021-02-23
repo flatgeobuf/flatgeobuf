@@ -4,12 +4,13 @@ use crate::properties_reader::FgbFeature;
 use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
-use geozero::{FeatureAccess, FeatureProcessor, ReadSeek};
+use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
 use std::io::SeekFrom;
+use std::io::{Read, Seek};
 
 /// FlatGeobuf dataset reader
-pub struct FgbReader<'a> {
-    reader: &'a mut dyn ReadSeek,
+pub struct FgbReader<'a, R: Read + Seek> {
+    reader: &'a mut R,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
@@ -23,9 +24,9 @@ pub struct FgbReader<'a> {
     feat_no: usize,
 }
 
-impl<'a> FgbReader<'a> {
+impl<'a, R: Read + Seek> FgbReader<'a, R> {
     /// Open dataset by reading the header information
-    pub fn open<R: 'a + ReadSeek>(reader: &'a mut R) -> Result<Self> {
+    pub fn open(reader: &'a mut R) -> Result<Self> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if magic_buf != MAGIC_BYTES {
@@ -132,7 +133,7 @@ impl<'a> FgbReader<'a> {
 /// # Ok(())
 /// # }
 /// ```
-impl<'a> FallibleStreamingIterator for FgbReader<'a> {
+impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R> {
     type Error = GeozeroError;
     type Item = FgbFeature;
 
@@ -173,10 +174,17 @@ impl<'a> FallibleStreamingIterator for FgbReader<'a> {
     }
 }
 
+impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T> {
+    /// Consume and process all selected features.
+    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
+        self.process_features(processor)
+    }
+}
+
 mod inspect {
     use super::*;
 
-    impl FgbReader<'_> {
+    impl<'a, R: Read + Seek> FgbReader<'a, R> {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
