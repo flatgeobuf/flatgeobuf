@@ -13,13 +13,12 @@ keywords = ["geo", "r-tree", "spatial"]
 
 [features]
 default = ["http"]
-http = ["reqwest", "async-trait", "bytes"]
+http = ["reqwest", "bytes"]
 
 [dependencies]
 flatbuffers = "0.6"
 byteorder = "1.4.2"
-geozero = { version = "0.7.0-pre", default-features = false }
-async-trait = { version = "0.1.42", optional = true }
+geozero = { version = "0.7.0", default-features = false }
 # Minimal dependencices without SSL support.
 reqwest = { version = "0.11.0", default-features = false, optional = true }
 bytes = { version = "1.0.1", optional = true }
@@ -27,7 +26,7 @@ log = "0.4.13"
 fallible-streaming-iterator = "0.1.9"
 
 [dev-dependencies]
-geozero = { version = "0.7.0-pre", default-features = true }
+geozero = { version = "0.7.0", default-features = true }
 rand = "0.8.2"
 hex = "0.4.2"
 criterion = "0.3.3"
@@ -49,4 +48,3 @@ geozero = { path = "../../../../rust/geozero/geozero" }
 
 [package.metadata.docs.rs]
 all-features = true
-rustc-args = ["--cfg", "docsrs"]
