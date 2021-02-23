@@ -4,17 +4,11 @@
 //! including circular interpolations as defined by SQL-MM Part 3.
 //!
 //!
-//! ## Installation
-//!
-//! ```ini
-//! [dependencies]
-//! flatgeobuf = "0.3"
-//! ```
-//!
 //! ## Reading a FlatGeobuf file
 //!
 //! ```rust
 //! use flatgeobuf::*;
+//! use geozero::ToJson;
 //! # use std::fs::File;
 //! # use std::io::BufReader;
 //!
@@ -23,8 +17,8 @@
 //! let mut fgb = FgbReader::open(&mut filein)?;
 //! fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
 //! while let Some(feature) = fgb.next()? {
-//!     let props = feature.properties()?;
-//!     println!("{}", props["name"]);
+//!     println!("{}", feature.property("name").unwrap_or("?".to_string()));
+//!     println!("{}", feature.to_json()?);
 //! }
 //! # Ok(())
 //! # }
@@ -58,36 +52,6 @@
 //! let mut coord_printer = CoordPrinter {};
 //! let geometry = feature.geometry().unwrap();
 //! geometry.process(&mut coord_printer, geometry_type)?;
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ## Zero-copy feature access
-//!
-//! Properties can be accessed by implementing the `PropertyProcessor` trait.
-//!
-//! ```rust
-//! use geozero::{PropertyProcessor, ColumnValue, error::Result};
-//! # use flatgeobuf::*;
-//! # use std::fs::File;
-//! # use std::io::BufReader;
-//!
-//! struct PropertyPrinter;
-//!
-//! impl PropertyProcessor for PropertyPrinter {
-//!     fn property(&mut self, i: usize, n: &str, v: &ColumnValue) -> Result<bool> {
-//!         println!("columnidx: {} name: {} value: {:?}", i, n, v);
-//!         Ok(false) // don't abort
-//!     }
-//! }
-//!
-//! # fn read_fbg() -> geozero::error::Result<()> {
-//! # let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-//! # let mut fgb = FgbReader::open(&mut filein)?;
-//! # fgb.select_all()?;
-//! # let feature = fgb.next()?.unwrap();
-//! let mut prop_printer = PropertyPrinter {};
-//! let _ = feature.process_properties(&mut prop_printer)?;
 //! # Ok(())
 //! # }
 //! ```
