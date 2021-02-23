@@ -114,8 +114,6 @@
 #[macro_use]
 extern crate log;
 
-#[cfg(not(target_arch = "wasm32"))]
-mod driver;
 #[allow(dead_code, unused_imports, non_snake_case)]
 mod feature_generated;
 mod file_reader;
@@ -129,10 +127,6 @@ mod http_reader;
 mod packed_r_tree;
 mod properties_reader;
 
-#[cfg(all(feature = "http", not(target_arch = "wasm32")))]
-pub use driver::http::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use driver::*;
 pub use feature_generated::flat_geobuf::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
