@@ -39,11 +39,27 @@ impl GeozeroGeometry for FgbFeature {
         geometry.process(processor, geometry_type)
     }
     fn empty() -> Self {
-        // let mut fbb = flatbuffers::FlatBufferBuilder::new();
-        // let g1 = Geometry::create(&mut fbb, &Default::default());
-        // fbb.finish(g1, None);
-        // g1
-        todo!()
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let h = Header::create(&mut fbb, &Default::default());
+        fbb.finish(h, None);
+        let header_buf = fbb.finished_data().to_vec();
+
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let geom = Geometry::create(&mut fbb, &Default::default());
+        let f = Feature::create(
+            &mut fbb,
+            &FeatureArgs {
+                geometry: Some(geom),
+                ..Default::default()
+            },
+        );
+        fbb.finish(f, None);
+        let feature_buf = fbb.finished_data().to_vec();
+
+        FgbFeature {
+            header_buf,
+            feature_buf,
+        }
     }
 }
 

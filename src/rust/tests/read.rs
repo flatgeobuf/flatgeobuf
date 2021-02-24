@@ -266,14 +266,9 @@ fn geomcollection_layer() -> Result<()> {
     let _count = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
-    let geometry = feature.geometry().unwrap();
-    assert_eq!(geometry.type_(), GeometryType::GeometryCollection);
-
-    let mut wkt_data: Vec<u8> = Vec::new();
-    let mut processor = WktWriter::new(&mut wkt_data);
-    geometry.process(&mut processor, geometry_type)?;
+    let wkt = feature.to_wkt()?;
     assert_eq!(
-        std::str::from_utf8(&wkt_data).unwrap(),
+        &wkt,
         "GEOMETRYCOLLECTION(POINT(0 1),LINESTRING(2 3,4 5),POLYGON((0 0,0 10,10 10,10 0,0 0),(1 1,1 9,9 9,9 1,1 1)),MULTIPOINT(0 1,2 3),MULTILINESTRING((0 1,2 3),(4 5,6 7)),MULTIPOLYGON(((0 0,0 10,10 10,10 0,0 0),(1 1,1 9,9 9,9 1,1 1)),((-9 0,-9 10,-1 10,-1 0,-9 0))))"
     );
 
@@ -349,24 +344,6 @@ fn surface_layers() -> Result<()> {
     Ok(())
 }
 
-struct MultiLineGenerator(Vec<Vec<(f64, f64)>>);
-
-impl GeomProcessor for MultiLineGenerator {
-    fn multilinestring_begin(&mut self, n: usize, _idx: usize) -> Result<()> {
-        self.0.reserve(n);
-        Ok(())
-    }
-    fn linestring_begin(&mut self, _tagged: bool, n: usize, _idx: usize) -> Result<()> {
-        self.0.push(Vec::with_capacity(n));
-        Ok(())
-    }
-    fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
-        let len = self.0.len();
-        self.0[len - 1].push((x, y));
-        Ok(())
-    }
-}
-
 #[test]
 #[ignore]
 fn multilinestring_layer() -> Result<()> {
@@ -374,7 +351,7 @@ fn multilinestring_layer() -> Result<()> {
     let mut fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::MultiLineString);
     assert_eq!(fgb.header().features_count(), 6);
-    let geometry_type = fgb.header().geometry_type();
+    let _geometry_type = fgb.header().geometry_type();
 
     let _count = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
@@ -386,14 +363,11 @@ fn multilinestring_layer() -> Result<()> {
         num_vertices += 1;
     }
     assert_eq!(num_vertices, 361);
-
-    let mut processor = MultiLineGenerator(Vec::new());
-    geometry.process(&mut processor, geometry_type)?;
-    assert_eq!(processor.0.len(), 1);
-    assert_eq!(processor.0[0].len(), 361);
-    assert_eq!(processor.0[0][0], (-20037505.025679983, 2692596.21474788));
-
-    let _props = feature.properties()?;
+    let wkt = feature.to_wkt()?;
+    assert_eq!(
+        &wkt[0..80],
+        "MULTILINESTRING((-20037505.025679983 2692596.21474788,-19924286.672913034 269259"
+    );
 
     Ok(())
 }
@@ -402,12 +376,7 @@ struct MaxFinder(f64);
 
 impl GeomProcessor for MaxFinder {
     fn dimensions(&self) -> CoordDimensions {
-        CoordDimensions {
-            z: true,
-            m: false,
-            t: false,
-            tm: false,
-        }
+        CoordDimensions::xyz()
     }
     fn coordinate(
         &mut self,
@@ -504,4 +473,11 @@ fn property_types() -> Result<()> {
     assert!(feature.process_properties(&mut prop_checker).is_ok());
 
     Ok(())
+}
+
+#[test]
+fn emtpy_feature() {
+    let empty = FgbFeature::empty();
+    let _fbgfeat = empty.fbs_feature();
+    assert!(empty.geometry().is_some());
 }
