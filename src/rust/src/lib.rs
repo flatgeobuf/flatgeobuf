@@ -15,9 +15,9 @@
 //! # fn read_fbg() -> geozero::error::Result<()> {
 //! let mut filein = BufReader::new(File::open("countries.fgb")?);
 //! let mut fgb = FgbReader::open(&mut filein)?;
-//! fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+//! fgb.select_all()?;
 //! while let Some(feature) = fgb.next()? {
-//!     println!("{}", feature.property("name").unwrap_or("?".to_string()));
+//!     println!("{}", feature.property::<String>("name").unwrap());
 //!     println!("{}", feature.to_json()?);
 //! }
 //! # Ok(())
@@ -46,12 +46,10 @@
 //! # fn read_fbg() -> geozero::error::Result<()> {
 //! # let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
 //! # let mut fgb = FgbReader::open(&mut filein)?;
-//! # let geometry_type = fgb.header().geometry_type();
 //! # fgb.select_all()?;
 //! # let feature = fgb.next()?.unwrap();
 //! let mut coord_printer = CoordPrinter {};
-//! let geometry = feature.geometry().unwrap();
-//! geometry.process(&mut coord_printer, geometry_type)?;
+//! feature.process_geom(&mut coord_printer)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -60,6 +58,7 @@
 //!
 //! ```rust
 //! use flatgeobuf::*;
+//! use geozero::ToWkt;
 //!
 //! #[cfg(feature = "http")]
 //! # async fn read_fbg() -> geozero::error::Result<()> {
@@ -68,6 +67,7 @@
 //! while let Some(feature) = fgb.next().await? {
 //!     let props = feature.properties()?;
 //!     println!("{}", props["name"]);
+//!     println!("{}", feature.to_wkt()?);
 //! }
 //! # Ok(())
 //! # }
