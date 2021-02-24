@@ -102,33 +102,15 @@ impl GeomProcessor for VertexCounter {
     }
 }
 
-struct FeatureFinder(bool);
-
-impl PropertyProcessor for FeatureFinder {
-    fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
-        // name == "id"
-        if i == 0 {
-            self.0 = v == &ColumnValue::String("DNK");
-            Ok(true) // finish
-        } else {
-            Ok(false)
-        }
-    }
-}
-
 #[test]
 fn filter() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?;
     fgb.select_all()?;
     let mut cnt = 0;
-    let mut finder = FeatureFinder { 0: false };
     while let Some(feature) = fgb
         .by_ref()
-        .filter(|feat| {
-            feat.process_properties(&mut finder).ok();
-            finder.0
-        })
+        .filter(|feat| feat.property("id") == Some("DNK".to_string()))
         .next()?
     {
         let _geometry = feature.geometry().unwrap();
@@ -142,14 +124,13 @@ fn filter() -> Result<()> {
 fn file_reader() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?;
-    let geometry_type = fgb.header().geometry_type();
-    assert_eq!(geometry_type, GeometryType::MultiPolygon);
+    assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(fgb.header().features_count(), 179);
 
     let count = fgb.select_all()?;
     assert_eq!(count, 179);
 
-    if let Some(feature) = fgb.find(|feat| feat.property("id") == Some("DNK".to_string()))? {
+    if let Some(feature) = fgb.find(|feat| feat.property_n(0) == Some("DNK".to_string()))? {
         // OGRFeature(countries):46
         //   id (String) = DNK
         //   name (String) = Denmark
@@ -157,15 +138,14 @@ fn file_reader() -> Result<()> {
         // 0.667804 56.081383,10.369993 56.190007,9.649985 55.469999,9.921906 54.983104,9.282049 54.830865,8.526229 54.962744,8.120311 55.517723,8.089977 56.540012,8.256582 5
         // 6.809969,8.543438 57.110003,9.424469 57.172066,9.775559 57.447941,10.580006 57.730017,10.546106 57.215733,10.25 56.890016,10.369993 56.609982,10.912182 56.458621))
         // )
-        let geometry = feature.geometry().unwrap();
 
         let mut vertex_counter = VertexCounter(0);
-        geometry.process(&mut vertex_counter, geometry_type)?;
+        feature.process_geom(&mut vertex_counter)?;
         assert_eq!(vertex_counter.0, 24);
 
         let props = feature.properties()?;
-        assert_eq!(props["id"], "DNK".to_string());
-        assert_eq!(props["name"], "Denmark".to_string());
+        assert_eq!(&props["id"], "DNK");
+        assert_eq!(&props["name"], "Denmark");
     } else {
         assert!(false, "find failed");
     }
@@ -181,8 +161,7 @@ fn bbox_file_reader() -> Result<()> {
     assert_eq!(count, 6);
 
     let feature = fgb.next()?.unwrap();
-    let props = feature.properties()?;
-    assert_eq!(props["name"], "Denmark".to_string());
+    assert_eq!(feature.property("name"), Some("Denmark".to_string()));
 
     Ok(())
 }
@@ -228,8 +207,7 @@ fn point_layer() -> Result<()> {
 fn linestring_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/lines.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?;
-    let geometry_type = fgb.header().geometry_type();
-    assert_eq!(geometry_type, GeometryType::LineString);
+    assert_eq!(fgb.header().geometry_type(), GeometryType::LineString);
     assert_eq!(fgb.header().features_count(), 8375);
 
     let _count = fgb.select_all()?;
@@ -259,8 +237,10 @@ fn geomcollection_layer() -> Result<()> {
         "../../test/data/gdal_sample_v1.2_nonlinear/geomcollection2d.fgb",
     )?);
     let mut fgb = FgbReader::open(&mut filein)?;
-    let geometry_type = fgb.header().geometry_type();
-    assert_eq!(geometry_type, GeometryType::GeometryCollection);
+    assert_eq!(
+        fgb.header().geometry_type(),
+        GeometryType::GeometryCollection
+    );
     assert_eq!(fgb.header().features_count(), 1);
 
     let _count = fgb.select_all()?;
@@ -280,17 +260,15 @@ fn geomcollection_layer() -> Result<()> {
 fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
     let mut filein = BufReader::new(File::open(&format!("../../test/data/{}", fname))?);
     let mut fgb = FgbReader::open(&mut filein)?;
-    let geometry_type = fgb.header().geometry_type();
 
     let _count = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
-    let geometry = feature.geometry().unwrap();
 
     let mut wkt_data: Vec<u8> = Vec::new();
     let mut processor = WktWriter::new(&mut wkt_data);
     processor.dims.z = with_z;
-    geometry.process(&mut processor, geometry_type)?;
+    feature.process_geom(&mut processor)?;
     Ok(std::str::from_utf8(&wkt_data).unwrap().to_string())
 }
 
