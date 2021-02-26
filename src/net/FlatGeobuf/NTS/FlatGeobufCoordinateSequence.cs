@@ -14,8 +14,8 @@ namespace FlatGeobuf.NTS
         public double[] Z { get { return _z; } }
         public double[] M { get { return _m; } }
 
-        public FlatGeobufCoordinateSequence(double[] xy, double[] z, double[] m, int offset)
-            : base(xy.Length / 2, GetDimension(z, m), m != null ? 1 : 0)
+        public FlatGeobufCoordinateSequence(double[] xy, double[] z, double[] m, int count, int offset)
+            : base(count, GetDimension(z, m), m != null ? 1 : 0)
         {
             _offset = offset;
             _xy = xy;

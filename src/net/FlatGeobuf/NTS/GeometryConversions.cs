@@ -130,7 +130,7 @@ namespace FlatGeobuf.NTS
                 var pxy = new double[] { xy[i * 2], xy[i * 2 + 1] };
                 var pz = header.HasZ ? new double[] { z[i] } : null;
                 var pm = header.HasM ? new double[] { m[i] } : null;
-                points[i] = factory.CreatePoint(new FlatGeobufCoordinateSequence(pxy, pz, pm, 0));
+                points[i] = factory.CreatePoint(new FlatGeobufCoordinateSequence(pxy, pz, pm, 1, 0));
             }
             return factory.CreateMultiPoint(points);
         }
