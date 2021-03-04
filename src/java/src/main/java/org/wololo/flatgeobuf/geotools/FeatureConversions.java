@@ -52,37 +52,37 @@ public class FeatureConversions {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
-        ByteBuffer bb = ByteBuffer.allocate(1024 * 1024);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer propertiesVectorBuf = ByteBuffer.allocate(1024 * 1024);
+        propertiesVectorBuf.order(ByteOrder.LITTLE_ENDIAN);
         for (short i = 0; i < headerMeta.columns.size(); i++) {
             ColumnMeta column = headerMeta.columns.get(i);
             byte type = column.type;
             Object value = feature.getAttribute(column.name);
             if (value == null)
                 continue;
-            bb.putShort(i);
+            propertiesVectorBuf.putShort(i);
             if (type == ColumnType.Bool)
-                bb.put((byte) ((boolean) value ? 1 : 0));
+                propertiesVectorBuf.put((byte) ((boolean) value ? 1 : 0));
             else if (type == ColumnType.Byte)
-                bb.put((byte) value);
+                propertiesVectorBuf.put((byte) value);
             else if (type == ColumnType.Short)
-                bb.putShort((short) value);
+                propertiesVectorBuf.putShort((short) value);
             else if (type == ColumnType.Int)
-                bb.putInt((int) value);
+                propertiesVectorBuf.putInt((int) value);
             else if (type == ColumnType.Long)
                 if (value instanceof Long)
-                    bb.putLong((long) value);
+                    propertiesVectorBuf.putLong((long) value);
                 else if (value instanceof BigInteger)
-                    bb.putLong(((BigInteger) value).longValue());
+                    propertiesVectorBuf.putLong(((BigInteger) value).longValue());
                 else
-                    bb.putLong((long) value);
+                    propertiesVectorBuf.putLong((long) value);
             else if (type == ColumnType.Double)
                 if (value instanceof Double)
-                    bb.putDouble((double) value);
+                    propertiesVectorBuf.putDouble((double) value);
                 else if (value instanceof BigDecimal)
-                    bb.putDouble(((BigDecimal) value).doubleValue());
+                    propertiesVectorBuf.putDouble(((BigDecimal) value).doubleValue());
                 else
-                    bb.putDouble((double) value);
+                    propertiesVectorBuf.putDouble((double) value);
             else if (type == ColumnType.DateTime) {
                 String isoDateTime = "";
                 if (value instanceof LocalDateTime)
@@ -97,17 +97,17 @@ public class FeatureConversions {
                     isoDateTime = ((OffsetTime) value).toString();
                 else
                     throw new RuntimeException("Unknown date/time type " + type);
-                writeString(bb, isoDateTime);
+                writeString(propertiesVectorBuf, isoDateTime);
             } else if (type == ColumnType.String)
-                writeString(bb, (String) value);
+                writeString(propertiesVectorBuf, (String) value);
             else
                 throw new RuntimeException("Unknown type " + type);
         }
 
         int propertiesOffset = 0;
-        if (bb.position() > 0) {
-            byte[] data = Arrays.copyOfRange(bb.array(), 0, bb.position());
-            propertiesOffset = Feature.createPropertiesVector(builder, data);
+        if (propertiesVectorBuf.position() > 0) {
+            propertiesVectorBuf.flip();
+            propertiesOffset = Feature.createPropertiesVector(builder, propertiesVectorBuf);
         }
         GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
         int geometryOffset = 0;
