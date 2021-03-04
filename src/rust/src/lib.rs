@@ -60,7 +60,7 @@
 //! use flatgeobuf::*;
 //! use geozero::ToWkt;
 //!
-//! #[cfg(feature = "http")]
+//! # #[cfg(feature = "http")]
 //! # async fn read_fbg() -> geozero::error::Result<()> {
 //! let mut fgb = HttpFgbReader::open("https://flatgeobuf.org/test/data/countries.fgb").await?;
 //! fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;

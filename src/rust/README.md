@@ -34,13 +34,13 @@ while let Some(feature) = fgb.next().await? {
 }
 ```
 
-See [documentation](https://docs.rs/flatgeobuf/) and [tests](tests/) for more examples.
+See [documentation](https://docs.rs/flatgeobuf/) and [tests](https://github.com/flatgeobuf/flatgeobuf/tree/master/src/rust/tests) for more examples.
 
 ## Run tests and benchmarks
 
     cargo test
 
-    cargo bench
+    cargo criterion
 
 ## Run fuzzer
 

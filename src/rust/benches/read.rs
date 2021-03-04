@@ -1,23 +1,18 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero::GeomProcessor;
+use geozero::ProcessorSink;
+use seek_bufread::BufReader;
 use std::fs::File;
-use std::io::BufReader;
-
-struct NullReader;
-impl GeomProcessor for NullReader {}
 
 fn read_fgb() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?;
-    let geometry_type = fgb.header().geometry_type();
     fgb.select_all()?;
 
-    let mut null_reader = NullReader;
+    let mut null_reader = ProcessorSink;
     while let Some(feature) = fgb.next()? {
-        let geometry = feature.geometry().unwrap();
-        geometry.process(&mut null_reader, geometry_type)?;
+        feature.process_geom(&mut null_reader)?;
     }
 
     Ok(())

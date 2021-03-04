@@ -27,6 +27,7 @@ fallible-streaming-iterator = "0.1.9"
 
 [dev-dependencies]
 geozero = { version = "0.7.0", default-features = true }
+seek_bufread = "1.2"
 rand = "0.8.2"
 hex = "0.4.2"
 criterion = "0.3.3"
