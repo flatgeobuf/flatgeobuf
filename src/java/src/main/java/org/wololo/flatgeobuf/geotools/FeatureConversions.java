@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -18,6 +19,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.util.NIOUtilities;
 import org.opengis.feature.simple.SimpleFeature;
 import org.wololo.flatgeobuf.generated.ColumnType;
 import org.wololo.flatgeobuf.generated.Feature;
@@ -86,37 +88,75 @@ public class FeatureConversions {
     private static int createProperiesVector(SimpleFeature feature, FlatBufferBuilder builder,
             HeaderMeta headerMeta) {
 
-        ByteBuffer propertiesVectorBuf = ByteBuffer.allocate(1024 * 1024);
-        propertiesVectorBuf.order(ByteOrder.LITTLE_ENDIAN);
+        final int minPow = 16;// 2^16 = 64KiB
+        final int maxPow = 20;// 2^20 = 1MiB
+        int size = 0;
+        for (int pow = minPow; pow <= maxPow; pow += 2) {
+            size = (int) Math.pow(2, pow);
+            ByteBuffer buff = NIOUtilities.allocate(size);
+            try {
+                buildPropertiesVector(feature, headerMeta, buff);
+            } catch (BufferOverflowException overflow) {
+                // return buffer and retry with a bigger one
+                NIOUtilities.returnToCache(buff);
+                continue;
+            }
+
+            int propertiesOffset = 0;
+            if (buff.position() > 0) {
+                buff.flip();
+                propertiesOffset = Feature.createPropertiesVector(builder, buff);
+            }
+            NIOUtilities.returnToCache(buff);
+            return propertiesOffset;
+        }
+        throw new IllegalStateException(
+                "Unable to write properties vector of feature " + feature.getID()
+                        + ". Buffer overflowed at maximum capacity of " + size + " bytes");
+    }
+
+    /**
+     * Builds the {@code feature} properties vector onto the {@code target} byte buffer, throws
+     * {@link BufferOverflowException} if {@code target} is too small
+     * 
+     * @param feature the feature whose properties to encode
+     * @param headerMeta feature type metadata
+     * @param target the buffer where to encode the feature properties vector
+     * @throws BufferOverflowException if {@code target} couldn't hold the encoded properties
+     */
+    private static void buildPropertiesVector(SimpleFeature feature, HeaderMeta headerMeta,
+            ByteBuffer target) {
+
+        target.order(ByteOrder.LITTLE_ENDIAN);
         for (short i = 0; i < headerMeta.columns.size(); i++) {
             ColumnMeta column = headerMeta.columns.get(i);
             byte type = column.type;
             Object value = feature.getAttribute(column.name);
             if (value == null)
                 continue;
-            propertiesVectorBuf.putShort(i);
+            target.putShort(i);
             if (type == ColumnType.Bool)
-                propertiesVectorBuf.put((byte) ((boolean) value ? 1 : 0));
+                target.put((byte) ((boolean) value ? 1 : 0));
             else if (type == ColumnType.Byte)
-                propertiesVectorBuf.put((byte) value);
+                target.put((byte) value);
             else if (type == ColumnType.Short)
-                propertiesVectorBuf.putShort((short) value);
+                target.putShort((short) value);
             else if (type == ColumnType.Int)
-                propertiesVectorBuf.putInt((int) value);
+                target.putInt((int) value);
             else if (type == ColumnType.Long)
                 if (value instanceof Long)
-                    propertiesVectorBuf.putLong((long) value);
+                    target.putLong((long) value);
                 else if (value instanceof BigInteger)
-                    propertiesVectorBuf.putLong(((BigInteger) value).longValue());
+                    target.putLong(((BigInteger) value).longValue());
                 else
-                    propertiesVectorBuf.putLong((long) value);
+                    target.putLong((long) value);
             else if (type == ColumnType.Double)
                 if (value instanceof Double)
-                    propertiesVectorBuf.putDouble((double) value);
+                    target.putDouble((double) value);
                 else if (value instanceof BigDecimal)
-                    propertiesVectorBuf.putDouble(((BigDecimal) value).doubleValue());
+                    target.putDouble(((BigDecimal) value).doubleValue());
                 else
-                    propertiesVectorBuf.putDouble((double) value);
+                    target.putDouble((double) value);
             else if (type == ColumnType.DateTime) {
                 String isoDateTime = "";
                 if (value instanceof LocalDateTime)
@@ -131,19 +171,12 @@ public class FeatureConversions {
                     isoDateTime = ((OffsetTime) value).toString();
                 else
                     throw new RuntimeException("Unknown date/time type " + type);
-                writeString(propertiesVectorBuf, isoDateTime);
+                writeString(target, isoDateTime);
             } else if (type == ColumnType.String)
-                writeString(propertiesVectorBuf, (String) value);
+                writeString(target, (String) value);
             else
                 throw new RuntimeException("Unknown type " + type);
         }
-
-        int propertiesOffset = 0;
-        if (propertiesVectorBuf.position() > 0) {
-            propertiesVectorBuf.flip();
-            propertiesOffset = Feature.createPropertiesVector(builder, propertiesVectorBuf);
-        }
-        return propertiesOffset;
     }
 
     private static String readString(ByteBuffer bb, String name) {
