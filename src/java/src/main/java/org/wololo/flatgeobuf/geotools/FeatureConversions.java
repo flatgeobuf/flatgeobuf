@@ -50,14 +50,30 @@ public class FeatureConversions {
     }
 
     public static void serialize(SimpleFeature feature, HeaderMeta headerMeta,
-            final OutputStream to) throws IOException {
-        FlatBufferBuilder builder = new FlatBufferBuilder(1024);
+            final OutputStream to, FlatBufferBuilder builder) throws IOException {
+
+        final int propertiesOffset = createProperiesVector(feature, builder, headerMeta);
+        final int geometryOffset = buildGeometry(feature, builder, headerMeta);
+        int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
+        builder.finishSizePrefixed(featureOffset);
+
+        WritableByteChannel channel = Channels.newChannel(to);
+        ByteBuffer dataBuffer = builder.dataBuffer();
+        while (dataBuffer.hasRemaining()) {
+            channel.write(dataBuffer);
+        }
+    }
+
+    protected static int buildGeometry(SimpleFeature feature, FlatBufferBuilder builder,
+            HeaderMeta headerMeta) throws IOException {
+
         org.locationtech.jts.geom.Geometry geometry =
                 (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
-        final int propertiesOffset = createProperiesVector(feature, builder, headerMeta);
+
         GeometryOffsets go =
                 GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
-        int geometryOffset = 0;
+
+        int geometryOffset;
         if (go.gos != null && go.gos.length > 0) {
             int[] partOffsets = new int[go.gos.length];
             for (int i = 0; i < go.gos.length; i++) {
@@ -72,14 +88,7 @@ public class FeatureConversions {
             geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0,
                     0, 0, 0, 0);
         }
-        int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
-        builder.finishSizePrefixed(featureOffset);
-
-        WritableByteChannel channel = Channels.newChannel(to);
-        ByteBuffer dataBuffer = builder.dataBuffer();
-        while (dataBuffer.hasRemaining()) {
-            channel.write(dataBuffer);
-        }
+        return geometryOffset;
     }
 
     /**
@@ -187,13 +196,13 @@ public class FeatureConversions {
         return value;
     }
 
-    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb, HeaderMeta headerMeta,
-            String fid) {
+    public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb,
+            HeaderMeta headerMeta, String fid) {
         Geometry geometry = feature.geometry();
         if (geometry == null)
             return null;
-        org.locationtech.jts.geom.Geometry jtsGeometry = GeometryConversions.deserialize(geometry,
-                headerMeta.geometryType);
+        org.locationtech.jts.geom.Geometry jtsGeometry =
+                GeometryConversions.deserialize(geometry, headerMeta.geometryType);
         if (jtsGeometry != null)
             fb.add(GeometryConversions.deserialize(geometry, headerMeta.geometryType));
         int propertiesLength = feature.propertiesLength();

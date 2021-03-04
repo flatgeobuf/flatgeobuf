@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import com.google.flatbuffers.ByteBufferUtil;
+import com.google.flatbuffers.FlatBufferBuilder;
 import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
 import org.wololo.flatgeobuf.generated.Feature;
@@ -22,13 +23,22 @@ public class FeatureCollectionConversions {
             OutputStream outputStream) throws IOException {
 
         SimpleFeatureType featureType = featureCollection.getSchema();
-        HeaderMeta headerMeta = FeatureTypeConversions.serialize(featureType, featuresCount, outputStream);
 
-        try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
-            while (iterator.hasNext()) {
-                SimpleFeature feature = iterator.next();
-                FeatureConversions.serialize(feature, headerMeta, outputStream);
+        FlatBufferBuilder builder = FlatBuffers.newBuilder(16 * 1024);
+        try {
+            HeaderMeta headerMeta =
+                    FeatureTypeConversions.serialize(featureType, featuresCount, outputStream, builder);
+            builder.clear();
+            
+            try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
+                while (iterator.hasNext()) {
+                    SimpleFeature feature = iterator.next();
+                    FeatureConversions.serialize(feature, headerMeta, outputStream, builder);
+                    builder.clear();
+                }
             }
+        } finally {
+            FlatBuffers.release(builder);
         }
     }
 

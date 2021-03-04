@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,8 +38,8 @@ import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 
 public class FeatureTypeConversions {
 
-    public static HeaderMeta serialize(SimpleFeatureType featureType, long featuresCount, OutputStream outputStream)
-            throws IOException {
+    public static HeaderMeta serialize(SimpleFeatureType featureType, long featuresCount,
+            OutputStream outputStream, FlatBufferBuilder builder) throws IOException {
 
         List<AttributeDescriptor> types = featureType.getAttributeDescriptors();
         List<ColumnMeta> columns = new ArrayList<ColumnMeta>();
@@ -92,19 +94,19 @@ public class FeatureTypeConversions {
         headerMeta.geometryType = geometryType;
         headerMeta.columns = columns;
 
-        byte[] headerBuffer = buildHeader(headerMeta);
-        outputStream.write(headerBuffer);
+        buildHeader(headerMeta, outputStream, builder);
 
         return headerMeta;
     }
 
-    private static byte[] buildHeader(HeaderMeta headerMeta) {
-        FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-
+    private static void buildHeader(HeaderMeta headerMeta, OutputStream to,
+            FlatBufferBuilder builder) throws IOException {
+        
         int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
-            return Column.createColumn(builder, nameOffset, type, 0, 0, -1, -1, -1, true, false, false, 0);
+            return Column.createColumn(builder, nameOffset, type, 0, 0, -1, -1, -1, true, false,
+                    false, 0);
         }).toArray();
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
@@ -117,7 +119,11 @@ public class FeatureTypeConversions {
 
         builder.finishSizePrefixed(offset);
 
-        return builder.sizedByteArray();
+        WritableByteChannel channel = Channels.newChannel(to);
+        ByteBuffer dataBuffer = builder.dataBuffer();
+        while (dataBuffer.hasRemaining()) {
+            channel.write(dataBuffer);
+        }
     }
 
     public static HeaderMeta deserialize(ByteBuffer bb, String name, String geometryPropertyName) throws IOException {
