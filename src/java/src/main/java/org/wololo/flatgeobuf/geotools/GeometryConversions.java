@@ -1,26 +1,24 @@
 package org.wololo.flatgeobuf.geotools;
 
 import java.io.IOException;
-import java.util.stream.Stream;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
-import java.util.stream.DoubleStream;
-
-import com.google.flatbuffers.FlatBufferBuilder;
-
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.MultiPoint;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.MultiPoint;
 import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-
-import org.wololo.flatgeobuf.generated.*;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.wololo.flatgeobuf.generated.Geometry;
+import org.wololo.flatgeobuf.generated.GeometryType;
+import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
     public static GeometryOffsets serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
@@ -57,20 +55,69 @@ public class GeometryConversions {
             return go;
         }
 
-        Stream<Coordinate> cs = Stream.of(geometry.getCoordinates());
-        double[] coords;
-        //if (headerMeta.hasZ && headerMeta.hasM)
-        //    coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y, c.getZ(), c.getM())).toArray();
-        //else if (headerMeta.hasZ || headerMeta.hasM)
-        //    coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y, c.getZ())).toArray();
-        //else
-        coords = cs.flatMapToDouble(c -> DoubleStream.of(c.x, c.y)).toArray();
-        go.coordsOffset = Geometry.createXyVector(builder, coords);
+        final int numPoints = geometry.getNumPoints();
+        // build the vector "manually", using a CoordinateSequenceFilter to avoid creating
+        // Coordinate arrays or any Coordinate at all, depending on the underlying
+        // CoordinateSequence implementation. Vector elements ought to be added in reverse order
+        Geometry.startXyVector(builder, 2 * numPoints);
+        applyInReverseOrder(geometry, new ReverseXYCoordinateSequenceFilter(builder));
+        go.coordsOffset = builder.endVector();
 
         if (go.ends != null)
             go.endsOffset = Geometry.createEndsVector(builder, go.ends);
 
         return go;
+    }
+    
+
+    /**
+     * Applies the {@code filter} to all {@link org.locationtech.jts.geom.Geometry#getGeometryN(int)
+     * subgeometries} in reverse order if it's a {@link GeometryCollection} or a {@link Polygon}
+     * (i.e. interior rings in reverse order first)
+     */
+    private static void applyInReverseOrder(org.locationtech.jts.geom.Geometry geometry,
+            CoordinateSequenceFilter filter) {
+
+        final int numGeometries = geometry.getNumGeometries();
+        if (numGeometries > 1) {
+            for (int i = numGeometries - 1; i >= 0; i--) {
+                org.locationtech.jts.geom.Geometry sub = geometry.getGeometryN(i);
+                applyInReverseOrder(sub, filter);
+            }
+        } else if (geometry instanceof Polygon) {
+            Polygon p = (Polygon) geometry;
+            for (int i = p.getNumInteriorRing() - 1; i >= 0; i--) {
+                org.locationtech.jts.geom.Geometry hole = p.getInteriorRingN(i);
+                applyInReverseOrder(hole, filter);
+            }
+            applyInReverseOrder(p.getExteriorRing(), filter);
+        } else {
+            geometry.apply(filter);
+        }
+    }
+
+    private static class ReverseXYCoordinateSequenceFilter implements CoordinateSequenceFilter {
+        private FlatBufferBuilder builder;
+
+        ReverseXYCoordinateSequenceFilter(FlatBufferBuilder builder) {
+            this.builder = builder;
+        }
+
+        public @Override void filter(final CoordinateSequence seq, final int coordIndex) {
+            int reverseSeqIndex = seq.size() - coordIndex - 1;
+            double y = seq.getOrdinate(reverseSeqIndex, 1);
+            double x = seq.getOrdinate(reverseSeqIndex, 0);
+            builder.addDouble(y);
+            builder.addDouble(x);
+        }
+
+        public @Override boolean isGeometryChanged() {
+            return false;
+        }
+
+        public @Override boolean isDone() {
+            return false;
+        }
     }
 
     public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, byte geometryType) {

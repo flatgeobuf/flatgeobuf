@@ -129,7 +129,7 @@ public class GeometryRoundtripTest {
 
     @Test
     public void multilinestring() throws IOException {
-        String expected = "MULTILINESTRING ((10 10, 20 20, 10 40), (40 40, 30 30, 40 20, 30 10))";
+        String expected = "MULTILINESTRING ((1 2, 3 4, 5 6), (7 8, 9 10, 11 12, 13 14))";
         assertEquals(expected, roundTrip(expected));
     }
 
