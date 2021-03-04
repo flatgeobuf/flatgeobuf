@@ -27,8 +27,7 @@ public class FeatureCollectionConversions {
         try (FeatureIterator<SimpleFeature> iterator = featureCollection.features()) {
             while (iterator.hasNext()) {
                 SimpleFeature feature = iterator.next();
-                byte[] featureBuffer = FeatureConversions.serialize(feature, headerMeta);
-                outputStream.write(featureBuffer);
+                FeatureConversions.serialize(feature, headerMeta, outputStream);
             }
         }
     }

@@ -2,11 +2,14 @@ package org.wololo.flatgeobuf.geotools;
 
 import static java.nio.charset.CodingErrorAction.REPLACE;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -45,7 +48,7 @@ public class FeatureConversions {
         target.putInt(lengthPosition, encodedLength);
     }
 
-    public static byte[] serialize(SimpleFeature feature, HeaderMeta headerMeta) throws IOException {
+    public static void serialize(SimpleFeature feature, HeaderMeta headerMeta, final OutputStream to) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
 
@@ -124,7 +127,11 @@ public class FeatureConversions {
         int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
         builder.finishSizePrefixed(featureOffset);
 
-        return builder.sizedByteArray();
+        WritableByteChannel channel = Channels.newChannel(to);
+        ByteBuffer dataBuffer = builder.dataBuffer();
+        while(dataBuffer.hasRemaining()) {
+            channel.write(dataBuffer);
+        }
     }
 
     private static String readString(ByteBuffer bb, String name) {
