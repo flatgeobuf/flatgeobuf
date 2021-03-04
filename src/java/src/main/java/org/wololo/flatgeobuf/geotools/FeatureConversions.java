@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.util.Arrays;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 import org.wololo.flatgeobuf.generated.ColumnType;
@@ -48,9 +47,44 @@ public class FeatureConversions {
         target.putInt(lengthPosition, encodedLength);
     }
 
-    public static void serialize(SimpleFeature feature, HeaderMeta headerMeta, final OutputStream to) throws IOException {
+    public static void serialize(SimpleFeature feature, HeaderMeta headerMeta,
+            final OutputStream to) throws IOException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-        org.locationtech.jts.geom.Geometry geometry = (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
+        org.locationtech.jts.geom.Geometry geometry =
+                (org.locationtech.jts.geom.Geometry) feature.getDefaultGeometry();
+        final int propertiesOffset = createProperiesVector(feature, builder, headerMeta);
+        GeometryOffsets go =
+                GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
+        int geometryOffset = 0;
+        if (go.gos != null && go.gos.length > 0) {
+            int[] partOffsets = new int[go.gos.length];
+            for (int i = 0; i < go.gos.length; i++) {
+                GeometryOffsets goPart = go.gos[i];
+                int partOffset = Geometry.createGeometry(builder, goPart.endsOffset,
+                        goPart.coordsOffset, 0, 0, 0, 0, 0, 0);
+                partOffsets[i] = partOffset;
+            }
+            int partsOffset = Geometry.createPartsVector(builder, partOffsets);
+            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
+        } else {
+            geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0,
+                    0, 0, 0, 0);
+        }
+        int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
+        builder.finishSizePrefixed(featureOffset);
+
+        WritableByteChannel channel = Channels.newChannel(to);
+        ByteBuffer dataBuffer = builder.dataBuffer();
+        while (dataBuffer.hasRemaining()) {
+            channel.write(dataBuffer);
+        }
+    }
+
+    /**
+     * Writes the properties vector to {@code builder} and returns its offset
+     */
+    private static int createProperiesVector(SimpleFeature feature, FlatBufferBuilder builder,
+            HeaderMeta headerMeta) {
 
         ByteBuffer propertiesVectorBuf = ByteBuffer.allocate(1024 * 1024);
         propertiesVectorBuf.order(ByteOrder.LITTLE_ENDIAN);
@@ -109,29 +143,7 @@ public class FeatureConversions {
             propertiesVectorBuf.flip();
             propertiesOffset = Feature.createPropertiesVector(builder, propertiesVectorBuf);
         }
-        GeometryOffsets go = GeometryConversions.serialize(builder, geometry, headerMeta.geometryType);
-        int geometryOffset = 0;
-        if (go.gos != null && go.gos.length > 0) {
-            int[] partOffsets = new int[go.gos.length];
-            for (int i = 0; i < go.gos.length; i++) {
-                GeometryOffsets goPart = go.gos[i];
-                int partOffset = Geometry.createGeometry(builder, goPart.endsOffset, goPart.coordsOffset, 0, 0, 0, 0, 0,
-                        0);
-                partOffsets[i] = partOffset;
-            }
-            int partsOffset = Geometry.createPartsVector(builder, partOffsets);
-            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
-        } else {
-            geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0, 0, 0, 0, 0);
-        }
-        int featureOffset = Feature.createFeature(builder, geometryOffset, propertiesOffset, 0);
-        builder.finishSizePrefixed(featureOffset);
-
-        WritableByteChannel channel = Channels.newChannel(to);
-        ByteBuffer dataBuffer = builder.dataBuffer();
-        while(dataBuffer.hasRemaining()) {
-            channel.write(dataBuffer);
-        }
+        return propertiesOffset;
     }
 
     private static String readString(ByteBuffer bb, String name) {
