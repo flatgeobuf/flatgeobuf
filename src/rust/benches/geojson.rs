@@ -1,9 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero_core::geojson::GeoJsonWriter;
+use geozero::geojson::GeoJsonWriter;
+use seek_bufread::BufReader;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::BufWriter;
 use tempfile::tempfile;
 
 fn fgb_to_geojson() -> Result<()> {
