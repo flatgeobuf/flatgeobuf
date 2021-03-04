@@ -1,10 +1,13 @@
 package org.wololo.flatgeobuf.geotools;
 
+import static java.nio.charset.CodingErrorAction.REPLACE;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,22 +15,34 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.util.Arrays;
-
-import com.google.flatbuffers.FlatBufferBuilder;
-
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.opengis.feature.simple.SimpleFeature;
 import org.wololo.flatgeobuf.generated.ColumnType;
 import org.wololo.flatgeobuf.generated.Feature;
 import org.wololo.flatgeobuf.generated.Geometry;
-
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.opengis.feature.simple.SimpleFeature;
+import com.google.flatbuffers.FlatBufferBuilder;
 
 public class FeatureConversions {
 
-    private static void writeString(ByteBuffer bb, String value) {
-        byte[] stringBytes = ((String) value).getBytes(StandardCharsets.UTF_8);
-        bb.putInt(stringBytes.length);
-        bb.put(stringBytes);
+    private static void writeString(ByteBuffer target, String value) {
+
+        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder().onMalformedInput(REPLACE)
+                .onUnmappableCharacter(REPLACE);
+
+        // save current position to write the string length later
+        final int lengthPosition = target.position();
+        // and leave room for it
+        target.position(lengthPosition + Integer.BYTES);
+
+        final int startStrPos = target.position();
+        final boolean endOfInput = true;
+        encoder.encode(CharBuffer.wrap(value), target, endOfInput);
+
+        final int endStrPos = target.position();
+        final int encodedLength = endStrPos - startStrPos;
+
+        // absolute put, doesn't change the current position
+        target.putInt(lengthPosition, encodedLength);
     }
 
     public static byte[] serialize(SimpleFeature feature, HeaderMeta headerMeta) throws IOException {
