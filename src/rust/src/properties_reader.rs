@@ -15,11 +15,13 @@ pub struct FgbFeature {
 
 impl FgbFeature {
     pub(crate) fn header(&self) -> Header {
-        root_as_header(&self.header_buf[..]).unwrap() //FIXME
+        get_root_as_header(&self.header_buf[..])
+        // root_as_header(&self.header_buf[..]).unwrap() //FIXME
     }
     // Flatbuffers feature access
     pub fn fbs_feature(&self) -> Feature {
-        root_as_feature(&self.feature_buf[..]).unwrap() //FIXME
+        get_root_as_feature(&self.feature_buf[..])
+        // root_as_feature(&self.feature_buf[..]).unwrap() //FIXME
     }
     // Flatbuffers geometry access
     pub fn geometry(&self) -> Option<Geometry> {
