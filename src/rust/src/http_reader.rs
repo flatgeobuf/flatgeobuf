@@ -4,6 +4,7 @@ use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use byteorder::{ByteOrder, LittleEndian};
+use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor};
 
@@ -58,13 +59,13 @@ impl HttpFgbReader {
         if bytes != MAGIC_BYTES {
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get_range(8, 4, min_req_size).await?;
-        let header_size = LittleEndian::read_u32(bytes) as usize;
+        let mut bytes = BytesMut::from(client.get_range(8, 4, min_req_size).await?);
+        let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get_range(12, header_size, min_req_size).await?;
+        bytes.put(client.get_range(12, header_size, min_req_size).await?);
         let header_buf = bytes.to_vec();
 
         trace!("completed: opening http reader");
@@ -85,7 +86,7 @@ impl HttpFgbReader {
         self.fbs.header()
     }
     fn header_len(&self) -> usize {
-        12 + self.fbs.header_buf.len()
+        8 + self.fbs.header_buf.len()
     }
     /// Select all features.  Returns feature count.
     pub async fn select_all(&mut self) -> Result<usize> {
@@ -145,13 +146,14 @@ impl HttpFgbReader {
             self.pos = self.feature_base + item.offset;
         }
         self.feat_no += 1;
-        let bytes = self.client.get_range(self.pos, 4, min_req_size).await?;
+        let mut bytes = BytesMut::from(self.client.get_range(self.pos, 4, min_req_size).await?);
         self.pos += 4;
-        let feature_size = LittleEndian::read_u32(bytes) as usize;
-        let bytes = self
-            .client
-            .get_range(self.pos, feature_size, min_req_size)
-            .await?;
+        let feature_size = LittleEndian::read_u32(&bytes) as usize;
+        bytes.put(
+            self.client
+                .get_range(self.pos, feature_size, min_req_size)
+                .await?,
+        );
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
         self.pos += feature_size;
         Ok(Some(&self.fbs))

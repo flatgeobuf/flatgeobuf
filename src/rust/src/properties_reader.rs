@@ -15,13 +15,13 @@ pub struct FgbFeature {
 
 impl FgbFeature {
     pub(crate) fn header(&self) -> Header {
-        get_root_as_header(&self.header_buf[..])
-        // root_as_header(&self.header_buf[..]).unwrap() //FIXME
+        // get_root_as_header(&self.header_buf[4..])
+        size_prefixed_root_as_header(&self.header_buf).unwrap()
     }
     // Flatbuffers feature access
     pub fn fbs_feature(&self) -> Feature {
-        get_root_as_feature(&self.feature_buf[..])
-        // root_as_feature(&self.feature_buf[..]).unwrap() //FIXME
+        // get_root_as_feature(&self.feature_buf[..])
+        size_prefixed_root_as_feature(&self.feature_buf).unwrap()
     }
     // Flatbuffers geometry access
     pub fn geometry(&self) -> Option<Geometry> {
@@ -56,7 +56,9 @@ impl GeozeroGeometry for FgbFeature {
             },
         );
         fbb.finish(f, None);
-        let feature_buf = fbb.finished_data().to_vec();
+        let mut buf = fbb.finished_data().to_vec();
+        let mut feature_buf = (buf.len() as u32).to_le_bytes().to_vec();
+        feature_buf.append(&mut buf);
 
         FgbFeature {
             header_buf,

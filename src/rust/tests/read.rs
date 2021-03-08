@@ -13,18 +13,18 @@ fn reader_header(fname: &str) -> Result<()> {
     reader.read_exact(&mut magic_buf)?;
     // assert_eq!(magic_buf, MAGIC_BYTES);
 
-    let mut size_buf: [u8; 4] = [0; 4];
-    reader.read_exact(&mut size_buf)?;
-    let header_size = u32::from_le_bytes(size_buf);
-
-    let mut header_buf = vec![0; header_size as usize];
+    let mut header_buf = Vec::with_capacity(4);
+    header_buf.resize(4, 0);
     reader.read_exact(&mut header_buf)?;
+    let sbuf = &header_buf;
+    let header_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
+    header_buf.resize(header_size + 4, 0);
+    reader.read_exact(&mut header_buf[4..])?;
     println!("{:?}", &header_buf);
     // [32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 28, 0, 8, 0, 12, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 20, 0, 22, 0, 0, 0, 0, 0, 0, 17, 60, 0, 0, 0, 20, 0, 0, 0, 12, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 64, 0, 0, 0, 0, 0, 0, 34, 64, 8, 0, 0, 0, 116, 114, 105, 97, 110, 103, 108, 101, 0, 0, 0, 0]
 
-    let header = get_root_as_header(&header_buf[..]);
+    let header = size_prefixed_root_as_header(&header_buf).unwrap();
     println!("{:?}", &header);
-    let _header = root_as_header(&header_buf[..]).unwrap();
     Ok(())
 }
 

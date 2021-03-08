@@ -5,8 +5,7 @@ use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
-use std::io::SeekFrom;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 /// FlatGeobuf dataset reader
 pub struct FgbReader<'a, R: Read + Seek> {
@@ -33,17 +32,18 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
             return Err(GeozeroError::GeometryFormat);
         }
 
-        let mut size_buf: [u8; 4] = [0; 4];
-        reader.read_exact(&mut size_buf)?;
-        let header_size = u32::from_le_bytes(size_buf) as usize;
+        let mut header_buf = Vec::with_capacity(4);
+        header_buf.resize(4, 0);
+        reader.read_exact(&mut header_buf)?;
+        let sbuf = &header_buf;
+        let header_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
 
-        let mut header_buf = Vec::with_capacity(header_size);
-        header_buf.resize(header_size, 0);
-        reader.read_exact(&mut header_buf)?;
+        header_buf.resize(header_size + 4, 0);
+        reader.read_exact(&mut header_buf[4..])?;
 
         Ok(FgbReader {
             reader,
@@ -148,11 +148,12 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R> {
                 .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
         }
         self.feat_no += 1;
-        let mut size_buf: [u8; 4] = [0; 4];
-        self.reader.read_exact(&mut size_buf)?;
-        let feature_size = u32::from_le_bytes(size_buf);
-        self.fbs.feature_buf.resize(feature_size as usize, 0);
+        self.fbs.feature_buf.resize(4, 0);
         self.reader.read_exact(&mut self.fbs.feature_buf)?;
+        let sbuf = &self.fbs.feature_buf;
+        let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
+        self.fbs.feature_buf.resize(feature_size + 4, 0);
+        self.reader.read_exact(&mut self.fbs.feature_buf[4..])?;
         Ok(())
     }
 
