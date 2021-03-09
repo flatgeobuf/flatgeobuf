@@ -30,7 +30,28 @@ TEST_CASE("Header")
         REQUIRE(VerifySizePrefixedHeaderBuffer(v2) == true);
         REQUIRE(VerifyHeaderBuffer(v3) == true);
         REQUIRE(VerifyHeaderBuffer(v4) == false);
-
         REQUIRE(size == 44);
+
+        // create another header and concat to see if the postponed buffer still verifies
+        FlatBufferBuilder fbb2;
+        std::vector<double> envelope2;
+        envelope2.push_back(1.1);
+        envelope2.push_back(1.1);
+        envelope2.push_back(2.1);
+        envelope2.push_back(2.1);
+        auto header2 = CreateHeaderDirect(fbb2, "Test2222", &envelope2, GeometryType::Point, false, false, false, false, columns, features_count);
+        fbb2.FinishSizePrefixed(header2);
+        uint8_t *buf2 = fbb2.GetBufferPointer();
+        int size2 = fbb2.GetSize();
+        REQUIRE(size2 == 88);
+
+        uint8_t buf3[size + size2];
+        memcpy(buf3, buf, size);
+        memcpy(buf3 + size, buf2, size2);
+
+        Verifier v5(buf3 + size, size2);
+        Verifier v6(buf3 + size, size2);
+        REQUIRE(VerifyHeaderBuffer(v5) == true);
+        REQUIRE(VerifySizePrefixedHeaderBuffer(v6) == true);
     }
 }
