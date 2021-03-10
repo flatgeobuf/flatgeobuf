@@ -1,3 +1,4 @@
+use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, PackedRTree};
@@ -67,6 +68,10 @@ impl HttpFgbReader {
         }
         bytes.put(client.get_range(12, header_size, min_req_size).await?);
         let header_buf = bytes.to_vec();
+
+        // verify flatbuffer
+        let _header = size_prefixed_root_as_header(&header_buf)
+            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
 
         trace!("completed: opening http reader");
         Ok(HttpFgbReader {
@@ -155,6 +160,9 @@ impl HttpFgbReader {
                 .await?,
         );
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
+                                               // verify flatbuffer
+        let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
+            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         self.pos += feature_size;
         Ok(Some(&self.fbs))
     }

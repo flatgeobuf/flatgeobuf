@@ -78,11 +78,11 @@
 #[macro_use]
 extern crate log;
 
-#[allow(dead_code, unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case)]
 mod feature_generated;
 mod file_reader;
 mod geometry_reader;
-#[allow(dead_code, unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case)]
 mod header_generated;
 #[cfg(feature = "http")]
 mod http_client;
@@ -95,6 +95,7 @@ pub use feature_generated::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
 pub use header_generated::*;
+#[cfg(feature = "http")]
 pub use http_client::*;
 #[cfg(feature = "http")]
 pub use http_reader::*;
