@@ -1,5 +1,6 @@
 package org.wololo.flatgeobuf.geotools;
 
+import org.locationtech.jts.geom.Envelope;
 import org.opengis.feature.simple.SimpleFeatureType;
 
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.List;
 public class HeaderMeta {
     public String name;
     public byte geometryType;
+    public Envelope envelope;
     public long featuresCount;
     public boolean hasZ = false;
     public boolean hasM = false;

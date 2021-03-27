@@ -5,6 +5,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
@@ -16,6 +17,7 @@ import org.opengis.feature.type.GeometryDescriptor;
 import org.wololo.flatgeobuf.Constants;
 import org.wololo.flatgeobuf.generated.Column;
 import org.wololo.flatgeobuf.generated.ColumnType;
+import org.wololo.flatgeobuf.generated.Crs;
 import org.wololo.flatgeobuf.generated.GeometryType;
 import org.wololo.flatgeobuf.generated.Header;
 
@@ -101,7 +103,6 @@ public class FeatureTypeConversions {
 
     private static void buildHeader(HeaderMeta headerMeta, OutputStream to,
             FlatBufferBuilder builder) throws IOException {
-        
         int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
@@ -121,12 +122,11 @@ public class FeatureTypeConversions {
 
         WritableByteChannel channel = Channels.newChannel(to);
         ByteBuffer dataBuffer = builder.dataBuffer();
-        while (dataBuffer.hasRemaining()) {
+        while (dataBuffer.hasRemaining())
             channel.write(dataBuffer);
-        }
     }
 
-    public static HeaderMeta deserialize(ByteBuffer bb, String name, String geometryPropertyName) throws IOException {
+    public static HeaderMeta deserialize(ByteBuffer bb, String defaultName, String geometryPropertyName) throws IOException {
         int offset = 0;
         if (Constants.isFlatgeobuf(bb))
             throw new IOException("This is not a flatgeobuf!");
@@ -163,8 +163,10 @@ public class FeatureTypeConversions {
             throw new RuntimeException("Unknown geometry type");
         }
 
-        long featuresCount = header.featuresCount();
-        int indexNodeSize = header.indexNodeSize();
+        HeaderMeta headerMeta = new HeaderMeta();
+
+        headerMeta.featuresCount = header.featuresCount();
+        headerMeta.indexNodeSize = header.indexNodeSize();
 
         int columnsLength = header.columnsLength();
         ArrayList<ColumnMeta> columnMetas = new ArrayList<ColumnMeta>();
@@ -176,17 +178,25 @@ public class FeatureTypeConversions {
         }
 
         SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
-        ftb.setName(name);
+        String name = header.name();
+        ftb.setName(name == null || name.isEmpty() ? defaultName : name);
+        Crs crs = header.crs();
+        if (crs != null && crs.code() != 0)
+            ftb.srid(crs.code());
+        if (header.envelopeLength() == 4) {
+            double minX = header.envelope(0);
+            double minY = header.envelope(1);
+            double maxX = header.envelope(2);
+            double maxY = header.envelope(3);
+            headerMeta.envelope = new Envelope(minX, maxX, minY, maxY);
+        }
         ftb.add(geometryPropertyName, geometryClass);
         for (ColumnMeta columnMeta : columnMetas)
             ftb.add(columnMeta.name, columnMeta.getBinding());
         SimpleFeatureType ft = ftb.buildFeatureType();
 
-        HeaderMeta headerMeta = new HeaderMeta();
         headerMeta.columns = columnMetas;
         headerMeta.geometryType = (byte) geometryType;
-        headerMeta.featuresCount = featuresCount;
-        headerMeta.indexNodeSize = indexNodeSize;
         headerMeta.offset = offset;
         headerMeta.featureType = ft;
 
