@@ -125,9 +125,13 @@ public class FeatureCollectionConversions {
     }
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb) throws IOException {
-        HeaderMeta headerMeta = FeatureTypeConversions.deserialize(bb, "testName", "geometryPropertyName");
+        HeaderMeta headerMeta = FeatureTypeConversions.deserialize(bb);
+        SimpleFeatureType featureType = FeatureTypeConversions.getSimpleFeatureType(headerMeta, "unknown");
+        return deserialize(bb, headerMeta, featureType);
+    }
+
+    public static SimpleFeatureCollection deserialize(ByteBuffer bb, HeaderMeta headerMeta, SimpleFeatureType ft) throws IOException {
         int offset = headerMeta.offset;
-        SimpleFeatureType ft = headerMeta.featureType;
         SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
         if (headerMeta.featuresCount > 0 && headerMeta.indexNodeSize > 0) {
@@ -147,10 +151,14 @@ public class FeatureCollectionConversions {
     }
 
     public static Iterable<SimpleFeature> deserialize(ByteBuffer bb, Envelope rect) throws IOException {
-        HeaderMeta headerMeta = FeatureTypeConversions.deserialize(bb, "testName", "geometryPropertyName");
+        HeaderMeta headerMeta = FeatureTypeConversions.deserialize(bb);
+        SimpleFeatureType featureType = FeatureTypeConversions.getSimpleFeatureType(headerMeta, "unknown");
+        return deserialize(bb, headerMeta, featureType, rect);
+    }
+
+    public static Iterable<SimpleFeature> deserialize(ByteBuffer bb, HeaderMeta headerMeta, SimpleFeatureType ft, Envelope rect) throws IOException {
         int treeSize = headerMeta.featuresCount > 0 && headerMeta.indexNodeSize > 0 ? (int) PackedRTree.calcSize((int) headerMeta.featuresCount, headerMeta.indexNodeSize) : 0;
         int featuresOffset = headerMeta.offset + treeSize;
-        SimpleFeatureType ft = headerMeta.featureType;
         SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
         if (treeSize > 0)
             bb.position(featuresOffset);

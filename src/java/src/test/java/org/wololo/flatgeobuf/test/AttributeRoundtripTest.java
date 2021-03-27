@@ -31,6 +31,8 @@ import org.locationtech.jts.geom.Geometry;
 import org.json.*;
 
 import org.wololo.flatgeobuf.geotools.FeatureCollectionConversions;
+import org.wololo.flatgeobuf.geotools.FeatureTypeConversions;
+import org.wololo.flatgeobuf.geotools.HeaderMeta;
 
 public class AttributeRoundtripTest {
 
@@ -51,7 +53,9 @@ public class AttributeRoundtripTest {
         FeatureCollectionConversions.serialize(makeFC(geojson), 1, os);
         ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
+        HeaderMeta headerMeta = FeatureTypeConversions.deserialize(bb);
+        SimpleFeatureType featureType = FeatureTypeConversions.getSimpleFeatureType(headerMeta, "unknown");
+        SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb, headerMeta, featureType);
         FeatureJSON featureJSON = new FeatureJSON();
         os = new ByteArrayOutputStream();
         featureJSON.writeFeatureCollection(fc, os);

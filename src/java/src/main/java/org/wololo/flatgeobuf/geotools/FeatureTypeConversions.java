@@ -126,7 +126,43 @@ public class FeatureTypeConversions {
             channel.write(dataBuffer);
     }
 
-    public static HeaderMeta deserialize(ByteBuffer bb, String defaultName, String geometryPropertyName) throws IOException {
+    public static Class<?> getGeometryClass(int geometryType) {
+        switch (geometryType) {
+        case GeometryType.Unknown:
+            return Geometry.class;
+        case GeometryType.Point:
+            return Point.class;
+        case GeometryType.MultiPoint:
+            return MultiPoint.class;
+        case GeometryType.LineString:
+            return LineString.class;
+        case GeometryType.MultiLineString:
+            return MultiLineString.class;
+        case GeometryType.Polygon:
+            return Polygon.class;
+        case GeometryType.MultiPolygon:
+            return MultiPolygon.class;
+        default:
+            throw new RuntimeException("Unknown geometry type");
+        }
+    }
+
+    public static SimpleFeatureType getSimpleFeatureType(HeaderMeta headerMeta, String defaultName) {
+        SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
+        String name = headerMeta.name;
+        if (name == null || name.isEmpty())
+            ftb.setName(defaultName);
+        else
+            ftb.setName(name);
+        ftb.setAbstract(false);
+        ftb.add("geometry", getGeometryClass(headerMeta.geometryType));
+        for (ColumnMeta columnMeta : headerMeta.columns)
+            ftb.add(columnMeta.name, columnMeta.getBinding());
+        SimpleFeatureType ft = ftb.buildFeatureType();
+        return ft;
+    }
+
+    public static HeaderMeta deserialize(ByteBuffer bb) throws IOException {
         int offset = 0;
         if (Constants.isFlatgeobuf(bb))
             throw new IOException("This is not a flatgeobuf!");
@@ -136,32 +172,6 @@ public class FeatureTypeConversions {
         Header header = Header.getRootAsHeader(bb);
         bb.position(offset += headerSize);
         int geometryType = header.geometryType();
-        Class<?> geometryClass;
-        switch (geometryType) {
-        case GeometryType.Unknown:
-            geometryClass = Geometry.class;
-            break;
-        case GeometryType.Point:
-            geometryClass = Point.class;
-            break;
-        case GeometryType.MultiPoint:
-            geometryClass = MultiPoint.class;
-            break;
-        case GeometryType.LineString:
-            geometryClass = LineString.class;
-            break;
-        case GeometryType.MultiLineString:
-            geometryClass = MultiLineString.class;
-            break;
-        case GeometryType.Polygon:
-            geometryClass = Polygon.class;
-            break;
-        case GeometryType.MultiPolygon:
-            geometryClass = MultiPolygon.class;
-            break;
-        default:
-            throw new RuntimeException("Unknown geometry type");
-        }
 
         HeaderMeta headerMeta = new HeaderMeta();
 
@@ -177,12 +187,9 @@ public class FeatureTypeConversions {
             columnMetas.add(columnMeta);
         }
 
-        SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
-        String name = header.name();
-        ftb.setName(name == null || name.isEmpty() ? defaultName : name);
         Crs crs = header.crs();
         if (crs != null && crs.code() != 0)
-            ftb.srid(crs.code());
+            headerMeta.srid = crs.code();
         if (header.envelopeLength() == 4) {
             double minX = header.envelope(0);
             double minY = header.envelope(1);
@@ -190,17 +197,14 @@ public class FeatureTypeConversions {
             double maxY = header.envelope(3);
             headerMeta.envelope = new Envelope(minX, maxX, minY, maxY);
         }
-        ftb.add(geometryPropertyName, geometryClass);
-        for (ColumnMeta columnMeta : columnMetas)
-            ftb.add(columnMeta.name, columnMeta.getBinding());
-        SimpleFeatureType ft = ftb.buildFeatureType();
 
         headerMeta.columns = columnMetas;
         headerMeta.geometryType = (byte) geometryType;
         headerMeta.offset = offset;
-        headerMeta.featureType = ft;
 
         return headerMeta;
     }
+
+
 
 }
