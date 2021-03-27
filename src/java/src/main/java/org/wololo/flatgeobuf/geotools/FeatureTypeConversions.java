@@ -163,6 +163,9 @@ public class FeatureTypeConversions {
             throw new RuntimeException("Unknown geometry type");
         }
 
+        long featuresCount = header.featuresCount();
+        int indexNodeSize = header.indexNodeSize();
+
         int columnsLength = header.columnsLength();
         ArrayList<ColumnMeta> columnMetas = new ArrayList<ColumnMeta>();
         for (int i = 0; i < columnsLength; i++) {
@@ -182,6 +185,8 @@ public class FeatureTypeConversions {
         HeaderMeta headerMeta = new HeaderMeta();
         headerMeta.columns = columnMetas;
         headerMeta.geometryType = (byte) geometryType;
+        headerMeta.featuresCount = featuresCount;
+        headerMeta.indexNodeSize = indexNodeSize;
         headerMeta.offset = offset;
         headerMeta.featureType = ft;
 

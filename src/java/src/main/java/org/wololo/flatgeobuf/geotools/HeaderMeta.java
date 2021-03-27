@@ -12,6 +12,7 @@ public class HeaderMeta {
     public boolean hasM = false;
     public boolean hasT = false;
     public boolean hasTM = false;
+    public int indexNodeSize;
     public List<ColumnMeta> columns;
     public SimpleFeatureType featureType;
     public int offset;
