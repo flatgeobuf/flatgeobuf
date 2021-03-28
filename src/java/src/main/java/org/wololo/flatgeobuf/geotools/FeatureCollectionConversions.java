@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import com.google.flatbuffers.ByteBufferUtil;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -50,6 +51,8 @@ public class FeatureCollectionConversions {
                 }
                 @Override
                 public SimpleFeature next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
                     SearchHit hit = hits.get(count);
                     int offset = featuresOffset + (int) hit.offset;
                     bb.position(offset);
@@ -77,6 +80,7 @@ public class FeatureCollectionConversions {
             this.featuresOffset = featuresOffset;
             this.bb = bb;
             this.fb = fb;
+            this.bb.position(featuresOffset);
         }
 
         @Override
@@ -90,7 +94,8 @@ public class FeatureCollectionConversions {
                 }
                 @Override
                 public SimpleFeature next() {
-                    bb.position(offset);
+                    if (!hasNext())
+                        throw new NoSuchElementException();
                     int featureSize = ByteBufferUtil.getSizePrefix(bb);
                     bb.position(offset += SIZE_PREFIX_LENGTH);
                     Feature feature = Feature.getRootAsFeature(bb);
