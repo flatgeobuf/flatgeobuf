@@ -197,7 +197,7 @@ public class FeatureConversions {
     }
 
     public static SimpleFeature deserialize(Feature feature, SimpleFeatureBuilder fb,
-            HeaderMeta headerMeta, String fid) {
+            HeaderMeta headerMeta, long fid) {
         Geometry geometry = feature.geometry();
         if (geometry == null)
             return null;
@@ -233,7 +233,7 @@ public class FeatureConversions {
                     throw new RuntimeException("Unknown type");
             }
         }
-        SimpleFeature f = fb.buildFeature(fid);
+        SimpleFeature f = fb.buildFeature(fb.getFeatureType().getTypeName() + "." + fid);
         return f;
     }
 }

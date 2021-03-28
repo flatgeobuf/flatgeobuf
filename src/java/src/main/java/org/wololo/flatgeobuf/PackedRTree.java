@@ -82,12 +82,12 @@ public class PackedRTree
         }
 
         public class SearchHit {
-            public SearchHit(long offset, int index) {
+            public SearchHit(long offset, long index) {
                 this.offset = offset;
                 this.index = index;
             }
             public long offset;
-            public int index;
+            public long index;
         }
 
         public ArrayList<SearchHit> search(ByteBuffer bb, int start, int numItems, int nodeSize, Envelope rect)

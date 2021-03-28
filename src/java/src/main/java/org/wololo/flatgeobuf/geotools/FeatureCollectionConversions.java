@@ -44,23 +44,24 @@ public class FeatureCollectionConversions {
         @Override
         public Iterator<SimpleFeature> iterator() {
             Iterator<SimpleFeature> it = new Iterator<SimpleFeature>() {
-                int count = 0;
+                int i = 0;
                 @Override
                 public boolean hasNext() {
-                    return count < hits.size();
+                    return i < hits.size();
                 }
                 @Override
                 public SimpleFeature next() {
                     if (!hasNext())
                         throw new NoSuchElementException();
-                    SearchHit hit = hits.get(count);
+                    SearchHit hit = hits.get(i);
                     int offset = featuresOffset + (int) hit.offset;
                     bb.position(offset);
                     int featureSize = ByteBufferUtil.getSizePrefix(bb);
                     bb.position(offset += SIZE_PREFIX_LENGTH);
                     Feature feature = Feature.getRootAsFeature(bb);
                     bb.position(offset += featureSize);
-                    SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, Long.toString(count++));
+                    SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, hit.index);
+                    i++;
                     return f;
                 }
             };
@@ -86,7 +87,7 @@ public class FeatureCollectionConversions {
         @Override
         public Iterator<SimpleFeature> iterator() {
             Iterator<SimpleFeature> it = new Iterator<SimpleFeature>() {
-                int count = 0;
+                long count = 0;
                 int offset = featuresOffset;
                 @Override
                 public boolean hasNext() {
@@ -100,7 +101,7 @@ public class FeatureCollectionConversions {
                     bb.position(offset += SIZE_PREFIX_LENGTH);
                     Feature feature = Feature.getRootAsFeature(bb);
                     bb.position(offset += featureSize);
-                    SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, Long.toString(count++));
+                    SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, count++);
                     return f;
                 }
             };
