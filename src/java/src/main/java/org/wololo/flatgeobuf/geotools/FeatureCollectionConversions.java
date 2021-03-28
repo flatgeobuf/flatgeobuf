@@ -13,7 +13,7 @@ import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
 import org.wololo.flatgeobuf.PackedRTree;
 import org.wololo.flatgeobuf.PackedRTree.SearchHit;
 import org.wololo.flatgeobuf.generated.Feature;
-
+import org.geotools.data.FeatureWriter;
 import org.geotools.data.memory.MemoryFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureIterator;
@@ -90,6 +90,7 @@ public class FeatureCollectionConversions {
                 }
                 @Override
                 public SimpleFeature next() {
+                    bb.position(offset);
                     int featureSize = ByteBufferUtil.getSizePrefix(bb);
                     bb.position(offset += SIZE_PREFIX_LENGTH);
                     Feature feature = Feature.getRootAsFeature(bb);
@@ -104,9 +105,7 @@ public class FeatureCollectionConversions {
 
     public static void serialize(SimpleFeatureCollection featureCollection, long featuresCount,
             OutputStream outputStream) throws IOException {
-
         SimpleFeatureType featureType = featureCollection.getSchema();
-
         FlatBufferBuilder builder = FlatBuffers.newBuilder(16 * 1024);
         try {
             HeaderMeta headerMeta =
@@ -131,22 +130,10 @@ public class FeatureCollectionConversions {
     }
 
     public static SimpleFeatureCollection deserialize(ByteBuffer bb, HeaderMeta headerMeta, SimpleFeatureType ft) throws IOException {
-        int offset = headerMeta.offset;
-        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
+        Iterator<SimpleFeature> it = deserialize(bb, headerMeta, ft, null).iterator();
         MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
-        if (headerMeta.featuresCount > 0 && headerMeta.indexNodeSize > 0) {
-            offset += PackedRTree.calcSize((int) headerMeta.featuresCount, headerMeta.indexNodeSize);
-            bb.position(offset);
-        }
-        long count = 0;
-        while (bb.hasRemaining()) {
-            int featureSize = ByteBufferUtil.getSizePrefix(bb);
-            bb.position(offset += SIZE_PREFIX_LENGTH);
-            Feature feature = Feature.getRootAsFeature(bb);
-            bb.position(offset += featureSize);
-            SimpleFeature f = FeatureConversions.deserialize(feature, fb, headerMeta, Long.toString(count++));
-            fc.add(f);
-        }
+        while (it.hasNext())
+            fc.add(it.next());
         return fc;
     }
 
