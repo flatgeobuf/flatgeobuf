@@ -66,12 +66,18 @@ public class GeometryConversions {
         if (go.ends != null)
             go.endsOffset = Geometry.createEndsVector(builder, go.ends);
 
+        go.type = geometryType;
+
         return go;
     }
 
     public static int serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry, byte geometryType) throws IOException {
+        byte knownGeometryType = geometryType;
+        if (geometryType == GeometryType.Unknown)
+            knownGeometryType = GeometryConversions.toGeometryType(geometry.getClass());
+
         GeometryOffsets go =
-                GeometryConversions.serializePart(builder, geometry, geometryType);
+                GeometryConversions.serializePart(builder, geometry, knownGeometryType);
 
         int geometryOffset;
         if (go.gos != null && go.gos.length > 0) {
@@ -79,14 +85,14 @@ public class GeometryConversions {
             for (int i = 0; i < go.gos.length; i++) {
                 GeometryOffsets goPart = go.gos[i];
                 int partOffset = Geometry.createGeometry(builder, goPart.endsOffset,
-                        goPart.coordsOffset, 0, 0, 0, 0, 0, 0);
+                        goPart.coordsOffset, 0, 0, 0, 0, goPart.type, 0);
                 partOffsets[i] = partOffset;
             }
             int partsOffset = Geometry.createPartsVector(builder, partOffsets);
-            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
+            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, geometryType == GeometryType.Unknown ? knownGeometryType : 0, partsOffset);
         } else {
             geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0,
-                    0, 0, 0, 0);
+                    0, 0, geometryType == GeometryType.Unknown ? knownGeometryType : 0, 0);
         }
         return geometryOffset;
     }
