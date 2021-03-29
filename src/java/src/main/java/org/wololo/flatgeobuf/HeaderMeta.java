@@ -37,15 +37,22 @@ public class HeaderMeta {
         int[] columnsArray = headerMeta.columns.stream().mapToInt(c -> {
             int nameOffset = builder.createString(c.name);
             int type = c.type;
-            return Column.createColumn(builder, nameOffset, type, 0, 0, -1, -1, -1, true, false,
-                    false, 0);
+            return Column.createColumn(builder, nameOffset, type, 0, 0, c.width, c.precision, c.scale, c.nullable, c.unique,
+                    c.primary_key, 0);
         }).toArray();
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
+        int crsOffset = 0;
+        if (headerMeta.srid != 0) {
+            Crs.startCrs(builder);
+            Crs.addCode(builder, headerMeta.srid);
+            crsOffset = Crs.endCrs(builder);
+        }
         Header.startHeader(builder);
         Header.addGeometryType(builder, headerMeta.geometryType);
         Header.addIndexNodeSize(builder, 0);
         Header.addColumns(builder, columnsOffset);
+        Header.addCrs(builder, crsOffset);
         Header.addFeaturesCount(builder, headerMeta.featuresCount);
         int offset = Header.endHeader(builder);
 
@@ -79,6 +86,16 @@ public class HeaderMeta {
             ColumnMeta columnMeta = new ColumnMeta();
             columnMeta.name = header.columns(i).name();
             columnMeta.type = (byte) header.columns(i).type();
+            columnMeta.title = header.columns(i).title();
+            columnMeta.description = header.columns(i).description();
+            columnMeta.width = header.columns(i).width();
+            columnMeta.precision = header.columns(i).precision();
+            columnMeta.scale = header.columns(i).scale();
+            columnMeta.nullable = header.columns(i).nullable();
+            columnMeta.unique = header.columns(i).unique();
+            columnMeta.nullable = header.columns(i).nullable();
+            columnMeta.primary_key = header.columns(i).primaryKey();
+            columnMeta.metadata = header.columns(i).metadata();
             columnMetas.add(columnMeta);
         }
 
