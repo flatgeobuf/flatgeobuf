@@ -2,43 +2,22 @@ package org.wololo.flatgeobuf.test;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 
-import org.geotools.data.memory.MemoryFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geojson.feature.FeatureJSON;
+import com.google.flatbuffers.FlatBufferBuilder;
+
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-
-import org.wololo.flatgeobuf.geotools.FeatureCollectionConversions;
+import org.wololo.flatgeobuf.GeometryConversions;
 
 public class GeometryRoundtripTest {
 
-    SimpleFeatureCollection makeFCFromGeoJSON(String geojson) {
-        FeatureJSON featureJSON = new FeatureJSON();
-        SimpleFeatureCollection fc;
-        try {
-            fc = (SimpleFeatureCollection) featureJSON
-                    .readFeatureCollection(new ByteArrayInputStream(geojson.getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return fc;
-    }
-
-    SimpleFeatureCollection makeFC(String wkt) {
+    String roundTrip(String wkt) throws IOException {
         WKTReader reader = new WKTReader();
         Geometry geometry;
         try {
@@ -46,47 +25,14 @@ public class GeometryRoundtripTest {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
-        SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
-        ftb.setName("testType");
-        ftb.add("geometryProperty", geometry.getClass());
-        SimpleFeatureType ft = ftb.buildFeatureType();
-        SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
-        fb.add(geometry);
-        SimpleFeature f = fb.buildFeature("fid");
-        MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
-        fc.add(f);
-        return fc;
-    }
-
-    SimpleFeatureCollection makeFC(String[] wkts, Class<?> geometryClass) {
-        WKTReader reader = new WKTReader();
-        Geometry geometry;
-        SimpleFeatureTypeBuilder ftb = new SimpleFeatureTypeBuilder();
-        ftb.setName("testType");
-        ftb.add("geometryProperty", geometryClass);
-        SimpleFeatureType ft = ftb.buildFeatureType();
-        MemoryFeatureCollection fc = new MemoryFeatureCollection(ft);
-        for (int i = 0; i < wkts.length; i++) {
-            SimpleFeatureBuilder fb = new SimpleFeatureBuilder(ft);
-            try {
-                geometry = reader.read(wkts[i]);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            fb.add(geometry);
-            SimpleFeature f = fb.buildFeature(Integer.toString(i));
-            fc.add(f);
-        }
-        return fc;
-    }
-
-    String roundTrip(String wkt) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        FeatureCollectionConversions.serialize(makeFC(wkt), 1, os);
-        ByteBuffer bb = ByteBuffer.wrap(os.toByteArray());
+        byte geometryType = GeometryConversions.toGeometryType(geometry.getClass());
+        FlatBufferBuilder builder = new FlatBufferBuilder(1024);
+        int gometryOffset = GeometryConversions.serialize(builder, geometry, geometryType);
+        builder.finish(gometryOffset);
+        byte[] bytes = builder.sizedByteArray();
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        SimpleFeatureCollection fc = FeatureCollectionConversions.deserialize(bb);
-        Geometry geometry = (Geometry) fc.features().next().getDefaultGeometry();
+        GeometryConversions.deserialize(org.wololo.flatgeobuf.generated.Geometry.getRootAsGeometry(bb), geometryType);
         WKTWriter writer = new WKTWriter();
         return writer.write(geometry).replace('−', '-');
     }

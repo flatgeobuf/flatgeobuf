@@ -1,4 +1,4 @@
-package org.wololo.flatgeobuf.geotools;
+package org.wololo.flatgeobuf;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,7 +21,7 @@ import org.wololo.flatgeobuf.generated.GeometryType;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
-    public static GeometryOffsets serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
+    public static GeometryOffsets serializePart(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
             byte geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
 
@@ -49,7 +49,7 @@ public class GeometryConversions {
             GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
             for (int i = 0; i < numGeometries; i++) {
                 Polygon p = (Polygon) mp.getGeometryN(i);
-                gos[i] = serialize(builder, p, GeometryType.Polygon);
+                gos[i] = serializePart(builder, p, GeometryType.Polygon);
             }
             go.gos = gos;
             return go;
@@ -68,7 +68,28 @@ public class GeometryConversions {
 
         return go;
     }
-    
+
+    public static int serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry, byte geometryType) throws IOException {
+        GeometryOffsets go =
+                GeometryConversions.serializePart(builder, geometry, geometryType);
+
+        int geometryOffset;
+        if (go.gos != null && go.gos.length > 0) {
+            int[] partOffsets = new int[go.gos.length];
+            for (int i = 0; i < go.gos.length; i++) {
+                GeometryOffsets goPart = go.gos[i];
+                int partOffset = Geometry.createGeometry(builder, goPart.endsOffset,
+                        goPart.coordsOffset, 0, 0, 0, 0, 0, 0);
+                partOffsets[i] = partOffset;
+            }
+            int partsOffset = Geometry.createPartsVector(builder, partOffsets);
+            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, 0, partsOffset);
+        } else {
+            geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, 0, 0,
+                    0, 0, 0, 0);
+        }
+        return geometryOffset;
+    }
 
     /**
      * Applies the {@code filter} to all {@link org.locationtech.jts.geom.Geometry#getGeometryN(int)
@@ -190,6 +211,27 @@ public class GeometryConversions {
         }
         case GeometryType.Polygon:
             return makePolygon.get();
+        default:
+            throw new RuntimeException("Unknown geometry type");
+        }
+    }
+
+    public static Class<?> getGeometryClass(int geometryType) {
+        switch (geometryType) {
+        case GeometryType.Unknown:
+            return Geometry.class;
+        case GeometryType.Point:
+            return Point.class;
+        case GeometryType.MultiPoint:
+            return MultiPoint.class;
+        case GeometryType.LineString:
+            return LineString.class;
+        case GeometryType.MultiLineString:
+            return MultiLineString.class;
+        case GeometryType.Polygon:
+            return Polygon.class;
+        case GeometryType.MultiPolygon:
+            return MultiPolygon.class;
         default:
             throw new RuntimeException("Unknown geometry type");
         }

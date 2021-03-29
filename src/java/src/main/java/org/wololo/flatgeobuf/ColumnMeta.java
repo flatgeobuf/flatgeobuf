@@ -1,4 +1,4 @@
-package org.wololo.flatgeobuf.geotools;
+package org.wololo.flatgeobuf;
 
 import org.wololo.flatgeobuf.generated.ColumnType;
 

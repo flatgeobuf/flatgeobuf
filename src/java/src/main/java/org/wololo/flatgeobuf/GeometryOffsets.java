@@ -1,7 +1,7 @@
-package org.wololo.flatgeobuf.geotools;
+package org.wololo.flatgeobuf;
 
 public class GeometryOffsets {
-    int coordsOffset;
+    public int coordsOffset;
     public int[] ends = null;
     public int[] lengths = null;
     public int endsOffset = 0;
