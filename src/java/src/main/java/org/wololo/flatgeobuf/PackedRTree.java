@@ -141,10 +141,10 @@ public class PackedRTree {
         return searchHits;
     }
 
-    public static ArrayList<SearchHit> search(LittleEndianDataInputStream data, int start, int numItems, int nodeSize, Envelope rect) throws IOException {
+    public static ArrayList<SearchHit> search(InputStream stream, int start, int numItems, int nodeSize, Envelope rect) throws IOException {
+        LittleEndianDataInputStream data = new LittleEndianDataInputStream(stream);
         int dataPos = 0;
         int skip;
-        data.reset();
         ArrayList<SearchHit> searchHits = new ArrayList<SearchHit>();
         double minX = rect.getMinX();
         double minY = rect.getMinY();
@@ -208,10 +208,5 @@ public class PackedRTree {
         }
         data.skipBytes((nodeSize * dataPos) - dataPos);
         return searchHits;
-    }
-
-    public static ArrayList<SearchHit> search(InputStream stream, int start, int numItems, int nodeSize, Envelope rect) throws IOException {
-        LittleEndianDataInputStream data = new LittleEndianDataInputStream(stream);
-        return search(data, start, numItems, nodeSize, rect);
     }
 }

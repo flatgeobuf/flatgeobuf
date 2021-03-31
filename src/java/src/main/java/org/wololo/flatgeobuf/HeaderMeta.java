@@ -6,6 +6,7 @@ import org.wololo.flatgeobuf.generated.Crs;
 import org.wololo.flatgeobuf.generated.Header;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -13,6 +14,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.io.LittleEndianDataInputStream;
 import com.google.flatbuffers.ByteBufferUtil;
 import com.google.flatbuffers.FlatBufferBuilder;
 
@@ -115,5 +117,22 @@ public class HeaderMeta {
         headerMeta.offset = offset;
 
         return headerMeta;
+    }
+
+    public static HeaderMeta read(InputStream stream) throws IOException {
+        LittleEndianDataInputStream data = new LittleEndianDataInputStream(stream);
+        byte[] magicbytes = new byte[8];
+        int len;
+        data.readFully(magicbytes);
+        len = data.readInt();
+        byte[] bytes = new byte[len];
+        data.readFully(bytes);
+        ByteBuffer bb = ByteBuffer.allocateDirect(8 + 4 + len);
+        bb.mark();
+        bb.put(magicbytes);
+        bb.putInt(len);
+        bb.put(bytes);
+        bb.reset();
+        return HeaderMeta.read(bb);
     }
 }
