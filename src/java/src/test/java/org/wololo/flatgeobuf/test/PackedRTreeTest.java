@@ -16,6 +16,7 @@ import org.locationtech.jts.geom.Envelope;
 import org.wololo.flatgeobuf.HeaderMeta;
 import org.wololo.flatgeobuf.PackedRTree;
 import org.wololo.flatgeobuf.PackedRTree.SearchHit;
+import org.wololo.flatgeobuf.PackedRTree.SearchResult;
 
 public class PackedRTreeTest {
     @Test
@@ -53,8 +54,8 @@ public class PackedRTreeTest {
         bb.get(treeBytes, 0, (int) size);
         InputStream stream = new ByteArrayInputStream(treeBytes);
 
-        ArrayList<SearchHit> result = PackedRTree.search(stream, headerMeta.offset, (int) headerMeta.featuresCount, headerMeta.indexNodeSize, env);
+        SearchResult result = PackedRTree.search(stream, headerMeta.offset, (int) headerMeta.featuresCount, headerMeta.indexNodeSize, env);
 
-        assertEquals(3, result.size());
+        assertEquals(3, result.hits.size());
     }
 }

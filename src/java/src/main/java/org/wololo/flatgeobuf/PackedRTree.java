@@ -141,11 +141,18 @@ public class PackedRTree {
         return searchHits;
     }
 
-    public static ArrayList<SearchHit> search(InputStream stream, int start, int numItems, int nodeSize, Envelope rect) throws IOException {
+    public static class SearchResult {
+        public ArrayList<SearchHit> hits = new ArrayList<SearchHit>();
+        public int pos;
+    }
+
+    public static SearchResult search(
+            InputStream stream, int start, int numItems, int nodeSize, Envelope rect)
+            throws IOException {
         LittleEndianDataInputStream data = new LittleEndianDataInputStream(stream);
         int dataPos = 0;
         int skip;
-        ArrayList<SearchHit> searchHits = new ArrayList<SearchHit>();
+        SearchResult searchResult = new SearchResult();
         double minX = rect.getMinX();
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
@@ -164,8 +171,7 @@ public class PackedRTree {
             int end = Math.min(nodeIndex + nodeSize, levelBound);
             int nodeStart = nodeIndex * NODE_ITEM_LEN;
             skip = nodeStart - dataPos;
-            if (skip < 0)
-                    throw new RuntimeException("What?");
+            if (skip < 0) throw new RuntimeException("What?");
             if (skip > 0) {
                 data.skipBytes(skip);
                 dataPos += skip;
@@ -175,38 +181,31 @@ public class PackedRTree {
             for (int pos = nodeIndex; pos < end; pos++) {
                 int offset = nodeStart + ((pos - nodeIndex) * NODE_ITEM_LEN);
                 skip = offset - dataPos;
-                if (skip < 0)
-                    throw new RuntimeException("What?");
+                if (skip < 0) throw new RuntimeException("What?");
                 if (skip > 0) {
                     data.skipBytes(skip);
                     dataPos += skip;
                 }
                 double nodeMinX = data.readDouble();
                 dataPos += 8;
-                if (maxX < nodeMinX)
-                    continue;
+                if (maxX < nodeMinX) continue;
                 double nodeMinY = data.readDouble();
                 dataPos += 8;
-                if (maxY < nodeMinY)
-                    continue;
+                if (maxY < nodeMinY) continue;
                 double nodeMaxX = data.readDouble();
                 dataPos += 8;
-                if (minX > nodeMaxX)
-                    continue;
+                if (minX > nodeMaxX) continue;
                 double nodeMaxY = data.readDouble();
                 dataPos += 8;
-                if (minY > nodeMaxY)
-                    continue;
+                if (minY > nodeMaxY) continue;
                 long indexOffset = data.readLong();
                 dataPos += 8;
-                if (isLeafNode)
-                    searchHits.add(new SearchHit(indexOffset, pos - 1));
-                else
-                    stack.add(new StackItem(indexOffset, level - 1));
+                if (isLeafNode) searchResult.hits.add(new SearchHit(indexOffset, pos - 1));
+                else stack.add(new StackItem(indexOffset, level - 1));
             }
             stack.sort((StackItem a, StackItem b) -> (int) (b.nodeIndex - a.nodeIndex));
         }
-        data.skipBytes((nodeSize * dataPos) - dataPos);
-        return searchHits;
+        searchResult.pos = dataPos;
+        return searchResult;
     }
 }
