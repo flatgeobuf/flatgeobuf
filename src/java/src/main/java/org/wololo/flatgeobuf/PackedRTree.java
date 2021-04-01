@@ -208,24 +208,11 @@ public class PackedRTree {
         return searchResult;
     }
 
-    // NOTE: ported from Java 12 JDK
-    static void skipNBytes(InputStream stream, long n) throws IOException {
-        if (n > 0) {
-            long ns = stream.skip(n);
-            if (ns >= 0 && ns < n) { // skipped too few bytes
-                // adjust number to skip
-                n -= ns;
-                // read until requested number skipped or EOS reached
-                while (n > 0 && stream.read() != -1) {
-                    n--;
-                }
-                // if not enough skipped, then EOFE
-                if (n != 0) {
-                    throw new EOFException();
-                }
-            } else if (ns != n) { // skipped negative or too many bytes
-                throw new IOException("Unable to skip exactly");
-            }
+    static void skipNBytes(InputStream stream, long skip) throws IOException {
+        long actual = 0;
+        long remaining = skip;
+        while (actual < remaining) {
+            remaining -= stream.skip(remaining);
         }
     }
 }
