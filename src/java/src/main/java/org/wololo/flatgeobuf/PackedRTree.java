@@ -1,5 +1,6 @@
 package org.wololo.flatgeobuf;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -171,9 +172,8 @@ public class PackedRTree {
             int end = Math.min(nodeIndex + nodeSize, levelBound);
             int nodeStart = nodeIndex * NODE_ITEM_LEN;
             skip = nodeStart - dataPos;
-            if (skip < 0) throw new RuntimeException("What?");
             if (skip > 0) {
-                data.skipBytes(skip);
+                skipNBytes(data, skip);
                 dataPos += skip;
             }
             // int length = end - nodeIndex;
@@ -181,9 +181,8 @@ public class PackedRTree {
             for (int pos = nodeIndex; pos < end; pos++) {
                 int offset = nodeStart + ((pos - nodeIndex) * NODE_ITEM_LEN);
                 skip = offset - dataPos;
-                if (skip < 0) throw new RuntimeException("What?");
                 if (skip > 0) {
-                    data.skipBytes(skip);
+                    skipNBytes(data, skip);
                     dataPos += skip;
                 }
                 double nodeMinX = data.readDouble();
@@ -207,5 +206,26 @@ public class PackedRTree {
         }
         searchResult.pos = dataPos;
         return searchResult;
+    }
+
+    // NOTE: ported from Java 12 JDK
+    static void skipNBytes(InputStream stream, long n) throws IOException {
+        if (n > 0) {
+            long ns = stream.skip(n);
+            if (ns >= 0 && ns < n) { // skipped too few bytes
+                // adjust number to skip
+                n -= ns;
+                // read until requested number skipped or EOS reached
+                while (n > 0 && stream.read() != -1) {
+                    n--;
+                }
+                // if not enough skipped, then EOFE
+                if (n != 0) {
+                    throw new EOFException();
+                }
+            } else if (ns != n) { // skipped negative or too many bytes
+                throw new IOException("Unable to skip exactly");
+            }
+        }
     }
 }
