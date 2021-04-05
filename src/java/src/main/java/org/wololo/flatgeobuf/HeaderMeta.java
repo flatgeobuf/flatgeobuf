@@ -44,6 +44,10 @@ public class HeaderMeta {
         }).toArray();
         int columnsOffset = Header.createColumnsVector(builder, columnsArray);
 
+        int nameOffset = 0;
+        if (headerMeta.name!=null) {
+            nameOffset = builder.createString(headerMeta.name);
+        }
         int crsOffset = 0;
         if (headerMeta.srid != 0) {
             Crs.startCrs(builder);
@@ -54,6 +58,7 @@ public class HeaderMeta {
         Header.addGeometryType(builder, headerMeta.geometryType);
         Header.addIndexNodeSize(builder, 0);
         Header.addColumns(builder, columnsOffset);
+        Header.addName(builder, nameOffset);
         Header.addCrs(builder, crsOffset);
         Header.addFeaturesCount(builder, headerMeta.featuresCount);
         int offset = Header.endHeader(builder);
