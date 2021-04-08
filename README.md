@@ -76,6 +76,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 * [GDAL](https://gdal.org) (3.1 and forward)
 * [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
 * [GeoServer](http://geoserver.org) (2.17 and forward)
+* [GeoTools](http://geotools.org) (23.0 and forward)
 * [QGIS](https://qgis.org) (3.16 and forward)
 
 ## Documentation
