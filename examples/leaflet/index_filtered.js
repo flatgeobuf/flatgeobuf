@@ -23,7 +23,7 @@ const rect = {
 
 // use flatgeobuf JavaScript API to iterate stream into results (features as geojson)
 // NOTE: would be more efficient with a special purpose Leaflet deserializer
-let it = flatgeobuf.deserialize('UScounties.fgb', rect, handleHeaderMeta)
+let it = flatgeobuf.deserialize('/test/data/UScounties.fgb', rect, handleHeaderMeta)
 // handle result
 function handleResult(result) {
     if (!result.done) {
