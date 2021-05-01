@@ -39,29 +39,74 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     const columns = header.columns
     const builder = new flatbuffers.Builder()
 
-    const props = []
+    let offset = 0
+    let capacity = 1024
+    let bytes = new Uint8Array(capacity)
+    let view = new DataView(bytes.buffer)
+
+    const prep = function(size: number) {
+        if (offset + size < capacity)
+            return
+        capacity = capacity * 2
+        const newBytes = new Uint8Array(capacity)
+        newBytes.set(bytes)
+        bytes = newBytes
+        view = new DataView(bytes.buffer, offset)
+    }
+
     if (columns) {
         for (let i = 0; i < columns.length; i++) {
             const column = columns[i]
             const value = properties[column.name]
             if (value === null)
                 continue
-            props.push(Uint16Array.of(i))
+            view.setUint16(offset, i, true)
+                offset += 2
             switch (column.type) {
                 case ColumnType.Bool:
+                    prep(1)
+                    view.setUint8(offset, value as number)
+                    offset += 1
+                    break
                 case ColumnType.Short:
+                    prep(2)
+                    view.setInt16(offset, value as number, true)
+                    offset += 2
+                    break
                 case ColumnType.UShort:
+                    prep(2)
+                    view.setUint16(offset, value as number, true)
+                    offset += 2
+                    break
                 case ColumnType.Int:
+                    prep(4)
+                    view.setInt32(offset, value as number, true)
+                    offset += 4
+                    break
                 case ColumnType.UInt:
+                    prep(4)
+                    view.setUint32(offset, value as number, true)
+                    offset += 4
+                    break
                 case ColumnType.Long:
+                    prep(8)
+                    view.setBigInt64(offset, BigInt(value), true)
+                    offset += 8
+                    break
                 case ColumnType.Double:
-                    props.push(column.arrayType.of(value))
+                    prep(8)
+                    view.setFloat64(offset, value as number, true)
+                    offset += 8
                     break
                 case ColumnType.DateTime:
                 case ColumnType.String: {
                     const str = textEncoder.encode(value)
-                    props.push(Uint32Array.of(str.length))
-                    props.push(str)
+                    prep(4)
+                    view.setUint32(offset, str.length, true)
+                    offset += 4
+                    prep(str.length)
+                    bytes.set(str, offset)
+                    offset += str.length
                     break
                 }
                 default:
@@ -71,8 +116,8 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     }
 
     let propertiesOffset = null
-    if (props.length > 0)
-        propertiesOffset = Feature.createPropertiesVector(builder, concat(Uint8Array, ...props))
+    if (offset > 0)
+        propertiesOffset = Feature.createPropertiesVector(builder, bytes.slice(0, offset))
 
     const geometryOffset = buildGeometry(builder, geometry)
     Feature.start(builder)
@@ -82,22 +127,6 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     const featureOffset = Feature.end(builder)
     builder.finishSizePrefixed(featureOffset)
     return builder.asUint8Array() as Uint8Array
-}
-
-function concat(resultConstructor: any, ...arrays : any[]) : Uint8Array {
-    let totalLength = 0
-    for (const arr of arrays)
-        totalLength += arr.byteLength
-    const result = new resultConstructor(totalLength)
-    let offset = 0
-    for (const arr of arrays) {
-        if (arr instanceof Uint8Array)
-            result.set(arr, offset)
-        else
-            result.set(new resultConstructor(arr.buffer), offset)
-        offset += arr.byteLength
-    }
-    return result
 }
 
 export function parseProperties(feature: Feature, columns: ColumnMeta[]): Record<string, unknown> {
