@@ -79,7 +79,11 @@ export async function* streamSearch(
             if (maxY < float64Array[nodePos + 1]) continue // maxY < nodeMinY
             if (minX > float64Array[nodePos + 2]) continue // minX > nodeMaxX
             if (minY > float64Array[nodePos + 3]) continue // minY > nodeMaxY
-            const offset = uint32Array[(nodePos << 1) + 8]
+
+            const low32Offset = uint32Array[(nodePos << 1) + 8]
+            const high32Offset = uint32Array[(nodePos << 1) + 9]
+            const offset = readUint52(high32Offset, low32Offset);
+
             if (isLeafNode)
                 yield [offset, pos - leafNodesOffset]
             else
@@ -88,4 +92,28 @@ export async function* streamSearch(
         // order queue to traverse sequential
         queue.sort((a, b) => b[0] - a[0])
     }
+}
+
+/**
+ * Returns a 64-bit uint value by combining it's decomposed lower and higher
+ * 32-bit halves. Though because JS `number` is a floating point, it cannot
+ * accurately represent an int beyond 52 bits.
+ *
+ * In practice, "52-bits ought to be enough for anybody", or at least into the
+ * pebibytes.
+ *
+ * Note: `BigInt` does exist to hold larger numbers, but we'd have to adapt a
+ * lot of code to support using it.
+ */
+function readUint52(high32Bits: number, low32Bits: number) {
+    // javascript integers can only be 52 bits, verify the top 12 bits
+    // are unused.
+    if ((high32Bits & 0xfff00000) != 0)  {
+        throw Error("integer is too large to be safely represented");
+    }
+
+    // Note: we multiply by 2**32 because bitshift operations wrap at 32, so `high32Bits << 32` would be a NOOP.
+    const result = low32Bits + (high32Bits * 2**32);
+
+    return result;
 }
