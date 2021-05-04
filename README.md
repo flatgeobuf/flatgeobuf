@@ -118,4 +118,3 @@ Default behaviour is to assume untrusted data and verify buffer integrity for sa
 ### What about vector tiles?
 
 FlatGeobuf does not aim to compete with vector tiles. Vector tiles are great for rendering but they are relatively expensive to create and is a lossy format, where as FlatGeobuf is lossless and very fast to write especially if a spatial index is not needed.
-
