@@ -5,7 +5,6 @@ import HeaderMeta from '../HeaderMeta'
 import { fromFeature, IGeoJsonFeature } from './feature'
 import { parseGeometry } from './geometry'
 import {
-    magicbytes,
     buildHeader,
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
@@ -14,6 +13,7 @@ import { toGeometryType } from '../generic/geometry'
 import { Rect } from '../packedrtree'
 import { buildFeature, IProperties } from '../generic/feature'
 import { HeaderMetaFn } from '../generic'
+import { magicbytes } from '../constants'
 
 export interface IGeoJsonFeatureCollection {
     type: string,

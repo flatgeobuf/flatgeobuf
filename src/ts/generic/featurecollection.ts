@@ -9,17 +9,16 @@ import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, IFeature } from './feature'
 import { toGeometryType } from './geometry'
-import { Rect, calcTreeSize, streamSearch as treeStreamSearch} from '../packedrtree'
+import { HttpReader} from '../HttpReader';
+import Logger from '../Logger'
+import { Rect, calcTreeSize} from '../packedrtree'
 import { parseGeometry } from './geometry'
-import { HeaderMetaFn } from '../generic'
+import { HeaderMetaFn} from '../generic'
+import { magicbytes, SIZE_PREFIX_LEN } from '../constants'
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature
-type ReadFn = (size: number) => Promise<ArrayBuffer>
+type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>
 type SeekFn = (offset: number) => Promise<void>
-
-const SIZE_PREFIX_LEN = 4
-
-export const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00])
 
 export function serialize(features: IFeature[]) : Uint8Array {
     const headerMeta = introspectHeaderMeta(features)
@@ -46,26 +45,6 @@ export function serialize(features: IFeature[]) : Uint8Array {
     return uint8
 }
 
-function parseHeader(bb: flatbuffers.ByteBuffer) : HeaderMeta {
-    const header = Header.getRoot(bb)
-    const count = header.featuresCount().toFloat64()
-    const indexNodeSize = header.indexNodeSize()
-
-    const columns: ColumnMeta[] = []
-    for (let j = 0; j < header.columnsLength(); j++) {
-        const column = header.columns(j)
-        if (!column)
-            throw new Error('Column unexpectedly missing')
-        if (!column.name())
-            throw new Error('Column name unexpectedly missing')
-        columns.push(new ColumnMeta(column.name() as string, column.type(), column.title(), column.description(), column.width(), column.precision(), column.scale(), column.nullable(), column.unique(), column.primaryKey()))
-    }
-    const crs = header.crs()
-    const crsMeta = (crs ? new CrsMeta(crs.org(), crs.code(), crs.name(), crs.description(), crs.wkt(), crs.codeString()) : null)
-    const headerMeta = new HeaderMeta(header.geometryType(), columns, count, indexNodeSize, crsMeta, header.title(), header.description(), header.metadata())
-    return headerMeta
-}
-
 export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn) : IFeature[] {
     if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
@@ -74,7 +53,7 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     const headerLength = bb.readUint32(magicbytes.length)
     bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN)
 
-    const headerMeta = parseHeader(bb)
+    const headerMeta = HeaderMeta.fromByteBuffer(bb);
     if (headerMetaFn)
         headerMetaFn(headerMeta)
 
@@ -96,91 +75,57 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     return features
 }
 
-export function deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
+export async function* deserializeStream(stream: ReadableStream, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
     : AsyncGenerator<IFeature>
 {
     const reader = slice(stream)
     const read: ReadFn = async size => await reader.slice(size)
-    return deserializeInternal(fromFeature, read, undefined, undefined, headerMetaFn)
-}
 
-export function deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
-    : AsyncGenerator<IFeature>
-{
-    let offset = 0
-    const read: ReadFn = async size => {
-        const response = await fetch(url, {
-            headers: {
-                'Range': `bytes=${offset}-${offset + size - 1}`
-            }
-        })
-        offset += size
-        const arrayBuffer = await response.arrayBuffer()
-        return arrayBuffer
-    }
-    const seek: SeekFn = async newoffset => { offset = newoffset }
-    return deserializeInternal(fromFeature, read, seek, rect, headerMetaFn)
-}
-
-async function* deserializeInternal(fromFeature: FromFeatureFn, read: ReadFn, seek?: SeekFn, rect?: Rect, headerMetaFn?: HeaderMetaFn) :
-    AsyncGenerator<IFeature>
-{
-    let offset = 0
-    let bytes = new Uint8Array(await read(8))
-    offset += 8
+    let bytes = new Uint8Array(await read(8, "magic bytes"))
     if (!bytes.every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
-    bytes = new Uint8Array(await read(4))
-    offset += 4
+    bytes = new Uint8Array(await read(4, "header length"))
     let bb = new flatbuffers.ByteBuffer(bytes)
     const headerLength = bb.readUint32(0)
-    bytes = new Uint8Array(await read(headerLength))
-    offset += headerLength
+    bytes = new Uint8Array(await read(headerLength, "header data"))
     bb = new flatbuffers.ByteBuffer(bytes)
 
-    const headerMeta = parseHeader(bb)
+    const headerMeta = HeaderMeta.fromByteBuffer(bb);
     if (headerMetaFn)
         headerMetaFn(headerMeta)
 
     const { indexNodeSize, featuresCount } = headerMeta
     if (indexNodeSize > 0) {
         const treeSize = calcTreeSize(featuresCount, indexNodeSize)
-        if (rect && seek) {
-            const readNode = async (treeOffset: number, size: number) => {
-                await seek(offset + treeOffset)
-                return await read(size)
-            }
-            const foundOffsets = []
-            for await (const [foundOffset] of treeStreamSearch(featuresCount, indexNodeSize, rect, readNode))
-                foundOffsets.push(foundOffset)
-            offset += treeSize
-            for await (const foundOffset of foundOffsets) {
-                await seek(offset + foundOffset)
-                const feature = await readFeature(read, headerMeta, fromFeature)
-                if (feature)
-                    yield feature
-            }
-            return
-        } else {
-            if (seek)
-                await seek(offset + treeSize)
-            else
-                await read(treeSize)
-        }
-        offset += treeSize
+        await read(treeSize, "entire index, w/o rect")
     }
     let feature : IFeature | undefined
     while ((feature = await readFeature(read, headerMeta, fromFeature)))
         yield feature
 }
 
+export async function *deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
+    : AsyncGenerator<IFeature>
+{
+       const reader = await HttpReader.open(url);
+       Logger.debug("opened reader");
+       if (headerMetaFn) {
+           headerMetaFn(reader.header);
+       }
+
+       for await (let featureOffset of reader.selectBbox(rect)) {
+           let feature = await reader.readFeature(featureOffset[0]);
+           yield fromFeature(feature, reader.header);
+       }
+}
+
 async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn): Promise<IFeature | undefined> {
-    let bytes = new Uint8Array(await read(4))
+    let bytes = new Uint8Array(await read(4, "feature length"))
     if (bytes.byteLength === 0)
         return
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
-    bytes = new Uint8Array(await read(featureLength))
+    bytes = new Uint8Array(await read(featureLength, "feature data"))
     const bytesAligned = new Uint8Array(featureLength + 4)
     bytesAligned.set(bytes, 4)
     bb = new flatbuffers.ByteBuffer(bytesAligned)
@@ -235,7 +180,7 @@ function valueToType(value: boolean | number | string): ColumnType {
         throw new Error(`Unknown type (value '${value}')`)
 }
 
-function introspectHeaderMeta(features: IFeature[]) {
+function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
     const feature = features[0]
     const geometry = feature.getGeometry ? feature.getGeometry() : undefined
     const geometryType = geometry ? geometry.getType() : undefined
