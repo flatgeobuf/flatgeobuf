@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  rust: circleci/rust@1.5.0
+
 executors:
   node:
     docker:
@@ -10,9 +13,6 @@ executors:
   net:
     docker:
       - image: mcr.microsoft.com/dotnet/core/sdk:3.1
-  rust:
-    docker:
-      - image: circleci/rust:1.49.0
 
 jobs:
   test-ts:
@@ -21,13 +21,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-{{ checksum "yarn.lock" }}
           - v1-dependencies-
       - run: yarn
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v1-dependencies-{{ checksum "yarn.lock" }}
       - run:
           name: Run tests
           command: yarn test
@@ -43,7 +43,7 @@ jobs:
             sudo apt-get install clang
       - run: ./script/getcppdeps.sh
       - run:
-          name: Run tests 
+          name: Run tests
           command: |
             clang++ -std=c++14 -Wall -Wfloat-conversion -Wmissing-declarations -fsanitize=float-divide-by-zero -g -o ./testcpp -Isrc/cpp/include src/cpp/packedrtree.cpp src/cpp/test/run_tests.cpp
             ./testcpp -d yes
@@ -77,12 +77,6 @@ jobs:
           key: v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
       - run: cd src/net && ./fetch.sh && dotnet test
 
-  test-rust:
-    executor: rust
-    steps:
-      - checkout
-      - run: cd src/rust && cargo test
-
 workflows:
   main:
     jobs:
@@ -90,4 +84,6 @@ workflows:
       - test-cpp
       - test-java
       - test-net
-      - test-rust
+      - rust/lint-test-build:
+          working_directory: src/rust
+          release: true
