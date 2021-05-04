@@ -6,7 +6,8 @@
     "build": "tsc -p config/tsconfig.mjs.json && tsc -p config/tsconfig.cjs.json && rollup -c config/rollup.config.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm -t 20000 src/**/*.spec.ts",
-    "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json"
+    "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
+    "server": "ws"
   },
   "files": [
     "lib/**/*",
