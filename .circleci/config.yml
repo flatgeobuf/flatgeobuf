@@ -74,11 +74,11 @@ jobs:
           keys:
             - v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
             - v1-dependencies-
+      - run: cd src/net && ./fetch.sh && dotnet test
       - save_cache:
           paths:
             - ~/.nuget/packages
           key: v1-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
-      - run: cd src/net && ./fetch.sh && dotnet test
 
   test-rust:
     executor: rust
@@ -88,11 +88,11 @@ jobs:
           keys:
             - v1-dependencies-{{ checksum "src/rust/Cargo.toml" }}
             - v1-dependencies-
+      - run: cd src/rust && cargo test
       - save_cache:
           paths:
             - ~/.cargo
           key: v1-dependencies-{{ checksum "src/rust/Cargo.toml" }}
-      - run: cd src/rust && cargo test
 
 workflows:
   main:
