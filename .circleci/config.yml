@@ -86,12 +86,12 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "src/rust/Cargo.lock" }}
+            - v1-dependencies-{{ checksum "src/rust/Cargo.toml" }}
             - v1-dependencies-
       - save_cache:
           paths:
             - ~/.cargo
-          key: v1-dependencies-{{ checksum "src/rust/Cargo.lock" }}
+          key: v1-dependencies-{{ checksum "src/rust/Cargo.toml" }}
       - run: cd src/rust && cargo test
 
 workflows:
