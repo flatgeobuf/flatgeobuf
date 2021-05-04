@@ -593,36 +593,36 @@ impl PackedRTree {
                     continue;
                 }
 
-                // spend this many extra bytes if it means we'll eliminate an extra request
+                // request up to this many extra bytes if it means we can eliminate an extra request
                 let combine_request_threshold = 256 * 1024 / size_of::<NodeItem>();
 
                 // Add node to search recursion
                 match (queue.back_mut(), node_item.offset as usize) {
                     // There is an existing node for this level, and it's close to this node.
                     // Merge the ranges to avoid an extra request
-                    (Some(mut head), offset)
-                        if head.level == next.level - 1
-                            && offset < head.nodes.end + combine_request_threshold =>
+                    (Some(mut tail), offset)
+                        if tail.level == next.level - 1
+                            && offset < tail.nodes.end + combine_request_threshold =>
                     {
-                        debug_assert!(head.nodes.end < offset);
-                        head.nodes.end = offset;
+                        debug_assert!(tail.nodes.end < offset);
+                        tail.nodes.end = offset;
                     }
 
-                    (head, offset) => {
+                    (tail, offset) => {
                         let node_range = NodeRange {
                             nodes: offset..(offset + 1),
                             level: next.level - 1,
                         };
 
-                        if head
+                        if tail
                             .as_ref()
                             .map(|head| head.level == next.level - 1)
                             .unwrap_or(false)
                         {
-                            debug!("creating new NodeRange for offset: {} rather than merging with distant NodeRange: {:?}", offset, &head);
+                            debug!("requesting new NodeRange for offset: {} rather than merging with distant NodeRange: {:?}", offset, &tail);
                         } else {
                             debug!(
-                                "pushing new level for NodeRange: {:?} onto Queue with head: {:?}",
+                                "pushing new level for NodeRange: {:?} onto Queue with tail: {:?}",
                                 &node_range,
                                 queue.back()
                             );
