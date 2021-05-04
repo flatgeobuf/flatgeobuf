@@ -77,7 +77,7 @@ mod http {
         let expected_error_text = "error trying to connect";
         assert!(
             error_text.contains(expected_error_text),
-            format!("expected to find {} in {}", expected_error_text, error_text)
+            "expected to find {} in {}", expected_error_text, error_text
         );
     }
 
