@@ -8,7 +8,7 @@ homepage = "https://flatgeobuf.org/"
 repository = "https://github.com/flatgeobuf/flatgeobuf/tree/master/src/rust"
 readme = "README.md"
 documentation = "https://docs.rs/flatgeobuf/"
-license = "ISC"
+license = "BSD-2-Clause"
 keywords = ["geo", "r-tree", "spatial"]
 
 [features]
