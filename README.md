@@ -93,7 +93,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ### Node usage
 
-See [this](examples/node) example for a minimal how to depend on and use the flatgeobuf npm package.
+See [this](https://github.com/flatgeobuf/flatgeobuf/tree/master/examples/node) example for a minimal how to depend on and use the flatgeobuf npm package.
 
 ## TODO
 
