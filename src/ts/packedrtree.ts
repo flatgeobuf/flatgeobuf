@@ -1,4 +1,12 @@
-const NODE_ITEM_LEN: number = 8 * 4 + 8
+import Logger from "./Logger";
+
+export const NODE_ITEM_LEN: number = 8 * 4 + 8
+// default branching factor of a node in the rtree
+//
+// actual value will be specified in the header but
+// this can be useful for having reasonably sized guesses for fetch-sizes when
+// streaming results
+export const DEFAULT_NODE_SIZE: number = 16;
 
 export interface Rect {
     minX: number
@@ -18,7 +26,10 @@ export function calcTreeSize(numItems: number, nodeSize: number): number {
     return numNodes * NODE_ITEM_LEN
 }
 
-function generateLevelBounds(numItems: number, nodeSize: number) {
+/**
+ * returns [leafNodesOffset, numNodes] for each level
+ */
+function generateLevelBounds(numItems: number, nodeSize: number): Array<[number, number]> {
     if (nodeSize < 2)
         throw new Error('Node size must be at least 2')
     if (numItems === 0)
@@ -35,7 +46,7 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     } while (n !== 1)
 
     // bounds per level in reversed storage order (top-down)
-    const levelOffsets = []
+    const levelOffsets: Array<number> = []
     n = numNodes
     for (const size of levelNumNodes) {
         levelOffsets.push(n - size)
@@ -43,7 +54,7 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
     }
     levelOffsets.reverse()
     levelNumNodes.reverse()
-    const levelBounds = []
+    const levelBounds: Array<[number, number]> = []
     for (let i = 0; i < levelNumNodes.length; i++)
         levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]])
     levelBounds.reverse()
@@ -52,25 +63,81 @@ function generateLevelBounds(numItems: number, nodeSize: number) {
 
 type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
 
+/** 
+ * A feature found to be within the bounding box `rect`
+ *
+ *  (offset, index)
+ *  `offset`: Byte offset in feature data section
+ *  `index`: feature number
+ */
+type SearchResult = [number, number];
+
 export async function* streamSearch(
     numItems: number,
     nodeSize: number,
     rect: Rect,
-    readNode: ReadNodeFn): AsyncGenerator<number[], void, unknown>
+    readNode: ReadNodeFn): AsyncGenerator<SearchResult, void, unknown>
 {
-    const { minX, minY, maxX, maxY } = rect
-    const levelBounds = generateLevelBounds(numItems, nodeSize)
-    const [[leafNodesOffset,numNodes]] = levelBounds
-    const queue: any[] = []
-    queue.push([0, levelBounds.length - 1])
-    while (queue.length !== 0) {
-        const [nodeIndex, level] = queue.pop()
-        const isLeafNode = nodeIndex >= numNodes - numItems
+    class NodeRange {
+        _level: number;
+        nodes: [number, number];
+        constructor(nodes: [number, number], level: number) {
+            this._level = level;
+            this.nodes = nodes;
+        }
+
+        level(): number {
+            return this._level;
+        }
+
+        startNode(): number {
+            return this.nodes[0];
+        }
+
+        endNode(): number {
+            return this.nodes[1];
+        }
+
+        extendEndNodeToNewOffset(newOffset: number) {
+            console.assert(newOffset > this.nodes[1]);
+            this.nodes[1] = newOffset;
+        }
+
+        toString(): String {
+            return `[NodeRange level: ${this._level}, nodes: ${this.nodes[0]}-${this.nodes[1]}]`
+        }
+    }
+
+    const { minX, minY, maxX, maxY } = rect;
+    const levelBounds = generateLevelBounds(numItems, nodeSize);
+    const leafNodesOffset = levelBounds[0][0];
+
+    const rootNodeRange: NodeRange = (() => {
+        const range: [number, number] = [0, 1];
+        const level = levelBounds.length - 1;
+        return new NodeRange(range, level);
+    })();
+
+    const queue: Array<NodeRange> = [rootNodeRange];
+
+    Logger.debug(`starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`);
+
+    while (queue.length != 0) {
+        const next = queue.shift()!;
+
+        Logger.debug(`popped node: ${next}, queueLength: ${queue.length}`);
+
+        let nodeIndex = next.startNode()
+        const isLeafNode = nodeIndex >= leafNodesOffset
+
         // find the end index of the node
-        const [,levelBound] = levelBounds[level]
-        const end = Math.min(nodeIndex + nodeSize, levelBound)
+        const [,levelBound] = levelBounds[next.level()];
+
+        const end = Math.min(next.endNode() + nodeSize, levelBound)
         const length = end - nodeIndex
+
         const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
+
         const float64Array = new Float64Array(buffer)
         const uint32Array = new Uint32Array(buffer)
         for (let pos = nodeIndex; pos < end; pos++) {
@@ -84,13 +151,40 @@ export async function* streamSearch(
             const high32Offset = uint32Array[(nodePos << 1) + 9]
             const offset = readUint52(high32Offset, low32Offset);
 
-            if (isLeafNode)
+            if (isLeafNode) {
+                Logger.debug("yielding feature");
                 yield [offset, pos - leafNodesOffset]
-            else
-                queue.push([offset, level - 1])
+                continue;
+            }
+
+            // request up to this many extra bytes if it means we can eliminate
+            // an extra request
+            const combineRequestThreshold = 256 * 1024 / NODE_ITEM_LEN;
+
+            const tail = queue[queue.length - 1];
+            if (tail !== undefined 
+                && tail.level() == next.level() - 1
+                && offset < tail.endNode() + combineRequestThreshold) {
+
+                Logger.debug(`Extending existing node: ${tail}, newOffset: ${tail.endNode()} -> ${offset}`);
+                tail.extendEndNodeToNewOffset(offset);
+                continue;
+            } 
+
+            let newNodeRange: NodeRange = (()=> {
+                let level = next.level() - 1;
+                let range: [number, number] = [offset, offset + 1];
+                return new NodeRange(range, level);
+            })();
+
+            if (tail !== undefined && tail.level() == next.level() - 1) {
+                Logger.debug(`pushing new node at offset: ${offset} rather than merging with distant ${tail}`);
+            } else {
+                Logger.debug(`pushing new level for ${newNodeRange} onto queue with tail: ${tail}`);
+            }
+
+            queue.push(newNodeRange);
         }
-        // order queue to traverse sequential
-        queue.sort((a, b) => b[0] - a[0])
     }
 }
 
