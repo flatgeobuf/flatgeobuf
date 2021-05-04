@@ -17,14 +17,14 @@
   "module": "lib/mjs/flatgeobuf.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bjornharrtell/flatgeobuf.git"
+    "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
   },
   "author": "",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/bjornharrtell/flatgeobuf/issues"
+    "url": "https://github.com/flatgeobuf/flatgeobuf/issues"
   },
-  "homepage": "https://github.com/bjornharrtell/flatgeobuf#readme",
+  "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
     "flatbuffers": "1.12.0",
     "slice-source": "0.4.1",
