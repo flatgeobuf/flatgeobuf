@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  rust: circleci/rust@1.5.0
-
 executors:
   node:
     docker:
