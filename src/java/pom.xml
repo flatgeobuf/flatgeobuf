@@ -6,7 +6,7 @@
   <version>3.16.4</version>
   <name>flatgeobuf</name>
   <description>A performant binary encoding for geographic data based on flatbuffers</description>
-  <url>https://github.com/bjornharrtell/flatgeobuf</url>
+  <url>https://github.com/flatgeobuf/flatgeobuf</url>
   <licenses>
     <license>
       <name>ISC License</name>
@@ -14,9 +14,9 @@
     </license>
   </licenses>
   <scm>
-    <url>https://github.com/bjornharrtell/flatgeobuf</url>
-    <connection>scm:git:https://github.com/bjornharrtell/flatgeobuf.git</connection>
-    <developerConnection>scm:git:https://github.com/bjornharrtell/flatgeobuf.git</developerConnection>
+    <url>https://github.com/flatgeobuf/flatgeobuf</url>
+    <connection>scm:git:https://github.com/flatgeobuf/flatgeobuf.git</connection>
+    <developerConnection>scm:git:https://github.com/flatgeobuf/flatgeobuf.git</developerConnection>
   </scm>
   <developers>
     <developer>
