@@ -92,6 +92,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.cargo
+            - src/rust/target
           key: v1-dependencies-{{ checksum "src/rust/Cargo.toml" }}
 
 workflows:
