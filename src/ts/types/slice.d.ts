@@ -1,5 +1,5 @@
 declare module 'slice-source' {
-    function slice(source: ReadableStream | ReadableStreamReader | SliceSource): SliceSource
+    function slice(source: ReadableStream | SliceSource): SliceSource
 
     interface SliceChunk {
         value: Uint8Array
