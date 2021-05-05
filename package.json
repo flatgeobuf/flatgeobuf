@@ -20,7 +20,34 @@
     "type": "git",
     "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
   },
-  "author": "",
+  "author": {
+    "name": "Björn Harrtell"
+  },
+  "contributors": [{
+    "name": "Pirmin Kalberer"
+  }, {
+    "name": "Michael Kirk"
+  }, {
+    "name": "Gabriel Roldan"
+  }, {
+    "name": "Jared Erickson"
+  }, {
+    "name": "Karsten Pihl"
+  }, {
+    "name": "Xavier Fischer"
+  }, {
+    "name": "Dustin Carlino"
+  }, {
+    "name": "Corey Farwell"
+  }, {
+    "name": "Even Rouault"
+  }, {
+    "name": "James Hughes"
+  }, {
+    "name": "James Gill"
+  }, {
+    "name": "Clemens Portele"
+  }],
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/flatgeobuf/flatgeobuf/issues"
