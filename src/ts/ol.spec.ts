@@ -13,6 +13,7 @@ import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
 import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 import SimpleGeometry from 'ol/geom/SimpleGeometry'
+import { Rect } from './packedrtree'
 
 global['ReadableStream'] = ReadableStream
 global['TextDecoder'] = TextDecoder
@@ -189,6 +190,14 @@ describe('ol module', () => {
       const readableStream = arrayToStream(bytes.buffer)
       const features = await takeAsync(deserialize(readableStream) as AsyncGenerator)
       expect(features.length).to.eq(179)
+      for (const f of features)
+        expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
+    })
+
+    xit('OL HNV2021 filtered', async () => {
+      const r: Rect = {minX: 881145.8872756235, minY: 6123357.718314062, maxX: 881643.4182304569, maxY: 6123742.7125053005}
+      const features = await takeAsync(deserialize('https://storage.googleapis.com/flatgeobuf/HNV2021_20210226.fgb', r) as AsyncGenerator)
+      expect(features.length).to.eq(8)
       for (const f of features)
         expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
     })

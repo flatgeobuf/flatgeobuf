@@ -291,6 +291,14 @@ describe('geojson module', () => {
         expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
     })
 
+    xit('GeoJSON HNV2021 filtered', async () => {
+      const r: Rect = {minX: 881145.8872756235, minY: 6123357.718314062, maxX: 881643.4182304569, maxY: 6123742.7125053005}
+      const features = await takeAsync(deserialize('https://storage.googleapis.com/flatgeobuf/HNV2021_20210226.fgb', r) as AsyncGenerator)
+      expect(features.length).to.eq(8)
+      for (const f of features)
+        expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
+    })
+
     /*it('Should parse countries fgb produced from GDAL', async () => {
       const r: Rect = { minX: 665612, minY: 6169484, maxX: 665612, maxY: 6169484 }
       const features = await takeAsync(deserialize('https://storage.googleapis.com/flatgeobuf/JORDSTYKKE.fgb', r))
