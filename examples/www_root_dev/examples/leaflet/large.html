@@ -1,0 +1,145 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="/examples/site.css" />
+    <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/json-formatter-js"></script>
+
+    <style>
+        #map { height: 480px; }
+    </style>
+</head>
+<body>
+    <ul class="primary-navigation">
+        <li class="active">
+            Leaflet Example
+        </li>
+        <li>
+            <a href="/examples/openlayers/large.html">OpenLayers Example</a>
+        </li>
+    </ul>
+    <ul class="secondary-navigation">
+        <li><a href="/examples/leaflet/">Basic Example</a></li>
+        <li><a href="/examples/leaflet/filtered.html">Filter By Rect</a></li>
+        <li class="active">Filtering a Large Dataset</li>
+    </ul>
+
+    <div id="map"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => { 
+            // basic OSM Leaflet map
+            let map = L.map('map').setView([40.766, -73.98], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // optionally show some meta-data about the FGB file
+            function handleHeaderMeta(headerMeta) {
+                const header = document.getElementById('header')
+                const formatter = new JSONFormatter(headerMeta, 10)
+                header.appendChild(formatter.render())
+            }
+
+            // For the example, we fix a visible Rect in the middle of the map
+            function getBoundForRect() {
+                const widthMeters = 2000;
+                return map.getCenter().toBounds(widthMeters);
+            }
+
+            // convert the rect into the format flatgeobuf expects
+            function fgBoundingBox() {
+                const bounds = getBoundForRect();
+                return {
+                    minX: bounds.getWest(),
+                    maxX: bounds.getEast(),
+                    minY: bounds.getSouth(),
+                    maxY: bounds.getNorth(),
+                };
+            }
+
+            // track the previous results so we can remove them when adding new results
+            let previousResults = L.layerGroup().addTo(map);
+            async function updateResults() {
+                // remove the old results
+                previousResults.remove();
+                const nextResults = L.layerGroup().addTo(map);
+                previousResults = nextResults;
+
+                // Use flatgeobuf JavaScript API to iterate features as geojson.
+                // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
+                // rather than the entire file.
+                let iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', fgBoundingBox(), handleHeaderMeta);
+                for await (let feature of iter) {
+                    // Leaflet styling
+                    const defaultStyle = { 
+                        color: 'blue', 
+                        weight: 2, 
+                        fillOpacity: 0.1,
+                    };
+                    L.geoJSON(feature, {
+                        style: defaultStyle,
+                    }).on({
+                        'mouseover': function(e) {
+                            const layer = e.target;
+                            layer.setStyle({
+                                color: 'blue',
+                                weight: 4,
+                                fillOpacity: 0.7,
+                            });
+                            layer.bringToFront();
+                        },
+                        'mouseout': function(e) {
+                            const layer = e.target;
+                            layer.setStyle(defaultStyle);
+                        }
+                   }).bindPopup(`${feature.properties["population"]} people live in this census block.</h1>`)
+                   .addTo(nextResults);
+                }
+            }
+            // if the user is panning around alot, only update once per second max
+            updateResults = _.debounce(updateResults, 1000);
+
+            // show a leaflet rect corresponding to our bounding box
+            let rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
+            
+            // show results based on the initial map
+            updateResults();
+            // ...and update the results whenever the map moves
+            map.on("moveend", function(s){
+                rectangle.setBounds(getBoundForRect());
+                updateResults();
+            });
+        });
+    </script>
+    <p>
+        This is a map of every census block in the USA, including it's
+        population. The entire file is over 12GB, but Flatgeobuf fetches only
+        the tiny subset of data that intersects with the bounding box (drawn
+        in yellow). Pan the map to move the query's bounding box.
+    </p>
+    <p>
+        When you have feature data that cover a large area in fine-grained
+        detail like this, the typical options are to either manually slice up
+        your file into manageable regions or to rely on running an application
+        server which does this slicing dynamically.
+    </p>
+    <p>
+        Hosting an application has initial complexity and ongoing maintenance
+        costs.  Slicing files can be tedious and inevitiably you might be
+        interested in an area on the boundary of slices.  
+    </p>
+    <p>
+        For these cases, consider instead using a single indexed flatgeobuffer.
+        Because flatgeobuffer's spatial index allows you to fetch only the data
+        you're interested in, you can keep your page size down while avoiding
+        the tedium of slicing up files manually, or building and maintaining an
+        application server.
+    </p>
+    <div id="header">
+        <h3>Parsed header content</h3>
+    </div>
+</body>
+</html>

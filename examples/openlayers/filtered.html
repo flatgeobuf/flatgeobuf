@@ -1,0 +1,154 @@
+<html>
+<head>
+    <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
+    <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.7.1/"></script>
+</head>
+<body>
+    <ul class="primary-navigation">
+        <li>
+            <a href="/examples/leaflet/filtered.html">Leaflet Examples</a>
+        </li>
+        <li class="active">
+            OpenLayers Examples
+        </li>
+    </ul>
+    <ul class="secondary-navigation">
+        <li><a href="/examples/openlayers/">Basic Example</a></li>
+        <li class="active">Filter By Rect</li>
+        <li><a href="/examples/openlayers/large.html">Filtering a Large Dataset</a></li>
+    </ul>
+
+    <style>
+      #map {
+        width: 100%;
+        height:400px;
+      }
+    </style>
+
+    <div id="map"></div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => { 
+            // Elements that make up the popup.
+            var popupContainer = document.getElementById('popup');
+            var popupContent = document.getElementById('popup-content');
+            var popupCloser = document.getElementById('popup-closer');
+
+            // Create an overlay to anchor the popup to the map.
+            var overlay = new ol.Overlay({
+              element: popupContainer,
+            });
+
+            /**
+             * Add a click handler to hide the popup.
+             * @return {boolean} Don't follow the href.
+             */
+            popupCloser.onclick = function () {
+              overlay.setPosition(undefined);
+              popupCloser.blur();
+              return false;
+            };
+
+            // convert the rect into the format flatgeobuf expects
+            function fgbBoundingBox(centerCoords) {
+                let widthMeters = 500000;
+                const minPoint = new ol.geom.Point(centerCoords);
+                minPoint.translate(widthMeters/-2, widthMeters/-2);
+                minPoint.transform('EPSG:3857', 'EPSG:4326')
+                    
+                const maxPoint = new ol.geom.Point(centerCoords);
+                maxPoint.translate(widthMeters/2, widthMeters/2);
+                maxPoint.transform('EPSG:3857', 'EPSG:4326')
+
+                return {
+                    minX: minPoint.getCoordinates()[0],
+                    minY: minPoint.getCoordinates()[1],
+                    maxX: maxPoint.getCoordinates()[0],
+                    maxY: maxPoint.getCoordinates()[1],
+                };
+            }
+
+            const results = new ol.source.Vector();
+            // track the previous results so we can remove them when adding new results
+            async function updateResults() {
+                let mapCenter = map.getView().getCenter();
+                //drawRect(map.getView().getCenter());
+                results.setLoader(async function () {
+                    let rect = fgbBoundingBox(mapCenter);
+                    // Use flatgeobuf JavaScript API to iterate features as geojson.
+                    // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
+                    // rather than the entire file.
+                    let iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', rect);
+                    for await (let feature of iter) {
+                        feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
+                        this.addFeature(feature)
+                    }
+                });
+                results.refresh();
+            }
+
+            // if the user is panning around alot, only update once per second max
+            updateResults = _.debounce(updateResults, 1000);
+  
+            const map = new ol.Map({
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    }),
+                    new ol.layer.Vector({
+                        source: results
+                    })
+                ],
+                overlays: [overlay],
+                target: 'map',
+
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([-98, 39]),
+                    zoom: 6
+                })
+            });
+
+            // show the popup when clicking a feature
+            map.on("click", function(e) {
+                map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+                    popupContent.innerText = `${feature.get("NAME")} ${feature.get("LSAD")}, ${feature.get("STATE")}`;
+                    overlay.setPosition(e.coordinate);
+                })
+            });
+
+
+            // show results based on the initial map
+            updateResults();
+            // ...and update the results whenever the map moves
+            map.on("moveend", function(e) {
+                updateResults();
+            });
+        });
+    </script>
+
+    <p>
+        Flatgeobuf's spatial index allows you to fetch the features that
+        intersect a given bounding box, without downloading the entire file.
+        This can be helpful when you have a very large file but are only
+        interested in a small portion of it, and want to keep your page loads
+        small and fast.
+    </p>
+    <p>
+        Pan the map to move the query's bounding box.
+    </p>
+    <p>
+        Open your developer console's network pane, and inspect the network
+        traffic. Compared to the <a href="/examples/leaflet/">example which loads the entire file</a>,
+        you'll see that this example makes more requests for the .fgb file, but
+        they are much smaller because we fetch only the relevant sections of
+        the file.  
+    </p>
+
+</body>
+</html>

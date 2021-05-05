@@ -1,0 +1,159 @@
+<html>
+<head>
+    <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
+    <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
+    <script src="/dist/flatgeobuf-ol.min.js"></script>
+</head>
+<body>
+    <ul class="primary-navigation">
+        <li>
+            <a href="/examples/leaflet/large.html">Leaflet Examples</a>
+        </li>
+        <li class="active">
+            OpenLayers Examples
+        </li>
+    </ul>
+    <ul class="secondary-navigation">
+        <li><a href="/examples/openlayers/">Basic Example</a></li>
+        <li><a href="/examples/openlayers/filtered.html">Filter By Rect</a></li>
+        <li class="active">Filtering a Large Dataset</li>
+    </ul>
+
+    <style>
+      #map {
+        width: 100%;
+        height:400px;
+      }
+    </style>
+
+    <div id="map"></div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => { 
+            // Elements that make up the popup.
+            var popupContainer = document.getElementById('popup');
+            var popupContent = document.getElementById('popup-content');
+            var popupCloser = document.getElementById('popup-closer');
+
+            // Create an overlay to anchor the popup to the map.
+            var overlay = new ol.Overlay({
+                element: popupContainer,
+            });
+
+            /**
+             * Add a click handler to hide the popup.
+             * @return {boolean} Don't follow the href.
+             */
+            popupCloser.onclick = function () {
+                overlay.setPosition(undefined);
+                popupCloser.blur();
+                return false;
+            };
+
+            // convert the rect into the format flatgeobuf expects
+            function fgbBoundingBox(centerCoords) {
+                let widthMeters = 2000;
+                const minPoint = new ol.geom.Point(centerCoords);
+                minPoint.translate(widthMeters/-2, widthMeters/-2);
+                minPoint.transform('EPSG:3857', 'EPSG:4326')
+                    
+                const maxPoint = new ol.geom.Point(centerCoords);
+                maxPoint.translate(widthMeters/2, widthMeters/2);
+                maxPoint.transform('EPSG:3857', 'EPSG:4326')
+
+                return {
+                    minX: minPoint.getCoordinates()[0],
+                    minY: minPoint.getCoordinates()[1],
+                    maxX: maxPoint.getCoordinates()[0],
+                    maxY: maxPoint.getCoordinates()[1],
+                };
+            }
+
+            const results = new ol.source.Vector();
+            // track the previous results so we can remove them when adding new results
+            async function updateResults() {
+                let mapCenter = map.getView().getCenter();
+                //drawRect(map.getView().getCenter());
+                results.setLoader(async function () {
+                    let rect = fgbBoundingBox(mapCenter);
+                    // Use flatgeobuf JavaScript API to iterate features as geojson.
+                    // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
+                    // rather than the entire file.
+                    let iter = flatgeobuf.deserialize('http://flatgeobuf.septima.dk/population_areas.fgb', rect);
+                    for await (let feature of iter) {
+                        feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
+                        this.addFeature(feature)
+                    }
+                });
+                results.refresh();
+            }
+
+            // if the user is panning around alot, only update once per second max
+            updateResults = _.debounce(updateResults, 1000);
+  
+            const map = new ol.Map({
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    }),
+                    new ol.layer.Vector({
+                        source: results
+                    })
+                ],
+                overlays: [overlay],
+                target: 'map',
+
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([-73.98, 40.766]),
+                    zoom: 14
+                })
+            });
+
+            // show the popup when clicking a feature
+            map.on("click", function(e) {
+                map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+                    popupContent.innerHTML = `<h1>${feature.get("population")} people live in this census block.</h1>`;
+                    overlay.setPosition(e.coordinate);
+                })
+            });
+
+
+            // show results based on the initial map
+            updateResults();
+            // ...and update the results whenever the map moves
+            map.on("moveend", function(e) {
+                updateResults();
+            });
+        });
+    </script>
+    <p>
+        This is a map of every census block in the USA, including it's
+        population. The entire file is over 12GB, but Flatgeobuf fetches only
+        the tiny subset of data that intersects with the bounding box. Pan the
+        map to move the query's bounding box.  
+    </p>
+    <p>
+        When you have feature data that cover a large area in fine-grained
+        detail like this, the typical options are to either manually slice up
+        your file into manageable regions or to rely on running an application
+        server which does this slicing dynamically.
+    </p>
+    <p>
+        Hosting an application has initial complexity and ongoing maintenance
+        costs.  Slicing files can be tedious and inevitiably you might be
+        interested in an area on the boundary of slices.  
+    </p>
+    <p>
+        For these cases, consider instead using a single indexed flatgeobuffer.
+        Because flatgeobuffer's spatial index allows you to fetch only the data
+        you're interested in, you can keep your page size down while avoiding
+        the tedium of slicing up files manually, or building and maintaining an
+        application server.
+    </p>
+</body>
+</html>
