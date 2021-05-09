@@ -61,7 +61,7 @@
                 const minPoint = new ol.geom.Point(centerCoords);
                 minPoint.translate(widthMeters/-2, widthMeters/-2);
                 minPoint.transform('EPSG:3857', 'EPSG:4326')
-                    
+
                 const maxPoint = new ol.geom.Point(centerCoords);
                 maxPoint.translate(widthMeters/2, widthMeters/2);
                 maxPoint.transform('EPSG:3857', 'EPSG:4326')
@@ -84,7 +84,7 @@
                     // Use flatgeobuf JavaScript API to iterate features as geojson.
                     // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                     // rather than the entire file.
-                    let iter = flatgeobuf.deserialize('http://flatgeobuf.septima.dk/population_areas.fgb', rect);
+                    let iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', rect);
                     for await (let feature of iter) {
                         feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
                         this.addFeature(feature)
