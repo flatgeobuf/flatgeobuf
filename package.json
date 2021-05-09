@@ -7,7 +7,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json mocha -r ts-node/register -r esm -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
-    "server": "ws --directory examples/www_root_dev"
+    "server": "ws"
   },
   "files": [
     "lib/**/*",

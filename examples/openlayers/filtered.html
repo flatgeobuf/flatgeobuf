@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css" type="text/css">
     <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@3.7.1/"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.7.1/dist/flatgeobuf-ol.min.js"></script>
 </head>
 <body>
     <ul class="primary-navigation">
@@ -78,7 +78,6 @@
             // track the previous results so we can remove them when adding new results
             async function updateResults() {
                 let mapCenter = map.getView().getCenter();
-                //drawRect(map.getView().getCenter());
                 results.setLoader(async function () {
                     let rect = fgbBoundingBox(mapCenter);
                     // Use flatgeobuf JavaScript API to iterate features as geojson.
