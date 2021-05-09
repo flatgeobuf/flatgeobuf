@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/examples/site.css" />
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@3.7.1/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.17.0/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js"></script>
 
     <style>
@@ -117,7 +117,7 @@
         });
     </script>
     <p>
-        Flatgeobuf's spatial index allows you to fetch the features that
+        FlatGeobuf's spatial index allows you to fetch the features that
         intersect a given bounding box, without downloading the entire file.
         This can be helpful when you have a very large file but are only
         interested in a small portion of it, and want to keep your page loads
@@ -132,7 +132,7 @@
         traffic. Compared to the <a href="/examples/leaflet/">example which loads the entire file</a>,
         you'll see that this example makes more requests for the .fgb file, but
         they are much smaller because we fetch only the relevant sections of
-        the file.  
+        the file.
     </p>
     <div id="header">
         <h3>Parsed header content</h3>

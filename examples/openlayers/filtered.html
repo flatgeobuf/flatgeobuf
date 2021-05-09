@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css" type="text/css">
     <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@3.7.1/dist/flatgeobuf-ol.min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.17.0/dist/flatgeobuf-ol.min.js"></script>
 </head>
 <body>
     <ul class="primary-navigation">
@@ -132,7 +132,7 @@
     </script>
 
     <p>
-        Flatgeobuf's spatial index allows you to fetch the features that
+        FlatGeobuf's spatial index allows you to fetch the features that
         intersect a given bounding box, without downloading the entire file.
         This can be helpful when you have a very large file but are only
         interested in a small portion of it, and want to keep your page loads
@@ -146,7 +146,7 @@
         traffic. Compared to the <a href="/examples/leaflet/">example which loads the entire file</a>,
         you'll see that this example makes more requests for the .fgb file, but
         they are much smaller because we fetch only the relevant sections of
-        the file.  
+        the file.
     </p>
 
 </body>

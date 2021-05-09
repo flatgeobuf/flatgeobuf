@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/examples/site.css" />
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@3.7.1/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.17.0/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js"></script>
 
     <style>
@@ -40,6 +40,8 @@
             function handleHeaderMeta(headerMeta) {
                 const header = document.getElementById('header')
                 const formatter = new JSONFormatter(headerMeta, 10)
+                while (header.firstChild)
+                    header.removeChild(header.firstChild)
                 header.appendChild(formatter.render())
             }
 
@@ -104,7 +106,7 @@
 
             // show a leaflet rect corresponding to our bounding box
             let rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
-            
+
             // show results based on the initial map
             updateResults();
             // ...and update the results whenever the map moves
@@ -116,7 +118,7 @@
     </script>
     <p>
         This is a map of every census block in the USA, including it's
-        population. The entire file is over 12GB, but Flatgeobuf fetches only
+        population. The entire file is over 12GB, but FlatGeobuf fetches only
         the tiny subset of data that intersects with the bounding box (drawn
         in yellow). Pan the map to move the query's bounding box.
     </p>
@@ -128,12 +130,12 @@
     </p>
     <p>
         Hosting an application has initial complexity and ongoing maintenance
-        costs.  Slicing files can be tedious and inevitiably you might be
-        interested in an area on the boundary of slices.  
+        costs. Slicing files can be tedious and inevitiably you might be
+        interested in an area on the boundary of slices.
     </p>
     <p>
-        For these cases, consider instead using a single indexed flatgeobuffer.
-        Because flatgeobuffer's spatial index allows you to fetch only the data
+        For these cases, consider instead using a single indexed FlatGeobuf.
+        Because FlatGeobuf's spatial index allows you to fetch only the data
         you're interested in, you can keep your page size down while avoiding
         the tedium of slicing up files manually, or building and maintaining an
         application server.
