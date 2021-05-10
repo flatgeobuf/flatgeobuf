@@ -24,7 +24,7 @@
         "exclude": [
             "**/*.spec.ts"
         ],
-        "entryPoints": "src/ts/flatgeobuf.ts",
+        "entryPoints": "src/ts/",
         "readme": "none"
     }
 }
