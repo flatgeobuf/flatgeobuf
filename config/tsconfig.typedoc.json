@@ -9,7 +9,8 @@
         "outDir": "../lib",
         "sourceMap": true,
         "target": "ESNext",
-        "typeRoots": [ "./src/ts/types", "./node_modules/@types"]
+        "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
+        "allowSyntheticDefaultImports": true
     },
     "include": [
         "../src/ts"
@@ -20,11 +21,10 @@
     ],
     "typedocOptions": {
         "out": "dist/doc",
-        "tsconfig": "config/tsconfig.json",
         "exclude": [
             "**/*.spec.ts"
         ],
-        "inputFiles": "src/ts/flatgeobuf.ts",
+        "entryPoints": "src/ts/flatgeobuf.ts",
         "readme": "none"
     }
 }
