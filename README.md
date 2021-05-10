@@ -83,7 +83,7 @@ As performance is highly data dependent I've also made similar tests on a larger
 
 ### TypeScript / JavaScript
 
-* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/index.html)
+* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/modules/_flatgeobuf_.html)
 
 #### Prebuilt bundles (intended for browser usage)
 
