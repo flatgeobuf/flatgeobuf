@@ -70,8 +70,21 @@ type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
  *  `offset`: Byte offset in feature data section
  *  `index`: feature number
  */
-type SearchResult = [number, number];
+export type SearchResult = [number, number];
 
+/**
+ * Yield's a `SearchResult` for each feature within the bounds of `rect`.
+ *
+ * Every node in the FGB index tree has a bounding rect, all of the nodes children
+ * are contained within that bounding rect. The leaf nodes of the tree represent
+ * the features of the collection. 
+ *
+ * As we traverse the tree, starting from the root, we'll need to read more data
+ * from the index. When we don't already have this range data buffered locally, 
+ * an HTTP fetch is triggered. For performance, we merge adjacent and nearby
+ * request ranges into a single request, reasoning that fetching a few extra 
+ * bytes is a good tradeoff if it means we can reduce the number of requests.
+ */
 export async function* streamSearch(
     numItems: number,
     nodeSize: number,
@@ -123,17 +136,17 @@ export async function* streamSearch(
     Logger.debug(`starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`);
 
     while (queue.length != 0) {
-        const next = queue.shift()!;
+        const nodeRange = queue.shift()!;
 
-        Logger.debug(`popped node: ${next}, queueLength: ${queue.length}`);
+        Logger.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
-        let nodeIndex = next.startNode()
+        let nodeIndex = nodeRange.startNode()
         const isLeafNode = nodeIndex >= leafNodesOffset
 
         // find the end index of the node
-        const [,levelBound] = levelBounds[next.level()];
+        const [,levelBound] = levelBounds[nodeRange.level()];
 
-        const end = Math.min(next.endNode() + nodeSize, levelBound)
+        const end = Math.min(nodeRange.endNode() + nodeSize, levelBound)
         const length = end - nodeIndex
 
         const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
@@ -161,26 +174,26 @@ export async function* streamSearch(
             // an extra request
             const combineRequestThreshold = 256 * 1024 / NODE_ITEM_LEN;
 
-            const tail = queue[queue.length - 1];
-            if (tail !== undefined 
-                && tail.level() == next.level() - 1
-                && offset < tail.endNode() + combineRequestThreshold) {
-
-                Logger.debug(`Extending existing node: ${tail}, newOffset: ${tail.endNode()} -> ${offset}`);
-                tail.extendEndNodeToNewOffset(offset);
+            const nextNodeRange = queue[queue.length - 1];
+            if (nextNodeRange !== undefined 
+                && nextNodeRange.level() == nodeRange.level() - 1
+                && offset < nextNodeRange.endNode() + combineRequestThreshold) {
+                Logger.debug(`Merging "nodeRange" request into existing range: ${nextNodeRange}, newOffset: ${nextNodeRange.endNode()} -> ${offset}`);
+                nextNodeRange.extendEndNodeToNewOffset(offset);
                 continue;
             } 
 
             let newNodeRange: NodeRange = (()=> {
-                let level = next.level() - 1;
+                let level = nodeRange.level() - 1;
                 let range: [number, number] = [offset, offset + 1];
                 return new NodeRange(range, level);
             })();
 
-            if (tail !== undefined && tail.level() == next.level() - 1) {
-                Logger.debug(`pushing new node at offset: ${offset} rather than merging with distant ${tail}`);
+            // We're going to add a new node range - log the reason
+            if (nextNodeRange !== undefined && nextNodeRange.level() == newNodeRange.level()) {
+                Logger.debug(`Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nextNodeRange}`);
             } else {
-                Logger.debug(`pushing new level for ${newNodeRange} onto queue with tail: ${tail}`);
+                Logger.debug(`Pushing new level for ${newNodeRange} onto queue with nextNodeRange: ${nextNodeRange} since there's not already a range for this level.`);
             }
 
             queue.push(newNodeRange);
