@@ -174,12 +174,15 @@ export async function* streamSearch(
             // an extra request
             const combineRequestThreshold = 256 * 1024 / NODE_ITEM_LEN;
 
-            const nextNodeRange = queue[queue.length - 1];
-            if (nextNodeRange !== undefined 
-                && nextNodeRange.level() == nodeRange.level() - 1
-                && offset < nextNodeRange.endNode() + combineRequestThreshold) {
-                Logger.debug(`Merging "nodeRange" request into existing range: ${nextNodeRange}, newOffset: ${nextNodeRange.endNode()} -> ${offset}`);
-                nextNodeRange.extendEndNodeToNewOffset(offset);
+            // Since we're traversing the tree by monotonically increasing byte 
+            // offset, the most recently enqueued node will be the nearest, and
+            // thus presents the best candidate for merging.
+            const nearestNodeRange = queue[queue.length - 1];
+            if (nearestNodeRange !== undefined 
+                && nearestNodeRange.level() == nodeRange.level() - 1
+                && offset < nearestNodeRange.endNode() + combineRequestThreshold) {
+                Logger.debug(`Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`);
+                nearestNodeRange.extendEndNodeToNewOffset(offset);
                 continue;
             } 
 
@@ -190,10 +193,10 @@ export async function* streamSearch(
             })();
 
             // We're going to add a new node range - log the reason
-            if (nextNodeRange !== undefined && nextNodeRange.level() == newNodeRange.level()) {
-                Logger.debug(`Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nextNodeRange}`);
+            if (nearestNodeRange !== undefined && nearestNodeRange.level() == newNodeRange.level()) {
+                Logger.debug(`Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`);
             } else {
-                Logger.debug(`Pushing new level for ${newNodeRange} onto queue with nextNodeRange: ${nextNodeRange} since there's not already a range for this level.`);
+                Logger.debug(`Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`);
             }
 
             queue.push(newNodeRange);
