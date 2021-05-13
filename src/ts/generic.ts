@@ -28,7 +28,5 @@ export {
     serialize
 } from './generic/featurecollection'
 
-export {
-    GeometryType,
-    ColumnType
-} from './header_generated'
+export { GeometryType } from './geometry-type'
+export { ColumnType } from './column-type'

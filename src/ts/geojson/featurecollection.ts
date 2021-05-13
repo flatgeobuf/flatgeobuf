@@ -1,5 +1,5 @@
 import ColumnMeta from '../ColumnMeta'
-import { ColumnType } from '../header_generated'
+import { ColumnType } from '../column-type'
 import HeaderMeta from '../HeaderMeta'
 
 import { fromFeature, IGeoJsonFeature } from './feature'

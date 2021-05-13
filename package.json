@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
-    "flatbuffers": "1.12.0",
+    "flatbuffers": "2.0.1",
     "slice-source": "0.4.1",
     "stream-buffers": "3.0.2"
   },
@@ -67,7 +67,6 @@
     "@rollup/plugin-babel": "5.3.0",
     "@rollup/plugin-node-resolve": "13.0.0",
     "@types/chai": "4.2.18",
-    "@types/flatbuffers": "1.10.0",
     "@types/mocha": "8.2.2",
     "@types/node": "15.0.2",
     "@types/ol": "6.4.2",

@@ -1,5 +1,5 @@
 
-import { ColumnType } from './header_generated'
+import { ColumnType } from './column-type'
 
 export default class ColumnMeta {
     constructor(

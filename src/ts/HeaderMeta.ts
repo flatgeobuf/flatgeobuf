@@ -1,9 +1,9 @@
-import { flatbuffers } from 'flatbuffers'
+import * as flatbuffers from 'flatbuffers'
 
 import ColumnMeta from './ColumnMeta'
 import CrsMeta from './CrsMeta'
-import { GeometryType } from './header_generated'
-import { Header } from './header_generated';
+import { GeometryType } from './geometry-type'
+import { Header } from './header'
 
 export default class HeaderMeta {
     constructor(
@@ -19,7 +19,7 @@ export default class HeaderMeta {
     }
 
     static fromByteBuffer(bb: flatbuffers.ByteBuffer) : HeaderMeta {
-        const header = Header.getRoot(bb)
+        const header = Header.getRootAsHeader(bb)
         const featuresCount = header.featuresCount().toFloat64()
         const indexNodeSize = header.indexNodeSize()
 

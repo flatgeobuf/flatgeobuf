@@ -1,10 +1,10 @@
-import { flatbuffers } from 'flatbuffers';
+import * as flatbuffers from 'flatbuffers'
 
 import { Rect, calcTreeSize, DEFAULT_NODE_SIZE, NODE_ITEM_LEN, streamSearch} from './packedrtree';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants';
 import Logger from './Logger';
-import HeaderMeta from './HeaderMeta'; 
-import { Feature } from './feature_generated';
+import HeaderMeta from './HeaderMeta';
+import { Feature } from './feature';
 
 export class HttpReader {
     private headerClient: BufferedHttpRangeClient;
@@ -13,9 +13,9 @@ export class HttpReader {
     private headerLength: number;
     private indexLength: number;
 
-    constructor(headerClient: BufferedHttpRangeClient, 
-                header: HeaderMeta, 
-                headerLength: number, 
+    constructor(headerClient: BufferedHttpRangeClient,
+                header: HeaderMeta,
+                headerLength: number,
                 indexLength: number) {
        this.headerClient = headerClient;
        this.header = header;
@@ -145,7 +145,7 @@ export class HttpReader {
         bytesAligned.set(bytes, SIZE_PREFIX_LEN);
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
         bb.setPosition(SIZE_PREFIX_LEN);
-        return Feature.getRoot(bb)
+        return Feature.getRootAsFeature(bb)
     }
 }
 

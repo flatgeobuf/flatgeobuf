@@ -1,5 +1,5 @@
-import { GeometryType } from '../header_generated'
-import { Geometry } from '../feature_generated'
+import { GeometryType } from '../geometry-type'
+import { Geometry } from '../geometry'
 
 import { ISimpleGeometry } from '../generic/geometry'
 
