@@ -32,17 +32,7 @@ public class PackedRTree {
         return numNodes * NODE_ITEM_LEN;
     }
 
-    private static class Interval {
-        public Interval(int start, int end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        int start;
-        int end;
-    }
-
-    static ArrayList<Interval> generateLevelBounds(int numItems, int nodeSize) {
+    static ArrayList<Integer> generateLevelEnds(int numItems, int nodeSize) {
         if (nodeSize < 2)
             throw new RuntimeException("Node size must be at least 2");
         if (numItems == 0)
@@ -59,7 +49,7 @@ public class PackedRTree {
             levelNumNodes.add(n);
         } while (n != 1);
 
-        // bounds per level in reversed storage order (top-down)
+        // offsets per level in reversed storage order (top-down)
         ArrayList<Integer> levelOffsets = new ArrayList<Integer>();
         n = numNodes;
         for (int size : levelNumNodes) {
@@ -68,11 +58,11 @@ public class PackedRTree {
         }
         Collections.reverse(levelOffsets);
         Collections.reverse(levelNumNodes);
-        ArrayList<Interval> levelBounds = new ArrayList<Interval>();
+        ArrayList<Integer> levelEnds = new ArrayList<Integer>();
         for (int i = 0; i < levelNumNodes.size(); i++)
-            levelBounds.add(new Interval(levelOffsets.get(i), levelOffsets.get(i) + levelNumNodes.get(i)));
-        Collections.reverse(levelBounds);
-        return levelBounds;
+            levelEnds.add(levelOffsets.get(i) + levelNumNodes.get(i));
+        Collections.reverse(levelEnds);
+        return levelEnds;
     }
 
     private static class StackItem {
@@ -101,18 +91,18 @@ public class PackedRTree {
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
         double maxY = rect.getMaxY();
-        ArrayList<Interval> levelBounds = generateLevelBounds(numItems, nodeSize);
-        int numNodes = levelBounds.get(0).end;
+        ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
+        int numNodes = levelEnds.get(0);
         Stack<StackItem> stack = new Stack<StackItem>();
-        stack.add(new StackItem(0, levelBounds.size() - 1));
+        stack.add(new StackItem(0, levelEnds.size() - 1));
         while (stack.size() != 0) {
             StackItem stackItem = stack.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
             // find the end index of the node
-            int levelBound = levelBounds.get(level).end;
-            int end = Math.min(nodeIndex + nodeSize, levelBound);
+            int levelEnd = levelEnds.get(level);
+            int end = Math.min(nodeIndex + nodeSize, levelEnd);
             int nodeStart = start + (nodeIndex * NODE_ITEM_LEN);
             // int length = end - nodeIndex;
             // search through child nodes
@@ -156,17 +146,17 @@ public class PackedRTree {
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
         double maxY = rect.getMaxY();
-        ArrayList<Interval> levelBounds = generateLevelBounds(numItems, nodeSize);
-        int numNodes = levelBounds.get(0).end;
+        ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
+        int numNodes = levelEnds.get(0);
         Stack<StackItem> stack = new Stack<StackItem>();
-        stack.add(new StackItem(0, levelBounds.size() - 1));
+        stack.add(new StackItem(0, levelEnds.size() - 1));
         while (stack.size() != 0) {
             StackItem stackItem = stack.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
             // find the end index of the node
-            int levelBound = levelBounds.get(level).end;
+            int levelBound = levelEnds.get(level);
             int end = Math.min(nodeIndex + nodeSize, levelBound);
             int nodeStart = nodeIndex * NODE_ITEM_LEN;
             skip = nodeStart - dataPos;
