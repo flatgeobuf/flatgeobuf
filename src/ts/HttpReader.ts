@@ -32,7 +32,7 @@ export class HttpReader {
         // a second request.
         const assumedHeaderLength = 2024;
 
-        let headerClient = new BufferedHttpRangeClient(url);
+        const headerClient = new BufferedHttpRangeClient(url);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -60,33 +60,33 @@ export class HttpReader {
         Logger.debug(`fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`);
 
         {
-            let bytes = new Uint8Array(await headerClient.getRange(0, 8, minReqLength, "header"));
+            const bytes = new Uint8Array(await headerClient.getRange(0, 8, minReqLength, 'header'));
             if (!bytes.every((v, i) => magicbytes[i] === v)) {
                 Logger.error(`bytes: ${bytes} != ${magicbytes}`);
                 throw new Error('Not a FlatGeobuf file')
             }
-            Logger.debug("magic bytes look good");
+            Logger.debug('magic bytes look good');
         }
 
         let headerLength: number;
         {
-            let bytes = await headerClient.getRange(8, 4, minReqLength, "header");
+            const bytes = await headerClient.getRange(8, 4, minReqLength, 'header');
             headerLength = new DataView(bytes).getUint32(0, true);
             const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
             if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
                 // minimum size check avoids panic in FlatBuffers header decoding
-                throw new Error("Invalid header size");
+                throw new Error('Invalid header size');
             }
             Logger.debug(`headerLength: ${headerLength}`);
         }
 
-        const bytes = await headerClient.getRange(12, headerLength, minReqLength, "header");
+        const bytes = await headerClient.getRange(12, headerLength, minReqLength, 'header');
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = HeaderMeta.fromByteBuffer(bb);
 
         const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
 
-        Logger.debug("completed: opening http reader");
+        Logger.debug('completed: opening http reader');
         return new HttpReader(headerClient, header, headerLength, indexLength);
     }
 
@@ -94,10 +94,10 @@ export class HttpReader {
         // Read R-Tree index and build filter for features within bbox
         const lengthBeforeTree = this.lengthBeforeTree();
 
-        let bufferedClient = this.headerClient;
+        const bufferedClient = this.headerClient;
         const readNode = async function(offsetIntoTree: number, size: number): Promise<ArrayBuffer> {
             const minReqLength = 0;
-            return bufferedClient.getRange(lengthBeforeTree + offsetIntoTree, size, minReqLength, "index");
+            return bufferedClient.getRange(lengthBeforeTree + offsetIntoTree, size, minReqLength, 'index');
         };
 
         Logger.debug(`starting: selectBbox, traversing index. lengthBeforeTree: ${lengthBeforeTree}`);
@@ -124,23 +124,23 @@ export class HttpReader {
         // read feature data at least 128kb at a time
         const minFeatureReqLength = 128 * 1024;
 
-        let offset = featureOffset + this.lengthBeforeFeatures();
+        const offset = featureOffset + this.lengthBeforeFeatures();
 
         let featureLength: number;
         {
             const bytes = await this.featureClient().getRange(offset, 
                                                      4,
                                                      minFeatureReqLength,
-                                                    "feature length");
+                                                    'feature length');
             featureLength = new DataView(bytes).getUint32(0, true);
         }
         Logger.debug(`featureOffset: ${offset}, featureLength: ${featureLength}`);
 
-        let byteBuffer = await this.featureClient().getRange(offset + 4,
+        const byteBuffer = await this.featureClient().getRange(offset + 4,
                                                     featureLength,
                                                     minFeatureReqLength,
-                                                   "feature data");
-        let bytes = new Uint8Array(byteBuffer);
+                                                   'feature data');
+                                                   const bytes = new Uint8Array(byteBuffer);
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
         bytesAligned.set(bytes, SIZE_PREFIX_LEN);
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
@@ -156,10 +156,10 @@ class BufferedHttpRangeClient {
 
     // Byte offset of `buffer` with respect to the beginning of the file being
     // buffered
-    private head: number = 0;
+    private head = 0;
 
     constructor(source: string | HttpRangeClient) {
-        if(typeof source === "string") {
+        if (typeof source === 'string') {
             this.httpClient = new HttpRangeClient(source); 
         } else {
             this.httpClient = source;
@@ -167,7 +167,7 @@ class BufferedHttpRangeClient {
     }
 
     clone(): BufferedHttpRangeClient {
-        let newClient = new BufferedHttpRangeClient(this.httpClient);
+        const newClient = new BufferedHttpRangeClient(this.httpClient);
 
         // copy buffer/head to benefit from any already fetched data
         newClient.buffer = this.buffer.slice(0);
@@ -185,7 +185,7 @@ class BufferedHttpRangeClient {
             return this.buffer.slice(start_i, end_i);
         }
 
-        let lengthToFetch = Math.max(length, minReqLength);
+        const lengthToFetch = Math.max(length, minReqLength);
         this.buffer = await this.httpClient.getRange(start, lengthToFetch, purpose);
         this.head = start;
 
@@ -206,10 +206,10 @@ class HttpRangeClient {
         this.requestsEverMade += 1;
         this.bytesEverRequested += length;
 
-        let range = `bytes=${begin}-${begin + length - 1}`;
+        const range = `bytes=${begin}-${begin + length - 1}`;
         Logger.debug(`request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`);
 
-        let response = await fetch(this.url, {
+        const response = await fetch(this.url, {
             headers: {
                 'Range': range
             }

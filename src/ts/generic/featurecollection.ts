@@ -2,7 +2,6 @@ import * as flatbuffers from 'flatbuffers'
 import slice from 'slice-source'
 
 import ColumnMeta from '../ColumnMeta'
-import CrsMeta from '../CrsMeta'
 
 import { Header } from '../header'
 
@@ -22,7 +21,6 @@ import { magicbytes, SIZE_PREFIX_LEN } from '../constants'
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>
-type SeekFn = (offset: number) => Promise<void>
 
 export function serialize(features: IFeature[]) : Uint8Array {
     const headerMeta = introspectHeaderMeta(features)
@@ -85,13 +83,13 @@ export async function* deserializeStream(stream: ReadableStream, fromFeature: Fr
     const reader = slice(stream)
     const read: ReadFn = async size => await reader.slice(size)
 
-    let bytes = new Uint8Array(await read(8, "magic bytes"))
+    let bytes = new Uint8Array(await read(8, 'magic bytes'))
     if (!bytes.every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file')
-    bytes = new Uint8Array(await read(4, "header length"))
+    bytes = new Uint8Array(await read(4, 'header length'))
     let bb = new flatbuffers.ByteBuffer(bytes)
     const headerLength = bb.readUint32(0)
-    bytes = new Uint8Array(await read(headerLength, "header data"))
+    bytes = new Uint8Array(await read(headerLength, 'header data'))
     bb = new flatbuffers.ByteBuffer(bytes)
 
     const headerMeta = HeaderMeta.fromByteBuffer(bb);
@@ -101,7 +99,7 @@ export async function* deserializeStream(stream: ReadableStream, fromFeature: Fr
     const { indexNodeSize, featuresCount } = headerMeta
     if (indexNodeSize > 0) {
         const treeSize = calcTreeSize(featuresCount, indexNodeSize)
-        await read(treeSize, "entire index, w/o rect")
+        await read(treeSize, 'entire index, w/o rect')
     }
     let feature : IFeature | undefined
     while ((feature = await readFeature(read, headerMeta, fromFeature)))
@@ -111,25 +109,24 @@ export async function* deserializeStream(stream: ReadableStream, fromFeature: Fr
 export async function *deserializeFiltered(url: string, rect: Rect, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn)
     : AsyncGenerator<IFeature>
 {
-       const reader = await HttpReader.open(url);
-       Logger.debug("opened reader");
-       if (headerMetaFn) {
-           headerMetaFn(reader.header);
-       }
+        const reader = await HttpReader.open(url)
+        Logger.debug('opened reader')
+        if (headerMetaFn)
+            headerMetaFn(reader.header)
 
-       for await (let featureOffset of reader.selectBbox(rect)) {
-           let feature = await reader.readFeature(featureOffset[0]);
-           yield fromFeature(feature, reader.header);
-       }
+        for await (const featureOffset of reader.selectBbox(rect)) {
+            const feature = await reader.readFeature(featureOffset[0])
+            yield fromFeature(feature, reader.header)
+        }
 }
 
 async function readFeature(read: ReadFn, headerMeta: HeaderMeta, fromFeature: FromFeatureFn): Promise<IFeature | undefined> {
-    let bytes = new Uint8Array(await read(4, "feature length"))
+    let bytes = new Uint8Array(await read(4, 'feature length'))
     if (bytes.byteLength === 0)
         return
     let bb = new flatbuffers.ByteBuffer(bytes)
     const featureLength = bb.readUint32(0)
-    bytes = new Uint8Array(await read(featureLength, "feature data"))
+    bytes = new Uint8Array(await read(featureLength, 'feature data'))
     const bytesAligned = new Uint8Array(featureLength + 4)
     bytesAligned.set(bytes, 4)
     bb = new flatbuffers.ByteBuffer(bytesAligned)
