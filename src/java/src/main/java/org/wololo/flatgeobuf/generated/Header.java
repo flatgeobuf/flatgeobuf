@@ -8,7 +8,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class Header extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
   public static Header getRootAsHeader(ByteBuffer _bb) { return getRootAsHeader(_bb, new Header()); }
   public static Header getRootAsHeader(ByteBuffer _bb, Header obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -27,7 +27,7 @@ public final class Header extends Table {
   public boolean hasZ() { int o = __offset(10); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public boolean hasM() { int o = __offset(12); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public boolean hasT() { int o = __offset(14); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
-  public boolean hasTM() { int o = __offset(16); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+  public boolean hasTm() { int o = __offset(16); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public Column columns(int j) { return columns(new Column(), j); }
   public Column columns(Column obj, int j) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int columnsLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
@@ -51,10 +51,10 @@ public final class Header extends Table {
       int nameOffset,
       int envelopeOffset,
       int geometry_type,
-      boolean hasZ,
-      boolean hasM,
-      boolean hasT,
-      boolean hasTM,
+      boolean has_z,
+      boolean has_m,
+      boolean has_t,
+      boolean has_tm,
       int columnsOffset,
       long features_count,
       int index_node_size,
@@ -72,10 +72,10 @@ public final class Header extends Table {
     Header.addEnvelope(builder, envelopeOffset);
     Header.addName(builder, nameOffset);
     Header.addIndexNodeSize(builder, index_node_size);
-    Header.addHasTM(builder, hasTM);
-    Header.addHasT(builder, hasT);
-    Header.addHasM(builder, hasM);
-    Header.addHasZ(builder, hasZ);
+    Header.addHasTm(builder, has_tm);
+    Header.addHasT(builder, has_t);
+    Header.addHasM(builder, has_m);
+    Header.addHasZ(builder, has_z);
     Header.addGeometryType(builder, geometry_type);
     return Header.endHeader(builder);
   }
@@ -89,7 +89,7 @@ public final class Header extends Table {
   public static void addHasZ(FlatBufferBuilder builder, boolean hasZ) { builder.addBoolean(3, hasZ, false); }
   public static void addHasM(FlatBufferBuilder builder, boolean hasM) { builder.addBoolean(4, hasM, false); }
   public static void addHasT(FlatBufferBuilder builder, boolean hasT) { builder.addBoolean(5, hasT, false); }
-  public static void addHasTM(FlatBufferBuilder builder, boolean hasTM) { builder.addBoolean(6, hasTM, false); }
+  public static void addHasTm(FlatBufferBuilder builder, boolean hasTm) { builder.addBoolean(6, hasTm, false); }
   public static void addColumns(FlatBufferBuilder builder, int columnsOffset) { builder.addOffset(7, columnsOffset, 0); }
   public static int createColumnsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startColumnsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }

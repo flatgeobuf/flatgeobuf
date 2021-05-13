@@ -1,6 +1,5 @@
 package org.wololo.flatgeobuf;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -67,7 +66,6 @@ public class PackedRTree {
             levelOffsets.add(n - size);
             n -= size;
         }
-        ;
         Collections.reverse(levelOffsets);
         Collections.reverse(levelNumNodes);
         ArrayList<Interval> levelBounds = new ArrayList<Interval>();

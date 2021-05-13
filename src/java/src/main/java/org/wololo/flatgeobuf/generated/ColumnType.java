@@ -3,21 +3,21 @@ package org.wololo.flatgeobuf.generated;
 
 public final class ColumnType {
   private ColumnType() { }
-  public static final byte Byte = 0;
-  public static final byte UByte = 1;
-  public static final byte Bool = 2;
-  public static final byte Short = 3;
-  public static final byte UShort = 4;
-  public static final byte Int = 5;
-  public static final byte UInt = 6;
-  public static final byte Long = 7;
-  public static final byte ULong = 8;
-  public static final byte Float = 9;
-  public static final byte Double = 10;
-  public static final byte String = 11;
-  public static final byte Json = 12;
-  public static final byte DateTime = 13;
-  public static final byte Binary = 14;
+  public static final int Byte = 0;
+  public static final int UByte = 1;
+  public static final int Bool = 2;
+  public static final int Short = 3;
+  public static final int UShort = 4;
+  public static final int Int = 5;
+  public static final int UInt = 6;
+  public static final int Long = 7;
+  public static final int ULong = 8;
+  public static final int Float = 9;
+  public static final int Double = 10;
+  public static final int String = 11;
+  public static final int Json = 12;
+  public static final int DateTime = 13;
+  public static final int Binary = 14;
 
   public static final String[] names = { "Byte", "UByte", "Bool", "Short", "UShort", "Int", "UInt", "Long", "ULong", "Float", "Double", "String", "Json", "DateTime", "Binary", };
 

@@ -22,7 +22,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
     public static GeometryOffsets serializePart(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
-            byte geometryType) throws IOException {
+            int geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
 
         if (geometry == null)
@@ -147,7 +147,7 @@ public class GeometryConversions {
         }
     }
 
-    public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, byte geometryType) {
+    public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, int geometryType) {
         GeometryFactory factory = new GeometryFactory();
 
         switch (geometryType) {
