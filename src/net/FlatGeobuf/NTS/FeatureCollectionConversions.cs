@@ -56,9 +56,26 @@ namespace FlatGeobuf.NTS
             AsyncContext.Run(async () => await SerializeAsync(output, features, geometryType, dimensions, columns));
         }
 
-        public static async ValueTask SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+#if NETSTANDARD2_0
+        public static async Task SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
         {
-            output.Write(Constants.MagicBytes);
+            await output.WriteAsync(Constants.MagicBytes, 0, Constants.MagicBytes.Length);
+            var headerBuffer = BuildHeader(0, geometryType, dimensions, columns, null);
+            var bytes = headerBuffer.ToSizedArray();
+            await output.WriteAsync(bytes, 0, bytes.Length);
+            headerBuffer.Position += 4;
+            var header = Header.GetRootAsHeader(headerBuffer).UnPack();
+            foreach (var feature in features)
+            {
+                var buffer = FeatureConversions.ToByteBuffer(feature, header);
+                bytes = buffer.ToSizedArray();
+                await output.WriteAsync(bytes, 0, bytes.Length);
+            }
+        }
+#else
+        public static async Task SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+        {
+            await output.WriteAsync(Constants.MagicBytes);
             var headerBuffer = BuildHeader(0, geometryType, dimensions, columns, null);
             await output.WriteAsync(headerBuffer.ToReadOnlyMemory(headerBuffer.Position, headerBuffer.Length - headerBuffer.Position));
             headerBuffer.Position += 4;
@@ -69,6 +86,7 @@ namespace FlatGeobuf.NTS
                 await output.WriteAsync(buffer.ToReadOnlyMemory(buffer.Position, buffer.Length - buffer.Position));
             }
         }
+#endif
 
         private static ColumnType ToColumnType(Type type)
         {

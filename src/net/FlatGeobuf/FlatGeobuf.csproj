@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
     <VersionPrefix>3.9.0</VersionPrefix>
     <DefineConstants>ENABLE_SPAN_T;UNSAFE_BYTEBUFFER</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,9 +14,5 @@
     <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-  </PropertyGroup>
 
 </Project>
