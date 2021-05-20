@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 
 #[test]
 fn verify_header() {
-    let mut builder = flatbuffers::FlatBufferBuilder::new_with_capacity(1024);
+    let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(1024);
     builder.start_vector::<u8>(0);
     let empty_vec = builder.end_vector(0);
     // Header { name: Some("triangle"), envelope: Some([0.0, 0.0, 9.0, 9.0]), geometry_type: Triangle, hasZ: false, hasM: false, hasT: false, hasTM: false, columns: Some([]), features_count: 1, index_node_size: 16, crs: None, title: None, description: None, metadata: None }
@@ -56,7 +56,7 @@ fn read_from_file(fname: &str) -> Vec<u8> {
 
 #[test]
 fn write_column() {
-    let mut builder = flatbuffers::FlatBufferBuilder::new_with_capacity(1024);
+    let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(1024);
     let column_args = ColumnArgs {
         name: Some(builder.create_string("STATE_FIPS")),
         type_: ColumnType::String,

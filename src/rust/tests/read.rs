@@ -465,10 +465,3 @@ fn property_types() -> Result<()> {
 
     Ok(())
 }
-
-#[test]
-fn emtpy_feature() {
-    let empty = FgbFeature::empty();
-    let _fbgfeat = empty.fbs_feature();
-    assert!(empty.geometry().is_some());
-}
