@@ -7,9 +7,9 @@ use std::io::{BufReader, Read, Seek, SeekFrom};
 
 #[test]
 fn reader_headers_checked() {
-    // assert!(
-    //     FgbReader::open(&mut File::open("../../test/data/surface/triangle.fgb").unwrap()).is_ok()
-    // );
+    assert!(
+        FgbReader::open(&mut File::open("../../test/data/surface/triangle.fgb").unwrap()).is_ok()
+    );
     assert!(FgbReader::open(&mut File::open("../../test/data/topp_states.fgb").unwrap()).is_ok());
     assert!(FgbReader::open(&mut File::open("../../test/data/UScounties.fgb").unwrap()).is_ok());
     assert!(FgbReader::open(&mut File::open("../../test/data/countries.fgb").unwrap()).is_ok());
