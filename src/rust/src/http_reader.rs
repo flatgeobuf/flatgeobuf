@@ -3,7 +3,7 @@ use crate::header_generated::*;
 use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
+use crate::{check_magic_bytes, NodeItem, HEADER_MAX_BUFFER_SIZE};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
@@ -57,7 +57,7 @@ impl HttpFgbReader {
         debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
 
         let bytes = client.get_range(0, 8, min_req_size).await?;
-        if bytes != MAGIC_BYTES {
+        if !check_magic_bytes(&bytes) {
             return Err(GeozeroError::GeometryFormat);
         }
         let mut bytes = BytesMut::from(client.get_range(8, 4, min_req_size).await?);

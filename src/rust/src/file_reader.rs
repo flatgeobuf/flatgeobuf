@@ -2,7 +2,7 @@ use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
+use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
@@ -29,10 +29,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
     pub fn open(reader: &'a mut R) -> Result<Self> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
-        if magic_buf[0..2] != MAGIC_BYTES[0..2]
-            || magic_buf[4..6] != MAGIC_BYTES[4..6]
-            || magic_buf[3] > MAGIC_BYTES[3]
-        {
+        if !check_magic_bytes(&magic_buf) {
             return Err(GeozeroError::GeometryFormat);
         }
 

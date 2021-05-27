@@ -110,3 +110,9 @@ pub const VERSION: u8 = 3;
 pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
 
 pub const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
+
+fn check_magic_bytes(magic_bytes: &[u8]) -> bool {
+    magic_bytes[0..3] == MAGIC_BYTES[0..3]
+        && magic_bytes[4..7] == MAGIC_BYTES[4..7]
+        && magic_bytes[3] <= VERSION
+}
