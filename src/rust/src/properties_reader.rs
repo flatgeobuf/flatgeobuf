@@ -9,18 +9,18 @@ use std::str;
 
 /// Access to current feature
 pub struct FgbFeature {
-    pub(crate) header_buf: Vec<u8>, // Header would require lifetime
+    pub(crate) header_buf: Vec<u8>, // Using type Header<'a> instead of Vec would require adding a lifetime to FgbFeature
     pub(crate) feature_buf: Vec<u8>,
 }
 
 impl FgbFeature {
     pub(crate) fn header(&self) -> Header {
-        // unsafe: verification is done before creating instance
+        // SAFETY: verification is done before creating instance
         unsafe { size_prefixed_root_as_header_unchecked(&self.header_buf) }
     }
     /// Flatbuffers feature access
     pub fn fbs_feature(&self) -> Feature {
-        // unsafe: verification is done before creating instance
+        // SAFETY: verification is done before creating instance
         unsafe { size_prefixed_root_as_feature_unchecked(&self.feature_buf) }
     }
     /// Flatbuffers geometry access
