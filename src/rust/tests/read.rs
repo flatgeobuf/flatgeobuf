@@ -22,7 +22,7 @@ fn read_file_low_level() -> Result<()> {
 
     let mut magic_buf: [u8; 8] = [0; 8];
     reader.read_exact(&mut magic_buf)?;
-    assert_eq!(magic_buf, MAGIC_BYTES);
+    assert_eq!(magic_buf, [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0]);
 
     let mut size_buf: [u8; 4] = [0; 4];
     reader.read_exact(&mut size_buf)?;

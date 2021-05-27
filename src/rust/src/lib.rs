@@ -107,9 +107,9 @@ pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
 
 pub const VERSION: u8 = 3;
-pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
+const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
 
-pub const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
+const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
 
 fn check_magic_bytes(magic_bytes: &[u8]) -> bool {
     magic_bytes[0..3] == MAGIC_BYTES[0..3]
