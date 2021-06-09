@@ -101,7 +101,7 @@
                 }
             }
             // if the user is panning around alot, only update once per second max
-            updateResults = _.debounce(updateResults, 1000);
+            updateResults = _.throttle(updateResults, 1000);
 
             // show a leaflet rect corresponding to our bounding box
             let rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
