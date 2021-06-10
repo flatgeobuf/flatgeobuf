@@ -63,6 +63,30 @@ As performance is highly data dependent I've also made similar tests on a larger
 | Write w/spatial index | 1         | 1.07       | 0.70       |
 | Size                  | 1         | 0.77       | 0.95       |
 
+### Optimizing Remotely Hosted FlatGeobufs
+
+If you're accessing a FlatGeobuf file over HTTP, consider using a CDN to
+minimize latency.
+
+In particular, when [using the spatial
+filter](https://flatgeobuf.org/examples/leaflet/filtered.html) to get a subset
+of features, multiple requests will be made. Often round-trip latency, rather
+than throughput, is the limiting factor. A caching CDN can be especially
+helpful here.
+
+Fetching a subset of a file over HTTP utilizes Range requests. If the page
+accessing the FGB is hosted on a different domain from the CDN, [Cross
+Origin](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing) policy
+applies, and the required `Range` header will induce an `OPTIONS` (preflight)
+request.
+
+Popular CDNs, like Cloudfront, support Range Requests, but don't cache the
+requisite preflight OPTIONS requests by default. Consider [enabling OPTIONS
+request caching
+](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/header-caching.html#header-caching-web-cors).
+Without this, the preflight authorization request could be much slower than
+necessary.
+
 ## Features
 
 * Reference implementation for JavaScript, TypeScript, C++, C#, Java and Rust
