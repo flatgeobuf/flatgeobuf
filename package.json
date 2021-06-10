@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
-    "flatbuffers": "2.0.1",
+    "flatbuffers": "2.0.3",
     "slice-source": "0.4.1",
     "stream-buffers": "3.0.2"
   },
