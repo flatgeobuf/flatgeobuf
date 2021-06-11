@@ -79,10 +79,12 @@
 extern crate log;
 
 #[allow(unused_imports, non_snake_case)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod feature_generated;
 mod file_reader;
 mod geometry_reader;
 #[allow(unused_imports, non_snake_case)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod header_generated;
 #[cfg(feature = "http")]
 mod http_client;
