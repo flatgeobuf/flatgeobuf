@@ -23,31 +23,44 @@
   "author": {
     "name": "Björn Harrtell"
   },
-  "contributors": [{
-    "name": "Pirmin Kalberer"
-  }, {
-    "name": "Michael Kirk"
-  }, {
-    "name": "Gabriel Roldan"
-  }, {
-    "name": "Jared Erickson"
-  }, {
-    "name": "Karsten Pihl"
-  }, {
-    "name": "Xavier Fischer"
-  }, {
-    "name": "Dustin Carlino"
-  }, {
-    "name": "Corey Farwell"
-  }, {
-    "name": "Even Rouault"
-  }, {
-    "name": "James Hughes"
-  }, {
-    "name": "James Gill"
-  }, {
-    "name": "Clemens Portele"
-  }],
+  "contributors": [
+    {
+      "name": "Pirmin Kalberer"
+    },
+    {
+      "name": "Michael Kirk"
+    },
+    {
+      "name": "Gabriel Roldan"
+    },
+    {
+      "name": "Jared Erickson"
+    },
+    {
+      "name": "Karsten Pihl"
+    },
+    {
+      "name": "Xavier Fischer"
+    },
+    {
+      "name": "Dustin Carlino"
+    },
+    {
+      "name": "Corey Farwell"
+    },
+    {
+      "name": "Even Rouault"
+    },
+    {
+      "name": "James Hughes"
+    },
+    {
+      "name": "James Gill"
+    },
+    {
+      "name": "Clemens Portele"
+    }
+  ],
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/flatgeobuf/flatgeobuf/issues"
@@ -62,30 +75,30 @@
     "ol": "^6.5.0"
   },
   "devDependencies": {
-    "@babel/core": "7.14.0",
-    "@babel/preset-env": "7.14.1",
+    "@babel/core": "7.14.5",
+    "@babel/preset-env": "7.14.5",
     "@rollup/plugin-babel": "5.3.0",
     "@rollup/plugin-node-resolve": "13.0.0",
     "@types/chai": "4.2.18",
     "@types/mocha": "8.2.2",
-    "@types/node": "15.0.2",
-    "@types/ol": "6.4.2",
+    "@types/node": "15.12.2",
+    "@types/ol": "6.5.1",
     "@types/stream-buffers": "3.0.3",
-    "@typescript-eslint/eslint-plugin": "4.22.1",
-    "@typescript-eslint/parser": "4.22.1",
+    "@typescript-eslint/eslint-plugin": "4.26.1",
+    "@typescript-eslint/parser": "4.26.1",
     "chai": "4.3.4",
-    "eslint": "7.26.0",
+    "eslint": "7.28.0",
     "esm": "3.2.25",
-    "jsts": "2.6.1",
+    "jsts": "2.6.2",
     "local-web-server": "4.2.1",
-    "mocha": "8.4.0",
+    "mocha": "9.0.0",
     "node-fetch": "2.6.1",
     "ol": "6.5.0",
-    "rollup": "2.47.0",
+    "rollup": "2.51.2",
     "rollup-plugin-terser": "7.0.2",
-    "ts-node": "9.1.1",
+    "ts-node": "10.0.0",
     "typedoc": "0.20.36",
-    "typescript": "4.2.4",
+    "typescript": "4.3.2",
     "web-streams-polyfill": "3.0.3"
   }
 }
