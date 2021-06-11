@@ -11,7 +11,7 @@ import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js'
 import SimpleGeometry from 'ol/geom/SimpleGeometry'
 import { Rect } from './packedrtree'
 

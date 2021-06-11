@@ -1,4 +1,4 @@
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js'
 
 import { ReadableStreamBuffer } from 'stream-buffers'
 

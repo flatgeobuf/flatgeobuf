@@ -2,13 +2,13 @@ import { expect } from 'chai'
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter'
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader'
 import 'mocha'
-import LocalWebServer = require('local-web-server')
+import LocalWebServer from 'local-web-server'
 
 import { readFileSync } from 'fs'
 import { TextDecoder, TextEncoder } from 'util'
 
 import fetch from 'node-fetch'
-import { ReadableStream } from 'web-streams-polyfill/ponyfill'
+import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js'
 
 global['ReadableStream'] = ReadableStream
 global['fetch'] = fetch
