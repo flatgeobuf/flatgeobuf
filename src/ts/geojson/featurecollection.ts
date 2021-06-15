@@ -1,5 +1,5 @@
 import ColumnMeta from '../ColumnMeta'
-import { ColumnType } from '../column-type'
+import { ColumnType } from '../flat-geobuf/column-type'
 import HeaderMeta from '../HeaderMeta'
 
 import { fromFeature, IGeoJsonFeature } from './feature'

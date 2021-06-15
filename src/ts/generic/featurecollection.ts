@@ -3,11 +3,11 @@ import slice from 'slice-source'
 
 import ColumnMeta from '../ColumnMeta'
 
-import { Header } from '../header'
+import { Header } from '../flat-geobuf/header'
 
-import { Column } from '../column'
-import { ColumnType } from '../column-type'
-import { Feature } from '../feature'
+import { Column } from '../flat-geobuf/column'
+import { ColumnType } from '../flat-geobuf/column-type'
+import { Feature } from '../flat-geobuf/feature'
 import HeaderMeta from '../HeaderMeta'
 
 import { buildFeature, IFeature } from './feature'

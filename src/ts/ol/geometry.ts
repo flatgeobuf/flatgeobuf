@@ -1,5 +1,5 @@
-import { GeometryType } from '../geometry-type'
-import { Geometry } from '../geometry'
+import { GeometryType } from '../flat-geobuf/geometry-type'
+import { Geometry } from '../flat-geobuf/geometry'
 
 import { ISimpleGeometry } from '../generic/geometry'
 

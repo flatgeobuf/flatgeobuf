@@ -2,8 +2,8 @@ import * as flatbuffers from 'flatbuffers'
 
 import ColumnMeta from './ColumnMeta'
 import CrsMeta from './CrsMeta'
-import { GeometryType } from './geometry-type'
-import { Header } from './header'
+import { GeometryType } from './flat-geobuf/geometry-type'
+import { Header } from './flat-geobuf/header'
 
 export default class HeaderMeta {
     constructor(

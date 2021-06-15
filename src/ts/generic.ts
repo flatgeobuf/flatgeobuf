@@ -28,5 +28,5 @@ export {
     serialize
 } from './generic/featurecollection'
 
-export { GeometryType } from './geometry-type'
-export { ColumnType } from './column-type'
+export { GeometryType } from './flat-geobuf/geometry-type'
+export { ColumnType } from './flat-geobuf/column-type'

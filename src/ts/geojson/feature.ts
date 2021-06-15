@@ -1,5 +1,5 @@
-import { Feature } from '../feature'
-import { Geometry } from '../geometry'
+import { Feature } from '../flat-geobuf/feature'
+import { Geometry } from '../flat-geobuf/geometry'
 import HeaderMeta from '../HeaderMeta'
 import { fromGeometry, IGeoJsonGeometry } from './geometry'
 import { parseProperties, IFeature } from '../generic/feature'

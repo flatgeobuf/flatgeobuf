@@ -4,7 +4,7 @@ import { Rect, calcTreeSize, DEFAULT_NODE_SIZE, NODE_ITEM_LEN, streamSearch} fro
 import { magicbytes, SIZE_PREFIX_LEN } from './constants';
 import Logger from './Logger';
 import HeaderMeta from './HeaderMeta';
-import { Feature } from './feature';
+import { Feature } from './flat-geobuf/feature';
 
 export class HttpReader {
     private headerClient: BufferedHttpRangeClient;
