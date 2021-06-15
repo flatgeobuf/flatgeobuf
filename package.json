@@ -7,7 +7,8 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json node --experimental-specifier-resolution=node --loader ts-node/esm.mjs ./node_modules/mocha/lib/cli/cli.js -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
-    "server": "ws"
+    "server": "ws",
+    "fmt": "prettier --write src/ts"
   },
   "files": [
     "lib/**/*",
@@ -94,6 +95,7 @@
     "mocha": "9.0.0",
     "node-fetch": "2.6.1",
     "ol": "6.5.0",
+    "prettier": "^2.3.1",
     "rollup": "2.51.2",
     "rollup-plugin-terser": "7.0.2",
     "ts-node": "10.0.0",
