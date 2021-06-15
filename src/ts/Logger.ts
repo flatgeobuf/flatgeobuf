@@ -8,23 +8,23 @@ export enum LogLevel {
 export default class Logger {
     static logLevel: LogLevel = LogLevel.Info;
 
-    static debug(...args: any[]) {
+    static debug(...args: any[]): void {
         this.log(LogLevel.Debug, ...args);
     }
 
-    static info(...args: any[]) {
+    static info(...args: any[]): void {
         this.log(LogLevel.Info, ...args);
     }
 
-    static warn(...args: any[]) {
+    static warn(...args: any[]): void {
         this.log(LogLevel.Warn, ...args);
     }
 
-    static error(...args: any[]) {
+    static error(...args: any[]): void {
         this.log(LogLevel.Error, ...args);
     }
 
-    static log(level: LogLevel, ...args: any[]) {
+    static log(level: LogLevel, ...args: any[]): void {
         if (this.logLevel > level) {
             return;
         }

@@ -6,7 +6,7 @@ export const NODE_ITEM_LEN: number = 8 * 4 + 8;
 // actual value will be specified in the header but
 // this can be useful for having reasonably sized guesses for fetch-sizes when
 // streaming results
-export const DEFAULT_NODE_SIZE: number = 16;
+export const DEFAULT_NODE_SIZE = 16;
 
 export interface Rect {
     minX: number;
@@ -118,7 +118,7 @@ export async function* streamSearch(
             this.nodes[1] = newOffset;
         }
 
-        toString(): String {
+        toString(): string {
             return `[NodeRange level: ${this._level}, nodes: ${this.nodes[0]}-${this.nodes[1]}]`;
         }
     }
@@ -140,11 +140,12 @@ export async function* streamSearch(
     );
 
     while (queue.length != 0) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nodeRange = queue.shift()!;
 
         Logger.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
-        let nodeIndex = nodeRange.startNode();
+        const nodeIndex = nodeRange.startNode();
         const isLeafNode = nodeIndex >= leafNodesOffset;
 
         // find the end index of the node
@@ -197,9 +198,9 @@ export async function* streamSearch(
                 continue;
             }
 
-            let newNodeRange: NodeRange = (() => {
-                let level = nodeRange.level() - 1;
-                let range: [number, number] = [offset, offset + 1];
+            const newNodeRange: NodeRange = (() => {
+                const level = nodeRange.level() - 1;
+                const range: [number, number] = [offset, offset + 1];
                 return new NodeRange(range, level);
             })();
 
