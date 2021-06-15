@@ -1,8 +1,8 @@
 import { default as OLFeature } from 'ol/Feature'
 
-import { GeometryType } from '../geometry-type'
-import { Feature } from '../feature'
-import { Geometry } from '../geometry'
+import { GeometryType } from '../flat-geobuf/geometry-type'
+import { Feature } from '../flat-geobuf/feature'
+import { Geometry } from '../flat-geobuf/geometry'
 import HeaderMeta from '../HeaderMeta'
 import { createGeometryOl } from './geometry'
 import { fromFeature as genericFromFeature, IFeature } from '../generic/feature'

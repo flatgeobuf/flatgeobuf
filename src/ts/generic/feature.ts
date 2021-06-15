@@ -1,8 +1,8 @@
 import * as flatbuffers from 'flatbuffers'
 
 import ColumnMeta from '../ColumnMeta'
-import { ColumnType } from '../column-type'
-import { Feature } from '../feature'
+import { ColumnType } from '../flat-geobuf/column-type'
+import { Feature } from '../flat-geobuf/feature'
 import HeaderMeta from '../HeaderMeta'
 import { buildGeometry, ISimpleGeometry, ICreateGeometry, IParsedGeometry } from './geometry'
 
