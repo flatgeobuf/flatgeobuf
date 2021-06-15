@@ -1,5 +1,4 @@
-
-import { ColumnType } from './flat-geobuf/column-type'
+import { ColumnType } from './flat-geobuf/column-type';
 
 export default class ColumnMeta {
     constructor(
@@ -13,6 +12,5 @@ export default class ColumnMeta {
         public nullable: boolean,
         public unique: boolean,
         public primary_key: boolean
-        ) {
-    }
+    ) {}
 }

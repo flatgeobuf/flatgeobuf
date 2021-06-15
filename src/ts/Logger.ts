@@ -1,5 +1,8 @@
 export enum LogLevel {
-    Debug, Info, Warn, Error
+    Debug,
+    Info,
+    Warn,
+    Error,
 }
 
 export default class Logger {
@@ -28,19 +31,19 @@ export default class Logger {
 
         switch (level) {
             case LogLevel.Debug: {
-                console.debug(...args); 
+                console.debug(...args);
                 break;
             }
             case LogLevel.Info: {
-                console.info(...args); 
+                console.info(...args);
                 break;
             }
             case LogLevel.Warn: {
-                console.warn(...args); 
+                console.warn(...args);
                 break;
             }
             case LogLevel.Error: {
-                console.error(...args); 
+                console.error(...args);
                 break;
             }
         }

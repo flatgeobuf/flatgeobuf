@@ -1,4 +1,4 @@
-# FlatGeobuf for JavaScript / TypeScript 
+# FlatGeobuf for JavaScript / TypeScript
 
 ## Building
 

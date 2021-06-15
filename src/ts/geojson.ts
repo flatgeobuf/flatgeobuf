@@ -3,18 +3,19 @@ import {
     deserialize as fcDeserialize,
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
-    serialize as fcSerialize } from './geojson/featurecollection'
+    serialize as fcSerialize,
+} from './geojson/featurecollection';
 
-import { Rect } from './packedrtree'
-import { IGeoJsonFeature } from './geojson/feature'
-import { HeaderMetaFn } from './generic'
+import { Rect } from './packedrtree';
+import { IGeoJsonFeature } from './geojson/feature';
+import { HeaderMetaFn } from './generic';
 
 /**
  * @param geojson GeoJSON object to serialize
  */
 export function serialize(geojson: IGeoJsonFeatureCollection): Uint8Array {
-    const bytes = fcSerialize(geojson)
-    return bytes
+    const bytes = fcSerialize(geojson);
+    return bytes;
 }
 
 /**
@@ -26,13 +27,10 @@ export function serialize(geojson: IGeoJsonFeatureCollection): Uint8Array {
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
-    headerMetaFn?: HeaderMetaFn) :
-    IGeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature>
-{
-    if (input instanceof Uint8Array)
-        return fcDeserialize(input, headerMetaFn)
+    headerMetaFn?: HeaderMetaFn
+): IGeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
+    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, headerMetaFn)
-    else
-        return fcDeserializeFiltered(input, rect as Rect, headerMetaFn)
+        return fcDeserializeStream(input, headerMetaFn);
+    else return fcDeserializeFiltered(input, rect as Rect, headerMetaFn);
 }

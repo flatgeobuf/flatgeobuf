@@ -1,6 +1,6 @@
-import Logger from "./Logger";
+import Logger from './Logger';
 
-export const NODE_ITEM_LEN: number = 8 * 4 + 8
+export const NODE_ITEM_LEN: number = 8 * 4 + 8;
 // default branching factor of a node in the rtree
 //
 // actual value will be specified in the header but
@@ -9,61 +9,63 @@ export const NODE_ITEM_LEN: number = 8 * 4 + 8
 export const DEFAULT_NODE_SIZE: number = 16;
 
 export interface Rect {
-    minX: number
-    minY: number
-    maxX: number
-    maxY: number
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
 }
 
 export function calcTreeSize(numItems: number, nodeSize: number): number {
-    nodeSize = Math.min(Math.max(+nodeSize, 2), 65535)
-    let n = numItems
-    let numNodes = n
+    nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
+    let n = numItems;
+    let numNodes = n;
     do {
-        n = Math.ceil(n / nodeSize)
-        numNodes += n
-    } while (n !== 1)
-    return numNodes * NODE_ITEM_LEN
+        n = Math.ceil(n / nodeSize);
+        numNodes += n;
+    } while (n !== 1);
+    return numNodes * NODE_ITEM_LEN;
 }
 
 /**
  * returns [leafNodesOffset, numNodes] for each level
  */
-function generateLevelBounds(numItems: number, nodeSize: number): Array<[number, number]> {
-    if (nodeSize < 2)
-        throw new Error('Node size must be at least 2')
+function generateLevelBounds(
+    numItems: number,
+    nodeSize: number
+): Array<[number, number]> {
+    if (nodeSize < 2) throw new Error('Node size must be at least 2');
     if (numItems === 0)
-        throw new Error('Number of items must be greater than 0')
+        throw new Error('Number of items must be greater than 0');
 
     // number of nodes per level in bottom-up order
-    let n = numItems
-    let numNodes = n
-    const levelNumNodes = [n]
+    let n = numItems;
+    let numNodes = n;
+    const levelNumNodes = [n];
     do {
-        n = Math.ceil(n / nodeSize)
-        numNodes += n
-        levelNumNodes.push(n)
-    } while (n !== 1)
+        n = Math.ceil(n / nodeSize);
+        numNodes += n;
+        levelNumNodes.push(n);
+    } while (n !== 1);
 
     // bounds per level in reversed storage order (top-down)
-    const levelOffsets: Array<number> = []
-    n = numNodes
+    const levelOffsets: Array<number> = [];
+    n = numNodes;
     for (const size of levelNumNodes) {
-        levelOffsets.push(n - size)
-        n -= size
+        levelOffsets.push(n - size);
+        n -= size;
     }
-    levelOffsets.reverse()
-    levelNumNodes.reverse()
-    const levelBounds: Array<[number, number]> = []
+    levelOffsets.reverse();
+    levelNumNodes.reverse();
+    const levelBounds: Array<[number, number]> = [];
     for (let i = 0; i < levelNumNodes.length; i++)
-        levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]])
-    levelBounds.reverse()
-    return levelBounds
+        levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]]);
+    levelBounds.reverse();
+    return levelBounds;
 }
 
-type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>
+type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>;
 
-/** 
+/**
  * A feature found to be within the bounding box `rect`
  *
  *  (offset, index)
@@ -77,20 +79,20 @@ export type SearchResult = [number, number];
  *
  * Every node in the FGB index tree has a bounding rect, all of the nodes children
  * are contained within that bounding rect. The leaf nodes of the tree represent
- * the features of the collection. 
+ * the features of the collection.
  *
  * As we traverse the tree, starting from the root, we'll need to read more data
- * from the index. When we don't already have this range data buffered locally, 
+ * from the index. When we don't already have this range data buffered locally,
  * an HTTP fetch is triggered. For performance, we merge adjacent and nearby
- * request ranges into a single request, reasoning that fetching a few extra 
+ * request ranges into a single request, reasoning that fetching a few extra
  * bytes is a good tradeoff if it means we can reduce the number of requests.
  */
 export async function* streamSearch(
     numItems: number,
     nodeSize: number,
     rect: Rect,
-    readNode: ReadNodeFn): AsyncGenerator<SearchResult, void, unknown>
-{
+    readNode: ReadNodeFn
+): AsyncGenerator<SearchResult, void, unknown> {
     class NodeRange {
         _level: number;
         nodes: [number, number];
@@ -117,7 +119,7 @@ export async function* streamSearch(
         }
 
         toString(): String {
-            return `[NodeRange level: ${this._level}, nodes: ${this.nodes[0]}-${this.nodes[1]}]`
+            return `[NodeRange level: ${this._level}, nodes: ${this.nodes[0]}-${this.nodes[1]}]`;
         }
     }
 
@@ -133,70 +135,86 @@ export async function* streamSearch(
 
     const queue: Array<NodeRange> = [rootNodeRange];
 
-    Logger.debug(`starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`);
+    Logger.debug(
+        `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`
+    );
 
     while (queue.length != 0) {
         const nodeRange = queue.shift()!;
 
         Logger.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
-        let nodeIndex = nodeRange.startNode()
-        const isLeafNode = nodeIndex >= leafNodesOffset
+        let nodeIndex = nodeRange.startNode();
+        const isLeafNode = nodeIndex >= leafNodesOffset;
 
         // find the end index of the node
-        const [,levelBound] = levelBounds[nodeRange.level()];
+        const [, levelBound] = levelBounds[nodeRange.level()];
 
-        const end = Math.min(nodeRange.endNode() + nodeSize, levelBound)
-        const length = end - nodeIndex
+        const end = Math.min(nodeRange.endNode() + nodeSize, levelBound);
+        const length = end - nodeIndex;
 
-        const buffer = await readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN)
+        const buffer = await readNode(
+            nodeIndex * NODE_ITEM_LEN,
+            length * NODE_ITEM_LEN
+        );
 
-        const float64Array = new Float64Array(buffer)
-        const uint32Array = new Uint32Array(buffer)
+        const float64Array = new Float64Array(buffer);
+        const uint32Array = new Uint32Array(buffer);
         for (let pos = nodeIndex; pos < end; pos++) {
-            const nodePos = (pos - nodeIndex) * 5
-            if (maxX < float64Array[nodePos + 0]) continue // maxX < nodeMinX
-            if (maxY < float64Array[nodePos + 1]) continue // maxY < nodeMinY
-            if (minX > float64Array[nodePos + 2]) continue // minX > nodeMaxX
-            if (minY > float64Array[nodePos + 3]) continue // minY > nodeMaxY
+            const nodePos = (pos - nodeIndex) * 5;
+            if (maxX < float64Array[nodePos + 0]) continue; // maxX < nodeMinX
+            if (maxY < float64Array[nodePos + 1]) continue; // maxY < nodeMinY
+            if (minX > float64Array[nodePos + 2]) continue; // minX > nodeMaxX
+            if (minY > float64Array[nodePos + 3]) continue; // minY > nodeMaxY
 
-            const low32Offset = uint32Array[(nodePos << 1) + 8]
-            const high32Offset = uint32Array[(nodePos << 1) + 9]
+            const low32Offset = uint32Array[(nodePos << 1) + 8];
+            const high32Offset = uint32Array[(nodePos << 1) + 9];
             const offset = readUint52(high32Offset, low32Offset);
 
             if (isLeafNode) {
-                Logger.debug("yielding feature");
-                yield [offset, pos - leafNodesOffset]
+                Logger.debug('yielding feature');
+                yield [offset, pos - leafNodesOffset];
                 continue;
             }
 
             // request up to this many extra bytes if it means we can eliminate
             // an extra request
-            const combineRequestThreshold = 256 * 1024 / NODE_ITEM_LEN;
+            const combineRequestThreshold = (256 * 1024) / NODE_ITEM_LEN;
 
-            // Since we're traversing the tree by monotonically increasing byte 
+            // Since we're traversing the tree by monotonically increasing byte
             // offset, the most recently enqueued node will be the nearest, and
             // thus presents the best candidate for merging.
             const nearestNodeRange = queue[queue.length - 1];
-            if (nearestNodeRange !== undefined 
-                && nearestNodeRange.level() == nodeRange.level() - 1
-                && offset < nearestNodeRange.endNode() + combineRequestThreshold) {
-                Logger.debug(`Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`);
+            if (
+                nearestNodeRange !== undefined &&
+                nearestNodeRange.level() == nodeRange.level() - 1 &&
+                offset < nearestNodeRange.endNode() + combineRequestThreshold
+            ) {
+                Logger.debug(
+                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`
+                );
                 nearestNodeRange.extendEndNodeToNewOffset(offset);
                 continue;
-            } 
+            }
 
-            let newNodeRange: NodeRange = (()=> {
+            let newNodeRange: NodeRange = (() => {
                 let level = nodeRange.level() - 1;
                 let range: [number, number] = [offset, offset + 1];
                 return new NodeRange(range, level);
             })();
 
             // We're going to add a new node range - log the reason
-            if (nearestNodeRange !== undefined && nearestNodeRange.level() == newNodeRange.level()) {
-                Logger.debug(`Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`);
+            if (
+                nearestNodeRange !== undefined &&
+                nearestNodeRange.level() == newNodeRange.level()
+            ) {
+                Logger.debug(
+                    `Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`
+                );
             } else {
-                Logger.debug(`Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`);
+                Logger.debug(
+                    `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`
+                );
             }
 
             queue.push(newNodeRange);
@@ -218,12 +236,12 @@ export async function* streamSearch(
 function readUint52(high32Bits: number, low32Bits: number) {
     // javascript integers can only be 52 bits, verify the top 12 bits
     // are unused.
-    if ((high32Bits & 0xfff00000) != 0)  {
-        throw Error("integer is too large to be safely represented");
+    if ((high32Bits & 0xfff00000) != 0) {
+        throw Error('integer is too large to be safely represented');
     }
 
     // Note: we multiply by 2**32 because bitshift operations wrap at 32, so `high32Bits << 32` would be a NOOP.
-    const result = low32Bits + (high32Bits * 2**32);
+    const result = low32Bits + high32Bits * 2 ** 32;
 
     return result;
 }

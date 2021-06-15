@@ -2,22 +2,33 @@ import {
     serialize,
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
-    deserializeFiltered as genericDeserializeFiltered } from '../generic/featurecollection'
-import { IFeature } from '../generic/feature'
-import { fromFeature } from './feature'
-import { HeaderMetaFn } from '../generic'
-import { Rect } from '../packedrtree'
+    deserializeFiltered as genericDeserializeFiltered,
+} from '../generic/featurecollection';
+import { IFeature } from '../generic/feature';
+import { fromFeature } from './feature';
+import { HeaderMetaFn } from '../generic';
+import { Rect } from '../packedrtree';
 
-export { serialize as serialize }
+export { serialize as serialize };
 
-export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IFeature[] {
-    return genericDeserialize(bytes, fromFeature, headerMetaFn)
+export function deserialize(
+    bytes: Uint8Array,
+    headerMetaFn?: HeaderMetaFn
+): IFeature[] {
+    return genericDeserialize(bytes, fromFeature, headerMetaFn);
 }
 
-export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeStream(stream, fromFeature, headerMetaFn)
+export function deserializeStream(
+    stream: ReadableStream,
+    headerMetaFn?: HeaderMetaFn
+): AsyncGenerator<any, void, unknown> {
+    return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
 
-export function deserializeFiltered(url: string, rect: Rect, headerMetaFn?: HeaderMetaFn): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn)
+export function deserializeFiltered(
+    url: string,
+    rect: Rect,
+    headerMetaFn?: HeaderMetaFn
+): AsyncGenerator<any, void, unknown> {
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn);
 }
