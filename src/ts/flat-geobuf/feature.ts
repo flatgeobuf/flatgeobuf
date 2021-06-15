@@ -2,8 +2,8 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-import { Column } from './column';
-import { Geometry } from './geometry';
+import { Column } from '../flat-geobuf/column';
+import { Geometry } from '../flat-geobuf/geometry';
 
 
 export class Feature {
