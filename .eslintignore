@@ -2,5 +2,4 @@ node_modules
 dist
 lib
 coverage
-*_generated.ts
-/src/java
+src/ts/flat-geobuf
