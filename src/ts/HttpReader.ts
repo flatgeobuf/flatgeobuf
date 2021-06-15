@@ -1,6 +1,12 @@
-import * as flatbuffers from 'flatbuffers'
+import * as flatbuffers from 'flatbuffers';
 
-import { Rect, calcTreeSize, DEFAULT_NODE_SIZE, NODE_ITEM_LEN, streamSearch} from './packedrtree';
+import {
+    Rect,
+    calcTreeSize,
+    DEFAULT_NODE_SIZE,
+    NODE_ITEM_LEN,
+    streamSearch,
+} from './packedrtree';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants';
 import Logger from './Logger';
 import HeaderMeta from './HeaderMeta';
@@ -13,15 +19,17 @@ export class HttpReader {
     private headerLength: number;
     private indexLength: number;
 
-    constructor(headerClient: BufferedHttpRangeClient,
-                header: HeaderMeta,
-                headerLength: number,
-                indexLength: number) {
-       this.headerClient = headerClient;
-       this.header = header;
-       this.headerLength = headerLength;
-       this.indexLength = indexLength;
-   }
+    constructor(
+        headerClient: BufferedHttpRangeClient,
+        header: HeaderMeta,
+        headerLength: number,
+        indexLength: number
+    ) {
+        this.headerClient = headerClient;
+        this.header = header;
+        this.headerLength = headerLength;
+        this.indexLength = indexLength;
+    }
 
     // Fetch the header, preparing the reader to read Feature data.
     //
@@ -40,7 +48,7 @@ export class HttpReader {
             // The actual branching factor will be in the header, but since we
             // don't have the header yet, we just guess. The consequence of
             // getting this wrong isn't terminal, it only means we may be
-            // fetching slightly more than we need or that we need to make an 
+            // fetching slightly more than we need or that we need to make an
             // extra request later.
             const assumedBranchingFactor = DEFAULT_NODE_SIZE;
 
@@ -57,20 +65,29 @@ export class HttpReader {
         })();
 
         const minReqLength = assumedHeaderLength + assumedIndexLength;
-        Logger.debug(`fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`);
+        Logger.debug(
+            `fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`
+        );
 
         {
-            const bytes = new Uint8Array(await headerClient.getRange(0, 8, minReqLength, 'header'));
+            const bytes = new Uint8Array(
+                await headerClient.getRange(0, 8, minReqLength, 'header')
+            );
             if (!bytes.every((v, i) => magicbytes[i] === v)) {
                 Logger.error(`bytes: ${bytes} != ${magicbytes}`);
-                throw new Error('Not a FlatGeobuf file')
+                throw new Error('Not a FlatGeobuf file');
             }
             Logger.debug('magic bytes look good');
         }
 
         let headerLength: number;
         {
-            const bytes = await headerClient.getRange(8, 4, minReqLength, 'header');
+            const bytes = await headerClient.getRange(
+                8,
+                4,
+                minReqLength,
+                'header'
+            );
             headerLength = new DataView(bytes).getUint32(0, true);
             const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
             if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
@@ -80,28 +97,51 @@ export class HttpReader {
             Logger.debug(`headerLength: ${headerLength}`);
         }
 
-        const bytes = await headerClient.getRange(12, headerLength, minReqLength, 'header');
+        const bytes = await headerClient.getRange(
+            12,
+            headerLength,
+            minReqLength,
+            'header'
+        );
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = HeaderMeta.fromByteBuffer(bb);
 
-        const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
+        const indexLength = calcTreeSize(
+            header.featuresCount,
+            header.indexNodeSize
+        );
 
         Logger.debug('completed: opening http reader');
         return new HttpReader(headerClient, header, headerLength, indexLength);
     }
 
-    async* selectBbox(rect: Rect): AsyncGenerator<number[], void, unknown> {
+    async *selectBbox(rect: Rect): AsyncGenerator<number[], void, unknown> {
         // Read R-Tree index and build filter for features within bbox
         const lengthBeforeTree = this.lengthBeforeTree();
 
         const bufferedClient = this.headerClient;
-        const readNode = async function(offsetIntoTree: number, size: number): Promise<ArrayBuffer> {
+        const readNode = async function (
+            offsetIntoTree: number,
+            size: number
+        ): Promise<ArrayBuffer> {
             const minReqLength = 0;
-            return bufferedClient.getRange(lengthBeforeTree + offsetIntoTree, size, minReqLength, 'index');
+            return bufferedClient.getRange(
+                lengthBeforeTree + offsetIntoTree,
+                size,
+                minReqLength,
+                'index'
+            );
         };
 
-        Logger.debug(`starting: selectBbox, traversing index. lengthBeforeTree: ${lengthBeforeTree}`);
-        yield *streamSearch(this.header.featuresCount, this.header.indexNodeSize, rect, readNode);
+        Logger.debug(
+            `starting: selectBbox, traversing index. lengthBeforeTree: ${lengthBeforeTree}`
+        );
+        yield* streamSearch(
+            this.header.featuresCount,
+            this.header.indexNodeSize,
+            rect,
+            readNode
+        );
     }
 
     lengthBeforeTree(): number {
@@ -117,7 +157,7 @@ export class HttpReader {
         if (this._featureClient === undefined) {
             this._featureClient = this.headerClient.clone();
         }
-        return this._featureClient
+        return this._featureClient;
     }
 
     async readFeature(featureOffset: number): Promise<Feature> {
@@ -128,24 +168,30 @@ export class HttpReader {
 
         let featureLength: number;
         {
-            const bytes = await this.featureClient().getRange(offset, 
-                                                     4,
-                                                     minFeatureReqLength,
-                                                    'feature length');
+            const bytes = await this.featureClient().getRange(
+                offset,
+                4,
+                minFeatureReqLength,
+                'feature length'
+            );
             featureLength = new DataView(bytes).getUint32(0, true);
         }
-        Logger.debug(`featureOffset: ${offset}, featureLength: ${featureLength}`);
+        Logger.debug(
+            `featureOffset: ${offset}, featureLength: ${featureLength}`
+        );
 
-        const byteBuffer = await this.featureClient().getRange(offset + 4,
-                                                    featureLength,
-                                                    minFeatureReqLength,
-                                                   'feature data');
-                                                   const bytes = new Uint8Array(byteBuffer);
+        const byteBuffer = await this.featureClient().getRange(
+            offset + 4,
+            featureLength,
+            minFeatureReqLength,
+            'feature data'
+        );
+        const bytes = new Uint8Array(byteBuffer);
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
         bytesAligned.set(bytes, SIZE_PREFIX_LEN);
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
         bb.setPosition(SIZE_PREFIX_LEN);
-        return Feature.getRootAsFeature(bb)
+        return Feature.getRootAsFeature(bb);
     }
 }
 
@@ -160,7 +206,7 @@ class BufferedHttpRangeClient {
 
     constructor(source: string | HttpRangeClient) {
         if (typeof source === 'string') {
-            this.httpClient = new HttpRangeClient(source); 
+            this.httpClient = new HttpRangeClient(source);
         } else {
             this.httpClient = source;
         }
@@ -176,8 +222,13 @@ class BufferedHttpRangeClient {
         return newClient;
     }
 
-    async getRange(start: number, length: number, minReqLength: number, purpose: string): Promise<ArrayBuffer> {
-        Logger.debug(`need Range: ${start}-${start+length-1}`);
+    async getRange(
+        start: number,
+        length: number,
+        minReqLength: number,
+        purpose: string
+    ): Promise<ArrayBuffer> {
+        Logger.debug(`need Range: ${start}-${start + length - 1}`);
         const start_i = start - this.head;
         const end_i = start_i + length;
         if (start_i >= 0 && end_i < this.buffer.byteLength) {
@@ -186,7 +237,11 @@ class BufferedHttpRangeClient {
         }
 
         const lengthToFetch = Math.max(length, minReqLength);
-        this.buffer = await this.httpClient.getRange(start, lengthToFetch, purpose);
+        this.buffer = await this.httpClient.getRange(
+            start,
+            lengthToFetch,
+            purpose
+        );
         this.head = start;
 
         return this.buffer.slice(0, length);
@@ -202,19 +257,25 @@ class HttpRangeClient {
         this.url = url;
     }
 
-    async getRange(begin: number, length: number, purpose: string): Promise<ArrayBuffer> {
+    async getRange(
+        begin: number,
+        length: number,
+        purpose: string
+    ): Promise<ArrayBuffer> {
         this.requestsEverMade += 1;
         this.bytesEverRequested += length;
 
         const range = `bytes=${begin}-${begin + length - 1}`;
-        Logger.debug(`request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`);
+        Logger.debug(
+            `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`
+        );
 
         const response = await fetch(this.url, {
             headers: {
-                'Range': range
-            }
+                Range: range,
+            },
         });
 
-        return response.arrayBuffer()
+        return response.arrayBuffer();
     }
 }
