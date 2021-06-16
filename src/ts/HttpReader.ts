@@ -213,10 +213,7 @@ export class HttpReader {
 
         const batchStart = firstFeatureOffset;
         const batchEnd = lastFeatureOffset + lastFeatureLength;
-
-        // I confess, I don't know why +1, but seeing an extra request (sometimes)
-        // when reading the final feature.
-        const batchSize = batchEnd - batchStart + 1;
+        const batchSize = batchEnd - batchStart;
 
         // A new feature client is needed for each batch to own the underlying buffer as features are yielded.
         const featureClient = this.buildFeatureClient();
@@ -293,7 +290,7 @@ class BufferedHttpRangeClient {
 
         const start_i = start - this.head;
         const end_i = start_i + length;
-        if (start_i >= 0 && end_i < this.buffer.byteLength) {
+        if (start_i >= 0 && end_i <= this.buffer.byteLength) {
             return this.buffer.slice(start_i, end_i);
         }
 
