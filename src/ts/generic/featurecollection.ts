@@ -124,8 +124,7 @@ export async function* deserializeFiltered(
     Logger.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
 
-    for await (const featureOffset of reader.selectBbox(rect)) {
-        const feature = await reader.readFeature(featureOffset[0]);
+    for await (const feature of reader.selectBbox(rect)) {
         yield fromFeature(feature, reader.header);
     }
 }
