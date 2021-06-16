@@ -32,7 +32,8 @@
             // basic OSM Leaflet map
             let map = L.map('map').setView([40.766, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
+                maxZoom: 18,
+                minZoom: 12,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 

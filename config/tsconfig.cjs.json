@@ -9,7 +9,7 @@
         "declaration": true,
         "outDir": "../lib/cjs",
         "sourceMap": true,
-        "target": "ES5",
+        "target": "ES2019",
         "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true

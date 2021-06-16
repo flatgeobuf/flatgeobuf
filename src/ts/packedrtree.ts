@@ -1,3 +1,4 @@
+import Config from './Config';
 import Logger from './Logger';
 
 export const NODE_ITEM_LEN: number = 8 * 4 + 8;
@@ -27,7 +28,7 @@ export function calcTreeSize(numItems: number, nodeSize: number): number {
 }
 
 /**
- * returns [leafNodesOffset, numNodes] for each level
+ * returns [levelOffset, numNodes] for each level
  */
 function generateLevelBounds(
     numItems: number,
@@ -71,8 +72,9 @@ type ReadNodeFn = (treeOffset: number, size: number) => Promise<ArrayBuffer>;
  *  (offset, index)
  *  `offset`: Byte offset in feature data section
  *  `index`: feature number
+ *  `featureLength`: featureLength, except for the last element
  */
-export type SearchResult = [number, number];
+export type SearchResult = [number, number, number | null];
 
 /**
  * Yield's a `SearchResult` for each feature within the bounds of `rect`.
@@ -124,6 +126,7 @@ export async function* streamSearch(
     }
 
     const { minX, minY, maxX, maxY } = rect;
+    Logger.info(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
     const levelBounds = generateLevelBounds(numItems, nodeSize);
     const leafNodesOffset = levelBounds[0][0];
 
@@ -173,23 +176,45 @@ export async function* streamSearch(
             const offset = readUint52(high32Offset, low32Offset);
 
             if (isLeafNode) {
-                Logger.debug('yielding feature');
-                yield [offset, pos - leafNodesOffset];
+                const featureLength = (() => {
+                    if (pos < numItems - 1) {
+                        // Since features are tightly packed, we infer the
+                        // length of _this_ feature by measuring to the _next_
+                        // feature's start.
+                        const nextPos = (pos - nodeIndex + 1) * 5;
+                        const low32Offset = uint32Array[(nextPos << 1) + 8];
+                        const high32Offset = uint32Array[(nextPos << 1) + 9];
+                        const nextOffset = readUint52(
+                            high32Offset,
+                            low32Offset
+                        );
+
+                        return nextOffset - offset;
+                    } else {
+                        // This is the last feature - there's no "next" feature
+                        // to measure to, so we can't know it's length.
+                        return null;
+                    }
+                })();
+
+                // Logger.debug(`offset: ${offset}, pos: ${pos}, featureLength: ${featureLength}`);
+                yield [offset, pos - leafNodesOffset, featureLength];
                 continue;
             }
 
-            // request up to this many extra bytes if it means we can eliminate
-            // an extra request
-            const combineRequestThreshold = (256 * 1024) / NODE_ITEM_LEN;
+            // request up to this many nodes if it means we can eliminate an
+            // extra request
+            const extraRequestThresholdNodes =
+                Config.global.extraRequestThreshold() / NODE_ITEM_LEN;
 
             // Since we're traversing the tree by monotonically increasing byte
-            // offset, the most recently enqueued node will be the nearest, and
-            // thus presents the best candidate for merging.
+            // offset, the most recently enqueued node range will be the
+            // nearest, and thus presents the best candidate for merging.
             const nearestNodeRange = queue[queue.length - 1];
             if (
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() == nodeRange.level() - 1 &&
-                offset < nearestNodeRange.endNode() + combineRequestThreshold
+                offset < nearestNodeRange.endNode() + extraRequestThresholdNodes
             ) {
                 Logger.debug(
                     `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`
@@ -209,11 +234,11 @@ export async function* streamSearch(
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() == newNodeRange.level()
             ) {
-                Logger.debug(
+                Logger.info(
                     `Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`
                 );
             } else {
-                Logger.debug(
+                Logger.info(
                     `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`
                 );
             }
