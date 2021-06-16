@@ -1,9 +1,9 @@
 <html>
 <head>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="/examples/site.css" />
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/flatgeobuf@3.17.4/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js"></script>
 
@@ -47,8 +47,11 @@
 
             // For the example, we fix a visible Rect in the middle of the map
             function getBoundForRect() {
-                const widthMeters = 2000;
-                return map.getCenter().toBounds(widthMeters);
+                const bounds = map.getBounds();
+
+                const width = map.distance(bounds.getNorthWest(), bounds.getNorthEast());
+                const height = map.distance(bounds.getNorthWest(), bounds.getSouthWest());
+                return map.getCenter().toBounds(Math.min(width, height) * 0.8);
             }
 
             // convert the rect into the format flatgeobuf expects
@@ -62,6 +65,9 @@
                 };
             }
 
+            // show a leaflet rect corresponding to our bounding box
+            let rectangle = L.rectangle(getBoundForRect(), { interactive: false, color: "blue", fillOpacity: 0.0, opacity: 1.0 }).addTo(map);
+
             // track the previous results so we can remove them when adding new results
             let previousResults = L.layerGroup().addTo(map);
             async function updateResults() {
@@ -73,13 +79,25 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                let iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', fgBoundingBox(), handleHeaderMeta);
-                for await (let feature of iter) {
+                const iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', fgBoundingBox(), handleHeaderMeta);
+
+                const colorScale = ((d) => {
+                    return d > 750 ? '#800026' :
+                        d > 500 ? '#BD0026' :
+                        d > 250  ? '#E31A1C' :
+                        d > 100 ? '#FC4E2A' :
+                        d > 50   ? '#FD8D3C' :
+                        d > 25  ? '#FEB24C' :
+                        d > 10   ? '#FED976' :
+                        '#FFEDA0'
+                });
+
+                for await (const feature of iter) {
                     // Leaflet styling
                     const defaultStyle = { 
-                        color: 'blue', 
-                        weight: 2, 
-                        fillOpacity: 0.1,
+                        color: colorScale(feature.properties["population"]), 
+                        weight: 1, 
+                        fillOpacity: 0.4,
                     };
                     L.geoJSON(feature, {
                         style: defaultStyle,
@@ -87,11 +105,9 @@
                         'mouseover': function(e) {
                             const layer = e.target;
                             layer.setStyle({
-                                color: 'blue',
                                 weight: 4,
-                                fillOpacity: 0.7,
+                                fillOpacity: 0.8,
                             });
-                            layer.bringToFront();
                         },
                         'mouseout': function(e) {
                             const layer = e.target;
@@ -100,12 +116,10 @@
                    }).bindPopup(`${feature.properties["population"]} people live in this census block.</h1>`)
                    .addTo(nextResults);
                 }
+                rectangle.bringToFront();
             }
             // if the user is panning around alot, only update once per second max
             updateResults = _.throttle(updateResults, 1000);
-
-            // show a leaflet rect corresponding to our bounding box
-            let rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
 
             // show results based on the initial map
             updateResults();
