@@ -7,7 +7,7 @@
         "preserveConstEnums": true,
         "outFile": "./test.js",
         "sourceMap": true,
-        "target": "ES6",
+        "target": "ES2019",
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true
     },
