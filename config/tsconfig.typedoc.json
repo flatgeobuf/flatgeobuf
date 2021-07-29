@@ -21,11 +21,11 @@
         "../**/*.spec.ts"
     ],
     "typedocOptions": {
-        "out": "dist/doc",
+        "out": "../dist/doc",
         "exclude": [
             "**/*.spec.ts"
         ],
-        "entryPoints": "src/ts/",
+        "entryPoints": ["../src/ts/flatgeobuf.ts"],
         "readme": "none"
     }
 }
