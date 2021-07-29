@@ -1,7 +1,5 @@
-import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js';
-
+import { ReadableStream } from 'web-streams-polyfill';
 import { ReadableStreamBuffer } from 'stream-buffers';
-
 import { Readable } from 'stream';
 
 export function arrayToStream(array: ArrayBuffer): ReadableStream {

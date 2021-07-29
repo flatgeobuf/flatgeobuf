@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter';
-import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader';
+import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
+import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
 import 'mocha';
 import LocalWebServer from 'local-web-server';
 
@@ -8,7 +8,7 @@ import { readFileSync } from 'fs';
 import { TextDecoder, TextEncoder } from 'util';
 
 import fetch from 'node-fetch';
-import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js';
+import { ReadableStream } from 'web-streams-polyfill';
 
 global['ReadableStream'] = ReadableStream;
 global['fetch'] = fetch;

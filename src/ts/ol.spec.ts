@@ -11,9 +11,10 @@ import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
-import { ReadableStream } from 'web-streams-polyfill/dist/ponyfill.es2018.js'
+import { ReadableStream } from 'web-streams-polyfill'
 import SimpleGeometry from 'ol/geom/SimpleGeometry'
 import { Rect } from './packedrtree'
+import Geometry from 'ol/geom/Geometry'
 
 global['ReadableStream'] = ReadableStream
 global['TextDecoder'] = TextDecoder
@@ -169,7 +170,7 @@ describe('ol module', () => {
     it('Should parse UScounties fgb produced from GDAL array buffer', () => {
       const buffer = readFileSync('./test/data/UScounties.fgb')
       const bytes = new Uint8Array(buffer)
-      const features = deserialize(bytes) as Feature[]
+      const features = deserialize(bytes) as Feature<Geometry>[]
       expect(features.length).to.eq(3221)
       for (const f of features)
         expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)
@@ -178,7 +179,7 @@ describe('ol module', () => {
     it('Should parse countries fgb produced from GDAL array buffer', () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const features = deserialize(bytes) as Feature[]
+      const features = deserialize(bytes) as Feature<Geometry>[]
       expect(features.length).to.eq(179)
       for (const f of features)
         expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)

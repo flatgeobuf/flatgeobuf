@@ -9,7 +9,6 @@ import LineString from 'ol/geom/LineString';
 import MultiLineString from 'ol/geom/MultiLineString';
 import Polygon from 'ol/geom/Polygon';
 import MultiPolygon from 'ol/geom/MultiPolygon';
-import GeometryLayout from 'ol/geom/GeometryLayout';
 
 export function createGeometryOl(
     geometry: Geometry | null,
@@ -25,13 +24,13 @@ export function createGeometryOl(
             case GeometryType.Point:
                 return new Point(xy);
             case GeometryType.MultiPoint:
-                return new MultiPoint(xy, 'XY' as GeometryLayout);
+                return new MultiPoint(xy, 'XY');
             case GeometryType.LineString:
-                return new LineString(xy, 'XY' as GeometryLayout);
+                return new LineString(xy, 'XY');
             case GeometryType.MultiLineString:
-                return new MultiLineString(xy, 'XY' as GeometryLayout, olEnds);
+                return new MultiLineString(xy, 'XY', olEnds);
             case GeometryType.Polygon:
-                return new Polygon(xy, 'XY' as GeometryLayout, olEnds);
+                return new Polygon(xy, 'XY', olEnds);
         }
     } else if (type === GeometryType.MultiPolygon) {
         const mp = new MultiPolygon([]);

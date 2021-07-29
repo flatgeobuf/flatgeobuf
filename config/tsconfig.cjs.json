@@ -12,7 +12,8 @@
         "target": "ES2019",
         "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "skipLibCheck": true
     },
     "include": [
         "../src/ts"
