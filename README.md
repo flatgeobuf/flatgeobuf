@@ -107,7 +107,7 @@ necessary.
 
 ### TypeScript / JavaScript
 
-* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/modules/flatgeobuf.html)
+* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/index.html)
 
 #### Prebuilt bundles (intended for browser usage)
 
