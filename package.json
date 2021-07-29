@@ -18,10 +18,23 @@
   "types": "lib/cjs/flatgeobuf.d.ts",
   "module": "lib/mjs/flatgeobuf.js",
   "type": "module",
+  "exports": {
+    "import": "./lib/mjs/flatgeobuf.js",
+    "require": "./lib/cjs/flatgeobuf.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
   },
+  "keywords": [
+    "spatial",
+    "geometry",
+    "feature",
+    "flatbuffers",
+    "serialization",
+    "binary",
+    "performance"
+  ],
   "author": {
     "name": "Björn Harrtell"
   },
@@ -71,8 +84,7 @@
   "dependencies": {
     "@repeaterjs/repeater": "3.0.4",
     "flatbuffers": "2.0.3",
-    "slice-source": "0.4.1",
-    "stream-buffers": "3.0.2"
+    "slice-source": "0.4.1"
   },
   "peerDependencies": {
     "ol": "^6.6.1"
@@ -98,6 +110,7 @@
     "prettier": "2.3.2",
     "rollup": "2.55.0",
     "rollup-plugin-terser": "7.0.2",
+    "stream-buffers": "3.0.2",
     "ts-node": "10.1.0",
     "typedoc": "0.21.4",
     "typescript": "4.3.5",
