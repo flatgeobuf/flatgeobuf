@@ -16,7 +16,7 @@ default = ["http"]
 http = ["reqwest", "bytes"]
 
 [dependencies]
-flatbuffers = "0.6"
+flatbuffers = "2.0.0"
 byteorder = "1.4.2"
 geozero = { version = "0.7.0", default-features = false }
 # Minimal dependencices without SSL support.

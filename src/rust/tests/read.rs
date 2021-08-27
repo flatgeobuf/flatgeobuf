@@ -6,23 +6,34 @@ use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
 #[test]
+fn reader_headers_checked() {
+    assert!(
+        FgbReader::open(&mut File::open("../../test/data/surface/triangle.fgb").unwrap()).is_ok()
+    );
+    assert!(FgbReader::open(&mut File::open("../../test/data/topp_states.fgb").unwrap()).is_ok());
+    assert!(FgbReader::open(&mut File::open("../../test/data/UScounties.fgb").unwrap()).is_ok());
+    assert!(FgbReader::open(&mut File::open("../../test/data/countries.fgb").unwrap()).is_ok());
+}
+
+#[test]
 fn read_file_low_level() -> Result<()> {
     let f = File::open("../../test/data/countries.fgb")?;
     let mut reader = BufReader::new(f);
 
     let mut magic_buf: [u8; 8] = [0; 8];
     reader.read_exact(&mut magic_buf)?;
-    assert_eq!(magic_buf, MAGIC_BYTES);
+    assert_eq!(magic_buf, [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0]);
 
     let mut size_buf: [u8; 4] = [0; 4];
     reader.read_exact(&mut size_buf)?;
-    let header_size = u32::from_le_bytes(size_buf);
+    let header_size = u32::from_le_bytes(size_buf) as usize;
     assert_eq!(header_size, 604);
+    let mut header_buf = Vec::with_capacity(header_size + 4);
+    header_buf.extend_from_slice(&size_buf);
+    header_buf.resize(header_buf.capacity(), 0);
+    reader.read_exact(&mut header_buf[4..])?;
 
-    let mut header_buf = vec![0; header_size as usize];
-    reader.read_exact(&mut header_buf)?;
-
-    let header = get_root_as_header(&header_buf[..]);
+    let header = size_prefixed_root_as_header(&header_buf).unwrap();
     assert_eq!(header.name(), Some("countries"));
     assert!(header.envelope().is_some());
     assert_eq!(
@@ -53,12 +64,14 @@ fn read_file_low_level() -> Result<()> {
 
     // Read first feature
     reader.read_exact(&mut size_buf)?;
-    let feature_size = u32::from_le_bytes(size_buf);
+    let feature_size = u32::from_le_bytes(size_buf) as usize;
     assert_eq!(feature_size, 10804);
-    let mut feature_buf = vec![0; feature_size as usize];
-    reader.read_exact(&mut feature_buf)?;
+    let mut feature_buf = Vec::with_capacity(feature_size + 4);
+    feature_buf.extend_from_slice(&size_buf);
+    feature_buf.resize(feature_buf.capacity(), 0);
+    reader.read_exact(&mut feature_buf[4..])?;
 
-    let feature = get_root_as_feature(&feature_buf[..]);
+    let feature = size_prefixed_root_as_feature(&feature_buf).unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
     assert_eq!(geometry.type_(), GeometryType::MultiPolygon);
@@ -451,11 +464,4 @@ fn property_types() -> Result<()> {
     assert!(feature.process_properties(&mut prop_checker).is_ok());
 
     Ok(())
-}
-
-#[test]
-fn emtpy_feature() {
-    let empty = FgbFeature::empty();
-    let _fbgfeat = empty.fbs_feature();
-    assert!(empty.geometry().is_some());
 }

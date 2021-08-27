@@ -78,11 +78,13 @@
 #[macro_use]
 extern crate log;
 
-#[allow(dead_code, unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod feature_generated;
 mod file_reader;
 mod geometry_reader;
-#[allow(dead_code, unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod header_generated;
 #[cfg(feature = "http")]
 mod http_client;
@@ -91,10 +93,10 @@ mod http_reader;
 mod packed_r_tree;
 mod properties_reader;
 
-pub use feature_generated::flat_geobuf::*;
+pub use feature_generated::*;
 pub use file_reader::*;
 pub use geometry_reader::*;
-pub use header_generated::flat_geobuf::*;
+pub use header_generated::*;
 #[cfg(feature = "http")]
 pub use http_client::*;
 #[cfg(feature = "http")]
@@ -107,6 +109,12 @@ pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
 
 pub const VERSION: u8 = 3;
-pub const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
+const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
 
-pub const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
+const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
+
+fn check_magic_bytes(magic_bytes: &[u8]) -> bool {
+    magic_bytes[0..3] == MAGIC_BYTES[0..3]
+        && magic_bytes[4..8] == MAGIC_BYTES[4..8]
+        && magic_bytes[3] <= VERSION
+}

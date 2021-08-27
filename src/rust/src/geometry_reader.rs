@@ -1,5 +1,5 @@
-use crate::feature_generated::flat_geobuf::*;
-use crate::header_generated::flat_geobuf::*;
+use crate::feature_generated::*;
+use crate::header_generated::*;
 use geozero::error::{GeozeroError, Result};
 use geozero::GeomProcessor;
 

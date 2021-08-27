@@ -1,9 +1,11 @@
-use crate::header_generated::flat_geobuf::*;
+use crate::feature_generated::*;
+use crate::header_generated::*;
 use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{NodeItem, HEADER_MAX_BUFFER_SIZE, MAGIC_BYTES};
+use crate::{check_magic_bytes, NodeItem, HEADER_MAX_BUFFER_SIZE};
 use byteorder::{ByteOrder, LittleEndian};
+use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor};
 
@@ -55,17 +57,21 @@ impl HttpFgbReader {
         debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
 
         let bytes = client.get_range(0, 8, min_req_size).await?;
-        if bytes != MAGIC_BYTES {
+        if !check_magic_bytes(&bytes) {
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get_range(8, 4, min_req_size).await?;
-        let header_size = LittleEndian::read_u32(bytes) as usize;
+        let mut bytes = BytesMut::from(client.get_range(8, 4, min_req_size).await?);
+        let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
-        let bytes = client.get_range(12, header_size, min_req_size).await?;
+        bytes.put(client.get_range(12, header_size, min_req_size).await?);
         let header_buf = bytes.to_vec();
+
+        // verify flatbuffer
+        let _header = size_prefixed_root_as_header(&header_buf)
+            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
 
         trace!("completed: opening http reader");
         Ok(HttpFgbReader {
@@ -85,7 +91,7 @@ impl HttpFgbReader {
         self.fbs.header()
     }
     fn header_len(&self) -> usize {
-        12 + self.fbs.header_buf.len()
+        8 + self.fbs.header_buf.len()
     }
     /// Select all features.  Returns feature count.
     pub async fn select_all(&mut self) -> Result<usize> {
@@ -145,14 +151,18 @@ impl HttpFgbReader {
             self.pos = self.feature_base + item.offset;
         }
         self.feat_no += 1;
-        let bytes = self.client.get_range(self.pos, 4, min_req_size).await?;
+        let mut bytes = BytesMut::from(self.client.get_range(self.pos, 4, min_req_size).await?);
         self.pos += 4;
-        let feature_size = LittleEndian::read_u32(bytes) as usize;
-        let bytes = self
-            .client
-            .get_range(self.pos, feature_size, min_req_size)
-            .await?;
+        let feature_size = LittleEndian::read_u32(&bytes) as usize;
+        bytes.put(
+            self.client
+                .get_range(self.pos, feature_size, min_req_size)
+                .await?,
+        );
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
+                                               // verify flatbuffer
+        let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
+            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         self.pos += feature_size;
         Ok(Some(&self.fbs))
     }

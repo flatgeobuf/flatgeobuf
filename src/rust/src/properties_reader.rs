@@ -1,5 +1,5 @@
-use crate::feature_generated::flat_geobuf::*;
-use crate::header_generated::flat_geobuf::*;
+use crate::feature_generated::*;
+use crate::header_generated::*;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
 use geozero::GeozeroGeometry;
@@ -9,19 +9,21 @@ use std::str;
 
 /// Access to current feature
 pub struct FgbFeature {
-    pub(crate) header_buf: Vec<u8>,
+    pub(crate) header_buf: Vec<u8>, // Using type Header<'a> instead of Vec would require adding a lifetime to FgbFeature
     pub(crate) feature_buf: Vec<u8>,
 }
 
 impl FgbFeature {
     pub(crate) fn header(&self) -> Header {
-        get_root_as_header(&self.header_buf[..])
+        // SAFETY: verification is done before creating instance
+        unsafe { size_prefixed_root_as_header_unchecked(&self.header_buf) }
     }
-    // Flatbuffers feature access
+    /// Flatbuffers feature access
     pub fn fbs_feature(&self) -> Feature {
-        get_root_as_feature(&self.feature_buf[..])
+        // SAFETY: verification is done before creating instance
+        unsafe { size_prefixed_root_as_feature_unchecked(&self.feature_buf) }
     }
-    // Flatbuffers geometry access
+    /// Flatbuffers geometry access
     pub fn geometry(&self) -> Option<Geometry> {
         self.fbs_feature().geometry()
     }
@@ -54,7 +56,9 @@ impl GeozeroGeometry for FgbFeature {
             },
         );
         fbb.finish(f, None);
-        let feature_buf = fbb.finished_data().to_vec();
+        let mut buf = fbb.finished_data().to_vec();
+        let mut feature_buf = (buf.len() as u32).to_le_bytes().to_vec();
+        feature_buf.append(&mut buf);
 
         FgbFeature {
             header_buf,
@@ -245,6 +249,7 @@ impl geozero::FeatureProperties for FgbFeature {
                         )?;
                         offset += len;
                     }
+                    ColumnType(_) => {}
                 }
             }
         }
