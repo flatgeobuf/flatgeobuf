@@ -1,2 +1,2 @@
 #!/bin/bash
-./flatcc -r -c -w -o src/c src/fbs/*.fbs
+./flatcc -r -c -w -v -o src/c src/fbs/*.fbs
