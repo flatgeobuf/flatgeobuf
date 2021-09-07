@@ -1,5 +1,9 @@
 # Format specification changelog
 
+## 3.0.1 (2020-01-28)
+
+* Enforce 8 byte alignment
+
 ## 3.0.0 (2020-01-28)
 
 * Optimized spatial index (https://github.com/flatgeobuf/flatgeobuf/pull/40)
