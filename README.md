@@ -28,14 +28,18 @@ FlatGeobuf is open source under the [BSD 2-Clause License](https://tldrlegal.com
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
-* MB: Magic bytes (0x6667620366676200)
+* MB: Magic bytes (0x6667620366676201)
 * H: Header (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/header.fbs))
 * I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/cpp/packedrtree.h))
 * DATA: Features (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
+The fourth byte in the magic bytes indicates major specification version. The last byte of the magic bytes indicate patch level. Patch level is backwards compatible so an implementation for a major version should accept any patch level version.
+
 Any 64-bit flatbuffer value contained anywhere in the file (for example coordinates) is aligned to 8 bytes to from the start of the file or feature to allow for direct memory access.
 
 Encoding of any string value is assumed to be UTF-8.
+
+A changelog of the specification is available [here](doc/format-changelog.md).
 
 ## Performance
 
