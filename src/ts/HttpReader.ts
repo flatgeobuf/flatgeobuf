@@ -74,7 +74,7 @@ export class HttpReader {
             const bytes = new Uint8Array(
                 await headerClient.getRange(0, 8, minReqLength, 'header')
             );
-            if (!bytes.every((v, i) => magicbytes[i] === v)) {
+            if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) {
                 Logger.error(`bytes: ${bytes} != ${magicbytes}`);
                 throw new Error('Not a FlatGeobuf file');
             }
