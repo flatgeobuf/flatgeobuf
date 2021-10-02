@@ -6,13 +6,13 @@ executors:
       - image: circleci/node:14
   java:
     docker:
-      - image: circleci/openjdk:15-jdk-buster
+      - image: circleci/openjdk:17-jdk-buster
   net:
     docker:
       - image: mcr.microsoft.com/dotnet/core/sdk:3.1
   rust:
     docker:
-      - image: circleci/rust:1.51.0
+      - image: circleci/rust:1.55.0
 
 jobs:
   test-ts:
