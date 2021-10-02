@@ -35,46 +35,21 @@
     "binary",
     "performance"
   ],
-  "author": {
-    "name": "Björn Harrtell"
-  },
+  "author": "Björn Harrtell",
   "contributors": [
-    {
-      "name": "Pirmin Kalberer"
-    },
-    {
-      "name": "Michael Kirk"
-    },
-    {
-      "name": "Gabriel Roldan"
-    },
-    {
-      "name": "Jared Erickson"
-    },
-    {
-      "name": "Karsten Pihl"
-    },
-    {
-      "name": "Xavier Fischer"
-    },
-    {
-      "name": "Dustin Carlino"
-    },
-    {
-      "name": "Corey Farwell"
-    },
-    {
-      "name": "Even Rouault"
-    },
-    {
-      "name": "James Hughes"
-    },
-    {
-      "name": "James Gill"
-    },
-    {
-      "name": "Clemens Portele"
-    }
+    "Pirmin Kalberer",
+    "Michael Kirk",
+    "Gabriel Roldan",
+    "Jared Erickson",
+    "Karsten Pihl",
+    "Xavier Fischer",
+    "Dustin Carlino",
+    "Peter Brodersen",
+    "Corey Farwell",
+    "Even Rouault",
+    "James Hughes",
+    "James Gill",
+    "Clemens Portele"
   ],
   "license": "BSD-3-Clause",
   "bugs": {
@@ -87,7 +62,7 @@
     "slice-source": "0.4.1"
   },
   "peerDependencies": {
-    "ol": "^6.6.1"
+    "ol": "^6"
   },
   "devDependencies": {
     "@babel/core": "7.15.5",
