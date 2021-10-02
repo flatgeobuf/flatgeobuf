@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1] - 2021-10-02
+
+ - Make all impl. lenient on magic bytes patch level (#146)
+
 ## [0.6.0] - 2021-09-01
 
 - Update to Rust Flatbuffers 2.0 (#105)
