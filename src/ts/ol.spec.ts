@@ -11,12 +11,10 @@ import Feature from 'ol/Feature'
 import WKT from 'ol/format/WKT'
 import GeoJSON from 'ol/format/GeoJSON'
 import { TextDecoder, TextEncoder } from 'util'
-import { ReadableStream } from 'web-streams-polyfill'
 import SimpleGeometry from 'ol/geom/SimpleGeometry'
 import { Rect } from './packedrtree'
 import Geometry from 'ol/geom/Geometry'
 
-global['ReadableStream'] = ReadableStream
 global['TextDecoder'] = TextDecoder
 global['TextEncoder'] = TextEncoder
 
@@ -59,7 +57,7 @@ describe('ol module', () => {
       const expected = makeFeatureCollection('POINT(1.2 -2.1)')
       const s = serialize(expected)
       const stream = arrayToStream(s)
-      const actual = await takeAsync(deserialize(stream) as AsyncGenerator)
+      const actual = await takeAsync(deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator)
       expect(g(actual)).to.equal(g(expected))
     })
 
@@ -188,8 +186,8 @@ describe('ol module', () => {
     it('Should parse countries fgb produced from GDAL stream', async () => {
       const buffer = readFileSync('./test/data/countries.fgb')
       const bytes = new Uint8Array(buffer)
-      const readableStream = arrayToStream(bytes.buffer)
-      const features = await takeAsync(deserialize(readableStream) as AsyncGenerator)
+      const stream = arrayToStream(bytes.buffer)
+      const features = await takeAsync(deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator)
       expect(features.length).to.eq(179)
       for (const f of features)
         expect((f.getGeometry() as SimpleGeometry).getCoordinates().length).to.be.greaterThan(0)

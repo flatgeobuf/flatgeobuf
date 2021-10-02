@@ -127,7 +127,6 @@ See [this](https://github.com/flatgeobuf/flatgeobuf/tree/master/examples/node) e
 ## TODO
 
 * Java index support
-* C language support
 * Go language support
 
 ## FAQ

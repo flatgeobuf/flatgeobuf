@@ -70,7 +70,7 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
-                deserialize(stream) as AsyncGenerator
+                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -139,7 +139,7 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
-                deserialize(stream) as AsyncGenerator
+                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -381,9 +381,9 @@ describe('geojson module', () => {
         it('Should parse countries fgb produced from GDAL stream no filter', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
-            const readableStream = arrayToStream(bytes.buffer);
+            const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync(
-                deserialize(readableStream) as AsyncGenerator
+                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
             );
             expect(features.length).to.eq(179);
             for (const f of features)
