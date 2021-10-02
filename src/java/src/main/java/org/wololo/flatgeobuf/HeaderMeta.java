@@ -73,7 +73,7 @@ public class HeaderMeta {
 
     public static HeaderMeta read(ByteBuffer bb) throws IOException {
         int offset = 0;
-        if (Constants.isFlatgeobuf(bb))
+        if (!Constants.isFlatgeobuf(bb))
             throw new IOException("This is not a flatgeobuf!");
         bb.position(offset += Constants.MAGIC_BYTES.length);
         int headerSize = ByteBufferUtil.getSizePrefix(bb);
