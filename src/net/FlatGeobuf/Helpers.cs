@@ -26,7 +26,7 @@ namespace FlatGeobuf {
         public static Header ReadHeader(BinaryReader reader, out int headerSize)
         {
             var magicBytes = reader.ReadBytes(8);
-            if (!magicBytes.SequenceEqual(Constants.MagicBytes))
+            if (!magicBytes.Take(4).SequenceEqual(Constants.MagicBytes.Take(4)))
                 throw new Exception("Not a FlatGeobuf file");
 
             headerSize = reader.ReadInt32();

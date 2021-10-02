@@ -57,7 +57,7 @@ export function deserialize(
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn
 ): IFeature[] {
-    if (!bytes.subarray(0, 7).every((v, i) => magicbytes[i] === v))
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file');
 
     const bb = new flatbuffers.ByteBuffer(bytes);
@@ -93,7 +93,7 @@ export async function* deserializeStream(
     const read: ReadFn = async (size) => await reader.slice(size);
 
     let bytes = new Uint8Array(await read(8, 'magic bytes'));
-    if (!bytes.every((v, i) => magicbytes[i] === v))
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file');
     bytes = new Uint8Array(await read(4, 'header length'));
     let bb = new flatbuffers.ByteBuffer(bytes);
