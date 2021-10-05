@@ -13,13 +13,13 @@ global['fetch'] = fetch as unknown as (input: RequestInfo, init?: RequestInit) =
 global['TextDecoder'] = TextDecoder;
 global['TextEncoder'] = TextEncoder;
 
-import { arrayToStream, takeAsync } from './streams/utils';
+import { arrayToStream, takeAsync } from './streams/utils.js';
 
-import { deserialize, serialize } from './geojson';
-import { IGeoJsonFeature } from './geojson/feature';
-import { Rect } from './packedrtree';
-import { IGeoJsonFeatureCollection } from './geojson/featurecollection';
-import HeaderMeta from './HeaderMeta';
+import { deserialize, serialize } from './geojson.js';
+import { IGeoJsonFeature } from './geojson/feature.js';
+import { Rect } from './packedrtree.js';
+import { IGeoJsonFeatureCollection } from './geojson/featurecollection.js';
+import HeaderMeta from './HeaderMeta.js';
 
 function makeFeatureCollection(wkt: string, properties?: any) {
     return makeFeatureCollectionFromArray([wkt], properties);

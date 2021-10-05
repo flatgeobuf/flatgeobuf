@@ -1,4 +1,4 @@
-import { IFeature } from './generic/feature';
+import { IFeature } from './generic/feature.js';
 
 import {
     deserialize as fcDeserialize,
@@ -6,8 +6,8 @@ import {
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
 } from './ol/featurecollection';
-import { HeaderMetaFn } from './generic';
-import { Rect } from './packedrtree';
+import { HeaderMetaFn } from './generic.js';
+import { Rect } from './packedrtree.js';
 
 export function serialize(features: IFeature[]): Uint8Array {
     const bytes = fcSerialize(features);

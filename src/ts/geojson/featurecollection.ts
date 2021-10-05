@@ -1,20 +1,20 @@
-import ColumnMeta from '../ColumnMeta';
-import { ColumnType } from '../flat-geobuf/column-type';
-import HeaderMeta from '../HeaderMeta';
+import ColumnMeta from '../ColumnMeta.js';
+import { ColumnType } from '../flat-geobuf/column-type.js';
+import HeaderMeta from '../HeaderMeta.js';
 
-import { fromFeature, IGeoJsonFeature } from './feature';
-import { parseGeometry } from './geometry';
+import { fromFeature, IGeoJsonFeature } from './feature.js';
+import { parseGeometry } from './geometry.js';
 import {
     buildHeader,
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
 } from '../generic/featurecollection';
-import { toGeometryType } from '../generic/geometry';
-import { Rect } from '../packedrtree';
-import { buildFeature, IProperties } from '../generic/feature';
-import { HeaderMetaFn } from '../generic';
-import { magicbytes } from '../constants';
+import { toGeometryType } from '../generic/geometry.js';
+import { Rect } from '../packedrtree.js';
+import { buildFeature, IProperties } from '../generic/feature.js';
+import { HeaderMetaFn } from '../generic.js';
+import { magicbytes } from '../constants.js';
 
 export interface IGeoJsonFeatureCollection {
     type: string;

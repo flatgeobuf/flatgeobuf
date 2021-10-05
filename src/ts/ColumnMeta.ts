@@ -1,4 +1,4 @@
-import { ColumnType } from './flat-geobuf/column-type';
+import { ColumnType } from './flat-geobuf/column-type.js';
 
 export default class ColumnMeta {
     constructor(

@@ -1,5 +1,5 @@
-import Config from './Config';
-import Logger from './Logger';
+import Config from './Config.js';
+import Logger from './Logger.js';
 
 export const NODE_ITEM_LEN: number = 8 * 4 + 8;
 // default branching factor of a node in the rtree

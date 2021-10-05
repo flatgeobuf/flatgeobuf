@@ -1,9 +1,9 @@
 import * as flatbuffers from 'flatbuffers';
 
-import ColumnMeta from './ColumnMeta';
-import CrsMeta from './CrsMeta';
-import { GeometryType } from './flat-geobuf/geometry-type';
-import { Header } from './flat-geobuf/header';
+import ColumnMeta from './ColumnMeta.js';
+import CrsMeta from './CrsMeta.js';
+import { GeometryType } from './flat-geobuf/geometry-type.js';
+import { Header } from './flat-geobuf/header.js';
 
 export default class HeaderMeta {
     constructor(

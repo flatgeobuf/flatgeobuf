@@ -1,7 +1,7 @@
-import { GeometryType } from '../flat-geobuf/geometry-type';
-import { Geometry } from '../flat-geobuf/geometry';
+import { GeometryType } from '../flat-geobuf/geometry-type.js';
+import { Geometry } from '../flat-geobuf/geometry.js';
 
-import { ISimpleGeometry } from '../generic/geometry';
+import { ISimpleGeometry } from '../generic/geometry.js';
 
 import Point from 'ol/geom/Point';
 import MultiPoint from 'ol/geom/MultiPoint';

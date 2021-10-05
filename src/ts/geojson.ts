@@ -6,9 +6,9 @@ import {
     serialize as fcSerialize,
 } from './geojson/featurecollection';
 
-import { Rect } from './packedrtree';
-import { IGeoJsonFeature } from './geojson/feature';
-import { HeaderMetaFn } from './generic';
+import { Rect } from './packedrtree.js';
+import { IGeoJsonFeature } from './geojson/feature.js';
+import { HeaderMetaFn } from './generic.js';
 
 /**
  * @param geojson GeoJSON object to serialize

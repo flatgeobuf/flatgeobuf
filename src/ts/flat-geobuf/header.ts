@@ -2,9 +2,9 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-import { Column } from '../flat-geobuf/column';
-import { Crs } from '../flat-geobuf/crs';
-import { GeometryType } from '../flat-geobuf/geometry-type';
+import { Column } from '../flat-geobuf/column.js';
+import { Crs } from '../flat-geobuf/crs.js';
+import { GeometryType } from '../flat-geobuf/geometry-type.js';
 
 
 export class Header {

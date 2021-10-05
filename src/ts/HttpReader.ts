@@ -8,11 +8,11 @@ import {
     NODE_ITEM_LEN,
     streamSearch,
 } from './packedrtree';
-import { magicbytes, SIZE_PREFIX_LEN } from './constants';
-import Config from './Config';
-import Logger from './Logger';
-import HeaderMeta from './HeaderMeta';
-import { Feature } from './flat-geobuf/feature';
+import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
+import Config from './Config.js';
+import Logger from './Logger.js';
+import HeaderMeta from './HeaderMeta.js';
+import { Feature } from './flat-geobuf/feature.js';
 
 export class HttpReader {
     private headerClient: BufferedHttpRangeClient;

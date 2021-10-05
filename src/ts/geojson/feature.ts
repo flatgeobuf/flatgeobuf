@@ -1,8 +1,8 @@
-import { Feature } from '../flat-geobuf/feature';
-import { Geometry } from '../flat-geobuf/geometry';
-import HeaderMeta from '../HeaderMeta';
-import { fromGeometry, IGeoJsonGeometry } from './geometry';
-import { parseProperties, IFeature } from '../generic/feature';
+import { Feature } from '../flat-geobuf/feature.js';
+import { Geometry } from '../flat-geobuf/geometry.js';
+import HeaderMeta from '../HeaderMeta.js';
+import { fromGeometry, IGeoJsonGeometry } from './geometry.js';
+import { parseProperties, IFeature } from '../generic/feature.js';
 
 export interface IGeoJsonProperties {
     [key: string]: boolean | number | string | any;

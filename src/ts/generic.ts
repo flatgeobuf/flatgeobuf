@@ -5,9 +5,9 @@ import {
     FromFeatureFn,
 } from './generic/featurecollection';
 
-import { Rect } from './packedrtree';
-import { IFeature } from './generic/feature';
-import HeaderMeta from './HeaderMeta';
+import { Rect } from './packedrtree.js';
+import { IFeature } from './generic/feature.js';
+import HeaderMeta from './HeaderMeta.js';
 
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
