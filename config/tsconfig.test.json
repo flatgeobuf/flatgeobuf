@@ -1,11 +1,10 @@
 {
     "compilerOptions": {
-        "module": "ESNext",
+        "module": "ES6",
         "moduleResolution": "node",
         "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outFile": "./test.js",
         "sourceMap": true,
         "target": "ES2019",
         "allowSyntheticDefaultImports": true,
@@ -13,10 +12,9 @@
         "skipLibCheck": true
     },
     "include": [
-        "src/**/*"
+        "src/ts"
     ],
     "exclude": [
-        "node_modules",
-        "**/*.spec.ts"
+        "node_modules"
     ]
 }
