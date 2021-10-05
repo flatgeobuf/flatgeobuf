@@ -2472,10 +2472,10 @@ jsonparse@^1.2.0:
   resolved "https://registry.yarnpkg.com/jsonparse/-/jsonparse-1.3.1.tgz#3f4dae4a91fac315f71062f8521cc239f1366280"
   integrity sha1-P02uSpH6wxX3EGL4UhzCOfE2YoA=
 
-jsts@2.7.2:
-  version "2.7.2"
-  resolved "https://registry.yarnpkg.com/jsts/-/jsts-2.7.2.tgz#4b8f7e9de098e7121e2ba3d8cb35e692ca253a50"
-  integrity sha512-KxKqYj3pDZ6i3BBVEnBWKUztbuv43Rq5SWsB4s4a/y64pE4/StbO4jbbXjslflj4N+KchlUoRwQC04OnayknJA==
+jsts@2.7.3:
+  version "2.7.3"
+  resolved "https://registry.yarnpkg.com/jsts/-/jsts-2.7.3.tgz#400cb14de0ebf839b7e68742a82a20f300def427"
+  integrity sha512-F3FyHHnTLcxnnx4eJBU+GXlHYzt5L8+DZvWchOYi941VBh9iMh1iguny1iJ150DB02NMWvkEAOjvBjiLn8F47A==
 
 keygrip@~1.1.0:
   version "1.1.0"
