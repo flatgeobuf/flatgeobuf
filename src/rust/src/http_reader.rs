@@ -97,7 +97,11 @@ impl HttpFgbReader {
     pub async fn select_all(&mut self) -> Result<usize> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
-        let index_size = PackedRTree::index_size(count, header.index_node_size());
+        let index_size = if header.index_node_size() > 0 {
+            PackedRTree::index_size(count, header.index_node_size())
+        } else {
+            0
+        };
         // Skip index
         self.feature_base = self.header_len() + index_size;
         self.pos = self.feature_base;
@@ -115,6 +119,9 @@ impl HttpFgbReader {
         trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
+        if header.index_node_size() == 0 {
+            return Err(GeozeroError::Geometry("Index missing".to_string()));
+        }
         let count = header.features_count() as usize;
         let header_len = self.header_len();
         let list = PackedRTree::http_stream_search(

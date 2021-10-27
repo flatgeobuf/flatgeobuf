@@ -69,7 +69,11 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
     pub fn select_all(&mut self) -> Result<usize> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
-        let index_size = PackedRTree::index_size(count, header.index_node_size());
+        let index_size = if header.index_node_size() > 0 {
+            PackedRTree::index_size(count, header.index_node_size())
+        } else {
+            0
+        };
         // Skip index
         self.feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
         self.count = count;
@@ -79,6 +83,9 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
     pub fn select_bbox(&mut self, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Result<usize> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
+        if header.index_node_size() == 0 {
+            return Err(GeozeroError::Geometry("Index missing".to_string()));
+        }
         let list = PackedRTree::stream_search(
             &mut self.reader,
             header.features_count() as usize,
