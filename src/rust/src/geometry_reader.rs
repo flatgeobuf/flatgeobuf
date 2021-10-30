@@ -76,7 +76,7 @@ fn read_multilinestring<P: GeomProcessor>(
         }
     } else {
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
-        processor.multilinestring_begin(ends.len() / 2, idx)?;
+        processor.multilinestring_begin(ends.len(), idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
@@ -133,7 +133,7 @@ fn read_tin<P: GeomProcessor>(processor: &mut P, geometry: &Geometry, idx: usize
         processor.tin_end(idx)?;
     } else {
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
-        processor.tin_begin(ends.len() / 2, idx)?;
+        processor.tin_begin(ends.len(), idx)?;
         read_triangle(processor, geometry, false, 0)?;
         processor.tin_end(idx)?;
     }
@@ -157,7 +157,7 @@ fn read_polygon<P: GeomProcessor>(
     } else {
         // multiple rings
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
-        processor.polygon_begin(tagged, ends.len() / 2, idx)?;
+        processor.polygon_begin(tagged, ends.len(), idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
             let end = ends.get(i) << 1;
