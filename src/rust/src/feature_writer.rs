@@ -1,9 +1,16 @@
 use crate::feature_generated::*;
+use crate::header_generated::*;
+use crate::FgbFeature;
+use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::Result;
-use geozero::GeomProcessor;
+use geozero::{
+    ColumnValue, CoordDimensions, FeatureAccess, FeatureProcessor, GeomProcessor, PropertyProcessor,
+};
+use std::mem::size_of;
 
-/// FBG Geometry writer.
-pub struct GeomWriter<'a> {
+/// FBG Feature writer.
+pub struct FeatureWriter<'a> {
+    pub dims: CoordDimensions,
     // Array of end index in flat coordinates per geometry part
     ends: Vec<u32>,
     // Flat x and y coordinate array (flat pairs)
@@ -17,12 +24,14 @@ pub struct GeomWriter<'a> {
     // Flat tm time nanosecond measurement array
     tm: Vec<u64>,
     parts: Vec<flatbuffers::WIPOffset<Geometry<'a>>>,
+    properties: Vec<u8>,
     fbb: flatbuffers::FlatBufferBuilder<'a>,
 }
 
-impl<'a> GeomWriter<'a> {
-    pub fn new() -> GeomWriter<'a> {
-        GeomWriter {
+impl<'a> FeatureWriter<'a> {
+    pub fn new() -> FeatureWriter<'a> {
+        FeatureWriter {
+            dims: CoordDimensions::default(),
             ends: Vec::new(),
             xy: Vec::new(),
             z: Vec::new(),
@@ -30,6 +39,7 @@ impl<'a> GeomWriter<'a> {
             t: Vec::new(),
             tm: Vec::new(),
             parts: Vec::new(),
+            properties: Vec::new(),
             fbb: flatbuffers::FlatBufferBuilder::new(),
         }
     }
@@ -96,12 +106,75 @@ impl<'a> GeomWriter<'a> {
             )
         }
     }
+    pub fn to_feature(&mut self, header: Vec<u8>) -> FgbFeature {
+        // let g = self.geometry(); // -> cannot borrow `self.fbb` as mutable more than once at a time
+        let g = if self.parts.len() == 0 {
+            self.finish_part();
+            self.parts.pop().unwrap()
+        } else {
+            let mut iter = std::mem::take(&mut self.parts).into_iter();
+            let parts = self.fbb.create_vector_from_iter(&mut iter);
+            Geometry::create(
+                &mut self.fbb,
+                &GeometryArgs {
+                    parts: Some(parts),
+                    ..Default::default()
+                },
+            )
+        };
+        let mut iter = std::mem::take(&mut self.properties).into_iter();
+        let properties = Some(self.fbb.create_vector_from_iter(&mut iter));
+        let f = Feature::create(
+            &mut self.fbb,
+            &FeatureArgs {
+                geometry: Some(g),
+                properties,
+                ..Default::default()
+            },
+        );
+        self.fbb.finish_size_prefixed(f, None);
+        let feature_buf = self.fbb.finished_data().to_vec();
+
+        FgbFeature {
+            header_buf: header,
+            feature_buf,
+        }
+    }
 }
 
-impl GeomProcessor for GeomWriter<'_> {
+impl GeomProcessor for FeatureWriter<'_> {
+    fn dimensions(&self) -> CoordDimensions {
+        self.dims
+    }
     fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
         self.xy.push(x);
         self.xy.push(y);
+        Ok(())
+    }
+    fn coordinate(
+        &mut self,
+        x: f64,
+        y: f64,
+        z: Option<f64>,
+        m: Option<f64>,
+        t: Option<f64>,
+        tm: Option<u64>,
+        _idx: usize,
+    ) -> Result<()> {
+        self.xy.push(x);
+        self.xy.push(y);
+        if let Some(v) = z {
+            self.z.push(v);
+        }
+        if let Some(v) = m {
+            self.m.push(v);
+        }
+        if let Some(v) = t {
+            self.t.push(v);
+        }
+        if let Some(v) = tm {
+            self.tm.push(v);
+        }
         Ok(())
     }
     fn point_begin(&mut self, _idx: usize) -> Result<()> {
@@ -130,55 +203,116 @@ impl GeomProcessor for GeomWriter<'_> {
     }
 }
 
+fn prop_size(colval: &ColumnValue) -> usize {
+    match colval {
+        ColumnValue::Byte(_) => size_of::<i8>(),
+        ColumnValue::UByte(_) => size_of::<u8>(),
+        ColumnValue::Bool(_) => size_of::<u8>(),
+        ColumnValue::Short(_) => size_of::<u8>(),
+        ColumnValue::UShort(_) => size_of::<u16>(),
+        ColumnValue::Int(_) => size_of::<i32>(),
+        ColumnValue::UInt(_) => size_of::<u32>(),
+        ColumnValue::Long(_) => size_of::<i64>(),
+        ColumnValue::ULong(_) => size_of::<u64>(),
+        ColumnValue::Float(_) => size_of::<f32>(),
+        ColumnValue::Double(_) => size_of::<f64>(),
+        ColumnValue::String(v) | ColumnValue::Json(v) | ColumnValue::DateTime(v) => {
+            size_of::<u32>() + v.len()
+        }
+        ColumnValue::Binary(v) => size_of::<u32>() + v.len(),
+    }
+}
+
+impl PropertyProcessor for FeatureWriter<'_> {
+    fn property(&mut self, i: usize, _colname: &str, colval: &ColumnValue) -> Result<bool> {
+        let ofs = self.properties.len();
+        self.properties
+            .resize(ofs + size_of::<u16>() + prop_size(colval), 0);
+        LittleEndian::write_u16(&mut self.properties[ofs..], i as u16);
+        let prop = &mut self.properties[ofs + size_of::<u16>()..];
+        match colval {
+            ColumnValue::Byte(v) => prop[0] = *v as u8,
+            ColumnValue::UByte(v) => prop[0] = *v,
+            ColumnValue::Bool(v) => prop[0] = *v as u8,
+            ColumnValue::Short(v) => prop[0] = *v as u8,
+            ColumnValue::UShort(v) => LittleEndian::write_u16(prop, *v),
+            ColumnValue::Int(v) => LittleEndian::write_i32(prop, *v),
+            ColumnValue::UInt(v) => LittleEndian::write_u32(prop, *v),
+            ColumnValue::Long(v) => LittleEndian::write_i64(prop, *v),
+            ColumnValue::ULong(v) => LittleEndian::write_u64(prop, *v),
+            ColumnValue::Float(v) => LittleEndian::write_f32(prop, *v),
+            ColumnValue::Double(v) => LittleEndian::write_f64(prop, *v),
+            ColumnValue::String(v) | ColumnValue::Json(v) | ColumnValue::DateTime(v) => {
+                LittleEndian::write_u32(prop, v.len() as u32);
+                prop[4..].copy_from_slice(v.as_bytes());
+            }
+            ColumnValue::Binary(v) => {
+                LittleEndian::write_u32(prop, v.len() as u32);
+                prop[4..].copy_from_slice(v);
+            }
+        };
+        Ok(false)
+    }
+}
+
+impl FeatureProcessor for FeatureWriter<'_> {
+    // Emulate property. JSON reader doesn't support properties yet (FIXME).
+    fn properties_end(&mut self) -> Result<()> {
+        self.property(0, "fid", &ColumnValue::Int(42))?;
+        self.property(1, "name", &ColumnValue::String("New Zealand"))?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::header_generated::*;
-    use geozero::geojson::{read_geojson_geom, GeoJsonWriter};
+    use geozero::geojson::{read_geojson_geom, GeoJson, GeoJsonWriter};
+    use geozero::GeozeroDatasource;
 
-    impl<'a> GeomWriter<'a> {
-        fn to_geometry(&mut self) -> Geometry<'_> {
-            // let g = self.geometry(); // -> cannot borrow `self.fbb` as mutable more than once at a time
-            let g = if self.parts.len() == 0 {
-                self.finish_part();
-                self.parts.pop().unwrap()
-            } else {
-                let mut iter = std::mem::take(&mut self.parts).into_iter();
-                let parts = self.fbb.create_vector_from_iter(&mut iter);
-                Geometry::create(
-                    &mut self.fbb,
-                    &GeometryArgs {
-                        parts: Some(parts),
-                        ..Default::default()
-                    },
-                )
-            };
-            let f = Feature::create(
-                &mut self.fbb,
-                &FeatureArgs {
-                    geometry: Some(g),
-                    ..Default::default()
-                },
-            );
-            self.fbb.finish(f, None);
-            let buf = self.fbb.finished_data();
-            let f = root_as_feature(buf).unwrap();
-            dbg!(&f);
-            f.geometry().unwrap()
-        }
+    fn header() -> Vec<u8> {
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let col0 = ColumnArgs {
+            name: Some(fbb.create_string("fid")),
+            type_: ColumnType::Int,
+            ..Default::default()
+        };
+        let col0 = Column::create(&mut fbb, &col0);
+        let col1 = ColumnArgs {
+            name: Some(fbb.create_string("name")),
+            type_: ColumnType::String,
+            ..Default::default()
+        };
+        let col1 = Column::create(&mut fbb, &col1);
+        let header_args = HeaderArgs {
+            name: Some(fbb.create_string("countries")),
+            geometry_type: GeometryType::MultiPolygon,
+            columns: Some(fbb.create_vector(&[col0, col1])),
+            features_count: 1,
+            index_node_size: 0,
+            ..Default::default()
+        };
+
+        let header = Header::create(&mut fbb, &header_args);
+        fbb.finish_size_prefixed(header, None);
+        fbb.finished_data().to_vec()
     }
 
-    fn json_to_fbg_to_json(geojson: &str, geometry_type: GeometryType) -> Vec<u8> {
-        let mut fgb_writer = GeomWriter::new();
-        // With type GeoJson:
-        // assert!(geojson.process_geom(&mut fgb_writer).is_ok());
+    fn json_to_fbg_to_json_n(geojson: &str, geometry_type: GeometryType, with_z: bool) -> Vec<u8> {
+        let mut fgb_writer = FeatureWriter::new();
+        fgb_writer.dims.z = with_z;
         assert!(read_geojson_geom(&mut geojson.as_bytes(), &mut fgb_writer).is_ok());
         let mut out: Vec<u8> = Vec::new();
-        fgb_writer
-            .to_geometry()
+        let f = fgb_writer.to_feature(header());
+        f.geometry()
+            .unwrap()
             .process(&mut GeoJsonWriter::new(&mut out), geometry_type)
             .unwrap();
         out
+    }
+
+    fn json_to_fbg_to_json(geojson: &str, geometry_type: GeometryType) -> Vec<u8> {
+        json_to_fbg_to_json_n(geojson, geometry_type, false)
     }
 
     #[test]
@@ -219,11 +353,16 @@ mod test {
     }
 
     #[test]
-    #[ignore] // TODO
+    #[ignore] // GeoJSON reader doesn't support 3D coords yet
     fn geometries3d() -> Result<()> {
         let geojson = r#"{"type": "LineString", "coordinates": [[1,1,10],[2,2,20]]}"#;
         assert_eq!(
-            std::str::from_utf8(&json_to_fbg_to_json(&geojson, GeometryType::LineString)).unwrap(),
+            std::str::from_utf8(&json_to_fbg_to_json_n(
+                &geojson,
+                GeometryType::LineString,
+                true
+            ))
+            .unwrap(),
             geojson
         );
         Ok(())
@@ -243,6 +382,23 @@ mod test {
             std::str::from_utf8(&json_to_fbg_to_json(geojson, GeometryType::MultiPolygon)).unwrap(),
             geojson
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn feature() -> Result<()> {
+        let mut geojson = GeoJson(
+            // r#"{"type": "Feature", "properties": {"id": "NZL", "name": "New Zealand"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[173.020375,-40.919052],[173.247234,-41.331999],[173.958405,-40.926701],[174.247587,-41.349155],[174.248517,-41.770008],[173.876447,-42.233184],[173.22274,-42.970038],[172.711246,-43.372288],[173.080113,-43.853344],[172.308584,-43.865694],[171.452925,-44.242519],[171.185138,-44.897104],[170.616697,-45.908929],[169.831422,-46.355775],[169.332331,-46.641235],[168.411354,-46.619945],[167.763745,-46.290197],[166.676886,-46.219917],[166.509144,-45.852705],[167.046424,-45.110941],[168.303763,-44.123973],[168.949409,-43.935819],[169.667815,-43.555326],[170.52492,-43.031688],[171.12509,-42.512754],[171.569714,-41.767424],[171.948709,-41.514417],[172.097227,-40.956104],[172.79858,-40.493962],[173.020375,-40.919052]]],[[[174.612009,-36.156397],[175.336616,-37.209098],[175.357596,-36.526194],[175.808887,-36.798942],[175.95849,-37.555382],[176.763195,-37.881253],[177.438813,-37.961248],[178.010354,-37.579825],[178.517094,-37.695373],[178.274731,-38.582813],[177.97046,-39.166343],[177.206993,-39.145776],[176.939981,-39.449736],[177.032946,-39.879943],[176.885824,-40.065978],[176.508017,-40.604808],[176.01244,-41.289624],[175.239567,-41.688308],[175.067898,-41.425895],[174.650973,-41.281821],[175.22763,-40.459236],[174.900157,-39.908933],[173.824047,-39.508854],[173.852262,-39.146602],[174.574802,-38.797683],[174.743474,-38.027808],[174.697017,-37.381129],[174.292028,-36.711092],[174.319004,-36.534824],[173.840997,-36.121981],[173.054171,-35.237125],[172.636005,-34.529107],[173.007042,-34.450662],[173.551298,-35.006183],[174.32939,-35.265496],[174.612009,-36.156397]]]]}}"#,
+            r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[173.020375,-40.919052],[173.247234,-41.331999],[173.958405,-40.926701],[174.247587,-41.349155],[174.248517,-41.770008],[173.876447,-42.233184],[173.22274,-42.970038],[172.711246,-43.372288],[173.080113,-43.853344],[172.308584,-43.865694],[171.452925,-44.242519],[171.185138,-44.897104],[170.616697,-45.908929],[169.831422,-46.355775],[169.332331,-46.641235],[168.411354,-46.619945],[167.763745,-46.290197],[166.676886,-46.219917],[166.509144,-45.852705],[167.046424,-45.110941],[168.303763,-44.123973],[168.949409,-43.935819],[169.667815,-43.555326],[170.52492,-43.031688],[171.12509,-42.512754],[171.569714,-41.767424],[171.948709,-41.514417],[172.097227,-40.956104],[172.79858,-40.493962],[173.020375,-40.919052]]],[[[174.612009,-36.156397],[175.336616,-37.209098],[175.357596,-36.526194],[175.808887,-36.798942],[175.95849,-37.555382],[176.763195,-37.881253],[177.438813,-37.961248],[178.010354,-37.579825],[178.517094,-37.695373],[178.274731,-38.582813],[177.97046,-39.166343],[177.206993,-39.145776],[176.939981,-39.449736],[177.032946,-39.879943],[176.885824,-40.065978],[176.508017,-40.604808],[176.01244,-41.289624],[175.239567,-41.688308],[175.067898,-41.425895],[174.650973,-41.281821],[175.22763,-40.459236],[174.900157,-39.908933],[173.824047,-39.508854],[173.852262,-39.146602],[174.574802,-38.797683],[174.743474,-38.027808],[174.697017,-37.381129],[174.292028,-36.711092],[174.319004,-36.534824],[173.840997,-36.121981],[173.054171,-35.237125],[172.636005,-34.529107],[173.007042,-34.450662],[173.551298,-35.006183],[174.32939,-35.265496],[174.612009,-36.156397]]]]}}"#,
+        );
+        let mut fgb_writer = FeatureWriter::new();
+        assert!(geojson.process(&mut fgb_writer).is_ok());
+        let mut out: Vec<u8> = Vec::new();
+        fgb_writer
+            .to_feature(header())
+            .process(&mut GeoJsonWriter::new(&mut out), 0)?;
+        assert_eq!(std::str::from_utf8(&out).unwrap(), geojson.0);
 
         Ok(())
     }

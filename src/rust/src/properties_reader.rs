@@ -4,6 +4,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
 use geozero::GeozeroGeometry;
 use geozero::{ColumnValue, GeomProcessor, PropertyProcessor};
+use std::io::Write;
 use std::mem::size_of;
 use std::str;
 
@@ -26,6 +27,13 @@ impl FgbFeature {
     /// Flatbuffers geometry access
     pub fn geometry(&self) -> Option<Geometry> {
         self.fbs_feature().geometry()
+    }
+    /// Write feature data
+    pub fn write<'a, W: Write>(
+        &self,
+        out: &'a mut W,
+    ) -> std::result::Result<usize, std::io::Error> {
+        out.write(&self.feature_buf)
     }
 }
 

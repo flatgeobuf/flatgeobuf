@@ -81,9 +81,9 @@ extern crate log;
 #[allow(unused_imports, non_snake_case)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod feature_generated;
+mod feature_writer;
 mod file_reader;
 mod geometry_reader;
-mod geometry_writer;
 #[allow(unused_imports, non_snake_case)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod header_generated;
@@ -95,6 +95,7 @@ mod packed_r_tree;
 mod properties_reader;
 
 pub use feature_generated::*;
+pub use feature_writer::FeatureWriter;
 pub use file_reader::*;
 pub use geometry_reader::*;
 pub use header_generated::*;
