@@ -85,11 +85,15 @@ impl geozero::FeatureProperties for FgbFeature {
         let mut finish = false;
         if let Some(properties) = self.fbs_feature().properties() {
             let mut offset = 0;
-            while offset < properties.len() - 1 && !finish {
+            while offset + 1 < properties.len() && !finish {
                 // NOTE: it should be offset < properties.len(), but there is data with a
                 // trailing byte in the last column of type Binary
                 let i = LittleEndian::read_u16(&properties[offset..offset + 2]) as usize;
                 offset += size_of::<u16>();
+                if i >= columns_meta.len() {
+                    // NOTE: reading also fails if column._type is different from effective entry
+                    return Err(GeozeroError::GeometryFormat);
+                }
                 let column = &columns_meta.get(i);
                 match column.type_() {
                     ColumnType::Int => {
