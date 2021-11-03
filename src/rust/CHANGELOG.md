@@ -1,8 +1,13 @@
 # Changelog
 
+## [0.6.2] - UNRELEASED
+
+- Add basic writing support
+- Fix reading FGB without properties
+
 ## [0.6.1] - 2021-10-02
 
- - Make all impl. lenient on magic bytes patch level (#146)
+- Make all impl. lenient on magic bytes patch level (#146)
 
 ## [0.6.0] - 2021-09-01
 

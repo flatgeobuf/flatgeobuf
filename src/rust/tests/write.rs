@@ -99,7 +99,7 @@ fn json_to_fgb() -> std::io::Result<()> {
     let mut fbb = flatbuffers::FlatBufferBuilder::new();
     let col0 = ColumnArgs {
         name: Some(fbb.create_string("fid")),
-        type_: ColumnType::Int,
+        type_: ColumnType::ULong,
         ..Default::default()
     };
     let col0 = Column::create(&mut fbb, &col0);
