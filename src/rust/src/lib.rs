@@ -83,6 +83,7 @@ extern crate log;
 mod feature_generated;
 mod feature_writer;
 mod file_reader;
+mod file_writer;
 mod geometry_reader;
 #[allow(unused_imports, non_snake_case)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -95,8 +96,8 @@ mod packed_r_tree;
 mod properties_reader;
 
 pub use feature_generated::*;
-pub use feature_writer::FeatureWriter;
 pub use file_reader::*;
+pub use file_writer::*;
 pub use geometry_reader::*;
 pub use header_generated::*;
 #[cfg(feature = "http")]
@@ -111,7 +112,7 @@ pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
 
 pub const VERSION: u8 = 3;
-const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
+pub(crate) const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
 
 const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
 
