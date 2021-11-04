@@ -28,6 +28,19 @@ pub struct FeatureWriter<'a> {
     fbb: flatbuffers::FlatBufferBuilder<'a>,
 }
 
+macro_rules! to_fb_vector {
+    ( $self:ident, $items:ident ) => {
+        if cfg!(target_endian = "big") {
+            let mut iter = std::mem::take(&mut $self.$items).into_iter();
+            $self.fbb.create_vector_from_iter(&mut iter)
+        } else {
+            let items = $self.fbb.create_vector_direct(&$self.$items);
+            $self.$items.truncate(0);
+            items
+        }
+    };
+}
+
 impl<'a> FeatureWriter<'a> {
     pub fn new() -> FeatureWriter<'a> {
         FeatureWriter {
@@ -44,35 +57,29 @@ impl<'a> FeatureWriter<'a> {
         }
     }
     fn finish_part(&mut self) {
-        let mut iter = std::mem::take(&mut self.xy).into_iter();
-        let xy = Some(self.fbb.create_vector_from_iter(&mut iter));
+        let xy = Some(to_fb_vector!(self, xy));
         let ends = if self.ends.len() > 0 {
-            let mut iter = std::mem::take(&mut self.ends).into_iter();
-            Some(self.fbb.create_vector_from_iter(&mut iter))
+            Some(to_fb_vector!(self, ends))
         } else {
             None
         };
         let z = if self.z.len() > 0 {
-            let mut iter = std::mem::take(&mut self.z).into_iter();
-            Some(self.fbb.create_vector_from_iter(&mut iter))
+            Some(to_fb_vector!(self, z))
         } else {
             None
         };
         let m = if self.m.len() > 0 {
-            let mut iter = std::mem::take(&mut self.m).into_iter();
-            Some(self.fbb.create_vector_from_iter(&mut iter))
+            Some(to_fb_vector!(self, m))
         } else {
             None
         };
         let t = if self.t.len() > 0 {
-            let mut iter = std::mem::take(&mut self.t).into_iter();
-            Some(self.fbb.create_vector_from_iter(&mut iter))
+            Some(to_fb_vector!(self, t))
         } else {
             None
         };
         let tm = if self.tm.len() > 0 {
-            let mut iter = std::mem::take(&mut self.tm).into_iter();
-            Some(self.fbb.create_vector_from_iter(&mut iter))
+            Some(to_fb_vector!(self, tm))
         } else {
             None
         };
@@ -89,6 +96,9 @@ impl<'a> FeatureWriter<'a> {
             },
         );
         self.parts.push(g);
+    }
+    pub fn set_property(&mut self, i: usize, colname: &str, colval: &ColumnValue) -> Result<bool> {
+        self.property(i, colname, colval)
     }
     pub fn geometry(&mut self) -> flatbuffers::WIPOffset<Geometry<'_>> {
         if self.parts.len() == 0 {
@@ -122,8 +132,8 @@ impl<'a> FeatureWriter<'a> {
                 },
             )
         };
-        let mut iter = std::mem::take(&mut self.properties).into_iter();
-        let properties = Some(self.fbb.create_vector_from_iter(&mut iter));
+        let properties = Some(self.fbb.create_vector_direct(&self.properties));
+        self.properties.truncate(0);
         let f = Feature::create(
             &mut self.fbb,
             &FeatureArgs {
@@ -134,6 +144,7 @@ impl<'a> FeatureWriter<'a> {
         );
         self.fbb.finish_size_prefixed(f, None);
         let feature_buf = self.fbb.finished_data().to_vec();
+        self.fbb.reset();
 
         FgbFeature {
             header_buf: header,
@@ -225,6 +236,7 @@ fn prop_size(colval: &ColumnValue) -> usize {
 
 impl PropertyProcessor for FeatureWriter<'_> {
     fn property(&mut self, i: usize, _colname: &str, colval: &ColumnValue) -> Result<bool> {
+        // TODO: check colval against columns_meta.get(i).type_() - requires header access
         let ofs = self.properties.len();
         self.properties
             .resize(ofs + size_of::<u16>() + prop_size(colval), 0);
