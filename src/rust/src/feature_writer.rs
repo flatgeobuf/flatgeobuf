@@ -9,7 +9,7 @@ use geozero::{
 use std::mem::size_of;
 
 /// FBG Feature writer.
-pub struct FeatureWriter<'a> {
+pub(crate) struct FeatureWriter<'a> {
     pub dims: CoordDimensions,
     // Array of end index in flat coordinates per geometry part
     ends: Vec<u32>,
@@ -97,27 +97,7 @@ impl<'a> FeatureWriter<'a> {
         );
         self.parts.push(g);
     }
-    pub fn set_property(&mut self, i: usize, colname: &str, colval: &ColumnValue) -> Result<bool> {
-        self.property(i, colname, colval)
-    }
-    pub fn geometry(&mut self) -> flatbuffers::WIPOffset<Geometry<'_>> {
-        if self.parts.len() == 0 {
-            self.finish_part();
-            self.parts.pop().unwrap()
-        } else {
-            let mut iter = std::mem::take(&mut self.parts).into_iter();
-            let parts = self.fbb.create_vector_from_iter(&mut iter);
-            Geometry::create(
-                &mut self.fbb,
-                &GeometryArgs {
-                    parts: Some(parts),
-                    ..Default::default()
-                },
-            )
-        }
-    }
-    pub fn to_feature(&mut self, header: Vec<u8>) -> FgbFeature {
-        // let g = self.geometry(); // -> cannot borrow `self.fbb` as mutable more than once at a time
+    pub(crate) fn to_feature(&mut self) -> Vec<u8> {
         let g = if self.parts.len() == 0 {
             self.finish_part();
             self.parts.pop().unwrap()
@@ -145,11 +125,7 @@ impl<'a> FeatureWriter<'a> {
         self.fbb.finish_size_prefixed(f, None);
         let feature_buf = self.fbb.finished_data().to_vec();
         self.fbb.reset();
-
-        FgbFeature {
-            header_buf: header,
-            feature_buf,
-        }
+        feature_buf
     }
 }
 
@@ -236,7 +212,6 @@ fn prop_size(colval: &ColumnValue) -> usize {
 
 impl PropertyProcessor for FeatureWriter<'_> {
     fn property(&mut self, i: usize, _colname: &str, colval: &ColumnValue) -> Result<bool> {
-        // TODO: check colval against columns_meta.get(i).type_() - requires header access
         let ofs = self.properties.len();
         self.properties
             .resize(ofs + size_of::<u16>() + prop_size(colval), 0);
@@ -308,7 +283,10 @@ mod test {
         fgb_writer.dims.z = with_z;
         assert!(read_geojson_geom(&mut geojson.as_bytes(), &mut fgb_writer).is_ok());
         let mut out: Vec<u8> = Vec::new();
-        let f = fgb_writer.to_feature(header());
+        let f = FgbFeature {
+            header_buf: header(),
+            feature_buf: fgb_writer.to_feature(),
+        };
         f.geometry()
             .unwrap()
             .process(&mut GeoJsonWriter::new(&mut out), geometry_type)
@@ -399,9 +377,11 @@ mod test {
         let mut fgb_writer = FeatureWriter::new();
         assert!(geojson.process(&mut fgb_writer).is_ok());
         let mut out: Vec<u8> = Vec::new();
-        fgb_writer
-            .to_feature(header())
-            .process(&mut GeoJsonWriter::new(&mut out), 0)?;
+        let feat = FgbFeature {
+            header_buf: header(),
+            feature_buf: fgb_writer.to_feature(),
+        };
+        feat.process(&mut GeoJsonWriter::new(&mut out), 0)?;
         assert_eq!(std::str::from_utf8(&out).unwrap(), geojson.0);
 
         Ok(())
