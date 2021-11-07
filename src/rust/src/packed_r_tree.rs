@@ -14,12 +14,12 @@ use std::{cmp, f64, u64, usize};
 #[repr(C)]
 /// R-Tree node
 pub struct NodeItem {
-    min_x: f64, // double
-    min_y: f64, // double
-    max_x: f64, // double
-    max_y: f64, // double
+    pub min_x: f64,
+    pub min_y: f64,
+    pub max_x: f64,
+    pub max_y: f64,
     /// Byte offset in feature data section
-    offset: u64, // uint64_t
+    pub offset: usize,
 }
 
 impl NodeItem {
@@ -33,7 +33,7 @@ impl NodeItem {
         }
     }
 
-    pub fn create(offset: u64) -> NodeItem {
+    pub fn create(offset: usize) -> NodeItem {
         NodeItem {
             min_x: f64::INFINITY,
             min_y: f64::INFINITY,
@@ -56,7 +56,7 @@ impl NodeItem {
         a
     }
 
-    fn expand(&mut self, r: &NodeItem) {
+    pub fn expand(&mut self, r: &NodeItem) {
         if r.min_x < self.min_x {
             self.min_x = r.min_x;
         }
@@ -68,6 +68,21 @@ impl NodeItem {
         }
         if r.max_y > self.max_y {
             self.max_y = r.max_y;
+        }
+    }
+
+    pub fn expand_xy(&mut self, x: f64, y: f64) {
+        if x < self.min_x {
+            self.min_x = x;
+        }
+        if y < self.min_y {
+            self.min_y = y;
+        }
+        if x > self.max_x {
+            self.max_x = x;
+        }
+        if y > self.max_y {
+            self.max_y = y;
         }
     }
 
@@ -86,11 +101,6 @@ impl NodeItem {
         }
         true
     }
-
-    // std::vector<double> NodeItem::toVector()
-    // {
-    //     return std::vector<double> { min_x, min_y, max_x, max_y };
-    // }
 }
 
 /// Read full capacity of vec from data stream
@@ -224,27 +234,13 @@ fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
     hilbert(x, y)
 }
 
-pub fn hilbert_sort(items: &mut Vec<NodeItem>) {
-    let extent = calc_extent(items);
+pub fn hilbert_sort(items: &mut Vec<NodeItem>, extent: &NodeItem) {
     items.sort_by(|a, b| {
-        let ha = hilbert_bbox(a, HILBERT_MAX, &extent);
-        let hb = hilbert_bbox(b, HILBERT_MAX, &extent);
+        let ha = hilbert_bbox(a, HILBERT_MAX, extent);
+        let hb = hilbert_bbox(b, HILBERT_MAX, extent);
         hb.partial_cmp(&ha).unwrap() // ha > hb
     });
 }
-
-// void hilbert_sort_shared_ptr(std::vector<std::shared_ptr<Item>> &items)
-// {
-//     NodeItem extent = std::accumulate(items.begin(), items.end(), NodeItem::create(0), [] (NodeItem a, std::shared_ptr<Item> b) {
-//         a.expand(b->node_item);
-//         return a;
-//     });
-//     std::sort(items.begin(), items.end(), [&extent] (std::shared_ptr<Item> a, std::shared_ptr<Item> b) {
-//         uint32_t ha = hilbert(a->node_item, hilbert_max, extent);
-//         uint32_t hb = hilbert(b->node_item, hilbert_max, extent);
-//         return ha > hb;
-//     });
-// }
 
 pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
     nodes.iter().fold(NodeItem::create(0), |mut a, b| {
@@ -252,15 +248,6 @@ pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
         a
     })
 }
-
-// NodeItem calc_extent_shared_ptr(const std::vector<std::shared_ptr<Item>> &items)
-// {
-//     NodeItem extent = std::accumulate(items.begin(), items.end(), NodeItem::create(0), [] (NodeItem a, std::shared_ptr<Item> b) {
-//         a.expand(b->node_item);
-//         return a;
-//     });
-//     return extent;
-// }
 
 /// Packed Hilbert R-Tree
 pub struct PackedRTree {
@@ -333,7 +320,7 @@ impl PackedRTree {
             let end = self.level_bounds[i].1;
             let mut newpos = self.level_bounds[i + 1].0;
             while pos < end {
-                let mut node = NodeItem::create(pos as u64);
+                let mut node = NodeItem::create(pos);
                 for _j in 0..self.node_size {
                     if pos >= end {
                         break;
@@ -692,7 +679,8 @@ mod inspect {
                     let _ =
                         processor.property(0, "levelno", &ColumnValue::ULong(levelno as u64))?;
                     let _ = processor.property(1, "pos", &ColumnValue::ULong(pos as u64))?;
-                    let _ = processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
+                    let _ =
+                        processor.property(2, "offset", &ColumnValue::ULong(node.offset as u64))?;
                     processor.properties_end()?;
                     processor.geometry_begin()?;
                     processor.polygon_begin(true, 1, 0)?;
@@ -723,10 +711,10 @@ fn tree_2items() -> Result<()> {
     assert_eq!(extent, NodeItem::new(0.0, 0.0, 3.0, 3.0));
     assert!(nodes[0].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
     assert!(nodes[1].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
-    hilbert_sort(&mut nodes);
+    hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
     for mut node in &mut nodes {
-        node.offset = offset as u64;
+        node.offset = offset;
         offset += size_of::<NodeItem>();
     }
     assert!(nodes[1].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
@@ -761,10 +749,10 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
     nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
     let extent = calc_extent(&nodes);
-    hilbert_sort(&mut nodes);
+    hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
     for mut node in &mut nodes {
-        node.offset = offset as u64;
+        node.offset = offset;
         offset += size_of::<NodeItem>();
     }
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
@@ -823,7 +811,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
     }
 
     let extent = calc_extent(&nodes);
-    hilbert_sort(&mut nodes);
+    hilbert_sort(&mut nodes, &extent);
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let list = tree.search(690407.0, 6063692.0, 811682.0, 6176467.0)?;
 
@@ -866,7 +854,7 @@ fn tree_processing() -> Result<()> {
     let extent = calc_extent(&nodes);
     let mut offset = 0;
     for mut node in &mut nodes {
-        node.offset = offset as u64;
+        node.offset = offset;
         offset += size_of::<NodeItem>();
     }
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;

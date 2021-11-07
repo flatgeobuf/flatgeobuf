@@ -1,4 +1,5 @@
 use crate::feature_generated::*;
+use crate::packed_r_tree::NodeItem;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::Result;
 use geozero::{ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, PropertyProcessor};
@@ -22,6 +23,7 @@ pub struct FeatureWriter<'a> {
     parts: Vec<flatbuffers::WIPOffset<Geometry<'a>>>,
     properties: Vec<u8>,
     fbb: flatbuffers::FlatBufferBuilder<'a>,
+    pub(crate) bbox: NodeItem,
 }
 
 macro_rules! to_fb_vector {
@@ -50,10 +52,12 @@ impl<'a> FeatureWriter<'a> {
             parts: Vec::new(),
             properties: Vec::new(),
             fbb: flatbuffers::FlatBufferBuilder::new(),
+            bbox: NodeItem::create(0),
         }
     }
     fn finish_part(&mut self) {
         let xy = Some(to_fb_vector!(self, xy));
+        self.bbox = NodeItem::create(0);
         let ends = if self.ends.len() > 0 {
             Some(to_fb_vector!(self, ends))
         } else {
@@ -132,6 +136,7 @@ impl GeomProcessor for FeatureWriter<'_> {
     fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
         self.xy.push(x);
         self.xy.push(y);
+        self.bbox.expand_xy(x, y);
         Ok(())
     }
     fn coordinate(

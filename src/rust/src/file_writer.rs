@@ -1,10 +1,11 @@
 use crate::feature_writer::FeatureWriter;
 use crate::header_generated::{ColumnType, Crs, CrsArgs, GeometryType};
+use crate::packed_r_tree::{calc_extent, hilbert_sort, NodeItem, PackedRTree};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use geozero::error::Result;
 use geozero::{CoordDimensions, GeozeroDatasource, GeozeroGeometry};
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
@@ -13,9 +14,17 @@ pub struct FgbWriter<'a> {
     tmpfn: PathBuf,
     tmpout: BufWriter<NamedTempFile>,
     fbb: flatbuffers::FlatBufferBuilder<'a>,
-    pub header_args: HeaderArgs<'a>,
+    header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
     feat_writer: FeatureWriter<'a>,
+    feat_offsets: Vec<FeatureOffset>,
+    feat_nodes: Vec<NodeItem>,
+}
+
+// Offsets in temporary file
+struct FeatureOffset {
+    offset: usize,
+    size: usize,
 }
 
 impl<'a> FgbWriter<'a> {
@@ -44,7 +53,7 @@ impl<'a> FgbWriter<'a> {
             name: Some(fbb.create_string(name)),
             geometry_type,
             crs,
-            index_node_size: 0,
+            index_node_size: PackedRTree::DEFAULT_NODE_SIZE,
             ..Default::default()
         };
 
@@ -69,6 +78,8 @@ impl<'a> FgbWriter<'a> {
             header_args,
             columns: Vec::new(),
             feat_writer,
+            feat_offsets: Vec::new(),
+            feat_nodes: Vec::new(),
         }
     }
     /// Create a builder for FlatBuffer entities.
@@ -109,32 +120,75 @@ impl<'a> FgbWriter<'a> {
         Ok(())
     }
     fn write_feature(&mut self) -> std::io::Result<usize> {
+        let mut node = self.feat_writer.bbox.clone();
+        // Offset is index of feat_offsets before sorting
+        // Will be replaced with output offset after sorting
+        node.offset = self.feat_offsets.len();
+        self.feat_nodes.push(node);
         let feat_buf = self.feat_writer.to_feature();
+        let tmpoffset = self
+            .feat_offsets
+            .last()
+            .map(|it| it.offset + it.size)
+            .unwrap_or(0);
+        self.feat_offsets.push(FeatureOffset {
+            offset: tmpoffset,
+            size: feat_buf.len(),
+        });
         self.tmpout.write(&feat_buf)?;
         self.header_args.features_count += 1;
         Ok(0)
     }
-    /// Write the FlatGeobuf dataset without index
-    pub fn write_without_index<W: Write>(&mut self, out: &'a mut W) -> std::io::Result<()> {
+    /// Write the FlatGeobuf dataset (Hilbert sorted)
+    pub fn write<W: Write>(&mut self, out: &'a mut W) -> std::io::Result<()> {
         out.write(&MAGIC_BYTES)?;
+
+        let extent = calc_extent(&self.feat_nodes);
 
         // Write header
         self.header_args.columns = Some(self.fbb.create_vector(&self.columns));
+        self.header_args.envelope =
+            Some(
+                self.fbb
+                    .create_vector(&[extent.min_x, extent.min_y, extent.max_x, extent.max_y]),
+            );
         let header = Header::create(&mut self.fbb, &self.header_args);
         self.fbb.finish_size_prefixed(header, None);
         let buf = self.fbb.finished_data();
         out.write(&buf)?;
 
-        // Copy features from temp file
+        // Create sorted index
+        hilbert_sort(&mut self.feat_nodes, &extent);
+        // Update offsets for index
+        let mut offset = 0;
+        let index_nodes = self
+            .feat_nodes
+            .iter()
+            .map(|tmpnode| {
+                let feat = &self.feat_offsets[tmpnode.offset];
+                let mut node = tmpnode.clone();
+                node.offset = offset;
+                offset += feat.size;
+                node
+            })
+            .collect();
+        let tree =
+            PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size).unwrap();
+        tree.stream_write(out)?;
+
+        // Copy features from temp file in sort order
         self.tmpout.flush()?;
         let tmpin = File::open(&self.tmpfn)?;
         let mut reader = BufReader::new(tmpin);
-        std::io::copy(&mut reader, out)?;
+        let mut buf = Vec::with_capacity(2048);
+        for node in &self.feat_nodes {
+            let feat = &self.feat_offsets[node.offset];
+            reader.seek(SeekFrom::Start(feat.offset as u64))?;
+            buf.resize(feat.size, 0);
+            reader.read_exact(&mut buf)?;
+            out.write(&buf)?;
+        }
 
         Ok(())
-    }
-    /// Write the Hilbert sorted FlatGeobuf dataset
-    pub fn write<W: Write>(&mut self, out: &'a mut W) -> std::io::Result<()> {
-        self.write_without_index(out) //TODO
     }
 }
