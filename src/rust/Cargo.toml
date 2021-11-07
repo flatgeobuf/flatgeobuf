@@ -24,6 +24,7 @@ reqwest = { version = "0.11.0", default-features = false, optional = true }
 bytes = { version = "1.0.1", optional = true }
 log = "0.4.13"
 fallible-streaming-iterator = "0.1.9"
+tempfile = "3.2.0"
 
 [dev-dependencies]
 geozero = { version = "0.7.5", default-features = true }
@@ -31,7 +32,6 @@ seek_bufread = "1.2"
 rand = "0.8.2"
 hex = "0.4.2"
 criterion = "0.3.3"
-tempfile = "3.2.0"
 tokio = { version = "1.0.2", default-features = false, features = ["rt-multi-thread"] }
 # One test needs SSL support; just use the default system bindings for that.
 reqwest = { version = "0.11.0", default-features = true }

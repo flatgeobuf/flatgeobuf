@@ -1,15 +1,11 @@
 use crate::feature_generated::*;
-use crate::header_generated::*;
-use crate::FgbFeature;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::Result;
-use geozero::{
-    ColumnValue, CoordDimensions, FeatureAccess, FeatureProcessor, GeomProcessor, PropertyProcessor,
-};
+use geozero::{ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, PropertyProcessor};
 use std::mem::size_of;
 
 /// FBG Feature writer.
-pub(crate) struct FeatureWriter<'a> {
+pub struct FeatureWriter<'a> {
     pub dims: CoordDimensions,
     // Array of end index in flat coordinates per geometry part
     ends: Vec<u32>,
@@ -212,6 +208,7 @@ fn prop_size(colval: &ColumnValue) -> usize {
 
 impl PropertyProcessor for FeatureWriter<'_> {
     fn property(&mut self, i: usize, _colname: &str, colval: &ColumnValue) -> Result<bool> {
+        // TODO: check colval against columns_meta.get(i).type_() - requires header access
         let ofs = self.properties.len();
         self.properties
             .resize(ofs + size_of::<u16>() + prop_size(colval), 0);
@@ -247,8 +244,10 @@ impl FeatureProcessor for FeatureWriter<'_> {}
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::header_generated::*;
+    use crate::FgbFeature;
     use geozero::geojson::{read_geojson_geom, GeoJson, GeoJsonWriter};
-    use geozero::GeozeroDatasource;
+    use geozero::{FeatureAccess, GeozeroDatasource};
 
     fn header() -> Vec<u8> {
         let mut fbb = flatbuffers::FlatBufferBuilder::new();
