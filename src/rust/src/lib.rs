@@ -92,7 +92,7 @@ mod header_generated;
 mod http_client;
 #[cfg(feature = "http")]
 mod http_reader;
-mod packed_r_tree;
+pub mod packed_r_tree;
 mod properties_reader;
 
 pub use feature_generated::*;
@@ -104,7 +104,6 @@ pub use header_generated::*;
 pub use http_client::*;
 #[cfg(feature = "http")]
 pub use http_reader::*;
-pub use packed_r_tree::*;
 pub use properties_reader::*;
 
 // Re-export used traits

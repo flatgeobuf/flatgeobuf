@@ -1,3 +1,4 @@
+use flatgeobuf::packed_r_tree::*;
 use flatgeobuf::*;
 use geozero::error::Result;
 use geozero::wkt::WktWriter;

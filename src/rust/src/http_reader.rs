@@ -1,9 +1,9 @@
 use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::http_client::BufferedHttpRangeClient;
-use crate::packed_r_tree::{self, PackedRTree};
+use crate::packed_r_tree::{self, NodeItem, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{check_magic_bytes, NodeItem, HEADER_MAX_BUFFER_SIZE};
+use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
