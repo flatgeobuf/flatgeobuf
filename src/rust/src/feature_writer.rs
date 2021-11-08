@@ -292,9 +292,11 @@ mod test {
             header_buf: header(),
             feature_buf: fgb_writer.to_feature(),
         };
+        let mut json_writer = GeoJsonWriter::new(&mut out);
+        json_writer.dims.z = with_z;
         f.geometry()
             .unwrap()
-            .process(&mut GeoJsonWriter::new(&mut out), geometry_type)
+            .process(&mut json_writer, geometry_type)
             .unwrap();
         out
     }
@@ -341,7 +343,6 @@ mod test {
     }
 
     #[test]
-    #[ignore] // GeoJSON reader doesn't support 3D coords yet
     fn geometries3d() -> Result<()> {
         let geojson = r#"{"type": "LineString", "coordinates": [[1,1,10],[2,2,20]]}"#;
         assert_eq!(
