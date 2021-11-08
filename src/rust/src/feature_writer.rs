@@ -151,6 +151,7 @@ impl GeomProcessor for FeatureWriter<'_> {
     ) -> Result<()> {
         self.xy.push(x);
         self.xy.push(y);
+        self.bbox.expand_xy(x, y);
         if let Some(v) = z {
             self.z.push(v);
         }

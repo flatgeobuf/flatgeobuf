@@ -28,6 +28,24 @@ struct FeatureOffset {
 }
 
 impl<'a> FgbWriter<'a> {
+    /// Configure FlatGeobuf headers for creating a new file
+    ///
+    /// * For reading/writing more than two dimensions set `hasZ=true`, etc.
+    /// * For skipping the index, set `index_node_size=0`
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// let mut fgb = FgbWriter::create(
+    ///     "countries",
+    ///     GeometryType::MultiPolygon,
+    ///     Some(4326),
+    ///     |header| {
+    ///         header.description = Some(FgbWriter::create_string("Country polygons"));
+    ///     },
+    /// );
+    /// ```
     pub fn create<F>(
         name: &str,
         geometry_type: GeometryType,
@@ -82,14 +100,17 @@ impl<'a> FgbWriter<'a> {
             feat_nodes: Vec::new(),
         }
     }
+
     /// Create a builder for FlatBuffer entities.
     pub fn fb_builder() -> flatbuffers::FlatBufferBuilder<'a> {
         flatbuffers::FlatBufferBuilder::new()
     }
+
     /// Create a single FlatBuffer string.
     pub fn create_string(val: &'a str) -> flatbuffers::WIPOffset<&str> {
         Self::fb_builder().create_string(val)
     }
+
     /// Add a new column.
     pub fn add_column<F>(&mut self, name: &str, col_type: ColumnType, cfgfn: F)
     where
@@ -103,12 +124,14 @@ impl<'a> FgbWriter<'a> {
         cfgfn(&mut col);
         self.columns.push(Column::create(&mut self.fbb, &col));
     }
+
     /// Add a new feature.
     pub fn add_feature(&mut self, mut feature: impl GeozeroDatasource) -> Result<()> {
         feature.process(&mut self.feat_writer)?;
         self.write_feature().unwrap();
         Ok(())
     }
+
     /// Add a new feature from a `GeozeroGeometry`.
     pub fn add_feature_geom<F>(&mut self, geom: impl GeozeroGeometry, cfgfn: F) -> Result<()>
     where
@@ -119,6 +142,7 @@ impl<'a> FgbWriter<'a> {
         self.write_feature().unwrap();
         Ok(())
     }
+
     fn write_feature(&mut self) -> std::io::Result<usize> {
         let mut node = self.feat_writer.bbox.clone();
         // Offset is index of feat_offsets before sorting
@@ -139,6 +163,7 @@ impl<'a> FgbWriter<'a> {
         self.header_args.features_count += 1;
         Ok(0)
     }
+
     /// Write the FlatGeobuf dataset (Hilbert sorted)
     pub fn write<W: Write>(&mut self, out: &'a mut W) -> std::io::Result<()> {
         out.write(&MAGIC_BYTES)?;
@@ -157,24 +182,26 @@ impl<'a> FgbWriter<'a> {
         let buf = self.fbb.finished_data();
         out.write(&buf)?;
 
-        // Create sorted index
-        hilbert_sort(&mut self.feat_nodes, &extent);
-        // Update offsets for index
-        let mut offset = 0;
-        let index_nodes = self
-            .feat_nodes
-            .iter()
-            .map(|tmpnode| {
-                let feat = &self.feat_offsets[tmpnode.offset];
-                let mut node = tmpnode.clone();
-                node.offset = offset;
-                offset += feat.size;
-                node
-            })
-            .collect();
-        let tree =
-            PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size).unwrap();
-        tree.stream_write(out)?;
+        if self.header_args.index_node_size > 0 {
+            // Create sorted index
+            hilbert_sort(&mut self.feat_nodes, &extent);
+            // Update offsets for index
+            let mut offset = 0;
+            let index_nodes = self
+                .feat_nodes
+                .iter()
+                .map(|tmpnode| {
+                    let feat = &self.feat_offsets[tmpnode.offset];
+                    let mut node = tmpnode.clone();
+                    node.offset = offset;
+                    offset += feat.size;
+                    node
+                })
+                .collect();
+            let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)
+                .unwrap();
+            tree.stream_write(out)?;
+        }
 
         // Copy features from temp file in sort order
         self.tmpout.flush()?;
