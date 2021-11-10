@@ -1,6 +1,5 @@
 use crate::feature_generated::*;
 use crate::header_generated::*;
-use crate::http_client::BufferedHttpRangeClient;
 use crate::packed_r_tree::{self, NodeItem, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
@@ -8,6 +7,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor};
+use http_range_client::{BufferedHttpRangeClient, HttpError};
 
 /// FlatGeobuf dataset HTTP reader
 pub struct HttpFgbReader {
@@ -25,6 +25,13 @@ pub struct HttpFgbReader {
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Current position in item_filter
     feat_no: usize,
+}
+
+pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {
+    match error {
+        HttpError::HttpStatus(e) => GeozeroError::HttpStatus(e),
+        HttpError::HttpError(e) => GeozeroError::HttpError(e),
+    }
 }
 
 impl HttpFgbReader {
@@ -56,17 +63,30 @@ impl HttpFgbReader {
         let min_req_size = assumed_header_size + prefetch_index_bytes;
         debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
 
-        let bytes = client.get_range(0, 8, min_req_size).await?;
+        let bytes = client
+            .get_range(0, 8, min_req_size)
+            .await
+            .map_err(from_http_err)?;
         if !check_magic_bytes(&bytes) {
             return Err(GeozeroError::GeometryFormat);
         }
-        let mut bytes = BytesMut::from(client.get_range(8, 4, min_req_size).await?);
+        let mut bytes = BytesMut::from(
+            client
+                .get_range(8, 4, min_req_size)
+                .await
+                .map_err(from_http_err)?,
+        );
         let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
             return Err(GeozeroError::GeometryFormat);
         }
-        bytes.put(client.get_range(12, header_size, min_req_size).await?);
+        bytes.put(
+            client
+                .get_range(12, header_size, min_req_size)
+                .await
+                .map_err(from_http_err)?,
+        );
         let header_buf = bytes.to_vec();
 
         // verify flatbuffer
@@ -158,13 +178,19 @@ impl HttpFgbReader {
             self.pos = self.feature_base + item.offset;
         }
         self.feat_no += 1;
-        let mut bytes = BytesMut::from(self.client.get_range(self.pos, 4, min_req_size).await?);
+        let mut bytes = BytesMut::from(
+            self.client
+                .get_range(self.pos, 4, min_req_size)
+                .await
+                .map_err(from_http_err)?,
+        );
         self.pos += 4;
         let feature_size = LittleEndian::read_u32(&bytes) as usize;
         bytes.put(
             self.client
                 .get_range(self.pos, feature_size, min_req_size)
-                .await?,
+                .await
+                .map_err(from_http_err)?,
         );
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
                                                // verify flatbuffer
