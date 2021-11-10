@@ -2,8 +2,10 @@
 //! to enable fast bounding box spatial filtering.
 
 #[cfg(feature = "http")]
-use crate::http_client::BufferedHttpRangeClient;
+use crate::http_reader::from_http_err;
 use geozero::error::{GeozeroError, Result};
+#[cfg(feature = "http")]
+use http_range_client::BufferedHttpRangeClient;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -145,7 +147,7 @@ async fn read_http_node_items(
 ) -> Result<Vec<NodeItem>> {
     let begin = base + node_index * size_of::<NodeItem>();
     let len = length * size_of::<NodeItem>();
-    let bytes = client.get_range(begin, len, min_req_size).await?;
+    let bytes = client.get_range(begin, len, min_req_size).await.map_err(from_http_err)?;
 
     let mut node_items = Vec::with_capacity(length);
     let buf = unsafe { std::slice::from_raw_parts_mut(node_items.as_mut_ptr() as *mut u8, len) };
@@ -353,7 +355,8 @@ impl PackedRTree {
         for i in 0..self.num_nodes {
             let bytes = client
                 .get_range(pos, size_of::<NodeItem>(), min_req_size)
-                .await?;
+                .await
+                .map_err(from_http_err)?;
             let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
             let n: NodeItem = unsafe { std::mem::transmute(*p) };
             self.node_items[i] = n.clone();

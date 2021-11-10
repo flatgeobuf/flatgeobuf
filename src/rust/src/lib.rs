@@ -89,8 +89,6 @@ mod geometry_reader;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod header_generated;
 #[cfg(feature = "http")]
-mod http_client;
-#[cfg(feature = "http")]
 mod http_reader;
 pub mod packed_r_tree;
 mod properties_reader;
@@ -100,8 +98,6 @@ pub use file_reader::*;
 pub use file_writer::*;
 pub use geometry_reader::*;
 pub use header_generated::*;
-#[cfg(feature = "http")]
-pub use http_client::*;
 #[cfg(feature = "http")]
 pub use http_reader::*;
 pub use properties_reader::*;
