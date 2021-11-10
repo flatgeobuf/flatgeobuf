@@ -41,7 +41,8 @@ fn num_properties() -> Result<()> {
 }
 
 #[cfg(feature = "http")]
-async fn http_json_async() -> Result<()> {
+#[tokio::test]
+async fn http_json() -> Result<()> {
     let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
     fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
@@ -57,13 +58,4 @@ async fn http_json_async() -> Result<()> {
 "features": [{"type": "Feature", "properties": {"id": "DNK", "name": "Denmark"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[12.690006,55.609991],[12.089991,54.800015],[11.043"#
     );
     Ok(())
-}
-
-#[test]
-#[cfg(feature = "http")]
-fn http_json() {
-    assert!(tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(http_json_async())
-        .is_ok());
 }
