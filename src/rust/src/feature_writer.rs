@@ -100,7 +100,7 @@ impl<'a> FeatureWriter<'a> {
     pub(crate) fn to_feature(&mut self) -> Vec<u8> {
         let g = if self.parts.len() == 0 {
             self.finish_part();
-            self.parts.pop().unwrap()
+            self.parts.pop().expect("push in finish_part")
         } else {
             let mut iter = std::mem::take(&mut self.parts).into_iter();
             let parts = self.fbb.create_vector_from_iter(&mut iter);

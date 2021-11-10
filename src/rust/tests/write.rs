@@ -1,5 +1,6 @@
 use crate::FgbWriter;
 use flatgeobuf::*;
+use geozero::error::Result;
 use geozero::geojson::GeoJson;
 use geozero::{ColumnValue, PropertyProcessor};
 use std::io::{BufWriter, Write};
@@ -89,7 +90,7 @@ fn verify_header() {
 }
 
 #[test]
-fn json_to_fgb() -> std::io::Result<()> {
+fn json_to_fgb() -> Result<()> {
     let mut fgb = FgbWriter::create(
         "countries",
         GeometryType::MultiPolygon,
@@ -97,7 +98,7 @@ fn json_to_fgb() -> std::io::Result<()> {
         |header| {
             header.description = Some(FgbWriter::create_string("Country polygons"));
         },
-    );
+    )?;
     fgb.add_column("fid", ColumnType::ULong, |col| {
         col.nullable = false;
     });
