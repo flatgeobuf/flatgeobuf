@@ -44,14 +44,14 @@ impl<'a> FgbWriter<'a> {
     ///     |header| {
     ///         header.description = Some(FgbWriter::create_string("Country polygons"));
     ///     },
-    /// );
+    /// ).unwrap();
     /// ```
     pub fn create<F>(
         name: &str,
         geometry_type: GeometryType,
         crs_code: Option<i32>,
         cfgfn: F,
-    ) -> Self
+    ) -> Result<Self>
     where
         F: FnOnce(&mut HeaderArgs),
     {
@@ -85,11 +85,11 @@ impl<'a> FgbWriter<'a> {
             tm: header_args.hasTM,
         };
 
-        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = NamedTempFile::new()?;
         let tmpfn = tmpfile.path().to_path_buf();
         let tmpout = BufWriter::new(tmpfile);
 
-        FgbWriter {
+        Ok(FgbWriter {
             tmpfn,
             tmpout,
             fbb,
@@ -98,7 +98,7 @@ impl<'a> FgbWriter<'a> {
             feat_writer,
             feat_offsets: Vec::new(),
             feat_nodes: Vec::new(),
-        }
+        })
     }
 
     /// Create a builder for FlatBuffer entities.
@@ -128,8 +128,7 @@ impl<'a> FgbWriter<'a> {
     /// Add a new feature.
     pub fn add_feature(&mut self, mut feature: impl GeozeroDatasource) -> Result<()> {
         feature.process(&mut self.feat_writer)?;
-        self.write_feature().unwrap();
-        Ok(())
+        self.write_feature()
     }
 
     /// Add a new feature from a `GeozeroGeometry`.
@@ -139,11 +138,10 @@ impl<'a> FgbWriter<'a> {
     {
         geom.process_geom(&mut self.feat_writer)?;
         cfgfn(&mut self.feat_writer);
-        self.write_feature().unwrap();
-        Ok(())
+        self.write_feature()
     }
 
-    fn write_feature(&mut self) -> std::io::Result<usize> {
+    fn write_feature(&mut self) -> Result<()> {
         let mut node = self.feat_writer.bbox.clone();
         // Offset is index of feat_offsets before sorting
         // Will be replaced with output offset after sorting
@@ -161,11 +159,11 @@ impl<'a> FgbWriter<'a> {
         });
         self.tmpout.write(&feat_buf)?;
         self.header_args.features_count += 1;
-        Ok(0)
+        Ok(())
     }
 
     /// Write the FlatGeobuf dataset (Hilbert sorted)
-    pub fn write<W: Write>(&mut self, out: &'a mut W) -> std::io::Result<()> {
+    pub fn write<W: Write>(&mut self, out: &'a mut W) -> Result<()> {
         out.write(&MAGIC_BYTES)?;
 
         let extent = calc_extent(&self.feat_nodes);
@@ -198,8 +196,7 @@ impl<'a> FgbWriter<'a> {
                     node
                 })
                 .collect();
-            let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)
-                .unwrap();
+            let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
             tree.stream_write(out)?;
         }
 

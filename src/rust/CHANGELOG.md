@@ -2,7 +2,7 @@
 
 ## [0.6.2] - UNRELEASED
 
-- Add basic writing support
+- Write support for basic geometry types
 - Fix reading FGB without properties
 
 ## [0.6.1] - 2021-10-02
