@@ -3,9 +3,9 @@ mod http {
 
     use flatgeobuf::*;
     use geozero::error::Result;
-    use tokio::runtime::Runtime;
 
-    async fn http_read_async() -> Result<()> {
+    #[tokio::test]
+    async fn http_read() -> Result<()> {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
         let mut fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
@@ -17,12 +17,8 @@ mod http {
         Ok(())
     }
 
-    #[test]
-    fn http_read() {
-        assert!(Runtime::new().unwrap().block_on(http_read_async()).is_ok());
-    }
-
-    async fn http_bbox_read_async() -> Result<()> {
+    #[tokio::test]
+    async fn http_bbox_read() -> Result<()> {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
         let mut fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
@@ -34,15 +30,8 @@ mod http {
         Ok(())
     }
 
-    #[test]
-    fn http_bbox_read() {
-        assert!(Runtime::new()
-            .unwrap()
-            .block_on(http_bbox_read_async())
-            .is_ok());
-    }
-
-    async fn http_bbox_big_async() -> Result<()> {
+    #[tokio::test]
+    async fn http_bbox_big() -> Result<()> {
         let url = "https://pkg.sourcepole.ch/osm-buildings-ch.fgb";
         let mut fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
@@ -55,16 +44,8 @@ mod http {
         Ok(())
     }
 
-    #[test]
-    #[ignore]
-    fn http_bbox_big() {
-        assert!(Runtime::new()
-            .unwrap()
-            .block_on(http_bbox_big_async())
-            .is_ok());
-    }
-
-    async fn http_err_async() {
+    #[tokio::test]
+    async fn http_err() {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/wrong.fgb";
         let fgb = HttpFgbReader::open(url).await;
         assert_eq!(
@@ -83,8 +64,4 @@ mod http {
         );
     }
 
-    #[test]
-    fn http_err() {
-        Runtime::new().unwrap().block_on(http_err_async());
-    }
 }

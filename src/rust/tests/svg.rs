@@ -125,7 +125,8 @@ fn fgb_to_svg() -> Result<()> {
 }
 
 #[cfg(feature = "http")]
-async fn http_svg_async() -> Result<()> {
+#[tokio::test]
+async fn http_svg() -> Result<()> {
     let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
     let mut fgb = HttpFgbReader::open(url).await?;
     fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
@@ -142,13 +143,4 @@ async fn http_svg_async() -> Result<()> {
 "#;
     assert_eq!(&out[..expected.len()], expected);
     Ok(())
-}
-
-#[test]
-#[cfg(feature = "http")]
-fn http_svg() {
-    assert!(tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(http_svg_async())
-        .is_ok());
 }
