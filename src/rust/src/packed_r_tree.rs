@@ -3,11 +3,13 @@
 
 #[cfg(feature = "http")]
 use crate::http_reader::from_http_err;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
+use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
@@ -43,6 +45,39 @@ impl NodeItem {
             max_y: f64::NEG_INFINITY,
             offset,
         }
+    }
+
+    fn from_bytes(raw: &[u8]) -> Result<Self> {
+        if raw.len() < size_of::<NodeItem>() {
+            return Err(GeozeroError::GeometryIndex);
+        }
+        let conv_err = { |_| GeozeroError::GeometryIndex };
+        Ok(NodeItem {
+            min_x: f64::from_le_bytes(raw[0..8].try_into().map_err(conv_err)?),
+            min_y: f64::from_le_bytes(raw[8..16].try_into().map_err(conv_err)?),
+            max_x: f64::from_le_bytes(raw[16..24].try_into().map_err(conv_err)?),
+            max_y: f64::from_le_bytes(raw[24..32].try_into().map_err(conv_err)?),
+            offset: u64::from_le_bytes(raw[32..40].try_into().map_err(conv_err)?),
+        })
+    }
+
+    pub fn from_reader<R: Read + ?Sized>(rdr: &mut R) -> Result<Self> {
+        Ok(NodeItem {
+            min_x: rdr.read_f64::<LittleEndian>()?,
+            min_y: rdr.read_f64::<LittleEndian>()?,
+            max_x: rdr.read_f64::<LittleEndian>()?,
+            max_y: rdr.read_f64::<LittleEndian>()?,
+            offset: rdr.read_u64::<LittleEndian>()?,
+        })
+    }
+
+    pub fn write<W: Write>(&self, wtr: &mut W) -> std::io::Result<()> {
+        wtr.write_f64::<LittleEndian>(self.min_x)?;
+        wtr.write_f64::<LittleEndian>(self.min_y)?;
+        wtr.write_f64::<LittleEndian>(self.max_x)?;
+        wtr.write_f64::<LittleEndian>(self.max_y)?;
+        wtr.write_u64::<LittleEndian>(self.offset)?;
+        Ok(())
     }
 
     pub fn width(&self) -> f64 {
@@ -106,17 +141,10 @@ impl NodeItem {
 }
 
 /// Read full capacity of vec from data stream
-fn read_node_vec(node_items: &mut Vec<NodeItem>, data: &mut dyn Read) -> Result<()> {
-    let num_nodes = node_items.capacity();
-    let buf = unsafe {
-        std::slice::from_raw_parts_mut(
-            node_items.as_mut_ptr() as *mut u8,
-            num_nodes * size_of::<NodeItem>(),
-        )
-    };
-    data.read_exact(buf)?;
-    unsafe {
-        node_items.set_len(num_nodes);
+fn read_node_vec<R: Read + ?Sized>(node_items: &mut Vec<NodeItem>, data: &mut R) -> Result<()> {
+    node_items.clear();
+    for _ in 0..node_items.capacity() {
+        node_items.push(NodeItem::from_reader(data)?);
     }
     Ok(())
 }
@@ -153,10 +181,8 @@ async fn read_http_node_items(
         .map_err(from_http_err)?;
 
     let mut node_items = Vec::with_capacity(length);
-    let buf = unsafe { std::slice::from_raw_parts_mut(node_items.as_mut_ptr() as *mut u8, len) };
-    buf.clone_from_slice(&bytes);
-    unsafe {
-        node_items.set_len(length);
+    for i in 0..length {
+        node_items.push(NodeItem::from_bytes(&bytes[i * size_of::<NodeItem>()..])?);
     }
     Ok(node_items)
 }
@@ -360,10 +386,9 @@ impl PackedRTree {
                 .get_range(pos, size_of::<NodeItem>(), min_req_size)
                 .await
                 .map_err(from_http_err)?;
-            let p = bytes.as_ptr() as *const [u8; size_of::<NodeItem>()];
-            let n: NodeItem = unsafe { std::mem::transmute(*p) };
-            self.node_items[i] = n.clone();
+            let n = NodeItem::from_bytes(bytes)?;
             self.extent.expand(&n);
+            self.node_items[i] = n;
             pos += size_of::<NodeItem>();
         }
         Ok(())
@@ -654,14 +679,12 @@ impl PackedRTree {
         num_nodes * size_of::<NodeItem>()
     }
 
-    pub fn stream_write(&self, out: &mut dyn Write) -> std::io::Result<()> {
-        let buf: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                self.node_items.as_ptr() as *const u8,
-                self.node_items.len() * size_of::<NodeItem>(),
-            )
-        };
-        out.write_all(buf)
+    /// Write all index nodes
+    pub fn stream_write<W: Write>(&self, out: &mut W) -> std::io::Result<()> {
+        for item in &self.node_items {
+            item.write(out)?;
+        }
+        Ok(())
     }
 
     pub fn extent(&self) -> NodeItem {
