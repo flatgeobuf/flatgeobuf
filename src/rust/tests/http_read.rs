@@ -63,5 +63,4 @@ mod http {
             error_text
         );
     }
-
 }
