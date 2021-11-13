@@ -145,7 +145,7 @@ impl<'a> FgbWriter<'a> {
         let mut node = self.feat_writer.bbox.clone();
         // Offset is index of feat_offsets before sorting
         // Will be replaced with output offset after sorting
-        node.offset = self.feat_offsets.len();
+        node.offset = self.feat_offsets.len() as u64;
         self.feat_nodes.push(node);
         let feat_buf = self.feat_writer.to_feature();
         let tmpoffset = self
@@ -189,10 +189,10 @@ impl<'a> FgbWriter<'a> {
                 .feat_nodes
                 .iter()
                 .map(|tmpnode| {
-                    let feat = &self.feat_offsets[tmpnode.offset];
+                    let feat = &self.feat_offsets[tmpnode.offset as usize];
                     let mut node = tmpnode.clone();
                     node.offset = offset;
-                    offset += feat.size;
+                    offset += feat.size as u64;
                     node
                 })
                 .collect();
@@ -206,7 +206,7 @@ impl<'a> FgbWriter<'a> {
         let mut reader = BufReader::new(tmpin);
         let mut buf = Vec::with_capacity(2048);
         for node in &self.feat_nodes {
-            let feat = &self.feat_offsets[node.offset];
+            let feat = &self.feat_offsets[node.offset as usize];
             reader.seek(SeekFrom::Start(feat.offset as u64))?;
             buf.resize(feat.size, 0);
             reader.read_exact(&mut buf)?;

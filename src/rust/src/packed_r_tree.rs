@@ -21,7 +21,7 @@ pub struct NodeItem {
     pub max_x: f64,
     pub max_y: f64,
     /// Byte offset in feature data section
-    pub offset: usize,
+    pub offset: u64,
 }
 
 impl NodeItem {
@@ -35,7 +35,7 @@ impl NodeItem {
         }
     }
 
-    pub fn create(offset: usize) -> NodeItem {
+    pub fn create(offset: u64) -> NodeItem {
         NodeItem {
             min_x: f64::INFINITY,
             min_y: f64::INFINITY,
@@ -147,7 +147,10 @@ async fn read_http_node_items(
 ) -> Result<Vec<NodeItem>> {
     let begin = base + node_index * size_of::<NodeItem>();
     let len = length * size_of::<NodeItem>();
-    let bytes = client.get_range(begin, len, min_req_size).await.map_err(from_http_err)?;
+    let bytes = client
+        .get_range(begin, len, min_req_size)
+        .await
+        .map_err(from_http_err)?;
 
     let mut node_items = Vec::with_capacity(length);
     let buf = unsafe { std::slice::from_raw_parts_mut(node_items.as_mut_ptr() as *mut u8, len) };
@@ -322,7 +325,7 @@ impl PackedRTree {
             let end = self.level_bounds[i].1;
             let mut newpos = self.level_bounds[i + 1].0;
             while pos < end {
-                let mut node = NodeItem::create(pos);
+                let mut node = NodeItem::create(pos as u64);
                 for _j in 0..self.node_size {
                     if pos >= end {
                         break;
@@ -718,7 +721,7 @@ fn tree_2items() -> Result<()> {
     let mut offset = 0;
     for mut node in &mut nodes {
         node.offset = offset;
-        offset += size_of::<NodeItem>();
+        offset += size_of::<NodeItem>() as u64;
     }
     assert!(nodes[1].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
     assert!(nodes[0].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
@@ -756,7 +759,7 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let mut offset = 0;
     for mut node in &mut nodes {
         node.offset = offset;
-        offset += size_of::<NodeItem>();
+        offset += size_of::<NodeItem>() as u64;
     }
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let list = tree.search(102.0, 102.0, 103.0, 103.0)?;
@@ -858,7 +861,7 @@ fn tree_processing() -> Result<()> {
     let mut offset = 0;
     for mut node in &mut nodes {
         node.offset = offset;
-        offset += size_of::<NodeItem>();
+        offset += size_of::<NodeItem>() as u64;
     }
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let mut fout = BufWriter::new(tempfile()?);
