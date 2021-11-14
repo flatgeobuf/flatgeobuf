@@ -1,4 +1,5 @@
 use crate::feature_generated::*;
+use crate::header_generated::ColumnType;
 use crate::packed_r_tree::NodeItem;
 use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::Result;
@@ -212,9 +213,28 @@ fn prop_size(colval: &ColumnValue) -> usize {
     }
 }
 
+pub(crate) fn prop_type(colval: &ColumnValue) -> ColumnType {
+    match colval {
+        ColumnValue::Byte(_) => ColumnType::Byte,
+        ColumnValue::UByte(_) => ColumnType::UByte,
+        ColumnValue::Bool(_) => ColumnType::Bool,
+        ColumnValue::Short(_) => ColumnType::Short,
+        ColumnValue::UShort(_) => ColumnType::UShort,
+        ColumnValue::Int(_) => ColumnType::Int,
+        ColumnValue::UInt(_) => ColumnType::UInt,
+        ColumnValue::Long(_) => ColumnType::Long,
+        ColumnValue::ULong(_) => ColumnType::ULong,
+        ColumnValue::Float(_) => ColumnType::Float,
+        ColumnValue::Double(_) => ColumnType::Double,
+        ColumnValue::String(_) => ColumnType::String,
+        ColumnValue::Json(_) => ColumnType::Json,
+        ColumnValue::DateTime(_) => ColumnType::DateTime,
+        ColumnValue::Binary(_) => ColumnType::Binary,
+    }
+}
+
 impl PropertyProcessor for FeatureWriter<'_> {
     fn property(&mut self, i: usize, _colname: &str, colval: &ColumnValue) -> Result<bool> {
-        // TODO: check colval against columns_meta.get(i).type_() - requires header access
         let ofs = self.properties.len();
         self.properties
             .resize(ofs + size_of::<u16>() + prop_size(colval), 0);
