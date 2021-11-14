@@ -9,8 +9,7 @@ use geozero::error::{GeozeroError, Result};
 use http_range_client::BufferedHttpRangeClient;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
-use std::convert::TryInto;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
 
@@ -47,20 +46,6 @@ impl NodeItem {
         }
     }
 
-    fn from_bytes(raw: &[u8]) -> Result<Self> {
-        if raw.len() < size_of::<NodeItem>() {
-            return Err(GeozeroError::GeometryIndex);
-        }
-        let conv_err = { |_| GeozeroError::GeometryIndex };
-        Ok(NodeItem {
-            min_x: f64::from_le_bytes(raw[0..8].try_into().map_err(conv_err)?),
-            min_y: f64::from_le_bytes(raw[8..16].try_into().map_err(conv_err)?),
-            max_x: f64::from_le_bytes(raw[16..24].try_into().map_err(conv_err)?),
-            max_y: f64::from_le_bytes(raw[24..32].try_into().map_err(conv_err)?),
-            offset: u64::from_le_bytes(raw[32..40].try_into().map_err(conv_err)?),
-        })
-    }
-
     pub fn from_reader<R: Read + ?Sized>(rdr: &mut R) -> Result<Self> {
         Ok(NodeItem {
             min_x: rdr.read_f64::<LittleEndian>()?,
@@ -69,6 +54,10 @@ impl NodeItem {
             max_y: rdr.read_f64::<LittleEndian>()?,
             offset: rdr.read_u64::<LittleEndian>()?,
         })
+    }
+
+    fn from_bytes(raw: &[u8]) -> Result<Self> {
+        Self::from_reader(&mut Cursor::new(raw))
     }
 
     pub fn write<W: Write>(&self, wtr: &mut W) -> std::io::Result<()> {
@@ -182,7 +171,9 @@ async fn read_http_node_items(
 
     let mut node_items = Vec::with_capacity(length);
     for i in 0..length {
-        node_items.push(NodeItem::from_bytes(&bytes[i * size_of::<NodeItem>()..])?);
+        node_items.push(NodeItem::from_bytes(
+            &bytes[i * size_of::<NodeItem>()..(i + 1) * size_of::<NodeItem>()],
+        )?);
     }
     Ok(node_items)
 }
