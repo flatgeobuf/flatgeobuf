@@ -1,9 +1,12 @@
-use crate::feature_writer::FeatureWriter;
+use crate::feature_writer::{prop_type, FeatureWriter};
 use crate::header_generated::{ColumnType, Crs, CrsArgs, GeometryType};
 use crate::packed_r_tree::{calc_extent, hilbert_sort, NodeItem, PackedRTree};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use geozero::error::Result;
-use geozero::{CoordDimensions, GeozeroDatasource, GeozeroGeometry};
+use geozero::{
+    ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, GeozeroDatasource,
+    GeozeroGeometry, PropertyProcessor,
+};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
@@ -180,7 +183,7 @@ impl<'a> FgbWriter<'a> {
         let buf = self.fbb.finished_data();
         out.write(&buf)?;
 
-        if self.header_args.index_node_size > 0 {
+        if self.header_args.index_node_size > 0 && self.feat_nodes.len() > 0 {
             // Create sorted index
             hilbert_sort(&mut self.feat_nodes, &extent);
             // Update offsets for index
@@ -214,5 +217,156 @@ impl<'a> FgbWriter<'a> {
         }
 
         Ok(())
+    }
+}
+
+impl FeatureProcessor for FgbWriter<'_> {
+    fn feature_end(&mut self, _idx: u64) -> Result<()> {
+        self.write_feature()
+    }
+}
+
+impl PropertyProcessor for FgbWriter<'_> {
+    fn property(&mut self, i: usize, colname: &str, colval: &ColumnValue) -> Result<bool> {
+        if i >= self.columns.len() {
+            if i == self.columns.len() {
+                info!(
+                    "Undefined property index {}, column: `{}` - adding column declaration",
+                    i, colname
+                );
+                self.add_column(colname, prop_type(colval), |_| {});
+            } else {
+                info!(
+                    "Undefined property index {}, column: `{}` - skipping",
+                    i, colname
+                );
+                return Ok(false);
+            }
+        }
+        // TODO: check name and type against existing declartion
+        self.feat_writer.property(i, colname, colval)
+    }
+}
+
+// Delegate GeomProcessor to self.feat_writer
+impl GeomProcessor for FgbWriter<'_> {
+    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
+        self.feat_writer.xy(x, y, idx)
+    }
+    fn coordinate(
+        &mut self,
+        x: f64,
+        y: f64,
+        z: Option<f64>,
+        m: Option<f64>,
+        t: Option<f64>,
+        tm: Option<u64>,
+        idx: usize,
+    ) -> Result<()> {
+        self.feat_writer.coordinate(x, y, z, m, t, tm, idx)
+    }
+    fn point_begin(&mut self, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::Point;
+        self.feat_writer.point_begin(idx)
+    }
+    fn point_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.point_end(idx)
+    }
+    fn multipoint_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::MultiPoint;
+        self.feat_writer.multipoint_begin(size, idx)
+    }
+    fn multipoint_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.multipoint_end(idx)
+    }
+    fn linestring_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+        if tagged {
+            self.header_args.geometry_type = GeometryType::LineString;
+        }
+        self.feat_writer.linestring_begin(tagged, size, idx)
+    }
+    fn linestring_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+        self.feat_writer.linestring_end(tagged, idx)
+    }
+    fn multilinestring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::MultiLineString;
+        self.feat_writer.multilinestring_begin(size, idx)
+    }
+    fn multilinestring_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.multilinestring_end(idx)
+    }
+    fn polygon_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+        if tagged {
+            self.header_args.geometry_type = GeometryType::Polygon;
+        }
+        self.feat_writer.polygon_begin(tagged, size, idx)
+    }
+    fn polygon_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+        self.feat_writer.polygon_end(tagged, idx)
+    }
+    fn multipolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::MultiPolygon;
+        self.feat_writer.multipolygon_begin(size, idx)
+    }
+    fn multipolygon_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.multipolygon_end(idx)
+    }
+    fn circularstring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::CircularString;
+        self.feat_writer.circularstring_begin(size, idx)
+    }
+    fn circularstring_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.circularstring_end(idx)
+    }
+    fn compoundcurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::CompoundCurve;
+        self.feat_writer.compoundcurve_begin(size, idx)
+    }
+    fn compoundcurve_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.compoundcurve_end(idx)
+    }
+    fn curvepolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::CurvePolygon;
+        self.feat_writer.curvepolygon_begin(size, idx)
+    }
+    fn curvepolygon_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.curvepolygon_end(idx)
+    }
+    fn multicurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::MultiCurve;
+        self.feat_writer.multicurve_begin(size, idx)
+    }
+    fn multicurve_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.multicurve_end(idx)
+    }
+    fn multisurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::MultiSurface;
+        self.feat_writer.multisurface_begin(size, idx)
+    }
+    fn multisurface_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.multisurface_end(idx)
+    }
+    fn triangle_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+        if tagged {
+            self.header_args.geometry_type = GeometryType::Triangle;
+        }
+        self.feat_writer.triangle_begin(tagged, size, idx)
+    }
+    fn triangle_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+        self.feat_writer.triangle_end(tagged, idx)
+    }
+    fn polyhedralsurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::PolyhedralSurface;
+        self.feat_writer.polyhedralsurface_begin(size, idx)
+    }
+    fn polyhedralsurface_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.polyhedralsurface_end(idx)
+    }
+    fn tin_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+        self.header_args.geometry_type = GeometryType::TIN;
+        self.feat_writer.tin_begin(size, idx)
+    }
+    fn tin_end(&mut self, idx: usize) -> Result<()> {
+        self.feat_writer.tin_end(idx)
     }
 }
