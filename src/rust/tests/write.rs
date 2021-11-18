@@ -1,9 +1,10 @@
 use crate::FgbWriter;
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero::geojson::GeoJson;
-use geozero::{ColumnValue, PropertyProcessor};
-use std::io::{BufWriter, Write};
+use geozero::geojson::{GeoJson, GeoJsonReader};
+use geozero::{ColumnValue, GeozeroDatasource, PropertyProcessor};
+use std::fs::File;
+use std::io::{BufReader, BufWriter, Write};
 use tempfile::tempfile;
 
 #[test]
@@ -94,15 +95,15 @@ fn json_to_fgb() -> Result<()> {
     let mut fgb = FgbWriter::create(
         "countries",
         GeometryType::MultiPolygon,
-        Some(4326),
-        |header| {
-            header.description = Some(FgbWriter::create_string("Country polygons"));
+        |fbb, header_args| {
+            header_args.description = Some(fbb.create_string("Country polygons"));
         },
     )?;
-    fgb.add_column("fid", ColumnType::ULong, |col| {
+    fgb.set_crs(4326, |_fbb, _crs| {});
+    fgb.add_column("fid", ColumnType::ULong, |_fbb, col| {
         col.nullable = false;
     });
-    fgb.add_column("name", ColumnType::String, |_| {});
+    fgb.add_column("name", ColumnType::String, |_, _| {});
 
     let geojson = GeoJson(
         r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[173.020375,-40.919052],[173.247234,-41.331999],[173.958405,-40.926701],[174.247587,-41.349155],[174.248517,-41.770008],[173.876447,-42.233184],[173.22274,-42.970038],[172.711246,-43.372288],[173.080113,-43.853344],[172.308584,-43.865694],[171.452925,-44.242519],[171.185138,-44.897104],[170.616697,-45.908929],[169.831422,-46.355775],[169.332331,-46.641235],[168.411354,-46.619945],[167.763745,-46.290197],[166.676886,-46.219917],[166.509144,-45.852705],[167.046424,-45.110941],[168.303763,-44.123973],[168.949409,-43.935819],[169.667815,-43.555326],[170.52492,-43.031688],[171.12509,-42.512754],[171.569714,-41.767424],[171.948709,-41.514417],[172.097227,-40.956104],[172.79858,-40.493962],[173.020375,-40.919052]]],[[[174.612009,-36.156397],[175.336616,-37.209098],[175.357596,-36.526194],[175.808887,-36.798942],[175.95849,-37.555382],[176.763195,-37.881253],[177.438813,-37.961248],[178.010354,-37.579825],[178.517094,-37.695373],[178.274731,-38.582813],[177.97046,-39.166343],[177.206993,-39.145776],[176.939981,-39.449736],[177.032946,-39.879943],[176.885824,-40.065978],[176.508017,-40.604808],[176.01244,-41.289624],[175.239567,-41.688308],[175.067898,-41.425895],[174.650973,-41.281821],[175.22763,-40.459236],[174.900157,-39.908933],[173.824047,-39.508854],[173.852262,-39.146602],[174.574802,-38.797683],[174.743474,-38.027808],[174.697017,-37.381129],[174.292028,-36.711092],[174.319004,-36.534824],[173.840997,-36.121981],[173.054171,-35.237125],[172.636005,-34.529107],[173.007042,-34.450662],[173.551298,-35.006183],[174.32939,-35.265496],[174.612009,-36.156397]]]]}}"#,
@@ -124,5 +125,16 @@ fn json_to_fgb() -> Result<()> {
     let mut file = BufWriter::new(tempfile()?);
     fgb.write(&mut file)?;
 
+    Ok(())
+}
+
+#[test]
+fn geozero_to_fgb() -> Result<()> {
+    let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+    let mut fin = BufReader::new(File::open("../../test/data/countries.geojson")?);
+    let mut reader = GeoJsonReader(&mut fin);
+    reader.process(&mut fgb)?;
+    let mut fout = BufWriter::new(tempfile()?);
+    fgb.write(&mut fout)?;
     Ok(())
 }
