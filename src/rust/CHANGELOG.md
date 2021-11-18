@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.6.2] - UNRELEASED
+## [0.6.2] - 2021-11-19
 
 - Write support for basic geometry types
 - Fix reading FGB without index or properties
