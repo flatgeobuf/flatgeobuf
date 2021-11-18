@@ -2,6 +2,7 @@ use crate::feature_writer::{prop_type, FeatureWriter};
 use crate::header_generated::{ColumnType, Crs, CrsArgs, GeometryType};
 use crate::packed_r_tree::{calc_extent, hilbert_sort, NodeItem, PackedRTree};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
+use flatbuffers::FlatBufferBuilder;
 use geozero::error::Result;
 use geozero::{
     ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, GeozeroDatasource,
@@ -13,10 +14,30 @@ use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
 /// FlatGeobuf dataset writer
+///
+/// # Usage example:
+///
+/// ```
+/// use flatgeobuf::*;
+/// use geozero::geojson::GeoJsonReader;
+/// use geozero::GeozeroDatasource;
+/// # use std::fs::File;
+/// # use std::io::{BufReader, BufWriter};
+///
+/// # fn json_to_fgb() -> geozero::error::Result<()> {
+/// let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+/// let mut fin = BufReader::new(File::open("countries.geojson")?);
+/// let mut reader = GeoJsonReader(&mut fin);
+/// reader.process(&mut fgb)?;
+/// let mut fout = BufWriter::new(File::create("countries.fgb")?);
+/// fgb.write(&mut fout)?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct FgbWriter<'a> {
     tmpfn: PathBuf,
     tmpout: BufWriter<NamedTempFile>,
-    fbb: flatbuffers::FlatBufferBuilder<'a>,
+    fbb: FlatBufferBuilder<'a>,
     header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
     feat_writer: FeatureWriter<'a>,
@@ -43,42 +64,25 @@ impl<'a> FgbWriter<'a> {
     /// let mut fgb = FgbWriter::create(
     ///     "countries",
     ///     GeometryType::MultiPolygon,
-    ///     Some(4326),
-    ///     |header| {
-    ///         header.description = Some(FgbWriter::create_string("Country polygons"));
+    ///     |fbb, header| {
+    ///         header.description = Some(fbb.create_string("Country polygons"));
     ///     },
     /// ).unwrap();
     /// ```
-    pub fn create<F>(
-        name: &str,
-        geometry_type: GeometryType,
-        crs_code: Option<i32>,
-        cfgfn: F,
-    ) -> Result<Self>
+    pub fn create<F>(name: &str, geometry_type: GeometryType, cfgfn: F) -> Result<Self>
     where
-        F: FnOnce(&mut HeaderArgs),
+        F: FnOnce(&mut FlatBufferBuilder<'a>, &mut HeaderArgs),
     {
         let mut fbb = flatbuffers::FlatBufferBuilder::new();
-
-        let crs = crs_code.map(|code| {
-            Crs::create(
-                &mut fbb,
-                &CrsArgs {
-                    code,
-                    ..Default::default()
-                },
-            )
-        });
 
         let mut header_args = HeaderArgs {
             name: Some(fbb.create_string(name)),
             geometry_type,
-            crs,
             index_node_size: PackedRTree::DEFAULT_NODE_SIZE,
             ..Default::default()
         };
 
-        cfgfn(&mut header_args);
+        cfgfn(&mut fbb, &mut header_args);
 
         let mut feat_writer = FeatureWriter::new();
         feat_writer.dims = CoordDimensions {
@@ -104,37 +108,84 @@ impl<'a> FgbWriter<'a> {
         })
     }
 
-    /// Create a builder for FlatBuffer entities.
-    pub fn fb_builder() -> flatbuffers::FlatBufferBuilder<'a> {
-        flatbuffers::FlatBufferBuilder::new()
-    }
-
-    /// Create a single FlatBuffer string.
-    pub fn create_string(val: &'a str) -> flatbuffers::WIPOffset<&str> {
-        Self::fb_builder().create_string(val)
+    /// Set CRS.
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// fgb.set_crs(4326, |_fbb, _crs| {});
+    /// ```
+    pub fn set_crs<F>(&mut self, code: i32, cfgfn: F)
+    where
+        F: FnOnce(&mut FlatBufferBuilder<'a>, &mut CrsArgs),
+    {
+        let mut crs_args = CrsArgs {
+            code,
+            ..Default::default()
+        };
+        cfgfn(&mut self.fbb, &mut crs_args);
+        self.header_args.crs = Some(Crs::create(&mut self.fbb, &crs_args));
     }
 
     /// Add a new column.
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// fgb.add_column("fid", ColumnType::ULong, |_fbb, col| {
+    ///     col.nullable = false;
+    /// });
+    /// ```
     pub fn add_column<F>(&mut self, name: &str, col_type: ColumnType, cfgfn: F)
     where
-        F: FnOnce(&mut ColumnArgs),
+        F: FnOnce(&mut FlatBufferBuilder<'a>, &mut ColumnArgs),
     {
         let mut col = ColumnArgs {
             name: Some(self.fbb.create_string(name)),
             type_: col_type,
             ..Default::default()
         };
-        cfgfn(&mut col);
+        cfgfn(&mut self.fbb, &mut col);
         self.columns.push(Column::create(&mut self.fbb, &col));
     }
 
     /// Add a new feature.
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// use geozero::geojson::GeoJson;
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// let geojson = GeoJson(r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "Point", "coordinates": [1, 1]}}"#);
+    /// fgb.add_feature(geojson).ok();
+    /// ```
     pub fn add_feature(&mut self, mut feature: impl GeozeroDatasource) -> Result<()> {
         feature.process(&mut self.feat_writer)?;
         self.write_feature()
     }
 
     /// Add a new feature from a `GeozeroGeometry`.
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// use geozero::geojson::GeoJson;
+    /// use geozero::{ColumnValue, PropertyProcessor};
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// let geom = GeoJson(r#"{"type": "Point", "coordinates": [1, 1]}"#);
+    /// fgb.add_feature_geom(geom, |feat| {
+    ///     feat.property(0, "fid", &ColumnValue::Long(43)).unwrap();
+    ///     feat.property(1, "name", &ColumnValue::String("South Africa"))
+    ///         .unwrap();
+    /// })
+    /// .ok();
+    /// ```
     pub fn add_feature_geom<F>(&mut self, geom: impl GeozeroGeometry, cfgfn: F) -> Result<()>
     where
         F: FnOnce(&mut FeatureWriter),
@@ -234,7 +285,7 @@ impl PropertyProcessor for FgbWriter<'_> {
                     "Undefined property index {}, column: `{}` - adding column declaration",
                     i, colname
                 );
-                self.add_column(colname, prop_type(colval), |_| {});
+                self.add_column(colname, prop_type(colval), |_, _| {});
             } else {
                 info!(
                     "Undefined property index {}, column: `{}` - skipping",
