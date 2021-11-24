@@ -81,23 +81,32 @@ export function flat(
     }
 }
 
-export function parseGeometry(geometry: ISimpleGeometry): IParsedGeometry {
+export function parseGeometry(
+    geometry: ISimpleGeometry,
+    headerGeomType: GeometryType
+): IParsedGeometry {
     let xy: number[] | undefined;
     let ends: number[] | undefined;
     let parts: IParsedGeometry[] | undefined;
-    const type = toGeometryType(geometry.getType());
+
+    let type = headerGeomType;
+    if (type === GeometryType.Unknown) {
+        type = toGeometryType(geometry.getType());
+    }
+
     if (type === GeometryType.MultiLineString) {
         if (geometry.getFlatCoordinates) xy = geometry.getFlatCoordinates();
         const mlsEnds = (geometry as IMultiLineString).getEnds();
         if (mlsEnds.length > 1) ends = mlsEnds.map((e) => e >> 1);
     } else if (type === GeometryType.Polygon) {
         if (geometry.getFlatCoordinates) xy = geometry.getFlatCoordinates();
-        // getEnds()??? -- may be an open layers thing?
         const pEnds = (geometry as IPolygon).getEnds();
         if (pEnds.length > 1) ends = pEnds.map((e) => e >> 1);
     } else if (type === GeometryType.MultiPolygon) {
         const mp = geometry as IMultiPolygon;
-        parts = mp.getPolygons().map((p) => parseGeometry(p));
+        parts = mp
+            .getPolygons()
+            .map((p) => parseGeometry(p, GeometryType.Polygon));
     } else {
         if (geometry.getFlatCoordinates) xy = geometry.getFlatCoordinates();
     }
