@@ -173,7 +173,7 @@ export class HttpReader {
 
             currentBatch.push([featureOffset, featureLength]);
         }
-        this.headerClient.logUsage("header+index");
+        this.headerClient.logUsage('header+index');
         if (currentBatch.length > 0) {
             batches.push(currentBatch);
         }
@@ -225,7 +225,7 @@ export class HttpReader {
                 batchSize
             );
         }
-        featureClient.logUsage("feature");
+        featureClient.logUsage('feature');
     }
 
     async readFeature(
