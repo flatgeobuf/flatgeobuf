@@ -18,6 +18,7 @@ import { Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
 import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
+import { GeometryType } from '../flat-geobuf/geometry-type.js';
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
@@ -25,13 +26,15 @@ type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
 export function serialize(features: IFeature[]): Uint8Array {
     const headerMeta = introspectHeaderMeta(features);
     const header = buildHeader(headerMeta);
+    // console.log('node writing header:');
+    // console.log(headerMeta);
     const featureBuffers: Uint8Array[] = features.map((f) => {
         if (!f.getGeometry)
             throw new Error('Missing getGeometry implementation');
         if (!f.getProperties)
             throw new Error('Missing getProperties implementation');
         return buildFeature(
-            parseGeometry(f.getGeometry(), headerMeta.geometryType),
+            parseGeometry(f.getGeometry()),
             f.getProperties(),
             headerMeta
         );
@@ -42,7 +45,9 @@ export function serialize(features: IFeature[]): Uint8Array {
     const uint8 = new Uint8Array(
         magicbytes.length + header.length + featuresLength
     );
+    // console.log('node writing header: ', header.length, 'bytes');
     uint8.set(header, magicbytes.length);
+
     let offset = magicbytes.length + header.length;
     for (const feature of featureBuffers) {
         uint8.set(feature, offset);
@@ -57,6 +62,7 @@ export function deserialize(
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn
 ): IFeature[] {
+    // console.log('feature coll deserialize');
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file');
 
@@ -67,6 +73,9 @@ export function deserialize(
     const headerMeta = HeaderMeta.fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
 
+    // console.log('deserialized headermeta:');
+    // console.log(headerMeta);
+
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
 
     const { indexNodeSize, featuresCount } = headerMeta;
@@ -75,8 +84,10 @@ export function deserialize(
     const features: IFeature[] = [];
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset);
+        // console.log('featurelen: ', featureLength);
         bb.setPosition(offset + SIZE_PREFIX_LEN);
         const feature = Feature.getRootAsFeature(bb);
+        // console.log('feature: ', feature);
         features.push(fromFeature(feature, headerMeta));
         offset += SIZE_PREFIX_LEN + featureLength;
     }
@@ -172,9 +183,11 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
         builder,
         new flatbuffers.Long(header.featuresCount, 0)
     );
+    // console.log('geom type:', header.geometryType);
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);
     if (columnOffsets) Header.addColumns(builder, columnOffsets);
+    // console.log('header add name', nameOffset);
     Header.addName(builder, nameOffset);
     const offset = Header.endHeader(builder);
     builder.finishSizePrefixed(offset);
@@ -192,10 +205,35 @@ function valueToType(value: boolean | number | string): ColumnType {
 }
 
 function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
-    const feature = features[0];
-    const geometry = feature.getGeometry ? feature.getGeometry() : undefined;
-    const geometryType = geometry ? geometry.getType() : undefined;
-    const properties = feature.getProperties ? feature.getProperties() : {};
+    let geometryType: GeometryType = undefined;
+
+    for (let f of features) {
+        if (geometryType === GeometryType.Unknown) {
+            break;
+        }
+
+        if (f.getGeometry) {
+            const geometry = f.getGeometry();
+            if (geometry) {
+                const gtype = toGeometryType(geometry.getType());
+                // console.log(
+                //     'checking current gtype',
+                //     gtype,
+                //     geometry.getType()
+                // );
+                if (geometryType === undefined) {
+                    geometryType = gtype;
+                } else if (geometryType !== gtype) {
+                    geometryType = GeometryType.Unknown;
+                }
+            }
+        }
+    }
+
+    const sampleFeature = features[0];
+    const properties = sampleFeature.getProperties
+        ? sampleFeature.getProperties()
+        : {};
 
     let columns: ColumnMeta[] | null = null;
     if (properties)

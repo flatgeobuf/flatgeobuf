@@ -21,6 +21,7 @@ export function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
     let ends: number[] | undefined;
     let parts: IParsedGeometry[] | undefined;
     const type: GeometryType = toGeometryType(geometry.type);
+    // console.log('parse feature geometry:', geometry.type);
     let end = 0;
     switch (geometry.type) {
         case 'Point':
@@ -75,6 +76,7 @@ function extractParts(xy: Float64Array, z: Float64Array, ends: Uint32Array) {
 }
 
 function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
+    // console.log('toGeoJsonCoordinates');
     const xy = geometry.xyArray() as Float64Array;
     const z = geometry.zArray() as Float64Array;
     switch (type) {
@@ -93,16 +95,17 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
     }
 }
 
-export function fromGeometry(
-    geometry: Geometry,
-    type: GeometryType
-): IGeoJsonGeometry {
+export function fromGeometry(geometry: Geometry): IGeoJsonGeometry {
+    const type = geometry.type();
+    console.log('geojson/geometry.ts fromGeometry');
+    console.log('For geometry type:');
+    console.log(type, '(', GeometryType[type], ')');
     if (type === GeometryType.GeometryCollection) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++) {
             const part = geometry.parts(i) as Geometry;
             const partType = part.type() as GeometryType;
-            geometries.push(fromGeometry(part, partType));
+            geometries.push(fromGeometry(part));
         }
         return {
             type: GeometryType[type],
@@ -111,17 +114,13 @@ export function fromGeometry(
     } else if (type === GeometryType.MultiPolygon) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++)
-            geometries.push(
-                fromGeometry(
-                    geometry.parts(i) as Geometry,
-                    GeometryType.Polygon
-                )
-            );
+            geometries.push(fromGeometry(geometry.parts(i) as Geometry));
         return {
             type: GeometryType[type],
             coordinates: geometries.map((g) => g.coordinates),
         } as IGeoJsonGeometry;
     }
+    console.log('reading non-parted geometry');
     const coordinates = toGeoJsonCoordinates(geometry, type);
     return {
         type: GeometryType[type],
