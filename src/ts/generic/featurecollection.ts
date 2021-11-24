@@ -44,7 +44,6 @@ export function serialize(features: IFeature[]): Uint8Array {
         magicbytes.length + header.length + featuresLength
     );
     uint8.set(header, magicbytes.length);
-
     let offset = magicbytes.length + header.length;
     for (const feature of featureBuffers) {
         uint8.set(feature, offset);

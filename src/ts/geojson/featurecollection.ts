@@ -26,14 +26,13 @@ export function serialize(
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta);
-    const features: Uint8Array[] = featurecollection.features.map((f) => {
-        const parsed = parseGeometry(f.geometry);
-        return buildFeature(
+    const features: Uint8Array[] = featurecollection.features.map((f) =>
+        buildFeature(
             parseGeometry(f.geometry),
             f.properties as IProperties,
             headerMeta
-        );
-    });
+        )
+    );
     const featuresLength = features
         .map((f) => f.length)
         .reduce((a, b) => a + b);
