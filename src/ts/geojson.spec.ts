@@ -200,7 +200,6 @@ describe('geojson module', () => {
             // NOTE: 18 flat coords, ends = [5, 9], endss = null
             expect(actual).to.deep.equal(expected);
         });
-
         it('GeometryCollection', () => {
             const expected = makeFeatureCollection(
                 `GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`
@@ -216,7 +215,6 @@ describe('geojson module', () => {
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
-
         it('Bahamas', () => {
             const expected = {
                 type: 'FeatureCollection',

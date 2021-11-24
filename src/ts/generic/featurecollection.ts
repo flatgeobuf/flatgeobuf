@@ -26,8 +26,6 @@ type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
 export function serialize(features: IFeature[]): Uint8Array {
     const headerMeta = introspectHeaderMeta(features);
     const header = buildHeader(headerMeta);
-    // console.log('node writing header:');
-    // console.log(headerMeta);
     const featureBuffers: Uint8Array[] = features.map((f) => {
         if (!f.getGeometry)
             throw new Error('Missing getGeometry implementation');
@@ -45,7 +43,6 @@ export function serialize(features: IFeature[]): Uint8Array {
     const uint8 = new Uint8Array(
         magicbytes.length + header.length + featuresLength
     );
-    // console.log('node writing header: ', header.length, 'bytes');
     uint8.set(header, magicbytes.length);
 
     let offset = magicbytes.length + header.length;
@@ -62,7 +59,6 @@ export function deserialize(
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn
 ): IFeature[] {
-    // console.log('feature coll deserialize');
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file');
 
@@ -73,9 +69,6 @@ export function deserialize(
     const headerMeta = HeaderMeta.fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
 
-    // console.log('deserialized headermeta:');
-    // console.log(headerMeta);
-
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
 
     const { indexNodeSize, featuresCount } = headerMeta;
@@ -84,10 +77,8 @@ export function deserialize(
     const features: IFeature[] = [];
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset);
-        // console.log('featurelen: ', featureLength);
         bb.setPosition(offset + SIZE_PREFIX_LEN);
         const feature = Feature.getRootAsFeature(bb);
-        // console.log('feature: ', feature);
         features.push(fromFeature(feature, headerMeta));
         offset += SIZE_PREFIX_LEN + featureLength;
     }
@@ -183,11 +174,9 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
         builder,
         new flatbuffers.Long(header.featuresCount, 0)
     );
-    // console.log('geom type:', header.geometryType);
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);
     if (columnOffsets) Header.addColumns(builder, columnOffsets);
-    // console.log('header add name', nameOffset);
     Header.addName(builder, nameOffset);
     const offset = Header.endHeader(builder);
     builder.finishSizePrefixed(offset);
@@ -216,11 +205,6 @@ function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
             const geometry = f.getGeometry();
             if (geometry) {
                 const gtype = toGeometryType(geometry.getType());
-                // console.log(
-                //     'checking current gtype',
-                //     gtype,
-                //     geometry.getType()
-                // );
                 if (geometryType === undefined) {
                     geometryType = gtype;
                 } else if (geometryType !== gtype) {
@@ -256,7 +240,7 @@ function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
             );
 
     const headerMeta = new HeaderMeta(
-        toGeometryType(geometryType),
+        geometryType,
         columns,
         features.length,
         0,

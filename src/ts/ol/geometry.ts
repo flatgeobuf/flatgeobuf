@@ -14,11 +14,8 @@ export function createGeometryOl(
     geometry: Geometry | null,
     headerGeomType: GeometryType
 ): ISimpleGeometry | undefined {
-    console.log('createGeometryOl with inferred type', headerGeomType);
     let geomType;
     if (headerGeomType === GeometryType.Unknown) {
-        console.log('use per-feature geom type');
-        console.log(geometry.type());
         geomType = geometry.type();
     } else {
         geomType = headerGeomType;

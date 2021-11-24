@@ -86,7 +86,6 @@ export function parseGeometry(geometry: ISimpleGeometry): IParsedGeometry {
     let ends: number[] | undefined;
     let parts: IParsedGeometry[] | undefined;
     const type = toGeometryType(geometry.getType());
-    console.log('generic/geometry.ts - parse geometry, type:', type);
     if (type === GeometryType.MultiLineString) {
         if (geometry.getFlatCoordinates) xy = geometry.getFlatCoordinates();
         const mlsEnds = (geometry as IMultiLineString).getEnds();
