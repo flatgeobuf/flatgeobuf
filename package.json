@@ -8,7 +8,8 @@
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json node --experimental-specifier-resolution=node --loader ts-node/esm.mjs ./node_modules/mocha/lib/cli/cli.js -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
     "server": "ws",
-    "fmt": "prettier --write src/ts"
+    "fmt": "prettier --write src/ts",
+    "fmt-check": "prettier --check src/ts"
   },
   "files": [
     "lib/**/*",

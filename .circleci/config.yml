@@ -31,6 +31,10 @@ jobs:
       - run:
           name: Run tests
           command: yarn test
+      - run:
+          name: Run linter
+          command: yarn fmt-check
+
 
   test-cpp:
     executor: node
