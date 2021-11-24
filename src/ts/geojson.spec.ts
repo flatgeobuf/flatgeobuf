@@ -9,7 +9,10 @@ import { TextDecoder, TextEncoder } from 'util';
 
 import fetch from 'node-fetch';
 
-global['fetch'] = fetch as unknown as (input: RequestInfo, init?: RequestInit) => Promise<Response>;
+global['fetch'] = fetch as unknown as (
+    input: RequestInfo,
+    init?: RequestInit
+) => Promise<Response>;
 global['TextDecoder'] = TextDecoder;
 global['TextEncoder'] = TextEncoder;
 
@@ -70,7 +73,9 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
-                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
+                deserialize(
+                    stream as unknown as ReadableStream<any>
+                ) as AsyncGenerator
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -139,7 +144,9 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
-                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
+                deserialize(
+                    stream as unknown as ReadableStream<any>
+                ) as AsyncGenerator
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -383,7 +390,9 @@ describe('geojson module', () => {
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync(
-                deserialize(stream as unknown as ReadableStream<any>) as AsyncGenerator
+                deserialize(
+                    stream as unknown as ReadableStream<any>
+                ) as AsyncGenerator
             );
             expect(features.length).to.eq(179);
             for (const f of features)
