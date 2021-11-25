@@ -6,7 +6,7 @@ use geozero::geojson::{GeoJson, GeoJsonReader};
 use geozero::{ColumnValue, GeozeroDatasource, PropertyProcessor};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
-use tempfile::tempfile;
+use tempfile::{tempfile, NamedTempFile};
 
 #[test]
 fn write_file() -> std::io::Result<()> {
@@ -141,8 +141,8 @@ fn geozero_to_fgb() -> Result<()> {
 }
 
 #[test]
-fn test_save_fgb_and_load() {
-    let tempf = tempfile().expect("test failed");
+fn test_save_fgb_and_load() -> Result<()> {
+    let file_to_write = NamedTempFile::new()?;
 
     // Save
     let linestrings: Vec<LineString<f64>> = vec![
@@ -156,28 +156,31 @@ fn test_save_fgb_and_load() {
     ];
 
     let mut fgb = FgbWriter::create("test_write", GeometryType::LineString, |_fbb, header| {
-        header.features_count = linestrings.len() as u64;
         header.index_node_size = 0;
-    })
-    .expect("test failed");
+    })?;
     fgb.set_crs(4326, |_fbb, _crs| {});
 
     for geom in linestrings.iter() {
         let geom: geo_types::Geometry<f64> = geom.to_owned().into();
-        fgb.add_feature_geom(geom, |_feat| {}).expect("test failed");
+        fgb.add_feature_geom(geom, |_feat| {})?;
     }
-    let mut file = BufWriter::new(&tempf);
-    fgb.write(&mut file).expect("test failed");
+    let mut file = BufWriter::new(&file_to_write);
+    fgb.write(&mut file)?;
+
+    file.flush()?;
 
     // Load
-    let mut filein = BufReader::new(&tempf);
-    let mut fgb = FgbReader::open(&mut filein).expect("test failed");
-    fgb.select_all().expect("test failed");
+    let read_file_again = file_to_write.reopen()?;
+    let mut filein = BufReader::new(&read_file_again);
+    let mut fgb = FgbReader::open(&mut filein)?;
+    fgb.select_all()?;
     let mut cnt = 0;
-    while let Some(feature) = fgb.next().expect("test failed") {
-        let _props = feature.properties().expect("test failed");
+    while let Some(feature) = fgb.next().unwrap() {
+        let _props = feature.properties();
         let _geometry = feature.geometry().unwrap();
         cnt += 1
     }
     assert_eq!(cnt, 2);
+
+    Ok(())
 }
