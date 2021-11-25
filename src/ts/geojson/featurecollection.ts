@@ -10,12 +10,11 @@ import {
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
 } from '../generic/featurecollection';
-import { toGeometryType } from '../generic/geometry.js';
 import { Rect } from '../packedrtree.js';
 import { buildFeature, IProperties } from '../generic/feature.js';
 import { HeaderMetaFn } from '../generic.js';
 import { magicbytes } from '../constants.js';
-import { GeometryType } from '../flat-geobuf/geometry-type.js';
+import { inferGeometryType } from '../generic/header.js';
 
 export interface IGeoJsonFeatureCollection {
     type: string;
@@ -89,23 +88,6 @@ function valueToType(value: boolean | number | string | unknown): ColumnType {
 function introspectHeaderMeta(
     featurecollection: IGeoJsonFeatureCollection
 ): HeaderMeta {
-    let geometryType: GeometryType = undefined;
-
-    for (const f of featurecollection.features) {
-        if (geometryType === GeometryType.Unknown) {
-            break;
-        }
-
-        if (f.getGeometry) {
-            const gtype = toGeometryType(f.geometry.type);
-            if (geometryType === undefined) {
-                geometryType = gtype;
-            } else if (geometryType !== gtype) {
-                geometryType = GeometryType.Unknown;
-            }
-        }
-    }
-
     const feature = featurecollection.features[0];
     const properties = feature.properties;
 
@@ -127,6 +109,7 @@ function introspectHeaderMeta(
                 )
         );
 
+    const geometryType = inferGeometryType(featurecollection.features);
     const headerMeta = new HeaderMeta(
         geometryType,
         columns,

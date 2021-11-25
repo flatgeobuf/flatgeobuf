@@ -11,14 +11,13 @@ import { Feature } from '../flat-geobuf/feature.js';
 import HeaderMeta from '../HeaderMeta.js';
 
 import { buildFeature, IFeature } from './feature.js';
-import { toGeometryType } from './geometry.js';
 import { HttpReader } from '../HttpReader.js';
 import Logger from '../Logger.js';
 import { Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
 import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
-import { GeometryType } from '../flat-geobuf/geometry-type.js';
+import { inferGeometryType } from './header.js';
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
@@ -193,26 +192,6 @@ function valueToType(value: boolean | number | string): ColumnType {
 }
 
 function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
-    let geometryType: GeometryType = undefined;
-
-    for (const f of features) {
-        if (geometryType === GeometryType.Unknown) {
-            break;
-        }
-
-        if (f.getGeometry) {
-            const geometry = f.getGeometry();
-            if (geometry) {
-                const gtype = toGeometryType(geometry.getType());
-                if (geometryType === undefined) {
-                    geometryType = gtype;
-                } else if (geometryType !== gtype) {
-                    geometryType = GeometryType.Unknown;
-                }
-            }
-        }
-    }
-
     const sampleFeature = features[0];
     const properties = sampleFeature.getProperties
         ? sampleFeature.getProperties()
@@ -238,6 +217,7 @@ function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
                     )
             );
 
+    const geometryType = inferGeometryType(features);
     const headerMeta = new HeaderMeta(
         geometryType,
         columns,
