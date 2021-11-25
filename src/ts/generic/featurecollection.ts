@@ -195,7 +195,7 @@ function valueToType(value: boolean | number | string): ColumnType {
 function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
     let geometryType: GeometryType = undefined;
 
-    for (let f of features) {
+    for (const f of features) {
         if (geometryType === GeometryType.Unknown) {
             break;
         }
