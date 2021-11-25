@@ -93,14 +93,20 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
     }
 }
 
-export function fromGeometry(geometry: Geometry): IGeoJsonGeometry {
-    const type = geometry.type();
+export function fromGeometry(
+    geometry: Geometry,
+    headerType: GeometryType
+): IGeoJsonGeometry {
+    let type = headerType;
+    if (type === GeometryType.Unknown) {
+        type = geometry.type();
+    }
     if (type === GeometryType.GeometryCollection) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++) {
             const part = geometry.parts(i) as Geometry;
             const partType = part.type() as GeometryType;
-            geometries.push(fromGeometry(part));
+            geometries.push(fromGeometry(part, partType));
         }
         return {
             type: GeometryType[type],
@@ -109,7 +115,12 @@ export function fromGeometry(geometry: Geometry): IGeoJsonGeometry {
     } else if (type === GeometryType.MultiPolygon) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++)
-            geometries.push(fromGeometry(geometry.parts(i) as Geometry));
+            geometries.push(
+                fromGeometry(
+                    geometry.parts(i) as Geometry,
+                    GeometryType.Polygon
+                )
+            );
         return {
             type: GeometryType[type],
             coordinates: geometries.map((g) => g.coordinates),

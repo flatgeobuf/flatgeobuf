@@ -19,7 +19,10 @@ export function fromFeature(
     header: HeaderMeta
 ): IGeoJsonFeature {
     const columns = header.columns;
-    const geometry = fromGeometry(feature.geometry() as Geometry);
+    const geometry = fromGeometry(
+        feature.geometry() as Geometry,
+        header.geometryType
+    );
     const geoJsonfeature: IGeoJsonFeature = {
         type: 'Feature',
         geometry,
