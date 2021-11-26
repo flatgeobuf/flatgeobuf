@@ -45,6 +45,7 @@ export function buildGeometry(
         const partsOffset = Geometry.createPartsVector(builder, partOffsets);
         Geometry.startGeometry(builder);
         Geometry.addParts(builder, partsOffset);
+        Geometry.addType(builder, type);
         return Geometry.endGeometry(builder);
     }
 
@@ -82,11 +83,17 @@ export function flat(
 
 export function parseGeometry(
     geometry: ISimpleGeometry,
-    type: GeometryType
+    headerGeomType: GeometryType
 ): IParsedGeometry {
     let xy: number[] | undefined;
     let ends: number[] | undefined;
     let parts: IParsedGeometry[] | undefined;
+
+    let type = headerGeomType;
+    if (type === GeometryType.Unknown) {
+        type = toGeometryType(geometry.getType());
+    }
+
     if (type === GeometryType.MultiLineString) {
         if (geometry.getFlatCoordinates) xy = geometry.getFlatCoordinates();
         const mlsEnds = (geometry as IMultiLineString).getEnds();

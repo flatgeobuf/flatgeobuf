@@ -268,6 +268,16 @@ describe('geojson module', () => {
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
+
+        it('Heterogeneous geometries', () => {
+            const expected = makeFeatureCollectionFromArray([
+                'POINT(1.2 -2.1)',
+                'LINESTRING(1.2 -2.1, 2.4 -4.8)',
+                'MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))',
+            ]);
+            const actual = deserialize(serialize(expected));
+            expect(actual).to.deep.equal(expected);
+        });
     });
 
     describe('Attribute roundtrips', () => {
@@ -410,6 +420,48 @@ describe('geojson module', () => {
                 expect(
                     (f.geometry.coordinates[0] as number[]).length
                 ).to.be.greaterThan(0);
+        });
+
+        it('Should parse heterogeneous fgb produced from Rust impl', () => {
+            const buffer = readFileSync('./test/data/heterogeneous.fgb');
+            const bytes = new Uint8Array(buffer);
+            const geojson = deserialize(bytes) as IGeoJsonFeatureCollection;
+            const expected = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [1.2, -2.1] },
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [1.2, -2.1],
+                                [2.4, -4.8],
+                            ],
+                        },
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'MultiPolygon',
+                            coordinates: [
+                                [
+                                    [
+                                        [30, 20],
+                                        [45, 40],
+                                        [10, 40],
+                                        [30, 20],
+                                    ],
+                                ],
+                            ],
+                        },
+                    },
+                ],
+            };
+            expect(geojson).to.deep.equal(expected);
         });
 
         /*it('Should parse topp:states fgb produced from GeoServer', () => {

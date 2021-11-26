@@ -10,11 +10,11 @@ import {
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
 } from '../generic/featurecollection';
-import { toGeometryType } from '../generic/geometry.js';
 import { Rect } from '../packedrtree.js';
 import { buildFeature, IProperties } from '../generic/feature.js';
 import { HeaderMetaFn } from '../generic.js';
 import { magicbytes } from '../constants.js';
+import { inferGeometryType } from '../generic/header.js';
 
 export interface IGeoJsonFeatureCollection {
     type: string;
@@ -109,8 +109,9 @@ function introspectHeaderMeta(
                 )
         );
 
+    const geometryType = inferGeometryType(featurecollection.features);
     const headerMeta = new HeaderMeta(
-        toGeometryType(feature.geometry.type),
+        geometryType,
         columns,
         featurecollection.features.length,
         0,

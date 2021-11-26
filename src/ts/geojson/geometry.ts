@@ -95,8 +95,12 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
 
 export function fromGeometry(
     geometry: Geometry,
-    type: GeometryType
+    headerType: GeometryType
 ): IGeoJsonGeometry {
+    let type = headerType;
+    if (type === GeometryType.Unknown) {
+        type = geometry.type();
+    }
     if (type === GeometryType.GeometryCollection) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++) {

@@ -321,5 +321,36 @@ describe('ol module', () => {
             );
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
+
+        it('Heterogeneous geometry types', () => {
+            const expected = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        properties: { name: 'A' },
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [-77.53466, 23.75975],
+                        },
+                    },
+                    {
+                        type: 'Feature',
+                        properties: { name: 'B' },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [-77.53466, 23.75975],
+                                [-77, 26.59],
+                            ],
+                        },
+                    },
+                ],
+            };
+            const actual = deserialize(
+                serialize(geojson.readFeatures(expected))
+            );
+            expect(JSON.parse(g(actual))).to.deep.equal(expected);
+        });
     });
 });
