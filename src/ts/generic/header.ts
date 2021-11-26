@@ -14,7 +14,7 @@ function featureGeomType(feature: IFeature | IGeoJsonFeature): GeometryType {
 export function inferGeometryType(
     features: (IFeature | IGeoJsonFeature)[]
 ): GeometryType {
-    let geometryType: GeometryType = undefined;
+    let geometryType: GeometryType | undefined = undefined;
 
     for (const f of features) {
         if (geometryType === GeometryType.Unknown) {
