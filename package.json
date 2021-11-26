@@ -60,37 +60,37 @@
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
     "@repeaterjs/repeater": "3.0.4",
-    "flatbuffers": "2.0.4",
-    "slice-source": "0.4.1"
+    "flatbuffers": "2.0.4"
   },
   "peerDependencies": {
     "ol": "^6"
   },
   "devDependencies": {
     "@babel/core": "7.16.0",
-    "@babel/preset-env": "7.16.0",
+    "@babel/preset-env": "7.16.4",
     "@rollup/plugin-babel": "5.3.0",
     "@rollup/plugin-node-resolve": "13.0.6",
     "@types/chai": "4.2.22",
     "@types/mocha": "9.0.0",
-    "@types/node": "16.11.6",
+    "@types/node": "16.11.10",
     "@types/stream-buffers": "3.0.4",
-    "@typescript-eslint/eslint-plugin": "5.2.0",
-    "@typescript-eslint/parser": "5.2.0",
+    "@typescript-eslint/eslint-plugin": "5.4.0",
+    "@typescript-eslint/parser": "5.4.0",
     "chai": "4.3.4",
-    "eslint": "8.1.0",
-    "jsts": "2.7.3",
-    "local-web-server": "4.2.1",
+    "eslint": "8.3.0",
+    "jsts": "2.8.1",
+    "local-web-server": "5.1.1",
     "mocha": "9.1.3",
-    "node-fetch": "3.0.0",
+    "node-fetch": "3.1.0",
     "ol": "6.9.0",
-    "prettier": "2.4.1",
-    "rollup": "2.58.3",
+    "prettier": "2.5.0",
+    "rollup": "2.60.1",
     "rollup-plugin-terser": "7.0.2",
+    "slice-source": "0.4.1",
     "stream-buffers": "3.0.2",
     "ts-node": "10.4.0",
-    "typedoc": "0.22.7",
-    "typescript": "4.4.4",
-    "web-streams-polyfill": "3.1.1"
+    "typedoc": "0.22.10",
+    "typescript": "4.5.2",
+    "web-streams-polyfill": "3.2.0"
   }
 }
