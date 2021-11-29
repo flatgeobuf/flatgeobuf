@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "3.20.0",
+  "version": "3.20.1",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "tsc -p config/tsconfig.mjs.json && tsc -p config/tsconfig.cjs.json && rollup -c config/rollup.config.js",
@@ -60,7 +60,8 @@
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
     "@repeaterjs/repeater": "3.0.4",
-    "flatbuffers": "2.0.4"
+    "flatbuffers": "2.0.4",
+    "slice-source": "0.4.1"
   },
   "peerDependencies": {
     "ol": "^6"
@@ -86,7 +87,6 @@
     "prettier": "2.5.0",
     "rollup": "2.60.1",
     "rollup-plugin-terser": "7.0.2",
-    "slice-source": "0.4.1",
     "stream-buffers": "3.0.2",
     "ts-node": "10.4.0",
     "typedoc": "0.22.10",
