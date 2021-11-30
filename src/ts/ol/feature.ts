@@ -1,4 +1,4 @@
-import { default as OLFeature } from 'ol/Feature';
+import { default as OLFeature } from 'ol/Feature.js';
 
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Feature } from '../flat-geobuf/feature.js';

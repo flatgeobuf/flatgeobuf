@@ -3,12 +3,12 @@ import { Geometry } from '../flat-geobuf/geometry.js';
 
 import { ISimpleGeometry } from '../generic/geometry.js';
 
-import Point from 'ol/geom/Point';
-import MultiPoint from 'ol/geom/MultiPoint';
-import LineString from 'ol/geom/LineString';
-import MultiLineString from 'ol/geom/MultiLineString';
-import Polygon from 'ol/geom/Polygon';
-import MultiPolygon from 'ol/geom/MultiPolygon';
+import Point from 'ol/geom/Point.js';
+import MultiPoint from 'ol/geom/MultiPoint.js';
+import LineString from 'ol/geom/LineString.js';
+import MultiLineString from 'ol/geom/MultiLineString.js';
+import Polygon from 'ol/geom/Polygon.js';
+import MultiPolygon from 'ol/geom/MultiPolygon.js';
 
 export function createGeometryOl(
     geometry: Geometry | null,

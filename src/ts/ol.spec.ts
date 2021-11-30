@@ -7,13 +7,13 @@ import { deserialize, serialize } from './ol';
 
 import { IFeature } from './generic/feature.js';
 
-import Feature from 'ol/Feature';
-import WKT from 'ol/format/WKT';
-import GeoJSON from 'ol/format/GeoJSON';
+import Feature from 'ol/Feature.js';
+import WKT from 'ol/format/WKT.js';
+import GeoJSON from 'ol/format/GeoJSON.js';
 import { TextDecoder, TextEncoder } from 'util';
-import SimpleGeometry from 'ol/geom/SimpleGeometry';
+import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 import { Rect } from './packedrtree.js';
-import Geometry from 'ol/geom/Geometry';
+import Geometry from 'ol/geom/Geometry.js';
 
 global['TextDecoder'] = TextDecoder;
 global['TextEncoder'] = TextEncoder;

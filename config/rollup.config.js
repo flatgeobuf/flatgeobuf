@@ -41,14 +41,14 @@ export default [{
 }, {
   input: './lib/mjs/ol.js',
   external: [
-    'ol/Feature',
-    'ol/geom/Point',
-    'ol/geom/MultiPoint',
-    'ol/geom/LineString',
-    'ol/geom/MultiLineString',
-    'ol/geom/Polygon',
-    'ol/geom/MultiPolygon',
-    'ol/geom/GeometryLayout'
+    'ol/Feature.js',
+    'ol/geom/Point.js',
+    'ol/geom/MultiPoint.js',
+    'ol/geom/LineString.js',
+    'ol/geom/MultiLineString.js',
+    'ol/geom/Polygon.js',
+    'ol/geom/MultiPolygon.js',
+    'ol/geom/GeometryLayout.js'
   ],
   output: {
     file: 'dist/flatgeobuf-ol.min.js',
@@ -56,14 +56,14 @@ export default [{
     name: 'flatgeobuf',
     sourcemap: true,
     globals: {
-      'ol/Feature': 'ol.Feature',
-      'ol/geom/Point': 'ol.geom.Point',
-      'ol/geom/MultiPoint': 'ol.geom.MultiPoint',
-      'ol/geom/LineString': 'ol.geom.LineString',
-      'ol/geom/MultiLineString': 'ol.geom.MultiLineString',
-      'ol/geom/Polygon': 'ol.geom.Polygon',
-      'ol/geom/MultiPolygon': 'ol.geom.MultiPolygon',
-      'ol/geom/GeometryLayout': 'ol.geom.GeometryLayout'
+      'ol/Feature.js': 'ol.Feature',
+      'ol/geom/Point.js': 'ol.geom.Point',
+      'ol/geom/MultiPoint.js': 'ol.geom.MultiPoint',
+      'ol/geom/LineString.js': 'ol.geom.LineString',
+      'ol/geom/MultiLineString.js': 'ol.geom.MultiLineString',
+      'ol/geom/Polygon.js': 'ol.geom.Polygon',
+      'ol/geom/MultiPolygon.js': 'ol.geom.MultiPolygon',
+      'ol/geom/GeometryLayout.js': 'ol.geom.GeometryLayout'
     }
   },
   plugins
