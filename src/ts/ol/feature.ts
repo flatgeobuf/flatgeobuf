@@ -8,7 +8,7 @@ import { createGeometryOl } from './geometry.js';
 import {
     fromFeature as genericFromFeature,
     IFeature,
-} from '../generic/feature';
+} from '../generic/feature.js';
 import { ISimpleGeometry } from '../generic/geometry.js';
 
 export function createFeatureOl(
