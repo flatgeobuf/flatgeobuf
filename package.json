@@ -3,7 +3,7 @@
   "version": "3.20.1",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
-    "build": "tsc -p config/tsconfig.mjs.json && tsc -p config/tsconfig.cjs.json && rollup -c config/rollup.config.js",
+    "build": "tsc -p config/tsconfig.mjs.json && rollup -c config/rollup.config.js",
     "lint": "eslint ./src/ts --ext .js,.jsx,.ts,.tsx",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json node --experimental-specifier-resolution=node --loader ts-node/esm.mjs ./node_modules/mocha/lib/cli/cli.js -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
@@ -15,14 +15,9 @@
     "lib/**/*",
     "dist/**/*"
   ],
-  "main": "lib/cjs/flatgeobuf.js",
-  "types": "lib/cjs/flatgeobuf.d.ts",
+  "types": "lib/mjs/flatgeobuf.d.ts",
   "module": "lib/mjs/flatgeobuf.js",
   "type": "module",
-  "exports": {
-    "import": "./lib/mjs/flatgeobuf.js",
-    "require": "./lib/cjs/flatgeobuf.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
