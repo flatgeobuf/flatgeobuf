@@ -17,6 +17,7 @@
   ],
   "types": "lib/mjs/flatgeobuf.d.ts",
   "module": "lib/mjs/flatgeobuf.js",
+  "main": "lib/mjs/flatgeobuf.js",
   "type": "module",
   "repository": {
     "type": "git",
