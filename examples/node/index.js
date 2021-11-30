@@ -1,6 +1,5 @@
 /* eslint-disable no-undef */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const geojson = require("flatgeobuf/lib/cjs/geojson")
+import { geojson } from 'flatgeobuf'
 
 const expected = {
     type: 'FeatureCollection',

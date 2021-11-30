@@ -2,8 +2,9 @@
   "name": "flatgeobuf-node-example",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "license": "BSD-3-Clause",
   "dependencies": {
-    "flatgeobuf": "3.17.0"
+    "flatgeobuf": "3.21.3"
   }
 }
