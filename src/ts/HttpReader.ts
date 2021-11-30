@@ -7,7 +7,7 @@ import {
     DEFAULT_NODE_SIZE,
     NODE_ITEM_LEN,
     streamSearch,
-} from './packedrtree';
+} from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './Config.js';
 import Logger from './Logger.js';

@@ -4,7 +4,7 @@ import {
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
-} from './geojson/featurecollection';
+} from './geojson/featurecollection.js';
 
 import { Rect } from './packedrtree.js';
 import { IGeoJsonFeature } from './geojson/feature.js';

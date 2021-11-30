@@ -5,14 +5,14 @@ import { readFileSync } from 'fs';
 import { arrayToStream, takeAsync } from './streams/utils';
 import { deserialize, serialize } from './ol';
 
-import { IFeature } from './generic/feature';
+import { IFeature } from './generic/feature.js';
 
 import Feature from 'ol/Feature';
 import WKT from 'ol/format/WKT';
 import GeoJSON from 'ol/format/GeoJSON';
 import { TextDecoder, TextEncoder } from 'util';
 import SimpleGeometry from 'ol/geom/SimpleGeometry';
-import { Rect } from './packedrtree';
+import { Rect } from './packedrtree.js';
 import Geometry from 'ol/geom/Geometry';
 
 global['TextDecoder'] = TextDecoder;

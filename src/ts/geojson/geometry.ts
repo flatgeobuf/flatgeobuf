@@ -6,7 +6,7 @@ import {
     flat,
     pairFlatCoordinates,
     toGeometryType,
-} from '../generic/geometry';
+} from '../generic/geometry.js';
 
 export interface IGeoJsonGeometry {
     type: string;

@@ -5,7 +5,7 @@ import {
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
-} from './ol/featurecollection';
+} from './ol/featurecollection.js';
 import { HeaderMetaFn } from './generic.js';
 import { Rect } from './packedrtree.js';
 

@@ -9,7 +9,7 @@ import {
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
-} from '../generic/featurecollection';
+} from '../generic/featurecollection.js';
 import { Rect } from '../packedrtree.js';
 import { buildFeature, IProperties } from '../generic/feature.js';
 import { HeaderMetaFn } from '../generic.js';

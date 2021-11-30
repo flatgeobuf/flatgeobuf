@@ -9,7 +9,7 @@ import {
     ISimpleGeometry,
     ICreateGeometry,
     IParsedGeometry,
-} from './geometry';
+} from './geometry.js';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();

@@ -3,7 +3,7 @@ import {
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
-} from '../generic/featurecollection';
+} from '../generic/featurecollection.js';
 import { IFeature } from '../generic/feature.js';
 import { fromFeature } from './feature.js';
 import { HeaderMetaFn } from '../generic.js';

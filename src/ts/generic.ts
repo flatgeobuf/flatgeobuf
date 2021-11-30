@@ -3,7 +3,7 @@ import {
     deserializeStream,
     deserializeFiltered,
     FromFeatureFn,
-} from './generic/featurecollection';
+} from './generic/featurecollection.js';
 
 import { Rect } from './packedrtree.js';
 import { IFeature } from './generic/feature.js';
@@ -23,7 +23,7 @@ export function deserialize(
     else return deserializeFiltered(input, rect as Rect, fromFeature);
 }
 
-export { serialize } from './generic/featurecollection';
+export { serialize } from './generic/featurecollection.js';
 
-export { GeometryType } from './flat-geobuf/geometry-type';
-export { ColumnType } from './flat-geobuf/column-type';
+export { GeometryType } from './flat-geobuf/geometry-type.js';
+export { ColumnType } from './flat-geobuf/column-type.js';
