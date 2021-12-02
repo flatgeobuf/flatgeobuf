@@ -40,31 +40,6 @@ impl GeozeroGeometry for FgbFeature {
         let geometry_type = self.header().geometry_type();
         geometry.process(processor, geometry_type)
     }
-    fn empty() -> Self {
-        let mut fbb = flatbuffers::FlatBufferBuilder::new();
-        let h = Header::create(&mut fbb, &Default::default());
-        fbb.finish(h, None);
-        let header_buf = fbb.finished_data().to_vec();
-
-        let mut fbb = flatbuffers::FlatBufferBuilder::new();
-        let geom = Geometry::create(&mut fbb, &Default::default());
-        let f = Feature::create(
-            &mut fbb,
-            &FeatureArgs {
-                geometry: Some(geom),
-                ..Default::default()
-            },
-        );
-        fbb.finish(f, None);
-        let mut buf = fbb.finished_data().to_vec();
-        let mut feature_buf = (buf.len() as u32).to_le_bytes().to_vec();
-        feature_buf.append(&mut buf);
-
-        FgbFeature {
-            header_buf,
-            feature_buf,
-        }
-    }
 }
 
 impl geozero::FeatureProperties for FgbFeature {
