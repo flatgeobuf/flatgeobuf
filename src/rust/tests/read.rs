@@ -124,7 +124,7 @@ fn filter() -> Result<()> {
     let mut cnt = 0;
     while let Some(feature) = fgb
         .by_ref()
-        .filter(|feat| feat.property("id") == Some("DNK".to_string()))
+        .filter(|feat| feat.property("id").ok() == Some("DNK".to_string()))
         .next()?
     {
         let _geometry = feature.geometry().unwrap();
@@ -144,7 +144,7 @@ fn file_reader() -> Result<()> {
     let count = fgb.select_all()?;
     assert_eq!(count, 179);
 
-    if let Some(feature) = fgb.find(|feat| feat.property_n(0) == Some("DNK".to_string()))? {
+    if let Some(feature) = fgb.find(|feat| feat.property_n(0).ok() == Some("DNK".to_string()))? {
         // OGRFeature(countries):46
         //   id (String) = DNK
         //   name (String) = Denmark
@@ -175,7 +175,7 @@ fn bbox_file_reader() -> Result<()> {
     assert_eq!(count, 6);
 
     let feature = fgb.next()?.unwrap();
-    assert_eq!(feature.property("name"), Some("Denmark".to_string()));
+    assert_eq!(feature.property("name").ok(), Some("Denmark".to_string()));
 
     Ok(())
 }
