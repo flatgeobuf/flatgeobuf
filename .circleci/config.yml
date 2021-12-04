@@ -32,6 +32,9 @@ jobs:
           name: Run tests
           command: yarn test
       - run:
+          name: Run tsc compile
+          command: yarn build
+      - run:
           name: Run linter
           command: yarn fmt-check
 
