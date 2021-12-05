@@ -3,16 +3,16 @@ version: 2.1
 executors:
   node:
     docker:
-      - image: circleci/node:16
+      - image: cimg/node:16
   java:
     docker:
-      - image: circleci/openjdk:17-jdk-buster
+      - image: cimg/openjdk:17-jdk-buster
   net:
     docker:
-      - image: mcr.microsoft.com/dotnet/core/sdk:6.0
+      - image: mcr.microsoft.com/dotnet/sdk:6.0
   rust:
     docker:
-      - image: circleci/rust:1.57.0
+      - image: cimg/rust:1.57.0
 
 commands:
   setup-sccache:
