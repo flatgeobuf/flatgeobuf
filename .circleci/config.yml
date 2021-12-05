@@ -3,16 +3,45 @@ version: 2.1
 executors:
   node:
     docker:
-      - image: circleci/node:14
+      - image: circleci/node:16
   java:
     docker:
       - image: circleci/openjdk:17-jdk-buster
   net:
     docker:
-      - image: mcr.microsoft.com/dotnet/core/sdk:3.1
+      - image: mcr.microsoft.com/dotnet/core/sdk:6.0
   rust:
     docker:
-      - image: circleci/rust:1.55.0
+      - image: circleci/rust:1.57.0
+
+commands:
+  setup-sccache:
+    steps:
+      - run:
+          name: Install sccache
+          command: |
+            cargo install sccache
+            # This configures Rust to use sccache.
+            echo 'export "RUSTC_WRAPPER"="sccache"' >> $BASH_ENV
+            # This is the maximum space sccache cache will use on disk.
+            echo 'export "SCCACHE_CACHE_SIZE"="1G"' >> $BASH_ENV
+            sccache --version
+  restore-sccache-cache:
+    steps:
+      - restore_cache:
+          name: Restore sccache cache
+          key: sccache-cache-stable-{{ arch }}-{{ .Environment.CIRCLE_JOB }}
+  save-sccache-cache:
+    steps:
+      - save_cache:
+          name: Save sccache cache
+          # We use {{ epoch }} to always upload a fresh cache:
+          # Of course, restore_cache will not find this exact key,
+          # but it will fall back to the closest key (aka the most recent).
+          # See https://discuss.circleci.com/t/add-mechanism-to-update-existing-cache-key/9014/13
+          key: sccache-cache-stable-{{ arch }}-{{ .Environment.CIRCLE_JOB }}-{{ epoch }}
+          paths:
+            - "~/.cache/sccache"
 
 jobs:
   test-ts:
@@ -88,16 +117,10 @@ jobs:
     executor: rust
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-rust-dependencies-{{ checksum "src/rust/Cargo.toml" }}
-            - v1-rust-dependencies-
+      - setup-sccache
+      - restore-sccache-cache
       - run: cd src/rust && cargo test
-      - save_cache:
-          paths:
-            - ~/.cargo
-            - src/rust/target
-          key: v1-rust-dependencies-{{ checksum "src/rust/Cargo.toml" }}
+      - save-sccache-cache
 
 workflows:
   main:
