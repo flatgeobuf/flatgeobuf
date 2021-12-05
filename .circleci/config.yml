@@ -25,7 +25,7 @@ commands:
             echo 'export "RUSTC_WRAPPER"="sccache-dist"' >> $BASH_ENV
             # This is the maximum space sccache cache will use on disk.
             echo 'export "SCCACHE_CACHE_SIZE"="1G"' >> $BASH_ENV
-            sccache-dist --version
+            ./sccache-dist --version
   restore-sccache-cache:
     steps:
       - restore_cache:
