@@ -12,7 +12,7 @@ declare module 'jsts/org/locationtech/jts/io/WKTReader.js' {
 
 declare module 'jsts/org/locationtech/jts/geom/Envelope.js' {
     export default class Envelope {
-        constructor(minx: number, maxx: number, miny: number, maxy: number)
+        constructor(minx: number, maxx: number, miny: number, maxy: number);
     }
 }
 

@@ -23,8 +23,7 @@ bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
 
 const headerMeta = HeaderMeta.fromByteBuffer(bb);
 
-if (headerMeta.indexNodeSize === 0)
-    throw new Error('No index found')
+if (headerMeta.indexNodeSize === 0) throw new Error('No index found');
 
 let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
 const numItems = headerMeta.featuresCount;
@@ -40,47 +39,44 @@ const treeSize = calcTreeSize(numItems, nodeSize);
 const levelBounds = generateLevelBounds(numItems, nodeSize).reverse();
 
 console.log('Level bounds:');
-for (const levelBound of levelBounds)
-    console.log('  ' + levelBound)
+for (const levelBound of levelBounds) console.log('  ' + levelBound);
 
 console.log('Size: ' + treeSize);
 
-const items: any[] = []
+const items: any[] = [];
 
 function readNode(level: number) {
-    const minx = buffer.readDoubleLE(offset+0);
-    const miny = buffer.readDoubleLE(offset+8);
-    const maxx = buffer.readDoubleLE(offset+16);
-    const maxy = buffer.readDoubleLE(offset+24);
-    items.push([level, minx, miny, maxx, maxy])
-    offset += 40
+    const minx = buffer.readDoubleLE(offset + 0);
+    const miny = buffer.readDoubleLE(offset + 8);
+    const maxx = buffer.readDoubleLE(offset + 16);
+    const maxy = buffer.readDoubleLE(offset + 24);
+    items.push([level, minx, miny, maxx, maxy]);
+    offset += 40;
 }
 
 let level = 0;
 for (const levelBound of levelBounds) {
-    for (let i = levelBound[0]; i < levelBound[1]; i++)
-        readNode(level)
+    for (let i = levelBound[0]; i < levelBound[1]; i++) readNode(level);
     level++;
 }
 
 const writer = new GeoJSONWriter();
 const factory = new GeometryFactory();
 
-const geojsonfeatures = items.map(i => {
+const geojsonfeatures = items.map((i) => {
     const geometry = factory.toGeometry(new Envelope(i[1], i[3], i[2], i[4]));
     return {
-        "type": "Feature",
-        "geometry": writer.write(geometry),
-        "properties": {
-          "level": i[0]
-        }
-      }
-})
+        type: 'Feature',
+        geometry: writer.write(geometry),
+        properties: {
+            level: i[0],
+        },
+    };
+});
 
 const geojson = {
-    "type": "FeatureCollection",
-    "features": geojsonfeatures
-}
+    type: 'FeatureCollection',
+    features: geojsonfeatures,
+};
 
-writeFileSync("out.geojson", JSON.stringify(geojson))
-
+writeFileSync('out.geojson', JSON.stringify(geojson));
