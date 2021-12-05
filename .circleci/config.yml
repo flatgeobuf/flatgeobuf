@@ -116,7 +116,7 @@ jobs:
   test-rust:
     executor: rust
     steps:
-      - run: DEBIAN_FRONTEND=noninteractive apt-get -y update && apt-get -y install libssl-dev
+      - run: DEBIAN_FRONTEND=noninteractive apt-get -y install libssl-dev
       - checkout
       - setup-sccache
       - restore-sccache-cache
