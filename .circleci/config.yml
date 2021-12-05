@@ -20,9 +20,9 @@ commands:
       - run:
           name: Install sccache
           command: |
-            curl -L -s https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-dist-v0.2.15-x86_64-unknown-linux-musl.tar.gz | tar xvz --strip-components=1
-            chmod +x ./sccache-dist
-            sudo mv ./sccache-dist /usr/local/bin/sccache
+            curl -L -s https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz | tar xvz --strip-components=1
+            chmod +x ./sccache
+            sudo mv ./sccache /usr/local/bin/sccache
             # This configures Rust to use sccache.
             echo 'export "RUSTC_WRAPPER"="sccache"' >> $BASH_ENV
             # This is the maximum space sccache cache will use on disk.
@@ -77,8 +77,9 @@ jobs:
       - run:
           name: Install Debian dependencies
           command: |
-            sudo apt-get update
-            sudo apt-get install clang
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get -y update
+            sudo apt-get -y install clang
       - run: ./script/getcppdeps.sh
       - run:
           name: Run tests
@@ -118,7 +119,12 @@ jobs:
   test-rust:
     executor: rust
     steps:
-      - run: DEBIAN_FRONTEND=noninteractive sudo apt-get -y update && sudo apt-get -y install libssl-dev
+      - run:
+          name: Install Debian dependencies
+          command: |
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get -y update
+            sudo apt-get -y install libssl-dev
       - checkout
       - setup-sccache
       - restore-sccache-cache
