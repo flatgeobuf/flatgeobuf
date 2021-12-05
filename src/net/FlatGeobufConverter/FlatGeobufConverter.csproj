@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    
     <ProjectReference Include="..\FlatGeobuf\FlatGeobuf.csproj" />
   </ItemGroup>
 
