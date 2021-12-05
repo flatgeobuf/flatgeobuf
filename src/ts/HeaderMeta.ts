@@ -9,6 +9,7 @@ export default class HeaderMeta {
     constructor(
         public geometryType: GeometryType,
         public columns: ColumnMeta[] | null,
+        public envelope: Float64Array | null,
         public featuresCount: number,
         public indexNodeSize: number,
         public crs: CrsMeta | null,
@@ -57,6 +58,7 @@ export default class HeaderMeta {
         const headerMeta = new HeaderMeta(
             header.geometryType(),
             columns,
+            null,
             featuresCount,
             indexNodeSize,
             crsMeta,

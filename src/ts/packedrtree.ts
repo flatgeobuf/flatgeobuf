@@ -30,7 +30,7 @@ export function calcTreeSize(numItems: number, nodeSize: number): number {
 /**
  * returns [levelOffset, numNodes] for each level
  */
-function generateLevelBounds(
+export function generateLevelBounds(
     numItems: number,
     nodeSize: number
 ): Array<[number, number]> {

@@ -221,6 +221,7 @@ function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
     const headerMeta = new HeaderMeta(
         geometryType,
         columns,
+        null,
         features.length,
         0,
         null,

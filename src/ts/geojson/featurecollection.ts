@@ -113,6 +113,7 @@ function introspectHeaderMeta(
     const headerMeta = new HeaderMeta(
         geometryType,
         columns,
+        null,
         featurecollection.features.length,
         0,
         null,
