@@ -22,11 +22,12 @@ commands:
           command: |
             curl -L -s https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-dist-v0.2.15-x86_64-unknown-linux-musl.tar.gz | tar xvz --strip-components=1
             chmod +x ./sccache-dist
+            sudo mv ./sscache-dist /usr/local/bin/sscache
             # This configures Rust to use sccache.
-            echo 'export "RUSTC_WRAPPER"="sccache-dist"' >> $BASH_ENV
+            echo 'export "RUSTC_WRAPPER"="sccache"' >> $BASH_ENV
             # This is the maximum space sccache cache will use on disk.
             echo 'export "SCCACHE_CACHE_SIZE"="1G"' >> $BASH_ENV
-            ./sccache-dist --version
+            sccache --version
   restore-sccache-cache:
     steps:
       - restore_cache:
