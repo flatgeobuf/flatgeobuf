@@ -1,0 +1,24 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.21.3/dist/flatgeobuf-geojson.min.js"></script>
+    <style>
+        #map { height: 480px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script type="module">
+        const map = L.map('map').setView([41.505, -80.09], 4)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map)
+
+        const response = await fetch('https://flatgeobuf.org/test/data/UScounties.fgb')
+        for await (const f of flatgeobuf.deserialize(response.body))
+            L.geoJSON(f).addTo(map)
+    </script>
+</body>
+</html>
