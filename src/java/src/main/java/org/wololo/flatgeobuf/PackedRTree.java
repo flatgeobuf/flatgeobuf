@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
 
-import com.google.common.io.LittleEndianDataInputStream;
-
 import org.locationtech.jts.geom.Envelope;
 
 public class PackedRTree {
