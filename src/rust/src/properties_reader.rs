@@ -45,6 +45,10 @@ impl GeozeroGeometry for FgbFeature {
 impl geozero::FeatureProperties for FgbFeature {
     /// Process feature properties.
     fn process_properties<P: PropertyProcessor>(&self, reader: &mut P) -> Result<bool> {
+        if self.header().columns().is_none() {
+            return Ok(false);
+        }
+
         let columns_meta = self
             .header()
             .columns()

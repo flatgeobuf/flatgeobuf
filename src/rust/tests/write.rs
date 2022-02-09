@@ -130,6 +130,35 @@ fn json_to_fgb() -> Result<()> {
 }
 
 #[test]
+fn json_to_fgb_geometry_only() -> Result<()> {
+    use std::io::Cursor;
+
+    let mut fgb = FgbWriter::create("test_point", GeometryType::Point, |fbb, header_args| {
+        header_args.description = Some(fbb.create_string("Point no properties"));
+        header_args.columns = None;
+    })?;
+    fgb.set_crs(4326, |_fbb, _crs| {});
+
+    let geojson = GeoJson(
+        r#"{"type": "Feature", "properties": {}, "geometry": {"type": "Point", "coordinates": [0.0, 0.0]}}"#,
+    );
+    fgb.add_feature(geojson).ok();
+
+    let mut out: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+    fgb.write(&mut out)?;
+
+    let mut input: Cursor<Vec<u8>> = Cursor::new(out.get_ref().clone());
+    let mut fgb = FgbReader::open(&mut input)?;
+    let count = fgb.select_all()?;
+    assert_eq!(count, 1);
+    let feature = fgb.next()?.unwrap();
+    assert!(feature.geometry().is_some());
+    assert!(feature.properties().is_ok());
+
+    Ok(())
+}
+
+#[test]
 fn geozero_to_fgb() -> Result<()> {
     let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
     let mut fin = BufReader::new(File::open("../../test/data/countries.geojson")?);
