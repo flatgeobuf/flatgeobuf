@@ -466,3 +466,17 @@ fn property_types() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn json_to_fgb_geometry_only() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/no_properties.fgb")?);
+
+    let mut fgb = FgbReader::open(&mut filein)?;
+    let count = fgb.select_all()?;
+    assert_eq!(count, 1);
+    let feature = fgb.next()?.unwrap();
+    assert!(feature.geometry().is_some());
+    assert!(feature.properties().is_ok());
+
+    Ok(())
+}
