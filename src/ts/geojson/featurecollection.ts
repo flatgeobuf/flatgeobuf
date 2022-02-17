@@ -82,7 +82,7 @@ function valueToType(value: boolean | number | string | unknown): ColumnType {
         else return ColumnType.Double;
     else if (typeof value === 'string') return ColumnType.String;
     else if (value === null) return ColumnType.String;
-    else throw new Error(`Unknown type (value '${value}')`);
+    else return ColumnType.Json;
 }
 
 function introspectHeaderMeta(

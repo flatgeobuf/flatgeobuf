@@ -340,6 +340,14 @@ describe('geojson module', () => {
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
+
+        it('Json Value', () => {
+            const expected = makeFeatureCollection('POINT(1 1)', {
+                test: {'hello': 'world'},
+            });
+            const actual = deserialize(serialize(expected));
+            expect(actual).to.deep.equal(expected);
+        });
     });
 
     describe('Prepared buffers tests', () => {
