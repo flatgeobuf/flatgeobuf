@@ -4,22 +4,34 @@ use std::fs::File;
 use std::io::BufReader;
 use geozero::error::{Result};
 use geozero::geojson::GeoJsonWriter;
-use clap::Parser;
+use clap::{ArgEnum, Parser};
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Input file
+    /// Input path
     #[clap(short, long)]
     input: String,
 
-    /// Output file
+    #[clap(long, arg_enum, default_value_t = Format::Flatgeobuf)]
+    inputformat: Format,
+
+    /// Output path
     //#[clap(short, long)]
     //output: String,
+
+    #[clap(long, arg_enum, default_value_t = Format::Geojson)]
+    outputformat: Format,
 
     /// Make output indexed
     #[clap(long)]
     index: bool,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+enum Format {
+    Flatgeobuf,
+    Geojson,
 }
 
 fn main() -> Result<()> {
