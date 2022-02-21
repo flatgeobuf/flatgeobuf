@@ -1,5 +1,4 @@
-use std::io::Stdout;
-use std::io::Write;
+use std::io::BufWriter;
 use flatgeobuf::FgbWriter;
 use geozero::GeozeroDatasource;
 use flatgeobuf::FgbReader;
@@ -12,21 +11,23 @@ use clap::{ArgEnum, Parser};
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Input path
+    // Input path
     #[clap(short, long)]
     input: String,
 
+    // Input format
     #[clap(long, arg_enum, default_value_t = Format::Flatgeobuf)]
     inputformat: Format,
 
-    /// Output path
-    //#[clap(short, long)]
-    //output: String,
+    // Output path
+    #[clap(short, long)]
+    output: String,
 
-    #[clap(long, arg_enum, default_value_t = Format::Geojson)]
+    // Output format
+    #[clap(long, arg_enum, default_value_t = Format::Flatgeobuf)]
     outputformat: Format,
 
-    /// Make output indexed
+    // Make output indexed
     #[clap(long)]
     index: bool,
 }
@@ -37,26 +38,39 @@ enum Format {
     Geojson,
 }
 
-enum FormatProcessor<'a, W: Write> {
-    Geojson(GeoJsonWriter<'a, W>),
-    Flatgeobuf(FgbWriter<'a>),
-}
+
+/*fn write(format: Format, reader: Box<GeozeroDatasource>)
+{
+
+}*/
 
 fn main() -> Result<()> {
     let args = Args::parse();
+
     let mut filein = BufReader::new(File::open(args.input)?);
-    let mut reader = FgbReader::open(&mut filein)?;
-    let name = reader.header().name().unwrap();
-    let geometry_type = reader.header().geometry_type();
-    let mut output = std::io::stdout();
-    let processor: FormatProcessor<Stdout> = match args.inputformat {
-        Format::Geojson => FormatProcessor::Geojson(GeoJsonWriter::new(&mut output)),
-        Format::Flatgeobuf => FormatProcessor::Flatgeobuf(FgbWriter::create(name, geometry_type, |_, _| {})?),
-    };
-    reader.select_all()?;
-    match processor {
-        FormatProcessor::Geojson(mut value) => reader.process(&mut value)?,
-        FormatProcessor::Flatgeobuf(mut value) => reader.process(&mut value)?
+    let mut fileout = BufWriter::new(File::create(&args.output)?);
+
+    match args.inputformat {
+        Format::Geojson => {},
+        Format::Flatgeobuf => {
+            let mut reader = Box::new(FgbReader::open(&mut filein)?);
+            reader.select_all()?;
+            let name = reader.header().name().unwrap();
+            let geometry_type = reader.header().geometry_type();
+            //write(args.outputformat, reader);
+            match args.outputformat {
+                Format::Geojson => {
+                    let mut writer = GeoJsonWriter::new(&mut fileout);
+                    reader.process(&mut writer)?;
+                },
+                Format::Flatgeobuf => {
+                    let mut writer = FgbWriter::create(name, geometry_type, |_, _| {})?;
+                    reader.process(&mut writer)?;
+                    writer.write(&mut fileout)?;
+                }
+            }
+        }
     }
+
     Ok(())
 }
