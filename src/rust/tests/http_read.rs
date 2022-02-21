@@ -7,10 +7,10 @@ mod http {
     #[tokio::test]
     async fn http_read() -> Result<()> {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
-        let mut fgb = HttpFgbReader::open(url).await?;
+        let fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
         assert_eq!(fgb.header().features_count(), 179);
-        fgb.select_all().await?;
+        let mut fgb = fgb.select_all().await?;
         let feature = fgb.next().await?.unwrap();
         let props = feature.properties()?;
         assert_eq!(props["name"], "Antarctica".to_string());
@@ -20,10 +20,10 @@ mod http {
     #[tokio::test]
     async fn http_bbox_read() -> Result<()> {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
-        let mut fgb = HttpFgbReader::open(url).await?;
+        let fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
         assert_eq!(fgb.header().features_count(), 179);
-        fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
+        let mut fgb = fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
         let feature = fgb.next().await?.unwrap();
         let props = feature.properties()?;
         assert_eq!(props["name"], "Denmark".to_string());
@@ -33,10 +33,11 @@ mod http {
     #[tokio::test]
     async fn http_bbox_big() -> Result<()> {
         let url = "https://pkg.sourcepole.ch/osm-buildings-ch.fgb";
-        let mut fgb = HttpFgbReader::open(url).await?;
+        let fgb = HttpFgbReader::open(url).await?;
         assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
         assert_eq!(fgb.header().features_count(), 2396905);
-        fgb.select_bbox(8.522086, 47.363333, 8.553521, 47.376020)
+        let mut fgb = fgb
+            .select_bbox(8.522086, 47.363333, 8.553521, 47.376020)
             .await?;
         let feature = fgb.next().await?.unwrap();
         let props = feature.properties()?;

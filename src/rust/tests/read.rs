@@ -95,8 +95,7 @@ fn read_file_low_level() -> Result<()> {
 #[test]
 fn read_all() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut cnt = 0;
     while let Some(feature) = fgb.next()? {
         let _props = feature.properties()?;
@@ -119,8 +118,7 @@ impl GeomProcessor for VertexCounter {
 #[test]
 fn filter() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut cnt = 0;
     while let Some(feature) = fgb
         .by_ref()
@@ -137,12 +135,12 @@ fn filter() -> Result<()> {
 #[test]
 fn file_reader() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(fgb.header().features_count(), 179);
 
-    let count = fgb.select_all()?;
-    assert_eq!(count, 179);
+    let mut fgb = fgb.select_all()?;
+    assert_eq!(fgb.features_count(), 179);
 
     if let Some(feature) = fgb.find(|feat| feat.property_n(0).ok() == Some("DNK".to_string()))? {
         // OGRFeature(countries):46
@@ -170,12 +168,32 @@ fn file_reader() -> Result<()> {
 #[test]
 fn bbox_file_reader() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    let count = fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
-    assert_eq!(count, 6);
+    let mut fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+    assert_eq!(fgb.features_count(), 6);
 
     let feature = fgb.next()?.unwrap();
     assert_eq!(feature.property("name").ok(), Some("Denmark".to_string()));
+
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn read_etrs89() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/Radweg_ETRS89.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), 2);
+
+    let feature = fgb.next()?.unwrap();
+    assert_eq!(feature.property("FTY").ok(), Some("Radweg".to_string()));
+
+    assert_eq!(fgb.header().crs().unwrap().code(), 25832);
+    assert_eq!(
+        fgb.header().crs().unwrap().wkt(),
+        Some(
+            r#"PROJCRS["ETRS89 / UTM zone 32N",BASEGEOGCRS["ETRS89",DATUM["European Terrestrial Reference System 1989",ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4258]],CONVERSION["UTM zone 32N",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",9,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",0,LENGTHUNIT["metre",1],ID["EPSG",8807]]],CS[Cartesian,2],AXIS["(E)",east,ORDER[1],LENGTHUNIT["metre",1]],AXIS["(N)",north,ORDER[2],LENGTHUNIT["metre",1]],USAGE[SCOPE["unknown"],AREA["Europe - 6°E to 12°E and ETRS89 by country"],BBOX[38.76,6,83.92,12]],ID["EPSG",25832]]"#
+        )
+    );
 
     Ok(())
 }
@@ -197,11 +215,11 @@ fn point_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open(
         "../../test/data/ne_10m_admin_0_country_points.fgb",
     )?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::Point);
     assert_eq!(fgb.header().features_count(), 250);
 
-    let _count = fgb.select_all()?;
+    let mut fgb = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
@@ -220,11 +238,11 @@ fn point_layer() -> Result<()> {
 #[ignore]
 fn linestring_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/lines.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::LineString);
     assert_eq!(fgb.header().features_count(), 8375);
 
-    let _count = fgb.select_all()?;
+    let mut fgb = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
@@ -250,14 +268,14 @@ fn geomcollection_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open(
         "../../test/data/gdal_sample_v1.2_nonlinear/geomcollection2d.fgb",
     )?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(
         fgb.header().geometry_type(),
         GeometryType::GeometryCollection
     );
     assert_eq!(fgb.header().features_count(), 1);
 
-    let _count = fgb.select_all()?;
+    let mut fgb = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let wkt = feature.to_wkt()?;
@@ -273,9 +291,7 @@ fn geomcollection_layer() -> Result<()> {
 
 fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
     let mut filein = BufReader::new(File::open(&format!("../../test/data/{}", fname))?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-
-    let _count = fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
 
@@ -340,12 +356,12 @@ fn surface_layers() -> Result<()> {
 #[ignore]
 fn multilinestring_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/ne_10m_geographic_lines.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().geometry_type(), GeometryType::MultiLineString);
     assert_eq!(fgb.header().features_count(), 6);
     let _geometry_type = fgb.header().geometry_type();
 
-    let _count = fgb.select_all()?;
+    let mut fgb = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
@@ -395,7 +411,7 @@ fn multi_dim() -> Result<()> {
     let mut filein = BufReader::new(File::open(
         "../../test/data/geoz_lod1_gebaeude_max_3d_extract.fgb",
     )?);
-    let mut fgb = FgbReader::open(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     let geometry_type = fgb.header().geometry_type();
     assert_eq!(geometry_type, GeometryType::MultiPolygon);
     assert_eq!(fgb.header().hasZ(), true);
@@ -404,7 +420,7 @@ fn multi_dim() -> Result<()> {
     assert_eq!(fgb.header().hasTM(), false);
     assert_eq!(fgb.header().features_count(), 87);
 
-    let _count = fgb.select_all()?;
+    let mut fgb = fgb.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     let geometry = feature.geometry().unwrap();
@@ -439,9 +455,7 @@ impl PropertyProcessor for PropChecker<'_> {
 #[test]
 fn property_types() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/alldatatypes.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-
-    let _count = fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let feature = fgb.next()?.unwrap();
     let mut prop_checker = PropChecker {
         expected: vec![
@@ -471,9 +485,8 @@ fn property_types() -> Result<()> {
 fn json_to_fgb_geometry_only() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/no_properties.fgb")?);
 
-    let mut fgb = FgbReader::open(&mut filein)?;
-    let count = fgb.select_all()?;
-    assert_eq!(count, 1);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), 1);
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     assert!(feature.properties().is_ok());
