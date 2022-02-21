@@ -1,4 +1,5 @@
 use crate::feature_generated::*;
+use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
@@ -7,9 +8,10 @@ use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
 use std::io::{Read, Seek, SeekFrom};
+use std::marker::PhantomData;
 
 /// FlatGeobuf dataset reader
-pub struct FgbReader<'a, R: Read + Seek> {
+pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     reader: &'a mut R,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
@@ -22,11 +24,19 @@ pub struct FgbReader<'a, R: Read + Seek> {
     count: usize,
     /// Current feature number
     feat_no: usize,
+    /// Reader state
+    state: PhantomData<State>,
 }
 
-impl<'a, R: Read + Seek> FgbReader<'a, R> {
+mod reader_state {
+    pub struct Initial;
+    pub struct Open;
+    pub struct FeaturesSelected;
+}
+
+impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
     /// Open dataset by reading the header information
-    pub fn open(reader: &'a mut R) -> Result<Self> {
+    pub fn open(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
@@ -59,14 +69,18 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
             item_filter: None,
             count: 0,
             feat_no: 0,
+            state: PhantomData::<Open>,
         })
     }
+}
+
+impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     /// Header information
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
     /// Select all features.  Returns feature count.
-    pub fn select_all(&mut self) -> Result<usize> {
+    pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
         let index_size = if header.index_node_size() > 0 {
@@ -75,12 +89,25 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
             0
         };
         // Skip index
-        self.feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
-        self.count = count;
-        Ok(count)
+        let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
+        Ok(FgbReader {
+            reader: self.reader,
+            fbs: self.fbs,
+            feature_base,
+            item_filter: None,
+            count,
+            feat_no: 0,
+            state: PhantomData::<FeaturesSelected>,
+        })
     }
     /// Select features within a bounding box. Returns count of selected features.
-    pub fn select_bbox(&mut self, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Result<usize> {
+    pub fn select_bbox(
+        mut self,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 {
@@ -95,10 +122,24 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
             max_x,
             max_y,
         )?;
-        self.feature_base = self.reader.seek(SeekFrom::Current(0))?;
-        self.count = list.len();
-        self.item_filter = Some(list);
-        Ok(self.count)
+        let feature_base = self.reader.seek(SeekFrom::Current(0))?;
+        let count = list.len();
+        Ok(FgbReader {
+            reader: self.reader,
+            fbs: self.fbs,
+            feature_base,
+            item_filter: Some(list),
+            count,
+            feat_no: 0,
+            state: PhantomData::<FeaturesSelected>,
+        })
+    }
+}
+
+impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelected> {
+    /// Header information
+    pub fn header(&self) -> Header {
+        self.fbs.header()
     }
     /// Number of selected features
     pub fn features_count(&self) -> usize {
@@ -135,8 +176,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
 ///
 /// # fn read_fbg() -> geozero::error::Result<()> {
 /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
-/// # let mut fgb = FgbReader::open(&mut filein)?;
-/// # fgb.select_all()?;
+/// # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
 /// while let Some(feature) = fgb.next()? {
 ///     let props = feature.properties()?;
 ///     println!("{}", props["name"]);
@@ -144,7 +184,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R> {
 /// # Ok(())
 /// # }
 /// ```
-impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R> {
+impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelected> {
     type Error = GeozeroError;
     type Item = FgbFeature;
 
@@ -189,7 +229,7 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R> {
     }
 }
 
-impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T> {
+impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
@@ -199,7 +239,7 @@ impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T> {
 mod inspect {
     use super::*;
 
-    impl<'a, R: Read + Seek> FgbReader<'a, R> {
+    impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {

@@ -7,8 +7,7 @@ use std::io::BufReader;
 #[test]
 fn fgb_to_geojson() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut json_data: Vec<u8> = Vec::new();
     let mut json = GeoJsonWriter::new(&mut json_data);
     fgb.process_features(&mut json)?;
@@ -26,8 +25,7 @@ fn fgb_to_geojson() -> Result<()> {
 #[ignore]
 fn num_properties() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/ne_10m_geographic_lines.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let feature = fgb.next()?.unwrap();
     let mut out: Vec<u8> = Vec::new();
     let mut json = GeoJsonWriter::new(&mut out);
@@ -44,8 +42,10 @@ fn num_properties() -> Result<()> {
 #[tokio::test]
 async fn http_json() -> Result<()> {
     let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
-    let mut fgb = HttpFgbReader::open(url).await?;
-    fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
+    let mut fgb = HttpFgbReader::open(url)
+        .await?
+        .select_bbox(8.8, 47.2, 9.5, 55.3)
+        .await?;
 
     let mut json_data: Vec<u8> = Vec::new();
     let mut json = GeoJsonWriter::new(&mut json_data);

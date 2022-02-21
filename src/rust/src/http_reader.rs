@@ -1,5 +1,6 @@
 use crate::feature_generated::*;
 use crate::header_generated::*;
+use crate::http_reader::reader_state::*;
 use crate::packed_r_tree::{self, NodeItem, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
@@ -8,9 +9,10 @@ use bytes::{BufMut, BytesMut};
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor};
 use http_range_client::{BufferedHttpRangeClient, HttpError};
+use std::marker::PhantomData;
 
 /// FlatGeobuf dataset HTTP reader
-pub struct HttpFgbReader {
+pub struct HttpFgbReader<State = Initial> {
     client: BufferedHttpRangeClient,
     /// Current read offset
     pos: usize,
@@ -25,6 +27,14 @@ pub struct HttpFgbReader {
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Current position in item_filter
     feat_no: usize,
+    /// Reader state
+    state: PhantomData<State>,
+}
+
+mod reader_state {
+    pub struct Initial;
+    pub struct Open;
+    pub struct FeaturesSelected;
 }
 
 pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {
@@ -34,8 +44,8 @@ pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {
     }
 }
 
-impl HttpFgbReader {
-    pub async fn open(url: &str) -> Result<HttpFgbReader> {
+impl HttpFgbReader<Initial> {
+    pub async fn open(url: &str) -> Result<HttpFgbReader<Open>> {
         trace!("starting: opening http reader, reading header");
         let mut client = BufferedHttpRangeClient::new(&url);
 
@@ -105,8 +115,12 @@ impl HttpFgbReader {
             feature_base: 0,
             item_filter: None,
             feat_no: 0,
+            state: PhantomData::<Open>,
         })
     }
+}
+
+impl HttpFgbReader<Open> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
@@ -114,7 +128,7 @@ impl HttpFgbReader {
         8 + self.fbs.header_buf.len()
     }
     /// Select all features.  Returns feature count.
-    pub async fn select_all(&mut self) -> Result<usize> {
+    pub async fn select_all(self) -> Result<HttpFgbReader<FeaturesSelected>> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
         let index_size = if header.index_node_size() > 0 {
@@ -123,19 +137,26 @@ impl HttpFgbReader {
             0
         };
         // Skip index
-        self.feature_base = self.header_len() + index_size;
-        self.pos = self.feature_base;
-        self.count = count;
-        Ok(count)
+        let feature_base = self.header_len() + index_size;
+        Ok(HttpFgbReader {
+            client: self.client,
+            pos: feature_base,
+            fbs: self.fbs,
+            count,
+            feature_base,
+            item_filter: None,
+            feat_no: 0,
+            state: PhantomData::<FeaturesSelected>,
+        })
     }
     /// Select features within a bounding box. Returns count of selected features.
     pub async fn select_bbox(
-        &mut self,
+        mut self,
         min_x: f64,
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<usize> {
+    ) -> Result<HttpFgbReader<FeaturesSelected>> {
         trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
@@ -156,12 +177,25 @@ impl HttpFgbReader {
         )
         .await?;
         let index_size = PackedRTree::index_size(count, header.index_node_size());
-        self.feature_base = self.header_len() + index_size;
-        self.pos = self.feature_base;
-        self.count = list.len();
-        self.item_filter = Some(list);
+        let feature_base = self.header_len() + index_size;
+        let count = list.len();
         trace!("completed: select_bbox");
-        Ok(self.count)
+        Ok(HttpFgbReader {
+            client: self.client,
+            pos: feature_base,
+            fbs: self.fbs,
+            count,
+            feature_base,
+            item_filter: Some(list),
+            feat_no: 0,
+            state: PhantomData::<FeaturesSelected>,
+        })
+    }
+}
+
+impl HttpFgbReader<FeaturesSelected> {
+    pub fn header(&self) -> Header {
+        self.fbs.header()
     }
     /// Number of selected features
     pub fn features_count(&self) -> usize {
