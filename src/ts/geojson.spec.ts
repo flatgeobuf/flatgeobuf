@@ -343,7 +343,7 @@ describe('geojson module', () => {
 
         it('Json Value', () => {
             const expected = makeFeatureCollection('POINT(1 1)', {
-                test: {'hello': 'world'},
+                test: { hello: 'world' },
             });
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
