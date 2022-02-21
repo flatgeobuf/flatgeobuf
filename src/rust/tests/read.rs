@@ -106,6 +106,20 @@ fn read_all() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn read_unchecked() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = unsafe { FgbReader::open_unchecked(&mut filein)?.select_all()? };
+    let mut cnt = 0;
+    while let Some(feature) = fgb.next()? {
+        let _props = feature.properties()?;
+        let _geometry = feature.geometry().unwrap();
+        cnt += 1
+    }
+    assert_eq!(cnt, 179);
+    Ok(())
+}
+
 struct VertexCounter(u64);
 
 impl GeomProcessor for VertexCounter {

@@ -13,6 +13,8 @@ use std::marker::PhantomData;
 /// FlatGeobuf dataset reader
 pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     reader: &'a mut R,
+    /// FlatBuffers verification
+    verify: bool,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
@@ -37,6 +39,13 @@ mod reader_state {
 impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
     /// Open dataset by reading the header information
     pub fn open(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+        Self::read_header(reader, true)
+    }
+    /// Open dataset by reading the header information without FlatBuffers verification
+    pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+        Self::read_header(reader, false)
+    }
+    fn read_header(reader: &'a mut R, verify: bool) -> Result<FgbReader<'a, R, Open>> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
@@ -55,12 +64,14 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
         header_buf.resize(header_buf.capacity(), 0);
         reader.read_exact(&mut header_buf[4..])?;
 
-        // verify flatbuffer
-        let _header = size_prefixed_root_as_header(&header_buf)
-            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        if verify {
+            let _header = size_prefixed_root_as_header(&header_buf)
+                .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        };
 
         Ok(FgbReader {
             reader,
+            verify,
             fbs: FgbFeature {
                 header_buf,
                 feature_buf: Vec::new(),
@@ -92,6 +103,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
         let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(FgbReader {
             reader: self.reader,
+            verify: self.verify,
             fbs: self.fbs,
             feature_base,
             item_filter: None,
@@ -126,6 +138,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
         let count = list.len();
         Ok(FgbReader {
             reader: self.reader,
+            verify: self.verify,
             fbs: self.fbs,
             feature_base,
             item_filter: Some(list),
@@ -205,9 +218,10 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
         self.fbs.feature_buf.resize(feature_size + 4, 0);
         self.reader.read_exact(&mut self.fbs.feature_buf[4..])?;
-        // verify flatbuffer
-        let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
-            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        if self.verify {
+            let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
+                .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        }
         Ok(())
     }
 
