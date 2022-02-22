@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0] - UNRELEASED
+
+- Add explicit reader/writer state to avoid wrong API use
+  - Breaking: select_all/select_bbox now return the reader struct
+- Optional reading without FlatBuffers verification
+- Handle empty columns in header in rust reader
+- Support GeometryCollection in writer
+- Update to geozero 0.8.0
+
 ## [0.6.2] - 2021-11-19
 
 - Write support for basic geometry types
