@@ -38,11 +38,45 @@ enum Format {
     Geojson,
 }
 
+// TODO: Cannot pass around GeozeroDatasource because it is a non object safe trait?
 
-/*fn write(format: Format, reader: Box<GeozeroDatasource>)
-{
+fn write(format: Format, reader: GeozeroDatasource, output: BufWriter<File>) -> Result<()> {
+    match format {
+        Format::Geojson => write_flatgeobuf(reader, output)?,
+        Format::Flatgeobuf => write_flatgeobuf(reader, output)?
+    }
+    Ok(())
+}
 
-}*/
+fn write_geojson(reader: GeozeroDatasource, output: BufWriter<File>) -> Result<()> {
+    let mut writer = GeoJsonWriter::new(&mut output);
+    reader.process(&mut writer)?;
+    Ok(())
+}
+
+fn write_flatgeobuf(reader: GeozeroDatasource, output: BufWriter<File>) -> Result<()> {
+    // TODO: would make sense if GeozeroDatasource could provide name and geometry_type?
+    let name = "";
+    let geometry_type = flatgeobuf::GeometryType::Unknown;
+    let mut writer = FgbWriter::create(name, geometry_type, |_, _| {})?;
+    reader.process(&mut writer)?;
+    writer.write(&mut output)?;
+    Ok(())
+}
+
+fn transform(inputformat: Format, outputformat: Format, input: BufReader<File>, output: BufWriter<File>) -> Result<()> {
+    match inputformat {
+        Format::Geojson => {
+            // TODO: impl..
+        },
+        Format::Flatgeobuf => {
+            let mut reader = FgbReader::open(&mut input)?;
+            reader.select_all()?;
+            write(outputformat, reader, output);
+        }
+    }
+    Ok(())
+}
 
 fn main() -> Result<()> {
     let args = Args::parse();
@@ -50,27 +84,7 @@ fn main() -> Result<()> {
     let mut filein = BufReader::new(File::open(args.input)?);
     let mut fileout = BufWriter::new(File::create(&args.output)?);
 
-    match args.inputformat {
-        Format::Geojson => {},
-        Format::Flatgeobuf => {
-            let mut reader = Box::new(FgbReader::open(&mut filein)?);
-            reader.select_all()?;
-            let name = reader.header().name().unwrap();
-            let geometry_type = reader.header().geometry_type();
-            //write(args.outputformat, reader);
-            match args.outputformat {
-                Format::Geojson => {
-                    let mut writer = GeoJsonWriter::new(&mut fileout);
-                    reader.process(&mut writer)?;
-                },
-                Format::Flatgeobuf => {
-                    let mut writer = FgbWriter::create(name, geometry_type, |_, _| {})?;
-                    reader.process(&mut writer)?;
-                    writer.write(&mut fileout)?;
-                }
-            }
-        }
-    }
+    transform(args.inputformat, args.outputformat, filein, fileout);
 
     Ok(())
 }
