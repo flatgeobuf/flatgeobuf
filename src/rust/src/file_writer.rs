@@ -217,7 +217,7 @@ impl<'a> FgbWriter<'a> {
     }
 
     /// Write the FlatGeobuf dataset (Hilbert sorted)
-    pub fn write<W: Write>(&mut self, out: &'a mut W) -> Result<()> {
+    pub fn write<W: Write>(mut self, out: &'a mut W) -> Result<()> {
         out.write(&MAGIC_BYTES)?;
 
         let extent = calc_extent(&self.feat_nodes);
