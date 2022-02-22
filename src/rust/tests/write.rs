@@ -172,8 +172,7 @@ fn test_save_fgb_and_load() -> Result<()> {
     // Load
     let read_file_again = file_to_write.reopen()?;
     let mut filein = BufReader::new(&read_file_again);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut cnt = 0;
     while let Some(feature) = fgb.next().unwrap() {
         let _props = feature.properties();
