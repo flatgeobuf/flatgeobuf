@@ -39,6 +39,7 @@ enum Format {
 }
 
 // TODO: Cannot pass around GeozeroDatasource because it is a non object safe trait?
+// TODO: Regardless might need dyn / Box?
 
 fn write(format: Format, reader: GeozeroDatasource, output: BufWriter<File>) -> Result<()> {
     match format {
