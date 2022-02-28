@@ -87,7 +87,7 @@
                 feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
                 source.addFeature(feature)
                 c++
-                if (c > 1000)
+                if (c > 10000)
                     break;
             }
             document.getElementById('fetch').disabled = false
