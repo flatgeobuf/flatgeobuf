@@ -63,6 +63,8 @@ FlatGeobuf could also be used as an optional output format for WFS and OGC API a
 
 As mentioned FlatGeobuf adheres to the geometry types defined in SQL-MM Part 3 and the geometry type enumeration is indeed identical to WKB. The geometry encoding is, however, not WKB because a design goal of FlatGeobuf is to be "zero copy" capable which WKB is not because it is not memory aligned.
 
+The closest OGC standard comparable to FlatGeobuf is GML in simple features profile.
+
 == Alignment with OGC Standards Baseline
 
 ////
