@@ -1,6 +1,6 @@
-:CSname: (Community Standard name)
+:CSname: FlatGeobuf
 :Title: {CSname} Community Standard Work Item Justification
-:titletext: {Title}
+:titletext: Justification for FlatGeobuf as an OGC Community Standard
 :doctype: book
 :encoding: utf-8
 :lang: en
@@ -20,7 +20,7 @@
 |Approval Date:   <yyyy-mm-dd>
 |Internal reference number of this OGC(R) document:    YY-nnnrx
 |Category: OGC(R) Community Standard Work Item Justification
-|Authors:   <Name(s) of Editor or Editors>
+|Authors: Björn Harrtell
 |===
 
 [cols = "^", frame = "none"]
@@ -47,15 +47,19 @@ Once approved, the Community standard Work Item defined by this document is vali
 
 == Overview of proposed submission
 
-////
-Summarize the proposed Community standard. In this summary, provide an overview of the geospatial interoperability requirements the proposed standard supports, the history of its development and use, and use cases.
-////
+A performant binary encoding for geographic data based on flatbuffers that can hold a collection of Simple Features including circular interpolations as defined by SQL-MM Part 3.
+
+Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access.
+
+Because the simple core design and efficient I/O handling it has become apparent that FlatGeobuf can work well as a "cloud native" lossless format for vector data. This is one area where FlatGeobuf can be useful for more than niché cases, because no other current format combines good performance and "cloud native" design.
+
+The initial stable specification version of FlatGeobuf is versioned as 3.0 and was released with reference implementation and GDAL implementation early in 2020.
+
+Besides the "cloud native" use case FlatGeobuf is suitable as a fast interopable serialization format for efficient communication between system to system. It can also be used as a practial replacement for Shapefiles because it has the same design goal without the shortcomings (no required sidecars, no size limitations and more flexible column/value representation).
 
 == Relationship to other OGC Standards
 
-////
-State whether this proposed Community standard has any dependencies on OGC standards or is itself normatively referenced by an OGC standard and list those standards, as applicable.
-////
+As mentioned FlatGeobuf adheres to the geometry types defined in SQL-MM Part 3 and the geometry type enumeration is indeed identical to WKB. The geometry encoding is, however, not WKB because a design goal of FlatGeobuf is to be "zero copy" capable which WKB is not because it is not memory aligned.
 
 == Alignment with OGC Standards Baseline
 
@@ -67,25 +71,57 @@ Describe where this proposed standard fits with respect to the existing OGC stan
 
 The following implementations use the proposed Community standard.
 
-*Implementation name:*
+*Implementation name: GDAL
 
-*Date of most recent version:*
+*Date of most recent version: 2022-01-04
 
-*Implementation description:*
+*Implementation description: GDAL is an open source MIT licensed translator library for raster and vector geospatial data formats.
 
-*Implementation URL:*
+*Implementation URL: https://gdal.org/
 
 *Is implementation complete?*
 
 * [x] Yes
 * [ ] No
 
-*If not,* what portions of the proposed Community standard are implemented?
+*Implementation name: QGIS
 
-////
-Repeat for each implementation. Place a "x" in the appropriate box regarding complete implementation.
-Optionally, provide a narrative description of the extent of implementation of the proposed Community standard for those proposed standards that are very widely used.
-////
+*Date of most recent version: 2022-02-18
+
+*Implementation description: Create, edit, visualise, analyse and publish geospatial information on Windows, Mac, Linux, BSD and mobile devices
+
+*Implementation URL: https://www.qgis.org/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*Implementation name: GeoServer
+
+*Date of most recent version: 2022-01-24
+
+*Implementation description: GeoServer is an open source server for sharing geospatial data.
+
+*Implementation URL: http://geoserver.org/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*Implementation name: PostGIS
+
+*Date of most recent version: 2022-02-12
+
+*Implementation description: Spatial and Geographic objects for PostgreSQL
+
+*Implementation URL: https://postgis.net/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
 
 == Public availability
 
