@@ -57,6 +57,8 @@ The initial stable specification version of FlatGeobuf is versioned as 3.0 and w
 
 Besides the "cloud native" use case FlatGeobuf is suitable as a fast interopable serialization format for efficient communication between system to system. It can also be used as a practial replacement for Shapefiles because it has the same design goal without the shortcomings (no required sidecars, no size limitations and more flexible column/value representation).
 
+FlatGeobuf could also be used as an optional output format for WFS and OGC API and would in this case compete very favorably with GML and GeoJSON. It's known that certain propitiatory GIS servers and clients uses a custom binary encoding instead of JSON to improve efficiency for feature access over HTTP, FlatGeobuf provides similar efficiency but with an open format.
+
 == Relationship to other OGC Standards
 
 As mentioned FlatGeobuf adheres to the geometry types defined in SQL-MM Part 3 and the geometry type enumeration is indeed identical to WKB. The geometry encoding is, however, not WKB because a design goal of FlatGeobuf is to be "zero copy" capable which WKB is not because it is not memory aligned.
