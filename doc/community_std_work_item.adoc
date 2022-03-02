@@ -1,0 +1,114 @@
+:CSname: (Community Standard name)
+:Title: {CSname} Community Standard Work Item Justification
+:titletext: {Title}
+:doctype: book
+:encoding: utf-8
+:lang: en
+:toc:
+:toc-placement!:
+:toclevels: 4
+:numbered:
+:sectanchors:
+:source-highlighter: pygments
+
+<<<
+[cols = ">",frame = "none",grid = "none"]
+|===
+|{set:cellbgcolor:#FFFFFF}
+|[big]*Open Geospatial Consortium*
+|Submission Date: <yyyy-mm-dd>
+|Approval Date:   <yyyy-mm-dd>
+|Internal reference number of this OGC(R) document:    YY-nnnrx
+|Category: OGC(R) Community Standard Work Item Justification
+|Authors:   <Name(s) of Editor or Editors>
+|===
+
+[cols = "^", frame = "none"]
+|===
+|[big]*{titletext}*
+|===
+
+[cols = "^", frame = "none", grid = "none"]
+|===
+|*Copyright notice*
+|Copyright (C) <year> Open Geospatial Consortium
+|To obtain additional rights of use, visit http://www.opengeospatial.org/legal/
+|===
+
+<<<
+
+== Introduction
+
+This document provides a justification to the OGC Technical Committee (TC) for consideration of {CSname} as a Community standard. This justification, along with the submitted candidate Community standard, will form the basis for TC review and vote to approve the start of a Work Item as the first step in the Community standard process for this standard.
+
+The submitters agree to abide by the TC Policies and Procedures and OGC Intellectual Property Rights Policy (http://www.opengeospatial.org/ogc/policies) during the processing of this submission.
+
+Once approved, the Community standard Work Item defined by this document is valid for six (6) months.
+
+== Overview of proposed submission
+
+////
+Summarize the proposed Community standard. In this summary, provide an overview of the geospatial interoperability requirements the proposed standard supports, the history of its development and use, and use cases.
+////
+
+== Relationship to other OGC Standards
+
+////
+State whether this proposed Community standard has any dependencies on OGC standards or is itself normatively referenced by an OGC standard and list those standards, as applicable.
+////
+
+== Alignment with OGC Standards Baseline
+
+////
+Describe where this proposed standard fits with respect to the existing OGC standards baseline and standards in development in the OGC and whether this proposed standard may compete with or enhance an existing OGC standard.
+////
+
+== Evidence of implementation
+
+The following implementations use the proposed Community standard.
+
+*Implementation name:*
+
+*Date of most recent version:*
+
+*Implementation description:*
+
+*Implementation URL:*
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*If not,* what portions of the proposed Community standard are implemented?
+
+////
+Repeat for each implementation. Place a "x" in the appropriate box regarding complete implementation.
+Optionally, provide a narrative description of the extent of implementation of the proposed Community standard for those proposed standards that are very widely used.
+////
+
+== Public availability
+
+Is the proposed Community standard currently publicly available?
+
+* [x] Yes
+* [ ] No
+
+URL:
+
+== Supporting OGC Members
+
+////
+List the supporting organizations. There must be at least three OGC organizations of which at least one must be an OGC Voting Member.
+////
+
+== Intellectual Property Rights
+
+Will the contributor retain intellectual property rights?
+
+* [ ] Yes
+* [ ] No
+
+If yes, the contributor will be required to work with OGC staff to properly attribute the submitter’s intellectual property rights.
+
+If no, the contributor will assign intellectual property rights to the OGC.
