@@ -22,8 +22,5 @@ export function fromFeature(
         geometry,
         properties: parseProperties(feature, columns),
     };
-    // TODO: geojson types do not allow GeoJsonFeature without properties?
-    //if (columns && columns.length > 0)
-    //    geoJsonfeature.properties = parseProperties(feature, columns);
     return geoJsonfeature;
 }
