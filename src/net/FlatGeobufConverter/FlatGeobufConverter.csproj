@@ -1,19 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TargetFramework>net6</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\FlatGeobuf\FlatGeobuf.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Linq" Version="4.3.0" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <ApplicationIcon />
-    <OutputType>Exe</OutputType>
-    <StartupObject />
-    <RootNamespace>FlatGeobuf</RootNamespace>
-  </PropertyGroup>
 
 </Project>
