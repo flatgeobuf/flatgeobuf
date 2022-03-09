@@ -82,9 +82,9 @@ columnsLength():number {
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 }
 
-featuresCount():flatbuffers.Long {
+featuresCount():bigint {
   const offset = this.bb!.__offset(this.bb_pos, 20);
-  return offset ? this.bb!.readUint64(this.bb_pos + offset) : this.bb!.createLong(0, 0);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : BigInt('0');
 }
 
 indexNodeSize():number {
@@ -183,8 +183,8 @@ static startColumnsVector(builder:flatbuffers.Builder, numElems:number) {
   builder.startVector(4, numElems, 4);
 }
 
-static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:flatbuffers.Long) {
-  builder.addFieldInt64(8, featuresCount, builder.createLong(0, 0));
+static addFeaturesCount(builder:flatbuffers.Builder, featuresCount:bigint) {
+  builder.addFieldInt64(8, featuresCount, BigInt('0'));
 }
 
 static addIndexNodeSize(builder:flatbuffers.Builder, indexNodeSize:number) {

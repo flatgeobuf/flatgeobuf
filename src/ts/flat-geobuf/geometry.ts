@@ -98,9 +98,9 @@ tArray():Float64Array|null {
   return offset ? new Float64Array(this.bb!.bytes().buffer, this.bb!.bytes().byteOffset + this.bb!.__vector(this.bb_pos + offset), this.bb!.__vector_len(this.bb_pos + offset)) : null;
 }
 
-tm(index: number):flatbuffers.Long|null {
+tm(index: number):bigint|null {
   const offset = this.bb!.__offset(this.bb_pos, 14);
-  return offset ? this.bb!.readUint64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : this.bb!.createLong(0, 0);
+  return offset ? this.bb!.readUint64(this.bb!.__vector(this.bb_pos + offset) + index * 8) : BigInt(0);
 }
 
 tmLength():number {
@@ -236,7 +236,7 @@ static addTm(builder:flatbuffers.Builder, tmOffset:flatbuffers.Offset) {
   builder.addFieldOffset(5, tmOffset, 0);
 }
 
-static createTmVector(builder:flatbuffers.Builder, data:flatbuffers.Long[]):flatbuffers.Offset {
+static createTmVector(builder:flatbuffers.Builder, data:bigint[]):flatbuffers.Offset {
   builder.startVector(8, data.length, 8);
   for (let i = data.length - 1; i >= 0; i--) {
     builder.addInt64(data[i]!);

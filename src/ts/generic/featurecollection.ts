@@ -170,7 +170,7 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
     Header.startHeader(builder);
     Header.addFeaturesCount(
         builder,
-        new flatbuffers.Long(header.featuresCount, 0)
+        BigInt(header.featuresCount)
     );
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);
