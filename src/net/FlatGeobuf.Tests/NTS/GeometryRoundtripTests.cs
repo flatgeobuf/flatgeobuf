@@ -37,16 +37,34 @@ namespace FlatGeobuf.Tests.NTS
             return dimensions;
         }
 
-        static async Task<string> RoundTrip(string wkt)
+        static async Task<IFeature> ToDeserializedFeature(string wkt)
         {
             var f = MakeFeature(wkt);
             var fc = MakeFeatureCollection(f);
             var geometryType = GeometryConversions.ToGeometryType(f.Geometry);
             byte dimensions = GetDimensions(f.Geometry);
             var flatgeobuf = await FeatureCollectionConversions.SerializeAsync(fc, geometryType, dimensions);
-            var fcOut = FeatureCollectionConversions.Deserialize(flatgeobuf);
-            var wktOut = new WKTWriter(dimensions).Write(fcOut[0].Geometry);
-            return wktOut;
+            return FeatureCollectionConversions.Deserialize(flatgeobuf)[0];
+        }
+        static async Task<string> RoundTrip(string wkt)
+        {
+            var f = await ToDeserializedFeature(wkt);
+            var gd = GetDimensions(f.Geometry);
+            return new WKTWriter(gd).Write(f.Geometry);
+        }
+
+        [TestMethod]
+        [DataRow("POINT (1.2 -2.1 3)")]
+        [DataRow("POINT (1.2 -2.1 3)")]
+        [DataRow("POINT M(1.2 -2.1 4)")]
+        [DataRow("POINT Z(1.2 -2.1 3)")]
+        [DataRow("POINT ZM(1.2 -2.1 3 4)")]
+        public async Task GeometryCopyable(string wkt)
+        {
+            var actual = await ToDeserializedFeature(wkt);
+            var copy = actual.Geometry.Copy();
+
+            Assert.AreEqual(actual.Geometry, copy);
         }
 
         [TestMethod]
