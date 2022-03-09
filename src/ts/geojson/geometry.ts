@@ -2,6 +2,17 @@ import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 
 import {
+    Geometry as GeoJsonGeometry,
+    Point,
+    MultiPoint,
+    LineString,
+    MultiLineString,
+    Polygon,
+    MultiPolygon,
+    GeometryCollection,
+} from 'geojson';
+
+import {
     IParsedGeometry,
     flat,
     pairFlatCoordinates,
@@ -14,7 +25,15 @@ export interface IGeoJsonGeometry {
     geometries?: IGeoJsonGeometry[];
 }
 
-export function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
+export function parseGeometry(
+    geometry:
+        | Point
+        | MultiPoint
+        | LineString
+        | MultiLineString
+        | Polygon
+        | MultiPolygon
+): IParsedGeometry {
     const cs = geometry.coordinates;
     const xy: number[] = [];
     const z: number[] = [];
@@ -42,19 +61,29 @@ export function parseGeometry(geometry: IGeoJsonGeometry): IParsedGeometry {
             const geometries = csss.map((coordinates) => ({
                 type: 'Polygon',
                 coordinates,
-            }));
+            })) as Polygon[];
             parts = geometries.map(parseGeometry);
             break;
         }
-        case 'GeometryCollection':
-            if (geometry.geometries)
-                parts = geometry.geometries.map(parseGeometry);
-            break;
     }
     return {
         xy,
         z: z.length > 0 ? z : undefined,
         ends,
+        type,
+        parts,
+    } as IParsedGeometry;
+}
+
+export function parseGC(geometry: GeometryCollection): IParsedGeometry {
+    const type: GeometryType = toGeometryType(geometry.type);
+    const parts = [];
+    for (let i = 0; i < geometry.geometries.length; i++) {
+        const g = geometry.geometries[i];
+        if (g.type === 'GeometryCollection') parts.push(parseGC(g));
+        else parts.push(parseGeometry(g));
+    }
+    return {
         type,
         parts,
     } as IParsedGeometry;
@@ -96,7 +125,7 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
 export function fromGeometry(
     geometry: Geometry,
     headerType: GeometryType
-): IGeoJsonGeometry {
+): GeoJsonGeometry {
     let type = headerType;
     if (type === GeometryType.Unknown) {
         type = geometry.type();
@@ -111,7 +140,7 @@ export function fromGeometry(
         return {
             type: GeometryType[type],
             geometries,
-        } as IGeoJsonGeometry;
+        } as GeoJsonGeometry;
     } else if (type === GeometryType.MultiPolygon) {
         const geometries = [];
         for (let i = 0; i < geometry.partsLength(); i++)
@@ -123,12 +152,12 @@ export function fromGeometry(
             );
         return {
             type: GeometryType[type],
-            coordinates: geometries.map((g) => g.coordinates),
-        } as IGeoJsonGeometry;
+            coordinates: geometries.map((g) => (g as Polygon).coordinates),
+        } as GeoJsonGeometry;
     }
     const coordinates = toGeoJsonCoordinates(geometry, type);
     return {
         type: GeometryType[type],
         coordinates,
-    } as IGeoJsonGeometry;
+    } as GeoJsonGeometry;
 }

@@ -144,7 +144,7 @@ export function buildFeature(
 
 export function parseProperties(
     feature: Feature,
-    columns: ColumnMeta[]
+    columns?: ColumnMeta[] | null
 ): Record<string, unknown> {
     const properties: Record<string, unknown> = {};
     if (!columns || columns.length === 0) return properties;
