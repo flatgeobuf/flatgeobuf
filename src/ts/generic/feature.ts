@@ -59,11 +59,11 @@ export function buildFeature(
 
     const prep = function (size: number) {
         if (offset + size < capacity) return;
-        capacity = capacity * 2;
+        capacity = Math.max(capacity + size, capacity * 2);
         const newBytes = new Uint8Array(capacity);
         newBytes.set(bytes);
         bytes = newBytes;
-        view = new DataView(bytes.buffer, offset);
+        view = new DataView(bytes.buffer);
     };
 
     if (columns) {
@@ -71,6 +71,7 @@ export function buildFeature(
             const column = columns[i];
             const value = properties[column.name];
             if (value === null) continue;
+            prep(2);
             view.setUint16(offset, i, true);
             offset += 2;
             switch (column.type) {
