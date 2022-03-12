@@ -288,6 +288,34 @@ describe('geojson module', () => {
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
+
+        it('Long feature properties', () => {
+            const expected = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        properties: {
+                            veryLong1: Array(1024 * 10)
+                                .fill('X')
+                                .join(''),
+                            veryLong2: Array(1024 * 10)
+                                .fill('Y')
+                                .join(''),
+                            veryLong3: Array(1024 * 10)
+                                .fill('Z')
+                                .join(''),
+                        },
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [-77.53466, 23.75975],
+                        },
+                    },
+                ],
+            };
+            const actual = deserialize(serialize(expected as any));
+            expect(actual).to.deep.equal(expected);
+        });
     });
 
     describe('Attribute roundtrips', () => {
