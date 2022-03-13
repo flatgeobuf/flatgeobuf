@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.7.0] - UNRELEASED
+## [0.7.0] - 2022-03-14
 
 - Add explicit reader/writer state to avoid wrong API use
   - Breaking: select_all/select_bbox now return the reader struct
