@@ -5,14 +5,19 @@ using FlatGeobuf.NTS;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Implementation;
 
 namespace FlatGeobuf.Tests.NTS
 {
     [TestClass]
     public class GeometryRoundtripTests
     {
+        private static readonly NetTopologySuite.NtsGeometryServices _services = new NetTopologySuite.NtsGeometryServices(
+            CoordinateArraySequenceFactory.Instance, new PrecisionModel(), 0, GeometryOverlay.NG, new PerOrdinateEqualityComparer());
+
+
         public static NetTopologySuite.Features.Feature MakeFeature(string wkt, Dictionary<string, object> attr = null) {
-            var reader = new WKTReader();
+            var reader = new WKTReader(_services);
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, attr != null ? new AttributesTable(attr) : null);
             return feature;
@@ -54,17 +59,23 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
-        [DataRow("POINT (1.2 -2.1 3)")]
+        [DataRow("POINT (1.2 -2.1)")]
         [DataRow("POINT (1.2 -2.1 3)")]
         [DataRow("POINT M(1.2 -2.1 4)")]
         [DataRow("POINT Z(1.2 -2.1 3)")]
         [DataRow("POINT ZM(1.2 -2.1 3 4)")]
+        [DataRow("LINESTRING (1.2 -2.1, 2.2 -2.2)")]
+        [DataRow("POLYGON((30 10, 40 40, 20 40, 10 20, 30 10))")]
+        [DataRow("POLYGON((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))")]
+        [DataRow("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))")]
+        [DataRow("MULTILINESTRING((30 20, 45 40, 10 40), (40 10, 10 20, 5 10, 15 5))")]
+        [DataRow("MULTIPOLYGON(((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))")]
         public async Task GeometryCopyable(string wkt)
         {
             var actual = await ToDeserializedFeature(wkt);
             var copy = actual.Geometry.Copy();
 
-            Assert.AreEqual(actual.Geometry, copy);
+            Assert.IsTrue(actual.Geometry.EqualsExact(copy));
         }
 
         [TestMethod]
