@@ -31,6 +31,7 @@ pub struct HttpFgbReader<State = Initial> {
     state: PhantomData<State>,
 }
 
+// Reader states for ensuring correct read API usage at compile-time
 mod reader_state {
     pub struct Initial;
     pub struct Open;
@@ -127,7 +128,7 @@ impl HttpFgbReader<Open> {
     fn header_len(&self) -> usize {
         8 + self.fbs.header_buf.len()
     }
-    /// Select all features.  Returns feature count.
+    /// Select all features.
     pub async fn select_all(self) -> Result<HttpFgbReader<FeaturesSelected>> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
@@ -149,7 +150,7 @@ impl HttpFgbReader<Open> {
             state: PhantomData::<FeaturesSelected>,
         })
     }
-    /// Select features within a bounding box. Returns count of selected features.
+    /// Select features within a bounding box.
     pub async fn select_bbox(
         mut self,
         min_x: f64,
