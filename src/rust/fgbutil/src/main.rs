@@ -37,10 +37,9 @@ enum Format {
 fn main() -> Result<()> {
     let args = Args::parse();
     let mut filein = BufReader::new(File::open(args.input)?);
-    let mut reader = FgbReader::open(&mut filein)?;
+    let mut reader = FgbReader::open(&mut filein)?.select_all()?;
     let mut output = std::io::stdout();
     let mut writer = GeoJsonWriter::new(&mut output);
-    reader.select_all()?;
     reader.process(&mut writer)?;
     Ok(())
 }
