@@ -30,6 +30,7 @@ pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     state: PhantomData<State>,
 }
 
+// Reader states for ensuring correct read API usage at compile-time
 mod reader_state {
     pub struct Initial;
     pub struct Open;
@@ -90,7 +91,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
-    /// Select all features.  Returns feature count.
+    /// Select all features.
     pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
@@ -112,7 +113,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             state: PhantomData::<FeaturesSelected>,
         })
     }
-    /// Select features within a bounding box. Returns count of selected features.
+    /// Select features within a bounding box.
     pub fn select_bbox(
         mut self,
         min_x: f64,
