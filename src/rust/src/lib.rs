@@ -23,35 +23,6 @@
 //! # }
 //! ```
 //!
-//! ## Zero-copy geometry reader
-//!
-//! Geometries can be accessed by implementing the `GeomProcessor` trait.
-//!
-//! ```rust
-//! use geozero::{GeomProcessor, error::Result};
-//! # use flatgeobuf::*;
-//! # use std::fs::File;
-//! # use std::io::BufReader;
-//!
-//! struct CoordPrinter;
-//!
-//! impl GeomProcessor for CoordPrinter {
-//!     fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
-//!         println!("({} {})", x, y);
-//!         Ok(())
-//!     }
-//! }
-//!
-//! # fn read_fbg() -> geozero::error::Result<()> {
-//! # let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-//! # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
-//! # let feature = fgb.next()?.unwrap();
-//! let mut coord_printer = CoordPrinter {};
-//! feature.process_geom(&mut coord_printer)?;
-//! # Ok(())
-//! # }
-//! ```
-//!
 //! ## Reading FlatGeobuf via HTTP
 //!
 //! ```rust
@@ -60,7 +31,7 @@
 //!
 //! # #[cfg(feature = "http")]
 //! # async fn read_fbg() -> geozero::error::Result<()> {
-//! let mut fgb = HttpFgbReader::open("https://!flatgeobuf.org/test/data/countries.fgb")
+//! let mut fgb = HttpFgbReader::open("https://flatgeobuf.org/test/data/countries.fgb")
 //!     .await?
 //!     .select_bbox(8.8, 47.2, 9.5, 55.3)
 //!     .await?;
@@ -69,6 +40,26 @@
 //!     println!("{}", props["name"]);
 //!     println!("{}", feature.to_wkt()?);
 //! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Writing a FlatGeobuf file
+//!
+//! ```rust
+//! use flatgeobuf::*;
+//! use geozero::geojson::GeoJsonReader;
+//! use geozero::GeozeroDatasource;
+//! # use std::fs::File;
+//! # use std::io::{BufReader, BufWriter};
+//!
+//! # fn json_to_fgb() -> geozero::error::Result<()> {
+//! let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+//! let mut fin = BufReader::new(File::open("countries.geojson")?);
+//! let mut reader = GeoJsonReader(&mut fin);
+//! reader.process(&mut fgb)?;
+//! let mut fout = BufWriter::new(File::create("countries.fgb")?);
+//! fgb.write(&mut fout)?;
 //! # Ok(())
 //! # }
 //! ```
