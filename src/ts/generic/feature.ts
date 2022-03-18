@@ -121,6 +121,16 @@ export function buildFeature(
                     offset += str.length;
                     break;
                 }
+                case ColumnType.Json: {
+                    const str = textEncoder.encode(JSON.stringify(value));
+                    prep(4);
+                    view.setUint32(offset, str.length, true);
+                    offset += 4;
+                    prep(str.length);
+                    bytes.set(str, offset);
+                    offset += str.length;
+                    break;
+                }
                 default:
                     throw new Error('Unknown type ' + column.type);
             }
@@ -217,6 +227,16 @@ export function parseProperties(
                 properties[name] = textDecoder.decode(
                     array.subarray(offset, offset + length)
                 );
+                offset += length;
+                break;
+            }
+            case ColumnType.Json: {
+                const length = view.getUint32(offset, true);
+                offset += 4;
+                const str = textDecoder.decode(
+                    array.subarray(offset, offset + length)
+                );
+                properties[name] = JSON.parse(str);
                 offset += length;
                 break;
             }

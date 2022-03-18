@@ -98,6 +98,7 @@ function valueToType(value: boolean | number | string | unknown): ColumnType {
         else return ColumnType.Double;
     else if (typeof value === 'string') return ColumnType.String;
     else if (value === null) return ColumnType.String;
+    else if (typeof value === 'object') return ColumnType.Json;
     else throw new Error(`Unknown type (value '${value}')`);
 }
 
