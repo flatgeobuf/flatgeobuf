@@ -35,7 +35,22 @@ namespace FlatGeobuf.NTS
 
         public override CoordinateSequence Copy()
         {
-            return null;
+            double[] xy = new double[Count * 2];
+            System.Buffer.BlockCopy(_xy, _offset * 16, xy, 0, Count * 16);
+
+            double[] z = null;
+            if (HasZ)
+            {
+                z = new double[Count];
+                System.Buffer.BlockCopy(_z, _offset * 8, z, 0, Count * 8);
+            }
+            double[] m = null;
+            if (HasM)
+            {
+                m = new double[Count];
+                System.Buffer.BlockCopy(_m, _offset * 8, m, 0, Count * 8);
+            }
+            return new FlatGeobufCoordinateSequence(xy, z, m, Count, 0);
         }
 
         public override double GetX(int index)
@@ -50,12 +65,12 @@ namespace FlatGeobuf.NTS
 
         public override double GetZ(int index)
         {
-            return _z[_offset + index];
+            return _z?[_offset + index] ?? Coordinate.NullOrdinate;
         }
 
         public override double GetM(int index)
         {
-            return _m[_offset + index];
+            return _m?[_offset + index] ?? Coordinate.NullOrdinate;
         }
 
         public override double GetOrdinate(int index, int ordinateIndex)

@@ -2,8 +2,8 @@ import ColumnMeta from '../ColumnMeta.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import HeaderMeta from '../HeaderMeta.js';
 
-import { fromFeature, IGeoJsonFeature } from './feature.js';
-import { parseGeometry } from './geometry.js';
+import { fromFeature } from './feature.js';
+import { parseGeometry, parseGC } from './geometry.js';
 import {
     buildHeader,
     deserialize as genericDeserialize,
@@ -16,19 +16,35 @@ import { HeaderMetaFn } from '../generic.js';
 import { magicbytes } from '../constants.js';
 import { inferGeometryType } from '../generic/header.js';
 
-export interface IGeoJsonFeatureCollection {
-    type: string;
-    features: IGeoJsonFeature[];
-}
+import {
+    FeatureCollection as GeoJsonFeatureCollection,
+    Point,
+    MultiPoint,
+    LineString,
+    MultiLineString,
+    Polygon,
+    MultiPolygon,
+    GeometryCollection,
+} from 'geojson';
 
 export function serialize(
-    featurecollection: IGeoJsonFeatureCollection
+    featurecollection: GeoJsonFeatureCollection
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta);
     const features: Uint8Array[] = featurecollection.features.map((f) =>
         buildFeature(
-            parseGeometry(f.geometry),
+            f.geometry.type === 'GeometryCollection'
+                ? parseGC(f.geometry as GeometryCollection)
+                : parseGeometry(
+                      f.geometry as
+                          | Point
+                          | MultiPoint
+                          | LineString
+                          | MultiLineString
+                          | Polygon
+                          | MultiPolygon
+                  ),
             f.properties as IProperties,
             headerMeta
         )
@@ -52,12 +68,12 @@ export function serialize(
 export function deserialize(
     bytes: Uint8Array,
     headerMetaFn?: HeaderMetaFn
-): IGeoJsonFeatureCollection {
+): GeoJsonFeatureCollection {
     const features = genericDeserialize(bytes, fromFeature, headerMetaFn);
     return {
         type: 'FeatureCollection',
         features,
-    } as IGeoJsonFeatureCollection;
+    } as GeoJsonFeatureCollection;
 }
 
 export function deserializeStream(
@@ -82,11 +98,12 @@ function valueToType(value: boolean | number | string | unknown): ColumnType {
         else return ColumnType.Double;
     else if (typeof value === 'string') return ColumnType.String;
     else if (value === null) return ColumnType.String;
+    else if (typeof value === 'object') return ColumnType.Json;
     else throw new Error(`Unknown type (value '${value}')`);
 }
 
 function introspectHeaderMeta(
-    featurecollection: IGeoJsonFeatureCollection
+    featurecollection: GeoJsonFeatureCollection
 ): HeaderMeta {
     const feature = featurecollection.features[0];
     const properties = feature.properties;

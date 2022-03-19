@@ -13,7 +13,7 @@ public struct Header : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_2_0_0(); }
   public static Header GetRootAsHeader(ByteBuffer _bb) { return GetRootAsHeader(_bb, new Header()); }
   public static Header GetRootAsHeader(ByteBuffer _bb, Header obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -38,7 +38,7 @@ public struct Header : IFlatbufferObject
   public bool HasZ { get { int o = __p.__offset(10); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
   public bool HasM { get { int o = __p.__offset(12); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
   public bool HasT { get { int o = __p.__offset(14); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
-  public bool HasTM { get { int o = __p.__offset(16); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
+  public bool HasTm { get { int o = __p.__offset(16); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
   public FlatGeobuf.Column? Columns(int j) { int o = __p.__offset(18); return o != 0 ? (FlatGeobuf.Column?)(new FlatGeobuf.Column()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ColumnsLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ulong FeaturesCount { get { int o = __p.__offset(20); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
@@ -70,10 +70,10 @@ public struct Header : IFlatbufferObject
       StringOffset nameOffset = default(StringOffset),
       VectorOffset envelopeOffset = default(VectorOffset),
       FlatGeobuf.GeometryType geometry_type = FlatGeobuf.GeometryType.Unknown,
-      bool hasZ = false,
-      bool hasM = false,
-      bool hasT = false,
-      bool hasTM = false,
+      bool has_z = false,
+      bool has_m = false,
+      bool has_t = false,
+      bool has_tm = false,
       VectorOffset columnsOffset = default(VectorOffset),
       ulong features_count = 0,
       ushort index_node_size = 16,
@@ -91,10 +91,10 @@ public struct Header : IFlatbufferObject
     Header.AddEnvelope(builder, envelopeOffset);
     Header.AddName(builder, nameOffset);
     Header.AddIndexNodeSize(builder, index_node_size);
-    Header.AddHasTM(builder, hasTM);
-    Header.AddHasT(builder, hasT);
-    Header.AddHasM(builder, hasM);
-    Header.AddHasZ(builder, hasZ);
+    Header.AddHasTm(builder, has_tm);
+    Header.AddHasT(builder, has_t);
+    Header.AddHasM(builder, has_m);
+    Header.AddHasZ(builder, has_z);
     Header.AddGeometryType(builder, geometry_type);
     return Header.EndHeader(builder);
   }
@@ -109,7 +109,7 @@ public struct Header : IFlatbufferObject
   public static void AddHasZ(FlatBufferBuilder builder, bool hasZ) { builder.AddBool(3, hasZ, false); }
   public static void AddHasM(FlatBufferBuilder builder, bool hasM) { builder.AddBool(4, hasM, false); }
   public static void AddHasT(FlatBufferBuilder builder, bool hasT) { builder.AddBool(5, hasT, false); }
-  public static void AddHasTM(FlatBufferBuilder builder, bool hasTM) { builder.AddBool(6, hasTM, false); }
+  public static void AddHasTm(FlatBufferBuilder builder, bool hasTm) { builder.AddBool(6, hasTm, false); }
   public static void AddColumns(FlatBufferBuilder builder, VectorOffset columnsOffset) { builder.AddOffset(7, columnsOffset.Value, 0); }
   public static VectorOffset CreateColumnsVector(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
@@ -139,7 +139,7 @@ public struct Header : IFlatbufferObject
     _o.HasZ = this.HasZ;
     _o.HasM = this.HasM;
     _o.HasT = this.HasT;
-    _o.HasTM = this.HasTM;
+    _o.HasTm = this.HasTm;
     _o.Columns = new List<FlatGeobuf.ColumnT>();
     for (var _j = 0; _j < this.ColumnsLength; ++_j) {_o.Columns.Add(this.Columns(_j).HasValue ? this.Columns(_j).Value.UnPack() : null);}
     _o.FeaturesCount = this.FeaturesCount;
@@ -175,7 +175,7 @@ public struct Header : IFlatbufferObject
       _o.HasZ,
       _o.HasM,
       _o.HasT,
-      _o.HasTM,
+      _o.HasTm,
       _columns,
       _o.FeaturesCount,
       _o.IndexNodeSize,
@@ -184,7 +184,7 @@ public struct Header : IFlatbufferObject
       _description,
       _metadata);
   }
-};
+}
 
 public class HeaderT
 {
@@ -194,7 +194,7 @@ public class HeaderT
   public bool HasZ { get; set; }
   public bool HasM { get; set; }
   public bool HasT { get; set; }
-  public bool HasTM { get; set; }
+  public bool HasTm { get; set; }
   public List<FlatGeobuf.ColumnT> Columns { get; set; }
   public ulong FeaturesCount { get; set; }
   public ushort IndexNodeSize { get; set; }
@@ -210,7 +210,7 @@ public class HeaderT
     this.HasZ = false;
     this.HasM = false;
     this.HasT = false;
-    this.HasTM = false;
+    this.HasTm = false;
     this.Columns = null;
     this.FeaturesCount = 0;
     this.IndexNodeSize = 16;
@@ -224,7 +224,7 @@ public class HeaderT
   }
   public byte[] SerializeToBinary() {
     var fbb = new FlatBufferBuilder(0x10000);
-    fbb.Finish(Header.Pack(fbb, this).Value);
+    Header.FinishHeaderBuffer(fbb, Header.Pack(fbb, this));
     return fbb.DataBuffer.ToSizedArray();
   }
 }

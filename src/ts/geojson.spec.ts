@@ -21,8 +21,17 @@ import { arrayToStream, takeAsync } from './streams/utils.js';
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
-import { IGeoJsonFeatureCollection } from './geojson/featurecollection.js';
 import HeaderMeta from './HeaderMeta.js';
+
+import {
+    FeatureCollection as GeoJsonFeatureCollection,
+    Point,
+    MultiPoint,
+    LineString,
+    MultiLineString,
+    Polygon,
+    MultiPolygon,
+} from 'geojson';
 
 function makeFeatureCollection(wkt: string, properties?: any) {
     return makeFeatureCollectionFromArray([wkt], properties);
@@ -33,13 +42,14 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
     const writer: any = new GeoJSONWriter();
     const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
     const features = geometries.map(
-        (geometry) => ({ type: 'Feature', geometry } as IGeoJsonFeature)
+        (geometry) =>
+            ({ type: 'Feature', geometry, properties: {} } as IGeoJsonFeature)
     );
     if (properties) features.forEach((f) => (f.properties = properties));
     return {
         type: 'FeatureCollection',
         features,
-    };
+    } as GeoJsonFeatureCollection;
 }
 
 describe('geojson module', () => {
@@ -265,7 +275,7 @@ describe('geojson module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected as any));
             expect(actual).to.deep.equal(expected);
         });
 
@@ -276,6 +286,34 @@ describe('geojson module', () => {
                 'MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))',
             ]);
             const actual = deserialize(serialize(expected));
+            expect(actual).to.deep.equal(expected);
+        });
+
+        it('Long feature properties', () => {
+            const expected = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        properties: {
+                            veryLong1: Array(1024 * 10)
+                                .fill('X')
+                                .join(''),
+                            veryLong2: Array(1024 * 10)
+                                .fill('Y')
+                                .join(''),
+                            veryLong3: Array(1024 * 10)
+                                .fill('Z')
+                                .join(''),
+                        },
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [-77.53466, 23.75975],
+                        },
+                    },
+                ],
+            };
+            const actual = deserialize(serialize(expected as any));
             expect(actual).to.deep.equal(expected);
         });
     });
@@ -340,6 +378,14 @@ describe('geojson module', () => {
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
+
+        it('Json Value', () => {
+            const expected = makeFeatureCollection('POINT(1 1)', {
+                test: { hello: 'world' },
+            });
+            const actual = deserialize(serialize(expected));
+            expect(actual).to.deep.equal(expected);
+        });
     });
 
     describe('Prepared buffers tests', () => {
@@ -351,13 +397,21 @@ describe('geojson module', () => {
                 bytes,
                 undefined,
                 (header: HeaderMeta) => (headerMeta = header)
-            ) as IGeoJsonFeatureCollection;
+            ) as GeoJsonFeatureCollection;
             expect(headerMeta.crs.code).to.eq(4326);
             expect(geojson.features.length).to.eq(179);
-            for (const f of geojson.features)
-                expect(
-                    (f.geometry.coordinates[0] as number[]).length
-                ).to.be.greaterThan(0);
+            for (const f of geojson.features) {
+                const g = f.geometry as
+                    | Point
+                    | MultiPoint
+                    | LineString
+                    | MultiLineString
+                    | Polygon
+                    | MultiPolygon;
+                expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
+                    0
+                );
+            }
         });
 
         it('Should parse countries fgb produced from GDAL stream filter', async () => {
@@ -414,27 +468,37 @@ describe('geojson module', () => {
         it('Should parse UScounties fgb produced from GDAL', () => {
             const buffer = readFileSync('./test/data/UScounties.fgb');
             const bytes = new Uint8Array(buffer);
-            const geojson = deserialize(bytes) as IGeoJsonFeatureCollection;
+            const geojson = deserialize(bytes) as GeoJsonFeatureCollection;
             expect(geojson.features.length).to.eq(3221);
-            for (const f of geojson.features)
-                expect(
-                    (f.geometry.coordinates[0] as number[]).length
-                ).to.be.greaterThan(0);
+            for (const f of geojson.features) {
+                const g = f.geometry as
+                    | Point
+                    | MultiPoint
+                    | LineString
+                    | MultiLineString
+                    | Polygon
+                    | MultiPolygon;
+                expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
+                    0
+                );
+            }
         });
 
         it('Should parse heterogeneous fgb produced from Rust impl', () => {
             const buffer = readFileSync('./test/data/heterogeneous.fgb');
             const bytes = new Uint8Array(buffer);
-            const geojson = deserialize(bytes) as IGeoJsonFeatureCollection;
+            const geojson = deserialize(bytes) as GeoJsonFeatureCollection;
             const expected = {
                 type: 'FeatureCollection',
                 features: [
                     {
                         type: 'Feature',
+                        properties: {},
                         geometry: { type: 'Point', coordinates: [1.2, -2.1] },
                     },
                     {
                         type: 'Feature',
+                        properties: {},
                         geometry: {
                             type: 'LineString',
                             coordinates: [
@@ -445,6 +509,7 @@ describe('geojson module', () => {
                     },
                     {
                         type: 'Feature',
+                        properties: {},
                         geometry: {
                             type: 'MultiPolygon',
                             coordinates: [

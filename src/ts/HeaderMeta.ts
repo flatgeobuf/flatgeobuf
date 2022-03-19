@@ -20,7 +20,7 @@ export default class HeaderMeta {
 
     static fromByteBuffer(bb: flatbuffers.ByteBuffer): HeaderMeta {
         const header = Header.getRootAsHeader(bb);
-        const featuresCount = header.featuresCount().toFloat64();
+        const featuresCount = header.featuresCount();
         const indexNodeSize = header.indexNodeSize();
 
         const columns: ColumnMeta[] = [];
@@ -59,7 +59,7 @@ export default class HeaderMeta {
             header.geometryType(),
             columns,
             null,
-            featuresCount,
+            Number(featuresCount),
             indexNodeSize,
             crsMeta,
             header.title(),

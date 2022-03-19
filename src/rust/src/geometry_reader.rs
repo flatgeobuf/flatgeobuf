@@ -3,6 +3,136 @@ use crate::header_generated::*;
 use geozero::error::{GeozeroError, Result};
 use geozero::GeomProcessor;
 
+/// Read FlatGeobuf geometry
+// See https://worace.works/2022/03/12/flatgeobuf-implementers-guide/
+// for a format description
+pub fn read_geometry<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    geometry_type: GeometryType,
+) -> Result<()> {
+    let geometry_type = if geometry_type == GeometryType::Unknown {
+        // per feature geometry type
+        geometry.type_()
+    } else {
+        geometry_type
+    };
+    read_geometry_n(processor, geometry, geometry_type, 0)
+}
+
+impl Geometry<'_> {
+    /// Read FlatGeobuf geometry
+    pub fn process<P: GeomProcessor>(
+        &self,
+        processor: &mut P,
+        geometry_type: GeometryType,
+    ) -> Result<()> {
+        read_geometry(processor, self, geometry_type)
+    }
+}
+
+fn read_geometry_n<P: GeomProcessor>(
+    processor: &mut P,
+    geometry: &Geometry,
+    geometry_type: GeometryType,
+    idx: usize,
+) -> Result<()> {
+    match geometry_type {
+        GeometryType::Point => {
+            processor.point_begin(idx)?;
+            if processor.multi_dim() {
+                read_coordinate(processor, geometry, 0, 0)?;
+            } else {
+                let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+                processor.xy(xy.get(0), xy.get(1), 0)?;
+            }
+            processor.point_end(idx)?;
+        }
+        GeometryType::MultiPoint => {
+            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+            processor.multipoint_begin(xy.len() / 2, idx)?;
+            read_coords(processor, geometry, 0, xy.len())?;
+            processor.multipoint_end(idx)?;
+        }
+        GeometryType::LineString => {
+            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+            processor.linestring_begin(true, xy.len() / 2, idx)?;
+            read_coords(processor, geometry, 0, xy.len())?;
+            processor.linestring_end(true, idx)?;
+        }
+        GeometryType::CircularString => {
+            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+            processor.circularstring_begin(xy.len() / 2, idx)?;
+            read_coords(processor, geometry, 0, xy.len())?;
+            processor.circularstring_end(idx)?;
+        }
+        GeometryType::CompoundCurve => {
+            read_compoundcurve(processor, geometry, idx)?;
+        }
+        GeometryType::MultiLineString => {
+            read_multilinestring(processor, geometry, idx)?;
+        }
+        GeometryType::MultiCurve => {
+            read_curve(
+                processor,
+                GeomProcessor::multicurve_begin,
+                GeomProcessor::multicurve_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::Polygon => {
+            read_polygon(processor, geometry, true, idx)?;
+        }
+        GeometryType::CurvePolygon => {
+            read_curvepolygon(processor, geometry, idx)?;
+        }
+        GeometryType::MultiPolygon => {
+            read_multipolygon_type(
+                processor,
+                GeomProcessor::multipolygon_begin,
+                GeomProcessor::multipolygon_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::PolyhedralSurface => {
+            read_multipolygon_type(
+                processor,
+                GeomProcessor::polyhedralsurface_begin,
+                GeomProcessor::polyhedralsurface_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::TIN => {
+            read_tin(processor, geometry, idx)?;
+        }
+        GeometryType::Triangle => {
+            read_triangle(processor, geometry, true, idx)?;
+        }
+        GeometryType::MultiSurface => {
+            read_curve(
+                processor,
+                GeomProcessor::multisurface_begin,
+                GeomProcessor::multisurface_end,
+                geometry,
+                idx,
+            )?;
+        }
+        GeometryType::GeometryCollection => {
+            read_geometrycollection(processor, geometry, idx)?;
+        }
+        _ => {
+            return Err(GeozeroError::Geometry(format!(
+                "Unknown geometry type {:?}",
+                geometry_type
+            )))
+        }
+    }
+    Ok(())
+}
+
 fn read_coordinate<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -203,10 +333,10 @@ fn read_curve<P: GeomProcessor>(
                 read_compoundcurve(processor, &geometry, i)?;
             }
             GeometryType::Polygon if polygon_allowed => {
-                read_polygon(processor, &geometry, true, idx)?;
+                read_polygon(processor, &geometry, true, i)?;
             }
             GeometryType::CurvePolygon if polygon_allowed => {
-                read_curvepolygon(processor, &geometry, idx)?;
+                read_curvepolygon(processor, &geometry, i)?;
             }
             _ => {
                 return Err(GeozeroError::Geometry(format!(
@@ -263,6 +393,7 @@ fn read_multipolygon_type<P: GeomProcessor>(
     }
     fn_end(processor, idx)
 }
+
 fn read_geometrycollection<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -275,130 +406,4 @@ fn read_geometrycollection<P: GeomProcessor>(
         read_geometry_n(processor, &part, part.type_(), i)?;
     }
     processor.geometrycollection_end(idx)
-}
-
-pub fn read_geometry<P: GeomProcessor>(
-    processor: &mut P,
-    geometry: &Geometry,
-    geometry_type: GeometryType,
-) -> Result<()> {
-    let geometry_type = if geometry_type == GeometryType::Unknown {
-        // per feature geometry type
-        geometry.type_()
-    } else {
-        geometry_type
-    };
-    read_geometry_n(processor, geometry, geometry_type, 0)
-}
-
-fn read_geometry_n<P: GeomProcessor>(
-    processor: &mut P,
-    geometry: &Geometry,
-    geometry_type: GeometryType,
-    idx: usize,
-) -> Result<()> {
-    match geometry_type {
-        GeometryType::Point => {
-            processor.point_begin(idx)?;
-            if processor.multi_dim() {
-                read_coordinate(processor, geometry, 0, 0)?;
-            } else {
-                let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-                processor.xy(xy.get(0), xy.get(1), 0)?;
-            }
-            processor.point_end(idx)?;
-        }
-        GeometryType::MultiPoint => {
-            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-            processor.multipoint_begin(xy.len() / 2, idx)?;
-            read_coords(processor, geometry, 0, xy.len())?;
-            processor.multipoint_end(idx)?;
-        }
-        GeometryType::LineString => {
-            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-            processor.linestring_begin(true, xy.len() / 2, idx)?;
-            read_coords(processor, geometry, 0, xy.len())?;
-            processor.linestring_end(true, idx)?;
-        }
-        GeometryType::CircularString => {
-            let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-            processor.circularstring_begin(xy.len() / 2, idx)?;
-            read_coords(processor, geometry, 0, xy.len())?;
-            processor.circularstring_end(idx)?;
-        }
-        GeometryType::CompoundCurve => {
-            read_compoundcurve(processor, geometry, idx)?;
-        }
-        GeometryType::MultiLineString => {
-            read_multilinestring(processor, geometry, idx)?;
-        }
-        GeometryType::MultiCurve => {
-            read_curve(
-                processor,
-                GeomProcessor::multicurve_begin,
-                GeomProcessor::multicurve_end,
-                geometry,
-                idx,
-            )?;
-        }
-        GeometryType::Polygon => {
-            read_polygon(processor, geometry, true, idx)?;
-        }
-        GeometryType::CurvePolygon => {
-            read_curvepolygon(processor, geometry, idx)?;
-        }
-        GeometryType::MultiPolygon => {
-            read_multipolygon_type(
-                processor,
-                GeomProcessor::multipolygon_begin,
-                GeomProcessor::multipolygon_end,
-                geometry,
-                idx,
-            )?;
-        }
-        GeometryType::PolyhedralSurface => {
-            read_multipolygon_type(
-                processor,
-                GeomProcessor::polyhedralsurface_begin,
-                GeomProcessor::polyhedralsurface_end,
-                geometry,
-                idx,
-            )?;
-        }
-        GeometryType::TIN => {
-            read_tin(processor, geometry, idx)?;
-        }
-        GeometryType::Triangle => {
-            read_triangle(processor, geometry, true, idx)?;
-        }
-        GeometryType::MultiSurface => {
-            read_curve(
-                processor,
-                GeomProcessor::multisurface_begin,
-                GeomProcessor::multisurface_end,
-                geometry,
-                idx,
-            )?;
-        }
-        GeometryType::GeometryCollection => {
-            read_geometrycollection(processor, geometry, idx)?;
-        }
-        _ => {
-            return Err(GeozeroError::Geometry(format!(
-                "Unknown geometry type {:?}",
-                geometry_type
-            )))
-        }
-    }
-    Ok(())
-}
-
-impl Geometry<'_> {
-    pub fn process<P: GeomProcessor>(
-        &self,
-        processor: &mut P,
-        geometry_type: GeometryType,
-    ) -> Result<()> {
-        read_geometry(processor, self, geometry_type)
-    }
 }

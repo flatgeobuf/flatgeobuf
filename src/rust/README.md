@@ -13,8 +13,7 @@ circular interpolations as defined by SQL-MM Part 3.
 use flatgeobuf::*;
 
 let mut filein = BufReader::new(File::open("countries.fgb")?);
-let mut fgb = FgbReader::open(&mut filein)?;
-fgb.select_all()?;
+let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
 while let Some(feature) = fgb.next()? {
     println!("{}", feature.property::<String>("name").unwrap());
     println!("{}", feature.to_json()?);
@@ -25,8 +24,10 @@ With async HTTP client:
 ```rust
 use flatgeobuf::*;
 
-let mut fgb = HttpFgbReader::open("https://flatgeobuf.org/test/data/countries.fgb").await?;
-fgb.select_bbox(8.8, 47.2, 9.5, 55.3).await?;
+let mut fgb = HttpFgbReader::open("https://flatgeobuf.org/test/data/countries.fgb")
+    .await?;
+    .select_bbox(8.8, 47.2, 9.5, 55.3)
+    .await?;
 while let Some(feature) = fgb.next().await? {
     let props = feature.properties()?;
     println!("{}", props["name"]);

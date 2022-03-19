@@ -1,18 +1,12 @@
 import { Feature } from '../flat-geobuf/feature.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 import HeaderMeta from '../HeaderMeta.js';
-import { fromGeometry, IGeoJsonGeometry } from './geometry.js';
-import { parseProperties, IFeature } from '../generic/feature.js';
+import { fromGeometry } from './geometry.js';
+import { IFeature, parseProperties } from '../generic/feature.js';
 
-export interface IGeoJsonProperties {
-    [key: string]: boolean | number | string | any;
-}
+import { Feature as GeoJsonFeature } from 'geojson';
 
-export interface IGeoJsonFeature extends IFeature {
-    type: string;
-    geometry: IGeoJsonGeometry;
-    properties?: IGeoJsonProperties;
-}
+export interface IGeoJsonFeature extends IFeature, GeoJsonFeature {}
 
 export function fromFeature(
     feature: Feature,
@@ -23,11 +17,10 @@ export function fromFeature(
         feature.geometry() as Geometry,
         header.geometryType
     );
-    const geoJsonfeature: IGeoJsonFeature = {
+    const geoJsonfeature: GeoJsonFeature = {
         type: 'Feature',
         geometry,
+        properties: parseProperties(feature, columns),
     };
-    if (columns && columns.length > 0)
-        geoJsonfeature.properties = parseProperties(feature, columns);
     return geoJsonfeature;
 }

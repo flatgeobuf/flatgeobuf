@@ -1,0 +1,154 @@
+:CSname: FlatGeobuf
+:Title: {CSname} Community Standard Work Item Justification
+:titletext: Justification for FlatGeobuf as an OGC Community Standard
+:doctype: book
+:encoding: utf-8
+:lang: en
+:toc:
+:toc-placement!:
+:toclevels: 4
+:numbered:
+:sectanchors:
+:source-highlighter: pygments
+
+<<<
+[cols = ">",frame = "none",grid = "none"]
+|===
+|{set:cellbgcolor:#FFFFFF}
+|[big]*Open Geospatial Consortium*
+|Submission Date: <yyyy-mm-dd>
+|Approval Date:   <yyyy-mm-dd>
+|Internal reference number of this OGC(R) document:    YY-nnnrx
+|Category: OGC(R) Community Standard Work Item Justification
+|Authors: Björn Harrtell
+|===
+
+[cols = "^", frame = "none"]
+|===
+|[big]*{titletext}*
+|===
+
+[cols = "^", frame = "none", grid = "none"]
+|===
+|*Copyright notice*
+|Copyright (C) <year> Open Geospatial Consortium
+|To obtain additional rights of use, visit http://www.opengeospatial.org/legal/
+|===
+
+<<<
+
+== Introduction
+
+This document provides a justification to the OGC Technical Committee (TC) for consideration of {CSname} as a Community standard. This justification, along with the submitted candidate Community standard, will form the basis for TC review and vote to approve the start of a Work Item as the first step in the Community standard process for this standard.
+
+The submitters agree to abide by the TC Policies and Procedures and OGC Intellectual Property Rights Policy (http://www.opengeospatial.org/ogc/policies) during the processing of this submission.
+
+Once approved, the Community standard Work Item defined by this document is valid for six (6) months.
+
+== Overview of proposed submission
+
+A performant binary encoding for geographic data based on flatbuffers that can hold a collection of Simple Features including circular interpolations as defined by SQL-MM Part 3.
+
+Goals are to be suitable for large volumes of static data, significantly faster than legacy formats without size limitations for contents or metainformation and to be suitable for streaming/random access.
+
+Because the simple core design and efficient I/O handling it has become apparent that FlatGeobuf can work well as a "cloud native" lossless format for vector data. This is one area where FlatGeobuf can be useful for more than niché cases, because no other current format combines good performance and "cloud native" design.
+
+The initial stable specification version of FlatGeobuf is versioned as 3.0 and was released with reference implementation and GDAL implementation early in 2020.
+
+Besides the "cloud native" use case FlatGeobuf is suitable as a fast interopable serialization format for efficient communication between system to system. It can also be used as a practial replacement for Shapefiles because it has the same design goal without the shortcomings (no required sidecars, no size limitations and more flexible column/value representation).
+
+FlatGeobuf could also be used as an optional output format for WFS and OGC API and would in this case compete very favorably with GML and GeoJSON. It's known that certain propitiatory GIS servers and clients uses a custom binary encoding instead of JSON to improve efficiency for feature access over HTTP, FlatGeobuf provides similar efficiency but with an open format.
+
+== Relationship to other OGC Standards
+
+As mentioned FlatGeobuf adheres to the geometry types defined in SQL-MM Part 3 and the geometry type enumeration is indeed identical to WKB. The geometry encoding is, however, not WKB because a design goal of FlatGeobuf is to be "zero copy" capable which WKB is not because it is not memory aligned.
+
+The closest OGC standard comparable to FlatGeobuf is GML in simple features profile.
+
+== Alignment with OGC Standards Baseline
+
+////
+Describe where this proposed standard fits with respect to the existing OGC standards baseline and standards in development in the OGC and whether this proposed standard may compete with or enhance an existing OGC standard.
+////
+
+== Evidence of implementation
+
+The following implementations use the proposed Community standard.
+
+*Implementation name: GDAL
+
+*Date of most recent version: 2022-01-04
+
+*Implementation description: GDAL is an open source MIT licensed translator library for raster and vector geospatial data formats.
+
+*Implementation URL: https://gdal.org/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*Implementation name: QGIS
+
+*Date of most recent version: 2022-02-18
+
+*Implementation description: Create, edit, visualise, analyse and publish geospatial information on Windows, Mac, Linux, BSD and mobile devices
+
+*Implementation URL: https://www.qgis.org/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*Implementation name: GeoServer
+
+*Date of most recent version: 2022-01-24
+
+*Implementation description: GeoServer is an open source server for sharing geospatial data.
+
+*Implementation URL: http://geoserver.org/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+*Implementation name: PostGIS
+
+*Date of most recent version: 2022-02-12
+
+*Implementation description: Spatial and Geographic objects for PostgreSQL
+
+*Implementation URL: https://postgis.net/
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
+== Public availability
+
+Is the proposed Community standard currently publicly available?
+
+* [x] Yes
+* [ ] No
+
+URL:
+
+== Supporting OGC Members
+
+////
+List the supporting organizations. There must be at least three OGC organizations of which at least one must be an OGC Voting Member.
+////
+
+== Intellectual Property Rights
+
+Will the contributor retain intellectual property rights?
+
+* [ ] Yes
+* [ ] No
+
+If yes, the contributor will be required to work with OGC staff to properly attribute the submitter’s intellectual property rights.
+
+If no, the contributor will assign intellectual property rights to the OGC.
