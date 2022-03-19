@@ -1,4 +1,3 @@
-use crate::MAGIC_BYTES;
 use crate::feature_generated::*;
 use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
@@ -19,8 +18,6 @@ pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
-    /// Index size
-    index_size: usize,
     /// File offset of feature section base
     feature_base: u64,
     /// Selected features or None if no bbox filter
@@ -68,22 +65,10 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
         header_buf.resize(header_buf.capacity(), 0);
         reader.read_exact(&mut header_buf[4..])?;
 
-        let header: Header;
         if verify {
-            header = size_prefixed_root_as_header(&header_buf)
+            let _header = size_prefixed_root_as_header(&header_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
-        } else {
-            header = unsafe { size_prefixed_root_as_header_unchecked(&header_buf) };
-        }
-
-        let count = header.features_count() as usize;
-        let index_size = if header.index_node_size() > 0 {
-            PackedRTree::index_size(count, header.index_node_size())
-        } else {
-            0
         };
-
-        let feature_base: u64 = (MAGIC_BYTES.len() + header_size + index_size) as u64;
 
         Ok(FgbReader {
             reader,
@@ -92,10 +77,9 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
                 header_buf,
                 feature_buf: Vec::new(),
             },
-            index_size,
-            feature_base,
+            feature_base: 0,
             item_filter: None,
-            count,
+            count: 0,
             feat_no: 0,
             state: PhantomData::<Open>,
         })
@@ -109,15 +93,22 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     }
     /// Select all features.
     pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
-        self.reader.seek(SeekFrom::Current(self.index_size as i64))?;
+        let header = self.fbs.header();
+        let count = header.features_count() as usize;
+        let index_size = if header.index_node_size() > 0 {
+            PackedRTree::index_size(count, header.index_node_size())
+        } else {
+            0
+        };
+        // Skip index
+        let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
         Ok(FgbReader {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
-            index_size: self.index_size,
-            feature_base: self.feature_base,
-            count: self.count,
+            feature_base,
             item_filter: None,
+            count,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
@@ -144,13 +135,13 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             max_x,
             max_y,
         )?;
+        let feature_base = self.reader.seek(SeekFrom::Current(0))?;
         let count = list.len();
         Ok(FgbReader {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
-            index_size: self.index_size,
-            feature_base: self.feature_base,
+            feature_base,
             item_filter: Some(list),
             count,
             feat_no: 0,
@@ -267,8 +258,8 @@ mod inspect {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
-            let features_count = self.fbs.header().features_count() as usize;
-            let index_node_size = self.fbs.header().index_node_size();
+            let features_count = self.header().features_count() as usize;
+            let index_node_size = self.header().index_node_size();
             let index = PackedRTree::from_buf(&mut self.reader, features_count, index_node_size)?;
             index.process_index(processor)
         }
