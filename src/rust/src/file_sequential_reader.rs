@@ -1,27 +1,28 @@
 use crate::feature_generated::*;
 use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
-use crate::packed_r_tree::{self, PackedRTree};
+use crate::packed_r_tree::PackedRTree;
 use crate::properties_reader::FgbFeature;
+use crate::MAGIC_BYTES;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
-use std::io::{Read, Seek, SeekFrom};
+use std::io::Read;
 use std::marker::PhantomData;
 
-/// FlatGeobuf dataset reader
-pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
+/// FlatGeobuf sequential dataset reader
+pub struct FgbSequentialReader<'a, R: Read, State = Initial> {
     reader: &'a mut R,
     /// FlatBuffers verification
     verify: bool,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
+    /// Index size
+    index_size: usize,
     /// File offset of feature section base
     feature_base: u64,
-    /// Selected features or None if no bbox filter
-    item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Number of selected features
     count: usize,
     /// Current feature number
@@ -30,23 +31,20 @@ pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     state: PhantomData<State>,
 }
 
-// Reader states for ensuring correct read API usage at compile-time
-pub(crate) mod reader_state {
-    pub struct Initial;
-    pub struct Open;
-    pub struct FeaturesSelected;
-}
-
-impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
+impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
+    /// Header information
+    pub fn header(&self) -> Header {
+        self.fbs.header()
+    }
     /// Open dataset by reading the header information
-    pub fn open(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+    pub fn open(reader: &'a mut R) -> Result<FgbSequentialReader<'a, R, Open>> {
         Self::read_header(reader, true)
     }
     /// Open dataset by reading the header information without FlatBuffers verification
-    pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+    pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbSequentialReader<'a, R, Open>> {
         Self::read_header(reader, false)
     }
-    fn read_header(reader: &'a mut R, verify: bool) -> Result<FgbReader<'a, R, Open>> {
+    fn read_header(reader: &'a mut R, verify: bool) -> Result<FgbSequentialReader<'a, R, Open>> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
@@ -65,92 +63,64 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
         header_buf.resize(header_buf.capacity(), 0);
         reader.read_exact(&mut header_buf[4..])?;
 
+        let header: Header;
         if verify {
-            let _header = size_prefixed_root_as_header(&header_buf)
+            header = size_prefixed_root_as_header(&header_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
-        };
+        } else {
+            header = unsafe { size_prefixed_root_as_header_unchecked(&header_buf) };
+        }
 
-        Ok(FgbReader {
-            reader,
-            verify,
-            fbs: FgbFeature {
-                header_buf,
-                feature_buf: Vec::new(),
-            },
-            feature_base: 0,
-            item_filter: None,
-            count: 0,
-            feat_no: 0,
-            state: PhantomData::<Open>,
-        })
-    }
-}
-
-impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
-    /// Header information
-    pub fn header(&self) -> Header {
-        self.fbs.header()
-    }
-    /// Select all features.
-    pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
-        let header = self.fbs.header();
         let count = header.features_count() as usize;
         let index_size = if header.index_node_size() > 0 {
             PackedRTree::index_size(count, header.index_node_size())
         } else {
             0
         };
-        // Skip index
-        let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
-        Ok(FgbReader {
-            reader: self.reader,
-            verify: self.verify,
-            fbs: self.fbs,
+
+        let feature_base: u64 = (header_size + MAGIC_BYTES.len() + index_size) as u64;
+
+        Ok(FgbSequentialReader {
+            reader,
+            verify,
+            fbs: FgbFeature {
+                header_buf,
+                feature_buf: Vec::new(),
+            },
+            index_size,
             feature_base,
-            item_filter: None,
             count,
             feat_no: 0,
-            state: PhantomData::<FeaturesSelected>,
+            state: PhantomData::<Open>,
         })
     }
-    /// Select features within a bounding box.
-    pub fn select_bbox(
-        mut self,
-        min_x: f64,
-        min_y: f64,
-        max_x: f64,
-        max_y: f64,
-    ) -> Result<FgbReader<'a, R, FeaturesSelected>> {
-        // Read R-Tree index and build filter for features within bbox
-        let header = self.fbs.header();
-        if header.index_node_size() == 0 {
-            return Err(GeozeroError::Geometry("Index missing".to_string()));
-        }
-        let list = PackedRTree::stream_search(
-            &mut self.reader,
-            header.features_count() as usize,
-            PackedRTree::DEFAULT_NODE_SIZE,
-            min_x,
-            min_y,
-            max_x,
-            max_y,
+}
+
+impl<'a, R: Read> FgbSequentialReader<'a, R, Open> {
+    /// Header information
+    pub fn header(&self) -> Header {
+        self.fbs.header()
+    }
+    /// Select all features.
+    pub fn select_all(self) -> Result<FgbSequentialReader<'a, R, FeaturesSelected>> {
+        std::io::copy(
+            &mut self.reader.take(self.index_size as u64),
+            &mut std::io::sink(),
         )?;
-        let feature_base = self.reader.seek(SeekFrom::Current(0))?;
-        let count = list.len();
-        Ok(FgbReader {
+        Ok(FgbSequentialReader {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
-            feature_base,
-            item_filter: Some(list),
-            count,
+            index_size: self.index_size,
+            feature_base: self.feature_base,
+            count: self.count,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
     }
 }
 
-impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelected> {
+impl<'a, R: Read> FgbSequentialReader<'a, R, FeaturesSelected> {
     /// Header information
     pub fn header(&self) -> Header {
         self.fbs.header()
@@ -198,7 +168,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelected> {
 /// # Ok(())
 /// # }
 /// ```
-impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelected> {
+impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, FeaturesSelected> {
     type Error = GeozeroError;
     type Item = FgbFeature;
 
@@ -206,11 +176,6 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
         if self.feat_no >= self.count {
             self.feat_no = self.count + 1;
             return Ok(());
-        }
-        if let Some(filter) = &self.item_filter {
-            let item = &filter[self.feat_no];
-            self.reader
-                .seek(SeekFrom::Start(self.feature_base + item.offset as u64))?;
         }
         self.feat_no += 1;
         self.fbs.feature_buf.resize(4, 0);
@@ -244,38 +209,9 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
     }
 }
 
-impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected> {
+impl<'a, T: Read> GeozeroDatasource for FgbSequentialReader<'a, T, FeaturesSelected> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
-    }
-}
-
-mod inspect {
-    use super::*;
-
-    impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
-        /// Process R-Tree index for debugging purposes
-        #[doc(hidden)]
-        pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
-            let features_count = self.header().features_count() as usize;
-            let index_node_size = self.header().index_node_size();
-            let index = PackedRTree::from_buf(&mut self.reader, features_count, index_node_size)?;
-            index.process_index(processor)
-        }
-    }
-
-    #[test]
-    fn dump_index() -> Result<()> {
-        use geozero::geojson::GeoJsonWriter;
-        use std::fs::File;
-        use std::io::{BufReader, BufWriter};
-
-        let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-        let mut fgb = FgbReader::open(&mut filein)?;
-        let mut fout = BufWriter::new(File::create("/tmp/countries-index.json")?);
-
-        fgb.process_index(&mut GeoJsonWriter::new(&mut fout))?;
-        Ok(())
     }
 }
