@@ -1,14 +1,14 @@
-use crate::MAGIC_BYTES;
 use crate::feature_generated::*;
 use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
-use crate::packed_r_tree::{PackedRTree};
+use crate::packed_r_tree::PackedRTree;
 use crate::properties_reader::FgbFeature;
+use crate::MAGIC_BYTES;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
-use std::io::{Read};
+use std::io::Read;
 use std::marker::PhantomData;
 
 /// FlatGeobuf sequential dataset reader
@@ -103,7 +103,10 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Open> {
     }
     /// Select all features.
     pub fn select_all(self) -> Result<FgbSequentialReader<'a, R, FeaturesSelected>> {
-        std::io::copy(&mut self.reader.take(self.index_size as u64), &mut std::io::sink())?;
+        std::io::copy(
+            &mut self.reader.take(self.index_size as u64),
+            &mut std::io::sink(),
+        )?;
         Ok(FgbSequentialReader {
             reader: self.reader,
             verify: self.verify,
