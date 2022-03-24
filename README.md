@@ -139,6 +139,10 @@ It does not align on 8 bytes so it not always possible to consume it without cop
 
 Performance reasons and to allow streaming/random access.
 
+### Why not use compression as part of the format?
+
+Separation of concerns and to allow random access.
+
 ### Why am I not getting expected performance in GDAL?
 
 Default behaviour is to assume untrusted data and verify buffer integrity for safety. If you have trusted data and want maximum performance make sure to set the open option VERIFY_BUFFERS to NO.
