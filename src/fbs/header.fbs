@@ -68,10 +68,10 @@ table Header {
   name: string;                 // Dataset name
   envelope: [double];           // Bounds
   geometry_type: GeometryType;  // Geometry type (should be set to Unknown if per feature geometry type)
-  has_z: bool = false;           // Does geometry have Z dimension?
-  has_m: bool = false;           // Does geometry have M dimension?
-  has_t: bool = false;           // Does geometry have T dimension?
-  has_tm: bool = false;          // Does geometry have TM dimension?
+  has_z: bool = false;          // Does geometry have Z dimension?
+  has_m: bool = false;          // Does geometry have M dimension?
+  has_t: bool = false;          // Does geometry have T dimension?
+  has_tm: bool = false;         // Does geometry have TM dimension?
   columns: [Column];            // Attribute columns schema (can be omitted if per feature schema)
   features_count: ulong;        // Number of features in the dataset (0 = unknown)
   index_node_size: ushort = 16; // Index node size (0 = no index)
@@ -80,7 +80,7 @@ table Header {
   description: string;          // Dataset description (intended for free form long text)
   metadata: string;             // Dataset metadata (intended to be application specific and suggested to be structured fx. JSON)
   validity: bool = false;       // Indicates that the dataset contains only OGC SF valid geometries
-  winding_ccw: bool = false;     // Indicates that the dataset contains only Polygons with the CCW winding order
+  winding_ccw: bool = false;    // Indicates that the dataset contains only Polygons with the CCW winding order
 }
 
 root_type Header;
