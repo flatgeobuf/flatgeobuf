@@ -79,6 +79,8 @@ table Header {
   title: string;                // Dataset title
   description: string;          // Dataset description (intended for free form long text)
   metadata: string;             // Dataset metadata (intended to be application specific and suggested to be structured fx. JSON)
+  validity: bool = false;       // Indicates that the dataset contains only OGC SF valid geometries
+  winding_ccw: bool = false;     // Indicates that the dataset contains only Polygons with the CCW winding order
 }
 
 root_type Header;
