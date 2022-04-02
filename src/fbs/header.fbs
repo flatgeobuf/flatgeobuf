@@ -64,6 +64,19 @@ table Crs {
   code_string: string;          // Text ID of the Spatial Reference System assigned by the organization in the (rare) case when it is not an integer and thus cannot be set into code
 }
 
+enum Validity: ubyte (bit_flags) {
+  Unknown = 0,
+  OGC = 1,                      // Indicates that the dataset contains only OGC SF valid geometries
+  ESRI = 2,                     // Indicates that the dataset contains only ESRI valid geometries
+  MSSQL = 3                     // Indicates that the dataset contains only MS SQL Server valid geometries
+}
+
+enum Winding: ubyte {
+  Unknown = 0,
+  CCW = 1,                      // Indicates that the dataset contains only CCW winding order polygons outer ring first
+  CW = 2                        // Indicates that the dataset contains only CW winding order polygons outer ring first
+}
+
 table Header {
   name: string;                 // Dataset name
   envelope: [double];           // Bounds
@@ -79,8 +92,8 @@ table Header {
   title: string;                // Dataset title
   description: string;          // Dataset description (intended for free form long text)
   metadata: string;             // Dataset metadata (intended to be application specific and suggested to be structured fx. JSON)
-  validity: bool = false;       // Indicates that the dataset contains only OGC SF valid geometries
-  winding_ccw: bool = false;    // Indicates that the dataset contains only Polygons with the CCW winding order
+  validity: Validity;           //
+  winding: Winding;             //
 }
 
 root_type Header;

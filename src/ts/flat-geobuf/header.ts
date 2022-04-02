@@ -5,6 +5,8 @@ import * as flatbuffers from 'flatbuffers';
 import { Column } from '../flat-geobuf/column.js';
 import { Crs } from '../flat-geobuf/crs.js';
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
+import { Validity } from '../flat-geobuf/validity.js';
+import { Winding } from '../flat-geobuf/winding.js';
 
 
 export class Header {
@@ -118,8 +120,18 @@ metadata(optionalEncoding?:any):string|Uint8Array|null {
   return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
 }
 
+validity():Validity {
+  const offset = this.bb!.__offset(this.bb_pos, 32);
+  return offset ? this.bb!.readUint8(this.bb_pos + offset) : 0;
+}
+
+winding():Winding {
+  const offset = this.bb!.__offset(this.bb_pos, 34);
+  return offset ? this.bb!.readUint8(this.bb_pos + offset) : Winding.Unknown;
+}
+
 static startHeader(builder:flatbuffers.Builder) {
-  builder.startObject(14);
+  builder.startObject(16);
 }
 
 static addName(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset) {
@@ -205,6 +217,14 @@ static addDescription(builder:flatbuffers.Builder, descriptionOffset:flatbuffers
 
 static addMetadata(builder:flatbuffers.Builder, metadataOffset:flatbuffers.Offset) {
   builder.addFieldOffset(13, metadataOffset, 0);
+}
+
+static addValidity(builder:flatbuffers.Builder, validity:Validity) {
+  builder.addFieldInt8(14, validity, 0);
+}
+
+static addWinding(builder:flatbuffers.Builder, winding:Winding) {
+  builder.addFieldInt8(15, winding, Winding.Unknown);
 }
 
 static endHeader(builder:flatbuffers.Builder):flatbuffers.Offset {
