@@ -1,15 +1,25 @@
+use std::io::Read;
+use geozero::FeatureProcessor;
+use geozero::GeozeroDatasource;
 use std::io::BufRead;
 use std::io::Write;
-use geozero::geojson::GeoJsonReader;
 use std::io::BufWriter;
 use flatgeobuf::FgbWriter;
-use geozero::GeozeroDatasource;
+use geozero::geojson::read_geojson_fc;
 use flatgeobuf::FgbSequentialReader;
 use std::fs::File;
 use std::io::BufReader;
 use geozero::error::{Result};
 use geozero::geojson::GeoJsonWriter;
 use clap::{ArgEnum, Parser};
+
+pub struct GeoJsonReaderStream<'a, R: Read>(pub &'a mut R);
+
+impl<'a, R: Read> GeozeroDatasource for GeoJsonReaderStream<'a, R> {
+    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
+        read_geojson_fc(&mut self.0, processor)
+    }
+}
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -67,7 +77,7 @@ fn write_flatgeobuf(mut reader: impl GeozeroDatasource, mut output: impl Write) 
 
 fn transform(inputformat: Format, outputformat: Format, mut input: impl BufRead, output: impl Write) -> Result<()> {
     match inputformat {
-        Format::Geojson => write(outputformat, GeoJsonReader(&mut input), output)?,
+        Format::Geojson => write(outputformat, GeoJsonReaderStream(&mut input), output)?,
         Format::Flatgeobuf => write(outputformat, FgbSequentialReader::open(&mut input)?.select_all()?, output)?
     }
     Ok(())
