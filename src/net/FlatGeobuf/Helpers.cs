@@ -1,6 +1,10 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using FlatBuffers;
 using NetTopologySuite.Geometries;
 
@@ -31,6 +35,38 @@ namespace FlatGeobuf {
 
             headerSize = reader.ReadInt32();
             var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
+
+            return header;
+        }
+
+        /// <summary>
+        /// Reads the header of a FlatGeobuf stream
+        /// </summary>
+        /// <param name="stream">The FlatGeobuf stream</param>
+        /// <returns>The header</returns>
+        /// <exception cref="InvalidDataException">Thrown if the stream does not contain FlatGeobuf data</exception>
+        internal static async ValueTask<HeaderT> ReadHeaderAsync(Stream stream, CancellationToken token)
+        {
+            byte[] smallBuffer = new byte[8];
+            // Read & check magic bytes
+            int numRead = await stream.ReadAsync(smallBuffer, 0, 8, token);
+            if (numRead != 8) throw new InvalidDataException("Insufficient stream size");
+            if (!smallBuffer.Take(4).SequenceEqual(Constants.MagicBytes.Take(4)))
+                throw new InvalidDataException("Not a FlatGeobuf stream");
+            
+            // Read header size
+            numRead = await stream.ReadAsync(smallBuffer, 0, 4, token);
+            if (numRead != 4) throw new InvalidDataException("Insufficient stream size");
+            int headerSize = MemoryMarshal.Read<int>(smallBuffer);
+
+            // Rent a buffer and read header data
+            byte[] headerData = ArrayPool<byte>.Shared.Rent(headerSize);
+            numRead = await stream.ReadAsync(headerData, 0, headerSize, token);
+            if (numRead != headerSize) throw new InvalidDataException("Insufficient stream size");
+
+            // Parse header, return buffer
+            var header = Header.GetRootAsHeader(new ByteBuffer(headerData, 0)).UnPack();
+            ArrayPool<byte>.Shared.Return(headerData);
 
             return header;
         }

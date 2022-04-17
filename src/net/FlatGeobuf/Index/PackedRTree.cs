@@ -63,6 +63,47 @@ namespace FlatGeobuf.Index
             return levelBounds;
         }
 
+        internal static List<(long Offset, ulong Index)> StreamSearch(MemoryStream stream, ulong numItems, ushort nodeSize, Envelope rect)
+        {
+            var minX = rect.MinX;
+            var minY = rect.MinY;
+            var maxX = rect.MaxX;
+            var maxY = rect.MaxY;
+            var levelBounds = GenerateLevelBounds(numItems, nodeSize);
+            var numNodes = levelBounds.First().End;
+            var stack = new Stack<(ulong NodeIndex, int Level)>();
+            stack.Push((0UL, levelBounds.Count() - 1));
+            using var reader = new BinaryReader(stream);
+            var res = new List<(long Offset, ulong Index)>((int)numItems);
+            while (stack.Count != 0)
+            {
+                var (nodeIndex, level) = stack.Pop();
+                var isLeafNode = nodeIndex >= numNodes - numItems;
+                // find the end index of the node
+                var levelBound = levelBounds[level].End;
+                var end = Math.Min(nodeIndex + nodeSize, levelBound);
+                stream.Seek((long)(nodeIndex * NODE_ITEM_LEN), SeekOrigin.Begin);
+                var start = stream.Position;
+                // search through child nodes
+                for (var pos = nodeIndex; pos < end; pos++)
+                {
+                    stream.Seek(start + (long)((pos - nodeIndex) * NODE_ITEM_LEN), SeekOrigin.Begin);
+                    if (maxX < reader.ReadDouble()) continue; // maxX < nodeMinX
+                    if (maxY < reader.ReadDouble()) continue; // maxY < nodeMinY
+                    if (minX > reader.ReadDouble()) continue; // minX > nodeMaxX
+                    if (minY > reader.ReadDouble()) continue; // minY > nodeMaxY
+                    var offset = reader.ReadUInt64();
+                    if (isLeafNode)
+                        res.Add(((long)offset, pos - 1));
+                    else
+                        stack.Push((offset, level - 1));
+                }
+                // order queue to traverse sequential
+                //queue.sort((a, b) => b[0] - a[0])
+            }
+            return res;
+        }
+
         public static IEnumerable<(ulong Offset, ulong Index)> StreamSearch(ulong numItems, ushort nodeSize, Envelope rect, ReadNode readNode)
         {
             var minX = rect.MinX;
@@ -73,7 +114,8 @@ namespace FlatGeobuf.Index
             var numNodes = levelBounds.First().End;
             var stack = new Stack<(ulong NodeIndex, int Level)>();
             stack.Push((0UL, levelBounds.Count() - 1));
-            while (stack.Count != 0) {
+            while (stack.Count != 0)
+            {
                 var (nodeIndex, level) = stack.Pop();
                 var isLeafNode = nodeIndex >= numNodes - numItems;
                 // find the end index of the node
@@ -84,8 +126,9 @@ namespace FlatGeobuf.Index
                 var start = stream.Position;
                 var reader = new BinaryReader(stream);
                 // search through child nodes
-                for (var pos = nodeIndex; pos < end; pos++) {
-                    stream.Seek(start + (long) ((pos - nodeIndex) * NODE_ITEM_LEN), SeekOrigin.Begin);
+                for (var pos = nodeIndex; pos < end; pos++)
+                {
+                    stream.Seek(start + (long)((pos - nodeIndex) * NODE_ITEM_LEN), SeekOrigin.Begin);
                     if (maxX < reader.ReadDouble()) continue; // maxX < nodeMinX
                     if (maxY < reader.ReadDouble()) continue; // maxY < nodeMinY
                     if (minX > reader.ReadDouble()) continue; // minX > nodeMaxX

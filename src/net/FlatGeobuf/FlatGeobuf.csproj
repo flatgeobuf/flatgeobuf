@@ -15,4 +15,7 @@
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
   </ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+  </ItemGroup>
 </Project>

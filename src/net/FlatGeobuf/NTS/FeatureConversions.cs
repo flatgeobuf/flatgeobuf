@@ -90,6 +90,11 @@ namespace FlatGeobuf.NTS
         public static IFeature FromByteBuffer(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, ByteBuffer bb, HeaderT header)
         {
             var feature = Feature.GetRootAsFeature(bb);
+            return FromFeature(factory, seqFactory, feature, header);
+        }
+
+        internal static IFeature FromFeature(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, Feature feature, HeaderT header)
+        { 
             IAttributesTable attributesTable = null;
             if (feature.PropertiesLength != 0)
             {
@@ -98,7 +103,7 @@ namespace FlatGeobuf.NTS
                 
                 var propertiesArray = feature.GetPropertiesArray();
                 var memoryStream = new MemoryStream(propertiesArray);
-                var reader = new BinaryReader(memoryStream);
+                using var reader = new BinaryReader(memoryStream);
                 attributesTable = new AttributesTable();
                 while (memoryStream.Position < memoryStream.Length)
                 {
