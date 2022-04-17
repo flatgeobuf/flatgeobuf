@@ -24,6 +24,8 @@ namespace FlatGeobuf.NTS
         private readonly Stream _stream;
         private readonly HeaderT _header;
         private readonly long _dataOffset;
+        private readonly CancellationToken _token;
+
         // Index
         private readonly HashSet<long> _itemsIndex;
         private readonly IEnumerator<(long Offset, ulong Index)> _itemEnumerator;
@@ -67,7 +69,7 @@ namespace FlatGeobuf.NTS
                 }
             }
 
-            return new AsyncFeatureEnumerator(factory, header, stream, filter);
+            return new AsyncFeatureEnumerator(factory, header, stream, filter, token.Value);
         }
 
         /// <summary>
@@ -77,12 +79,13 @@ namespace FlatGeobuf.NTS
         /// <param name="header">The header, containg general information about the feature data set</param>
         /// <param name="stream">The stream from which to deserialize the feature data set</param>
         /// <param name="items">An object containing the interesting features</param>
-        private AsyncFeatureEnumerator(GeometryFactory factory, HeaderT header, Stream stream, IList<(long Offset, ulong Index)> items)
+        private AsyncFeatureEnumerator(GeometryFactory factory, HeaderT header, Stream stream, IList<(long Offset, ulong Index)> items, CancellationToken token)
         {
             _factory = factory;
             _header = header;
             _stream = stream;
             _dataOffset = stream.Position;
+            _token = token;
 
             // Build the items index
             if (items != null)
@@ -164,13 +167,13 @@ namespace FlatGeobuf.NTS
 
             // Read the feature size
             byte[] smallBuffer = new byte[4];
-            int numRead = await _stream.ReadAsync(smallBuffer, 0, 4);
+            int numRead = await _stream.ReadAsync(smallBuffer, 0, 4, _token);
             if (numRead != 4) throw new InvalidDataException("Insufficient stream length");
             int featureSize = MemoryMarshal.Read<int>(smallBuffer);
 
             // provide buffer, read feature data
             byte[] featureData = ArrayPool<byte>.Shared.Rent(featureSize);
-            numRead = await _stream.ReadAsync(featureData, 0, featureSize);
+            numRead = await _stream.ReadAsync(featureData, 0, featureSize, _token);
             if (numRead != featureSize) throw new InvalidDataException("Insufficient stream length");
 
             // Check if the this feature is requested
