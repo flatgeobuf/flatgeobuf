@@ -132,6 +132,7 @@ impl HttpFgbReader<Open> {
     pub async fn select_all(self) -> Result<HttpFgbReader<FeaturesSelected>> {
         let header = self.fbs.header();
         let count = header.features_count() as usize;
+        // TODO: support reading with unknown feature count
         let index_size = if header.index_node_size() > 0 {
             PackedRTree::index_size(count, header.index_node_size())
         } else {
@@ -161,7 +162,7 @@ impl HttpFgbReader<Open> {
         trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
-        if header.index_node_size() == 0 {
+        if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(GeozeroError::Geometry("Index missing".to_string()));
         }
         let count = header.features_count() as usize;
@@ -198,9 +199,13 @@ impl HttpFgbReader<FeaturesSelected> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
-    /// Number of selected features
-    pub fn features_count(&self) -> usize {
-        self.count
+    /// Number of selected features (might be unknown)
+    pub fn features_count(&self) -> Option<usize> {
+        if self.count > 0 {
+            Some(self.count)
+        } else {
+            None
+        }
     }
     /// Read next feature
     pub async fn next(&mut self) -> Result<Option<&FgbFeature>> {

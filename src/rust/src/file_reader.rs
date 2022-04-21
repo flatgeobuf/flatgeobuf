@@ -22,8 +22,10 @@ pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     feature_base: u64,
     /// Selected features or None if no bbox filter
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
-    /// Number of selected features
-    count: usize,
+    /// Number of selected features (maybe unknown)
+    count: Option<usize>,
+    /// File size in case of unknown feature count
+    file_len: Option<u64>,
     /// Current feature number
     feat_no: usize,
     /// Reader state
@@ -79,7 +81,8 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
             },
             feature_base: 0,
             item_filter: None,
-            count: 0,
+            count: None,
+            file_len: None,
             feat_no: 0,
             state: PhantomData::<Open>,
         })
@@ -94,14 +97,27 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     /// Select all features.
     pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         let header = self.fbs.header();
-        let count = header.features_count() as usize;
-        let index_size = if header.index_node_size() > 0 {
-            PackedRTree::index_size(count, header.index_node_size())
+        let count = {
+            if header.features_count() > 0 {
+                Some(header.features_count() as usize)
+            } else {
+                None
+            }
+        };
+        let index_size = if header.index_node_size() > 0 && count.is_some() {
+            PackedRTree::index_size(count.unwrap(), header.index_node_size())
         } else {
             0
         };
         // Skip index
         let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
+        let file_len = if count.is_some() {
+            None
+        } else {
+            let end = self.reader.seek(SeekFrom::End(0))?;
+            let _ = self.reader.seek(SeekFrom::Start(feature_base))?;
+            Some(end)
+        };
         Ok(FgbReader {
             reader: self.reader,
             verify: self.verify,
@@ -109,6 +125,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             feature_base,
             item_filter: None,
             count,
+            file_len,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
@@ -123,7 +140,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     ) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
-        if header.index_node_size() == 0 {
+        if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(GeozeroError::Geometry("Index missing".to_string()));
         }
         let list = PackedRTree::stream_search(
@@ -136,7 +153,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             max_y,
         )?;
         let feature_base = self.reader.seek(SeekFrom::Current(0))?;
-        let count = list.len();
+        let count = Some(list.len());
         Ok(FgbReader {
             reader: self.reader,
             verify: self.verify,
@@ -144,6 +161,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             feature_base,
             item_filter: Some(list),
             count,
+            file_len: None,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
@@ -155,8 +173,8 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelected> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
-    /// Number of selected features
-    pub fn features_count(&self) -> usize {
+    /// Number of selected features (might be unknown)
+    pub fn features_count(&self) -> Option<usize> {
         self.count
     }
     /// Return current feature
@@ -203,9 +221,18 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
     type Item = FgbFeature;
 
     fn advance(&mut self) -> Result<()> {
-        if self.feat_no >= self.count {
-            self.feat_no = self.count + 1;
-            return Ok(());
+        if let Some(count) = self.count {
+            if self.feat_no >= count {
+                self.feat_no = count + 1;
+                return Ok(());
+            }
+        } else {
+            if self.file_len.is_none()
+                || self.reader.seek(SeekFrom::Current(0))? >= self.file_len.unwrap()
+            {
+                self.file_len = None;
+                return Ok(());
+            }
         }
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
@@ -227,19 +254,31 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
     }
 
     fn get(&self) -> Option<&FgbFeature> {
-        if self.feat_no > self.count {
-            None
+        if let Some(count) = self.count {
+            if self.feat_no > count {
+                None
+            } else {
+                Some(&self.fbs)
+            }
         } else {
-            Some(&self.fbs)
+            if self.file_len.is_none() {
+                None
+            } else {
+                Some(&self.fbs)
+            }
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.feat_no >= self.count {
-            (0, Some(0))
+        if let Some(count) = self.count {
+            if self.feat_no >= count {
+                (0, Some(0))
+            } else {
+                let remaining = count - self.feat_no;
+                (remaining, Some(remaining))
+            }
         } else {
-            let remaining = self.count - self.feat_no;
-            (remaining, Some(remaining))
+            (0, None)
         }
     }
 }
