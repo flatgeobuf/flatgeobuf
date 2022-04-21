@@ -41,7 +41,7 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
         Self::read_header(reader, true)
     }
     /// Open dataset by reading the header information without FlatBuffers verification
-    pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbSequentialReader<'a, R, Open>> {
+    pub fn open_unchecked(reader: &'a mut R) -> Result<FgbSequentialReader<'a, R, Open>> {
         Self::read_header(reader, false)
     }
     fn read_header(reader: &'a mut R, verify: bool) -> Result<FgbSequentialReader<'a, R, Open>> {
@@ -68,7 +68,7 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
             header = size_prefixed_root_as_header(&header_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         } else {
-            header = unsafe { size_prefixed_root_as_header_unchecked(&header_buf) };
+            header = size_prefixed_root_as_header_unchecked(&header_buf);
         }
 
         let count = header.features_count() as usize;
