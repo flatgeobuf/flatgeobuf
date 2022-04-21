@@ -124,6 +124,7 @@ fn read_unchecked() -> Result<()> {
 fn read_unknown_feature_count() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.header().features_count(), 0);
     assert_eq!(fgb.features_count(), None);
     let mut cnt = 0;
     while let Some(feature) = fgb.next()? {
