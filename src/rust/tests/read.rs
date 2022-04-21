@@ -120,6 +120,28 @@ fn read_unchecked() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn read_unknown_feature_count() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), None);
+    let mut cnt = 0;
+    while let Some(feature) = fgb.next()? {
+        let _props = feature.properties()?;
+        let _geometry = feature.geometry().unwrap();
+        cnt += 1
+    }
+    assert_eq!(cnt, 1);
+
+    let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
+    let fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
+    assert_eq!(
+        fgb.err().unwrap().to_string(),
+        "processing geometry `Index missing`"
+    );
+    Ok(())
+}
+
 struct VertexCounter(u64);
 
 impl GeomProcessor for VertexCounter {
@@ -154,7 +176,7 @@ fn file_reader() -> Result<()> {
     assert_eq!(fgb.header().features_count(), 179);
 
     let mut fgb = fgb.select_all()?;
-    assert_eq!(fgb.features_count(), 179);
+    assert_eq!(fgb.features_count(), Some(179));
 
     if let Some(feature) = fgb.find(|feat| feat.property_n(0).ok() == Some("DNK".to_string()))? {
         // OGRFeature(countries):46
@@ -183,7 +205,7 @@ fn file_reader() -> Result<()> {
 fn bbox_file_reader() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3)?;
-    assert_eq!(fgb.features_count(), 6);
+    assert_eq!(fgb.features_count(), Some(6));
 
     let feature = fgb.next()?.unwrap();
     assert_eq!(feature.property("name").ok(), Some("Denmark".to_string()));
@@ -196,7 +218,7 @@ fn bbox_file_reader() -> Result<()> {
 fn read_etrs89() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/Radweg_ETRS89.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
-    assert_eq!(fgb.features_count(), 2);
+    assert_eq!(fgb.features_count(), Some(2));
 
     let feature = fgb.next()?.unwrap();
     assert_eq!(feature.property("FTY").ok(), Some("Radweg".to_string()));
@@ -500,7 +522,7 @@ fn json_to_fgb_geometry_only() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/no_properties.fgb")?);
 
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
-    assert_eq!(fgb.features_count(), 1);
+    assert_eq!(fgb.features_count(), Some(1));
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     assert!(feature.properties().is_ok());
