@@ -31,6 +31,28 @@ mod http {
     }
 
     #[tokio::test]
+    async fn http_read_unknown_feature_count() -> Result<()> {
+        let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/unknown_feature_count.fgb";
+        let fgb = HttpFgbReader::open(url).await?;
+        assert_eq!(fgb.header().features_count(), 0);
+        let mut fgb = fgb.select_all().await?;
+        assert_eq!(fgb.features_count(), None);
+        let feature = fgb.next().await?;
+        assert!(feature.is_none()); // TODO: support reading unknown feature count
+
+        let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/unknown_feature_count.fgb";
+        let fgb = HttpFgbReader::open(url)
+            .await?
+            .select_bbox(8.8, 47.2, 9.5, 55.3)
+            .await;
+        assert_eq!(
+            fgb.err().unwrap().to_string(),
+            "processing geometry `Index missing`"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn http_bbox_big() -> Result<()> {
         let url = "https://pkg.sourcepole.ch/osm-buildings-ch.fgb";
         let fgb = HttpFgbReader::open(url).await?;
