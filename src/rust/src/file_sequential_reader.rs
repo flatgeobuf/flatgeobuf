@@ -125,9 +125,13 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, FeaturesSelected> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
-    /// Number of selected features
-    pub fn features_count(&self) -> usize {
-        self.count
+    /// Number of selected features (might be unknown)
+    pub fn features_count(&self) -> Option<usize> {
+        if self.count > 0 {
+            Some(self.count)
+        } else {
+            None
+        }
     }
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
