@@ -1,8 +1,8 @@
 use crate::feature_generated::*;
-use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
+use crate::reader_state::*;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
@@ -36,13 +36,6 @@ enum SizeInfo {
     RemainingBytes(u64),
     // Undefined or all features read
     None,
-}
-
-// Reader states for ensuring correct read API usage at compile-time
-pub(crate) mod reader_state {
-    pub struct Initial;
-    pub struct Open;
-    pub struct FeaturesSelected;
 }
 
 impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {

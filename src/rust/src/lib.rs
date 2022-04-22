@@ -95,6 +95,14 @@ pub use header_generated::*;
 pub use http_reader::*;
 pub use properties_reader::*;
 
+// Reader states for ensuring correct read API usage at compile-time
+#[doc(hidden)]
+pub mod reader_state {
+    pub struct Initial;
+    pub struct Open;
+    pub struct FeaturesSelected;
+}
+
 // Re-export used traits
 pub use fallible_streaming_iterator::FallibleStreamingIterator;
 pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
