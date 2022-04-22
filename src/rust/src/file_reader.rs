@@ -22,14 +22,20 @@ pub struct FgbReader<'a, R: Read + Seek, State = Initial> {
     feature_base: u64,
     /// Selected features or None if no bbox filter
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
-    /// Number of selected features (maybe unknown)
-    count: Option<usize>,
-    /// File size in case of unknown feature count
-    file_len: Option<u64>,
+    /// Number of selected features or remaining file size in case of unknown feature count
+    size_info: SizeInfo,
     /// Current feature number
     feat_no: usize,
     /// Reader state
     state: PhantomData<State>,
+}
+
+#[derive(Debug)]
+enum SizeInfo {
+    FeatureCount(usize),
+    RemainingBytes(u64),
+    // Undefined or all features read
+    None,
 }
 
 // Reader states for ensuring correct read API usage at compile-time
@@ -81,8 +87,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Initial> {
             },
             feature_base: 0,
             item_filter: None,
-            count: None,
-            file_len: None,
+            size_info: SizeInfo::None,
             feat_no: 0,
             state: PhantomData::<Open>,
         })
@@ -97,26 +102,26 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     /// Select all features.
     pub fn select_all(self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
         let header = self.fbs.header();
-        let count = {
-            if header.features_count() > 0 {
-                Some(header.features_count() as usize)
-            } else {
-                None
-            }
-        };
-        let index_size = if header.index_node_size() > 0 && count.is_some() {
-            PackedRTree::index_size(count.unwrap(), header.index_node_size())
+        let count = header.features_count() as usize;
+        let index_size = if header.index_node_size() > 0 && count > 0 {
+            PackedRTree::index_size(count, header.index_node_size())
         } else {
             0
         };
         // Skip index
         let feature_base = self.reader.seek(SeekFrom::Current(index_size as i64))?;
-        let file_len = if count.is_some() {
-            None
+        let size_info = if count > 0 {
+            SizeInfo::FeatureCount(count)
         } else {
+            // if dataset contains features, feature count is undefined
             let end = self.reader.seek(SeekFrom::End(0))?;
             let _ = self.reader.seek(SeekFrom::Start(feature_base))?;
-            Some(end)
+            let remaining_bytes = end - feature_base;
+            if remaining_bytes > 0 {
+                SizeInfo::RemainingBytes(remaining_bytes)
+            } else {
+                SizeInfo::FeatureCount(0)
+            }
         };
         Ok(FgbReader {
             reader: self.reader,
@@ -124,8 +129,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             fbs: self.fbs,
             feature_base,
             item_filter: None,
-            count,
-            file_len,
+            size_info,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
@@ -153,15 +157,14 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             max_y,
         )?;
         let feature_base = self.reader.seek(SeekFrom::Current(0))?;
-        let count = Some(list.len());
+        let size_info = SizeInfo::FeatureCount(list.len());
         Ok(FgbReader {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
             feature_base,
             item_filter: Some(list),
-            count,
-            file_len: None,
+            size_info,
             feat_no: 0,
             state: PhantomData::<FeaturesSelected>,
         })
@@ -175,7 +178,10 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelected> {
     }
     /// Number of selected features (might be unknown)
     pub fn features_count(&self) -> Option<usize> {
-        self.count
+        match self.size_info {
+            SizeInfo::FeatureCount(count) => Some(count),
+            _ => None,
+        }
     }
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
@@ -221,16 +227,20 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
     type Item = FgbFeature;
 
     fn advance(&mut self) -> Result<()> {
-        if let Some(count) = self.count {
-            if self.feat_no >= count {
-                self.feat_no = count + 1;
-                return Ok(());
+        match self.size_info {
+            SizeInfo::FeatureCount(count) => {
+                if self.feat_no >= count {
+                    self.size_info = SizeInfo::None;
+                    return Ok(());
+                }
             }
-        } else {
-            if self.file_len.is_none()
-                || self.reader.seek(SeekFrom::Current(0))? >= self.file_len.unwrap()
-            {
-                self.file_len = None;
+            SizeInfo::RemainingBytes(bytes) => {
+                if bytes == 0 {
+                    self.size_info = SizeInfo::None;
+                    return Ok(());
+                }
+            }
+            SizeInfo::None => {
                 return Ok(());
             }
         }
@@ -250,35 +260,32 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
             let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         }
+        if let SizeInfo::RemainingBytes(bytes) = self.size_info {
+            self.size_info = SizeInfo::RemainingBytes(bytes - self.fbs.feature_buf.len() as u64);
+        }
         Ok(())
     }
 
     fn get(&self) -> Option<&FgbFeature> {
-        if let Some(count) = self.count {
-            if self.feat_no > count {
-                None
-            } else {
-                Some(&self.fbs)
-            }
-        } else {
-            if self.file_len.is_none() {
-                None
-            } else {
-                Some(&self.fbs)
-            }
+        match self.size_info {
+            SizeInfo::FeatureCount(_) => Some(&self.fbs),
+            SizeInfo::RemainingBytes(_) => Some(&self.fbs),
+            SizeInfo::None => None,
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if let Some(count) = self.count {
-            if self.feat_no >= count {
-                (0, Some(0))
-            } else {
-                let remaining = count - self.feat_no;
-                (remaining, Some(remaining))
+        match self.size_info {
+            SizeInfo::FeatureCount(count) => {
+                if self.feat_no >= count {
+                    (0, Some(0))
+                } else {
+                    let remaining = count - self.feat_no;
+                    (remaining, Some(remaining))
+                }
             }
-        } else {
-            (0, None)
+            SizeInfo::RemainingBytes(_) => (0, None),
+            SizeInfo::None => (0, Some(0)),
         }
     }
 }

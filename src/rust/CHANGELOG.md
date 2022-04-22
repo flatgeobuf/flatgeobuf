@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.0] - UNRELEASED
+
+- Support reading files with undefined feature count
+  - Breaking: features_count returns None if undefined
+
 ## [0.7.0] - 2022-03-14
 
 - Add explicit reader/writer state to avoid wrong API use
