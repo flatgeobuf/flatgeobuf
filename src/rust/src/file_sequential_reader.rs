@@ -1,8 +1,8 @@
 use crate::feature_generated::*;
-use crate::file_reader::reader_state::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::PackedRTree;
 use crate::properties_reader::FgbFeature;
+use crate::reader_state::*;
 use crate::MAGIC_BYTES;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;

@@ -1,8 +1,8 @@
 use crate::feature_generated::*;
 use crate::header_generated::*;
-use crate::http_reader::reader_state::*;
 use crate::packed_r_tree::{self, NodeItem, PackedRTree};
 use crate::properties_reader::FgbFeature;
+use crate::reader_state::*;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
@@ -29,13 +29,6 @@ pub struct HttpFgbReader<State = Initial> {
     feat_no: usize,
     /// Reader state
     state: PhantomData<State>,
-}
-
-// Reader states for ensuring correct read API usage at compile-time
-mod reader_state {
-    pub struct Initial;
-    pub struct Open;
-    pub struct FeaturesSelected;
 }
 
 pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {

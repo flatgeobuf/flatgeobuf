@@ -236,6 +236,29 @@ fn read_etrs89() -> Result<()> {
 }
 
 #[test]
+fn reader_type() -> Result<()> {
+    fn get_opened_reader<R: Read + Seek>(
+        reader: &mut R,
+    ) -> Result<FgbReader<R, reader_state::Open>> {
+        FgbReader::open(reader)
+    }
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let fgb = get_opened_reader(&mut filein)?;
+    assert_eq!(fgb.header().features_count(), 179);
+
+    fn get_feature_reader<R: Read + Seek>(
+        reader: &mut R,
+    ) -> Result<FgbReader<R, reader_state::FeaturesSelected>> {
+        FgbReader::open(reader)?.select_all()
+    }
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let fgb = get_feature_reader(&mut filein)?;
+    assert_eq!(fgb.features_count(), Some(179));
+
+    Ok(())
+}
+
+#[test]
 fn magic_byte() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/states.geojson")?);
     assert_eq!(

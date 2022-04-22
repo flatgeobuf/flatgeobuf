@@ -4,6 +4,7 @@
 
 - Support reading files with undefined feature count
   - Breaking: features_count returns None if undefined
+- Make reader state types public
 
 ## [0.7.0] - 2022-03-14
 
