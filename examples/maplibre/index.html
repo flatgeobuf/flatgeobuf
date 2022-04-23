@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <link rel="stylesheet" href="/examples/site.css" />
+    <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.22.0/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/json-formatter-js"></script>
+</head>
+<body>
+<style>
+</style>
+    <ul class="primary-navigation">
+        <li>
+            <a href="/examples/leaflet/">Leaflet Example</a>
+        </li>
+        <li>
+            <a href="/examples/openlayers/">OpenLayers Example</a>
+        </li>
+        <li class="active">
+            MapLibre Example
+        </li>
+    </ul>
+    <ul class="secondary-navigation">
+        <li class="active">Basic Example</li>
+        <li><a href="/examples/maplibre/filtered.html">Filter By Rect</a></li>
+        <li><a href="/examples/maplibre/large.html">Filtering a Large Dataset</a></li>
+    </ul>
+
+    <style>
+        #map { height: 480px; }
+    </style>
+    <div id="map"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            // basic MapLibre map
+            const map = new maplibregl.Map({
+                container: "map",
+                style: "https://demotiles.maplibre.org/style.json",
+                center: [-98, 39],
+                zoom: 3,
+                maxZoom: 8,
+            });
+
+            // optionally show some meta-data about the FGB file
+            function handleHeaderMeta(headerMeta) {
+                const header = document.getElementById("header")
+                const formatter = new JSONFormatter(headerMeta, 10)
+                header.appendChild(formatter.render())
+            }
+
+            const response = await fetch("/test/data/UScounties.fgb");
+            map.on("load", async () => {
+                const fc = {type: "FeatureCollection", features: []};
+                let i = 0;
+                for await (const f of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+                    fc.features.push({...f, id: i});
+                    i += 1;
+                }
+
+                map.addSource("counties", {
+                    type: "geojson",
+                    data: fc,
+                });
+                map.addLayer({
+                    id: "counties-fill",
+                    type: "fill",
+                    source: "counties",
+                    paint: {
+                        "fill-color": "#0000FF",
+                        "fill-opacity": [
+                            "case",
+                            ["boolean", ["feature-state", "hover"], false],
+                            1,
+                            0.5
+                        ],
+                    },
+                });
+                map.addLayer({
+                    id: "counties-line",
+                    type: "line",
+                    source: "counties",
+                    paint: {
+                      "line-color": "#0000FF",
+                      "line-opacity": 0.9,
+                      "line-width": 2,
+                    },
+                });
+
+                // from https://docs.mapbox.com/mapbox-gl-js/example/popup-on-click/
+                map.on("click", "counties-fill", (e) => {
+                    const props = e.features[0].properties;
+                    const html = `<h1>${props.NAME} ${props.LSAD}, ${props.STATE}</h1>`;
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(html)
+                        .addTo(map);
+                });
+
+                let hoveredStateId = null;
+                map.on("mousemove", "counties-fill", (e) => {
+                    if (e.features.length > 0) {
+                        if (hoveredStateId !== null) {
+                            map.setFeatureState(
+                                { source: "counties", id: hoveredStateId },
+                                { hover: false }
+                            );
+                        }
+                        hoveredStateId = e.features[0].id;
+                        map.setFeatureState(
+                            { source: "counties", id: hoveredStateId },
+                            { hover: true }
+                        );
+                    }
+                });
+                map.on("mouseenter", "counties-fill", () => {
+                    map.getCanvas().style.cursor = "pointer";
+                });
+                map.on("mouseleave", "counties-fill", () => {
+                    map.getCanvas().style.cursor = "";
+                    if (hoveredStateId !== null) {
+                        map.setFeatureState(
+                            { source: "counties", id: hoveredStateId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredStateId = null;
+                });
+            });
+        });
+    </script>
+
+    <p>
+    This basic example shows how to render all the features in a FlatGeobuf
+    onto a <a href="https://maplibre.org/maplibre-gl-js-docs/">MapLibre</a> map.  It shows
+    per-feature properties when you click on each feature. This will work almost exactly
+    the same for Mapbox GL JS, just add an account key and load the Mapbox libraries instead.
+    </p>
+
+    <div id="header">
+        <h3>Parsed header content</h3>
+    </div>
+</body>
+</html>
