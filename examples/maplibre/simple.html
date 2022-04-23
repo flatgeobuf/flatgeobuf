@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.22.0/dist/flatgeobuf-geojson.min.js"></script>
+    <style>
+        #map { height: 480px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script type="module">
+        const map = new maplibregl.Map({
+            container: "map",
+            style: "https://demotiles.maplibre.org/style.json",
+            center: [-80.09, 41.505],
+            zoom: 3,
+            maxZoom: 8,
+        });
+
+        const response = await fetch("https://flatgeobuf.org/test/data/UScounties.fgb")
+        map.on("load", async () => {
+            const fc = {type: "FeatureCollection", features: []};
+            for await (const f of flatgeobuf.deserialize(response.body))
+                fc.features.push(f);
+
+            map.addSource("counties", {
+               type: "geojson",
+               data: fc,
+            });
+            map.addLayer({
+                id: "counties-fill",
+                type: "fill",
+                source: "counties",
+                paint: {
+                  "fill-color": "#0000FF",
+                  "fill-opacity": 0.2,
+                },
+            });
+            map.addLayer({
+                id: "counties-line",
+                type: "line",
+                source: "counties",
+                paint: {
+                  "line-color": "#0000FF",
+                  "line-opacity": 0.9,
+                  "line-width": 2,
+                },
+            });
+        });
+    </script>
+</body>
+</html>
