@@ -103,6 +103,7 @@ fn read_all() -> Result<()> {
         cnt += 1
     }
     assert_eq!(cnt, 179);
+
     Ok(())
 }
 
@@ -117,6 +118,35 @@ fn read_unchecked() -> Result<()> {
         cnt += 1
     }
     assert_eq!(cnt, 179);
+    Ok(())
+}
+
+#[test]
+fn read_empty_dataset() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), Some(0));
+    fgb.process_features(&mut geozero::ProcessorSink)?;
+
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
+    assert_eq!(
+        fgb.err().unwrap().to_string(),
+        "processing geometry `Index missing`"
+    );
+
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let mut fgb = FgbSequentialReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), Some(0));
+    fgb.process_features(&mut geozero::ProcessorSink)?;
+
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let fgb = FgbSequentialReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
+    assert_eq!(
+        fgb.err().unwrap().to_string(),
+        "processing geometry `Index missing`"
+    );
+
     Ok(())
 }
 
@@ -156,11 +186,6 @@ fn read_all_without_seek() -> Result<()> {
     }
     assert_eq!(cnt, 179);
 
-    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
-    let mut fgb = FgbSequentialReader::open(&mut filein)?.select_all()?;
-    assert_eq!(fgb.features_count(), Some(0));
-    fgb.process_features(&mut geozero::ProcessorSink)?;
-
     Ok(())
 }
 
@@ -172,13 +197,6 @@ fn read_bbox_without_seek() -> Result<()> {
 
     let feature = fgb.next()?.unwrap();
     assert_eq!(feature.property("name").ok(), Some("Denmark".to_string()));
-
-    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
-    let fgb = FgbSequentialReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
-    assert_eq!(
-        fgb.err().unwrap().to_string(),
-        "processing geometry `Index missing`"
-    );
 
     Ok(())
 }
