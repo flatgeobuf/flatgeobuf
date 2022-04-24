@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <link rel="stylesheet" href="/examples/site.css" />
+    <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.22.0/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/json-formatter-js"></script>
+
+    <style>
+        #map { height: 480px; }
+    </style>
+</head>
+<body>
+    <ul class="primary-navigation">
+        <li>
+            <a href="/examples/leaflet/">Leaflet Example</a>
+        </li>
+        <li>
+            <a href="/examples/openlayers/">OpenLayers Example</a>
+        </li>
+        <li class="active">
+            MapLibre Example
+        </li>
+    </ul>
+    <ul class="secondary-navigation">
+        <li><a href="/examples/maplibre/">Basic Example</a></li>
+        <li><a href="/examples/maplibre/filtered.html">Filter By Rect</a></li>
+        <li class="active">Filtering a Large Dataset</li>
+    </ul>
+
+    <div id="map"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        // basic MapLibre map
+        const map = new maplibregl.Map({
+            container: "map",
+            style: "https://demotiles.maplibre.org/style.json",
+            center: [-73.98, 40.766],
+            zoom: 13,
+            maxZoom: 18,
+            minZoom: 12,
+        });
+
+        // optionally show some meta-data about the FGB file
+        function handleHeaderMeta(headerMeta) {
+            const header = document.getElementById("header")
+            const formatter = new JSONFormatter(headerMeta, 10)
+            header.appendChild(formatter.render())
+        }
+
+        // convert the rect into the format flatgeobuf expects
+        function fgBoundingBox() {
+            const { lng, lat } = map.getCenter();
+            const { _sw, _ne } = map.getBounds();
+            const size = Math.min(_ne.lng-lng, _ne.lat-lat) * 0.8;
+            return { minX: lng-size, minY: lat-size, maxX: lng+size, maxY: lat+size };
+        }
+
+        function getRect() {
+            const bbox = fgBoundingBox();
+            const coords = [[
+                [bbox.minX, bbox.minY],
+                [bbox.maxX, bbox.minY],
+                [bbox.maxX, bbox.maxY],
+                [bbox.minX, bbox.maxY],
+                [bbox.minX, bbox.minY],
+            ]];
+            return {
+                type: "FeatureCollection",
+                features: [{
+                    type: "Feature",
+                    geometry: { type: "Polygon", coordinates: coords }
+                }]
+            }
+        }
+
+        async function updateResults() {
+            let i = 0;
+            const fc = {type: "FeatureCollection", features: []};
+            let iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", fgBoundingBox(), handleHeaderMeta);
+            for await (let feature of iter) {
+                fc.features.push({...feature, id: i});
+                i += 1;
+            }
+            map.getSource("blocks").setData(fc);
+        }
+
+        map.on("load", () => {
+            map.addSource("blocks", {
+                type: "geojson",
+                data: {type: "FeatureCollection", features: []},
+            });
+            const pop = ["to-number", ["get", "population"], 0];
+            const color = [
+                "case",
+                [">", pop, 750], "#800026",
+                [">", pop, 500], "#BD0026",
+                [">", pop, 250], "#E31A1C",
+                [">", pop, 100], "#FC4E2A",
+                [">", pop, 50], "#FD8D3C",
+                [">", pop, 25], "#FEB24C",
+                [">", pop, 10], "#FED976",
+                "#FF0000",
+            ];
+            map.addLayer({
+                id: "blocks-fill",
+                type: "fill",
+                source: "blocks",
+                paint: {
+                    "fill-color": color,
+                    "fill-opacity": [
+                        "case",
+                        ["boolean", ["feature-state", "hover"], false],
+                        0.8,
+                        0.4
+                    ],
+                },
+            });
+            map.addLayer({
+                id: "blockes-line",
+                type: "line",
+                source: "blocks",
+                paint: {
+                    "line-color": color,
+                    "line-opacity": 0.8,
+                    "line-width": 2,
+                },
+            });
+
+            map.addSource("rectangle", {
+                type: "geojson",
+                data: {type: "FeatureCollection", features: []},
+            });
+            map.addLayer({
+                id: "rectangle",
+                type: "line",
+                source: "rectangle",
+                paint: {
+                    "line-color": "#0000FF",
+                    "line-opacity": 0.9,
+                    "line-width": 3,
+                },
+            });
+
+            // from https://docs.mapbox.com/mapbox-gl-js/example/popup-on-click/
+            map.on("click", "blocks-fill", (e) => {
+                const props = e.features[0].properties;
+                const html = `${props.population} people live in this census block.`;
+                new maplibregl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(html)
+                    .addTo(map);
+            });
+
+            let hoveredStateId = null;
+            map.on("mousemove", "blocks-fill", (e) => {
+                if (e.features.length > 0) {
+                    if (hoveredStateId !== null) {
+                        map.setFeatureState(
+                            { source: "blocks", id: hoveredStateId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredStateId = e.features[0].id;
+                    map.setFeatureState(
+                        { source: "blocks", id: hoveredStateId },
+                        { hover: true }
+                    );
+                }
+            });
+            map.on("mouseenter", "blocks-fill", () => {
+                map.getCanvas().style.cursor = "pointer";
+            });
+
+            map.on("mouseleave", "blocks-fill", () => {
+                map.getCanvas().style.cursor = "";
+                if (hoveredStateId !== null) {
+                    map.setFeatureState(
+                        { source: "blocks", id: hoveredStateId },
+                        { hover: false }
+                    );
+                }
+                hoveredStateId = null;
+            });
+
+            // if the user is panning around alot, only update once per second max
+            updateResults = _.throttle(updateResults, 1000);
+
+            // show a rectangle corresponding to our bounding box
+            map.getSource("rectangle").setData(getRect());
+
+            // show results based on the initial map
+            updateResults();
+
+            // ...and update the results whenever the map moves
+            map.on("moveend", function(s){
+                map.getSource("rectangle").setData(getRect());
+                updateResults();
+            });
+        });
+    });
+    </script>
+    <p>
+        This is a map of every census block in the USA, including its
+        population. The entire file is over 12GB, but FlatGeobuf fetches only
+        the tiny subset of data that intersects with the bounding box (drawn
+        in yellow). Pan the map to move the query's bounding box.
+    </p>
+    <p>
+        When you have feature data that cover a large area in fine-grained
+        detail like this, the typical options are to either manually slice up
+        your file into manageable regions or to rely on running an application
+        server which does this slicing dynamically.
+    </p>
+    <p>
+        Hosting an application has initial complexity and ongoing maintenance
+        costs. Slicing files can be tedious and inevitiably you might be
+        interested in an area on the boundary of slices.
+    </p>
+    <p>
+        For these cases, consider instead using a single indexed FlatGeobuf.
+        Because FlatGeobuf's spatial index allows you to fetch only the data
+        you're interested in, you can keep your page size down while avoiding
+        the tedium of slicing up files manually, or building and maintaining an
+        application server.
+    </p>
+    <div id="header">
+        <h3>Parsed header content</h3>
+    </div>
+</body>
+</html>

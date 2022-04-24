@@ -54,27 +54,36 @@
             function fgBoundingBox() {
                 const { lng, lat } = map.getCenter();
                 const size = 4;
-                return {minX: lng-size, minY: lat-size, maxX: lng+size, maxY: lat+size};
+                return { minX: lng-size, minY: lat-size, maxX: lng+size, maxY: lat+size };
             }
 
             function getRect() {
                 const bbox = fgBoundingBox();
+                const coords = [[
+                    [bbox.minX, bbox.minY],
+                    [bbox.maxX, bbox.minY],
+                    [bbox.maxX, bbox.maxY],
+                    [bbox.minX, bbox.maxY],
+                    [bbox.minX, bbox.minY],
+                ]];
                 return {
                     type: "FeatureCollection",
                     features: [{
                         type: "Feature",
-                        geometry: {
-                            type: "Polygon",
-                            coordinates: [[
-                                [bbox.minX, bbox.minY],
-                                [bbox.maxX, bbox.minY],
-                                [bbox.maxX, bbox.maxY],
-                                [bbox.minX, bbox.maxY],
-                                [bbox.minX, bbox.minY],
-                            ]]
-                        }
+                        geometry: { type: "Polygon", coordinates: coords }
                     }]
                 }
+            }
+
+            async function updateResults() {
+                let i = 0;
+                const fc = {type: "FeatureCollection", features: []};
+                let iter = flatgeobuf.deserialize("/test/data/UScounties.fgb", fgBoundingBox(), handleHeaderMeta);
+                for await (let feature of iter) {
+                    fc.features.push({...feature, id: i});
+                    i += 1;
+                }
+                map.getSource("counties").setData(fc);
             }
 
             map.on("load", () => {
@@ -173,21 +182,10 @@
 
                 // ...and update the results whenever the map moves
                 map.on("moveend", function(s){
-                map.getSource("rectangle").setData(getRect());
-                        updateResults();
+                    map.getSource("rectangle").setData(getRect());
+                    updateResults();
                 });
             });
-
-            async function updateResults() {
-                let i = 0;
-                const fc = {type: "FeatureCollection", features: []};
-                let iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', fgBoundingBox(), handleHeaderMeta);
-                for await (let feature of iter) {
-                    fc.features.push({...feature, id: i});
-                    i += 1;
-                }
-                map.getSource("counties").setData(fc);
-            }
         });
     </script>
     <p>
