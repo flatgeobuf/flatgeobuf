@@ -3,7 +3,6 @@ use crate::header_generated::*;
 use crate::packed_r_tree::PackedRTree;
 use crate::properties_reader::FgbFeature;
 use crate::reader_state::*;
-use crate::MAGIC_BYTES;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
@@ -19,14 +18,12 @@ pub struct FgbSequentialReader<'a, R: Read, State = Initial> {
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
-    /// Index size
-    index_size: usize,
-    /// File offset of feature section base
-    feature_base: u64,
-    /// Number of selected features
-    count: usize,
-    /// Current feature number
-    feat_no: usize,
+    /// Number of selected features (None for undefined feature count)
+    count: Option<usize>,
+    /// File offset within feature section
+    cur_pos: u64,
+    /// All features read or end of file reached
+    finished: bool,
     /// Reader state
     state: PhantomData<State>,
 }
@@ -63,22 +60,12 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
         header_buf.resize(header_buf.capacity(), 0);
         reader.read_exact(&mut header_buf[4..])?;
 
-        let header: Header;
         if verify {
-            header = size_prefixed_root_as_header(&header_buf)
+            let _header = size_prefixed_root_as_header(&header_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
-        } else {
-            header = unsafe { size_prefixed_root_as_header_unchecked(&header_buf) };
         }
 
-        let count = header.features_count() as usize;
-        let index_size = if header.index_node_size() > 0 {
-            PackedRTree::index_size(count, header.index_node_size())
-        } else {
-            0
-        };
-
-        let feature_base: u64 = (header_size + MAGIC_BYTES.len() + index_size) as u64;
+        // let feature_base: u64 = (header_size + MAGIC_BYTES.len() + index_size) as u64;
 
         Ok(FgbSequentialReader {
             reader,
@@ -87,10 +74,9 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
                 header_buf,
                 feature_buf: Vec::new(),
             },
-            index_size,
-            feature_base,
-            count,
-            feat_no: 0,
+            count: None,
+            cur_pos: 0,
+            finished: false,
             state: PhantomData::<Open>,
         })
     }
@@ -102,19 +88,35 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Open> {
         self.fbs.header()
     }
     /// Select all features.
-    pub fn select_all(self) -> Result<FgbSequentialReader<'a, R, FeaturesSelected>> {
+    pub fn select_all(mut self) -> Result<FgbSequentialReader<'a, R, FeaturesSelected>> {
+        let header = self.fbs.header();
+        let feat_count = header.features_count() as usize;
+        let index_size = if header.index_node_size() > 0 && feat_count > 0 {
+            PackedRTree::index_size(feat_count, header.index_node_size())
+        } else {
+            0
+        };
         std::io::copy(
-            &mut self.reader.take(self.index_size as u64),
+            &mut self.reader.take(index_size as u64),
             &mut std::io::sink(),
         )?;
+        // Detect empty dataset by reading the first feature size
+        self.fbs.feature_buf.resize(4, 0);
+        let finished = self.reader.read_exact(&mut self.fbs.feature_buf).is_err();
+        let count = if feat_count > 0 {
+            Some(feat_count)
+        } else if finished {
+            Some(0)
+        } else {
+            None
+        };
         Ok(FgbSequentialReader {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
-            index_size: self.index_size,
-            feature_base: self.feature_base,
-            count: self.count,
-            feat_no: 0,
+            count,
+            cur_pos: 4,
+            finished,
             state: PhantomData::<FeaturesSelected>,
         })
     }
@@ -127,11 +129,7 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, FeaturesSelected> {
     }
     /// Number of selected features (might be unknown)
     pub fn features_count(&self) -> Option<usize> {
-        if self.count > 0 {
-            Some(self.count)
-        } else {
-            None
-        }
+        self.count
     }
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
@@ -177,13 +175,17 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
     type Item = FgbFeature;
 
     fn advance(&mut self) -> Result<()> {
-        if self.feat_no >= self.count {
-            self.feat_no = self.count + 1;
+        if self.finished {
             return Ok(());
         }
-        self.feat_no += 1;
-        self.fbs.feature_buf.resize(4, 0);
-        self.reader.read_exact(&mut self.fbs.feature_buf)?;
+        if self.cur_pos != 4 {
+            // First featare size is read in select_all or select_bbox
+            self.fbs.feature_buf.resize(4, 0);
+            if self.reader.read_exact(&mut self.fbs.feature_buf).is_err() {
+                self.finished = true;
+                return Ok(());
+            }
+        }
         let sbuf = &self.fbs.feature_buf;
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
         self.fbs.feature_buf.resize(feature_size + 4, 0);
@@ -192,11 +194,12 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
             let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         }
+        self.cur_pos += self.fbs.feature_buf.len() as u64;
         Ok(())
     }
 
     fn get(&self) -> Option<&FgbFeature> {
-        if self.feat_no > self.count {
+        if self.finished {
             None
         } else {
             Some(&self.fbs)
@@ -204,12 +207,7 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.feat_no >= self.count {
-            (0, Some(0))
-        } else {
-            let remaining = self.count - self.feat_no;
-            (remaining, Some(remaining))
-        }
+        (0, None) // Maybe we could estimate?
     }
 }
 
