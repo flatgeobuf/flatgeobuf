@@ -160,7 +160,7 @@ impl HttpFgbReader<Open> {
         }
         let count = header.features_count() as usize;
         let header_len = self.header_len();
-        let list = PackedRTree::http_stream_search(
+        let mut list = PackedRTree::http_stream_search(
             &mut self.client,
             header_len,
             count,
@@ -171,6 +171,7 @@ impl HttpFgbReader<Open> {
             max_y,
         )
         .await?;
+        list.sort_by(|a, b| a.offset.cmp(&b.offset));
         let index_size = PackedRTree::index_size(count, header.index_node_size());
         let feature_base = self.header_len() + index_size;
         let count = list.len();
