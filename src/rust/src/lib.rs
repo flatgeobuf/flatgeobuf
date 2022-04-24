@@ -74,7 +74,6 @@ extern crate log;
 mod feature_generated;
 mod feature_writer;
 mod file_reader;
-mod file_sequential_reader;
 mod file_writer;
 mod geometry_reader;
 #[allow(unused_imports, non_snake_case)]
@@ -87,7 +86,6 @@ mod properties_reader;
 
 pub use feature_generated::*;
 pub use file_reader::*;
-pub use file_sequential_reader::*;
 pub use file_writer::*;
 pub use geometry_reader::*;
 pub use header_generated::*;
@@ -101,6 +99,7 @@ pub mod reader_state {
     pub struct Initial;
     pub struct Open;
     pub struct FeaturesSelected;
+    pub struct FeaturesSelectedSeek;
 }
 
 // Re-export used traits

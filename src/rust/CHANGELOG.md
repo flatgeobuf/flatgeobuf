@@ -2,6 +2,7 @@
 
 ## [0.8.0] - UNRELEASED
 
+- Support for file reading without seek
 - Support reading files with undefined feature count
   - Breaking: features_count returns None if undefined
 - Make reader state types public
