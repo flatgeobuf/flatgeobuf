@@ -147,6 +147,7 @@ fn read_unknown_feature_count() -> Result<()> {
 fn read_all_without_seek() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbSequentialReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), Some(179));
     let mut cnt = 0;
     while let Some(feature) = fgb.next()? {
         let _props = feature.properties()?;
@@ -154,6 +155,31 @@ fn read_all_without_seek() -> Result<()> {
         cnt += 1
     }
     assert_eq!(cnt, 179);
+
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let mut fgb = FgbSequentialReader::open(&mut filein)?.select_all()?;
+    assert_eq!(fgb.features_count(), Some(0));
+    fgb.process_features(&mut geozero::ProcessorSink)?;
+
+    Ok(())
+}
+
+#[test]
+fn read_bbox_without_seek() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbSequentialReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+    assert_eq!(fgb.features_count(), Some(6));
+
+    let feature = fgb.next()?.unwrap();
+    assert_eq!(feature.property("name").ok(), Some("Denmark".to_string()));
+
+    let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
+    let fgb = FgbSequentialReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
+    assert_eq!(
+        fgb.err().unwrap().to_string(),
+        "processing geometry `Index missing`"
+    );
+
     Ok(())
 }
 
@@ -170,6 +196,13 @@ fn read_unknown_feature_count_without_seek() -> Result<()> {
         cnt += 1
     }
     assert_eq!(cnt, 1);
+
+    let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
+    let fgb = FgbSequentialReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
+    assert_eq!(
+        fgb.err().unwrap().to_string(),
+        "processing geometry `Index missing`"
+    );
     Ok(())
 }
 

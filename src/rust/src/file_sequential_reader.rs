@@ -1,6 +1,6 @@
 use crate::feature_generated::*;
 use crate::header_generated::*;
-use crate::packed_r_tree::PackedRTree;
+use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::reader_state::*;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
@@ -18,8 +18,12 @@ pub struct FgbSequentialReader<'a, R: Read, State = Initial> {
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
+    /// Selected features or None if no bbox filter
+    item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Number of selected features (None for undefined feature count)
     count: Option<usize>,
+    /// Current feature number
+    feat_no: usize,
     /// File offset within feature section
     cur_pos: u64,
     /// All features read or end of file reached
@@ -65,8 +69,6 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         }
 
-        // let feature_base: u64 = (header_size + MAGIC_BYTES.len() + index_size) as u64;
-
         Ok(FgbSequentialReader {
             reader,
             verify,
@@ -74,7 +76,9 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Initial> {
                 header_buf,
                 feature_buf: Vec::new(),
             },
+            item_filter: None,
             count: None,
+            feat_no: 0,
             cur_pos: 0,
             finished: false,
             state: PhantomData::<Open>,
@@ -114,7 +118,47 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, Open> {
             reader: self.reader,
             verify: self.verify,
             fbs: self.fbs,
+            item_filter: None,
             count,
+            feat_no: 0,
+            cur_pos: 4,
+            finished,
+            state: PhantomData::<FeaturesSelected>,
+        })
+    }
+    /// Select features within a bounding box.
+    pub fn select_bbox(
+        mut self,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+    ) -> Result<FgbSequentialReader<'a, R, FeaturesSelected>> {
+        // Read R-Tree index and build filter for features within bbox
+        let header = self.fbs.header();
+        if header.index_node_size() == 0 || header.features_count() == 0 {
+            return Err(GeozeroError::Geometry("Index missing".to_string()));
+        }
+        let index = PackedRTree::from_buf(
+            self.reader,
+            header.features_count() as usize,
+            header.index_node_size(),
+        )?;
+        let mut list = index.search(min_x, min_y, max_x, max_y)?;
+        list.sort_by(|a, b| a.offset.cmp(&b.offset));
+
+        // Detect empty dataset by reading the first feature size
+        self.fbs.feature_buf.resize(4, 0);
+        let finished = self.reader.read_exact(&mut self.fbs.feature_buf).is_err();
+        let count = Some(list.len());
+
+        Ok(FgbSequentialReader {
+            reader: self.reader,
+            verify: self.verify,
+            fbs: self.fbs,
+            item_filter: Some(list),
+            count,
+            feat_no: 0,
             cur_pos: 4,
             finished,
             state: PhantomData::<FeaturesSelected>,
@@ -150,7 +194,7 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, FeaturesSelected> {
 /// `FallibleStreamingIterator` differs from the standard library's `Iterator`
 /// in two ways:
 /// * each call to `next` can fail.
-/// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
+/// * returned `FgbFeature` is valid until `next` is called again or `FgbSequentialReader` is
 ///   reset or finalized.
 ///
 /// While these iterators cannot be used with Rust `for` loops, `while let`
@@ -162,7 +206,7 @@ impl<'a, R: Read> FgbSequentialReader<'a, R, FeaturesSelected> {
 ///
 /// # fn read_fbg() -> geozero::error::Result<()> {
 /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
-/// # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+/// # let mut fgb = FgbSequentialReader::open(&mut filein)?.select_all()?;
 /// while let Some(feature) = fgb.next()? {
 ///     let props = feature.properties()?;
 ///     println!("{}", props["name"]);
@@ -178,8 +222,16 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
         if self.finished {
             return Ok(());
         }
+        if let Some(filter) = &self.item_filter {
+            let item = &filter[self.feat_no];
+            if item.offset as u64 > self.cur_pos {
+                let seek_bytes = item.offset as u64 - self.cur_pos;
+                std::io::copy(&mut self.reader.take(seek_bytes), &mut std::io::sink())?;
+                self.cur_pos += seek_bytes;
+            }
+        }
+        // Read feature size if not already read in select_all or select_bbox
         if self.cur_pos != 4 {
-            // First featare size is read in select_all or select_bbox
             self.fbs.feature_buf.resize(4, 0);
             if self.reader.read_exact(&mut self.fbs.feature_buf).is_err() {
                 self.finished = true;
@@ -194,6 +246,12 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
             let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
                 .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
         }
+        if let Some(count) = self.count {
+            if self.feat_no >= count {
+                self.finished = true;
+            }
+        }
+        self.feat_no += 1;
         self.cur_pos += self.fbs.feature_buf.len() as u64;
         Ok(())
     }
@@ -207,7 +265,14 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbSequentialReader<'a, R, Featu
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None) // Maybe we could estimate?
+        if self.finished {
+            (0, Some(0))
+        } else if let Some(count) = self.count {
+            let remaining = count - self.feat_no;
+            (remaining, Some(remaining))
+        } else {
+            (0, None)
+        }
     }
 }
 
