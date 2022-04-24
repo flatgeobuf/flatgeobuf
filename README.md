@@ -23,6 +23,7 @@ FlatGeobuf is open source under the [BSD 2-Clause License](https://tldrlegal.com
 * [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
 * [OpenLayers example](https://flatgeobuf.org/examples/openlayers)
 * [Leaflet example](https://flatgeobuf.org/examples/leaflet)
+* [MapLibre/Mapbox example](https://flatgeobuf.org/examples/maplibre)
 
 ## Specification
 
