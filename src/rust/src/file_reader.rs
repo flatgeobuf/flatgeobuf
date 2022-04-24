@@ -140,7 +140,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(GeozeroError::Geometry("Index missing".to_string()));
         }
-        let list = PackedRTree::stream_search(
+        let mut list = PackedRTree::stream_search(
             &mut self.reader,
             header.features_count() as usize,
             PackedRTree::DEFAULT_NODE_SIZE,
@@ -149,6 +149,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
             max_x,
             max_y,
         )?;
+        list.sort_by(|a, b| a.offset.cmp(&b.offset));
         let feature_base = self.reader.seek(SeekFrom::Current(0))?;
         let size_info = SizeInfo::FeatureCount(list.len());
         Ok(FgbReader {
