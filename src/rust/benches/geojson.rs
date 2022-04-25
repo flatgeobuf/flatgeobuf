@@ -8,7 +8,7 @@ use std::io::BufWriter;
 use tempfile::tempfile;
 
 fn fgb_to_geojson() -> Result<()> {
-    // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /tmp/countries-ogr.json ../../test/data/countries.fgb
+    // Comparison: time ogr2ogr -f GeoJSON /tmp/countries-ogr.json ../../test/data/countries.fgb
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
@@ -16,10 +16,28 @@ fn fgb_to_geojson() -> Result<()> {
     fgb.process_features(&mut json)
 }
 
+fn fgb_to_geojson_unchecked() -> Result<()> {
+    // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /tmp/countries-ogr.json ../../test/data/countries.fgb
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = unsafe { FgbReader::open_unchecked(&mut filein) }?.select_all()?;
+    let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
+    let mut json = GeoJsonWriter::new(&mut fout);
+    fgb.process_features(&mut json)
+}
+
 fn fgb_to_geojson_dev_null() -> Result<()> {
-    // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /dev/null ../../test/data/countries.fgb
+    // Comparison: time ogr2ogr -f GeoJSON /dev/null ../../test/data/countries.fgb
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    let mut fout = std::io::sink();
+    let mut json = GeoJsonWriter::new(&mut fout);
+    fgb.process_features(&mut json)
+}
+
+fn fgb_to_geojson_dev_null_unchecked() -> Result<()> {
+    // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /dev/null ../../test/data/countries.fgb
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = unsafe { FgbReader::open_unchecked(&mut filein) }?.select_all()?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
     fgb.process_features(&mut json)
@@ -35,8 +53,14 @@ fn fgb_bbox_to_geojson_dev_null() -> Result<()> {
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("fgb_to_geojson", |b| b.iter(|| fgb_to_geojson()));
+    c.bench_function("fgb_to_geojson_unchecked", |b| {
+        b.iter(|| fgb_to_geojson_unchecked())
+    });
     c.bench_function("fgb_to_geojson_dev_null", |b| {
         b.iter(|| fgb_to_geojson_dev_null())
+    });
+    c.bench_function("fgb_to_geojson_dev_null_unchecked", |b| {
+        b.iter(|| fgb_to_geojson_dev_null_unchecked())
     });
     c.bench_function("fgb_bbox_to_geojson_dev_null", |b| {
         b.iter(|| fgb_bbox_to_geojson_dev_null())
