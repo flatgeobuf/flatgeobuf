@@ -1,15 +1,10 @@
-use std::io::BufRead;
-use std::io::Write;
-use geozero::geojson::GeoJsonReader;
-use std::io::BufWriter;
-use flatgeobuf::FgbWriter;
-use geozero::GeozeroDatasource;
-use flatgeobuf::FgbSequentialReader;
-use std::fs::File;
-use std::io::BufReader;
-use geozero::error::{Result};
-use geozero::geojson::GeoJsonWriter;
 use clap::{ArgEnum, Parser};
+use flatgeobuf::{FgbReader, FgbWriter};
+use geozero::error::Result;
+use geozero::geojson::{GeoJsonReader, GeoJsonWriter};
+use geozero::GeozeroDatasource;
+use std::fs::File;
+use std::io::{BufRead, BufReader, BufWriter, Write};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -41,10 +36,15 @@ enum Format {
     Geojson,
 }
 
-fn write(format: Format, reader: impl GeozeroDatasource, output: impl Write, index: bool) -> Result<()> {
+fn write(
+    format: Format,
+    reader: impl GeozeroDatasource,
+    output: impl Write,
+    index: bool,
+) -> Result<()> {
     match format {
         Format::Geojson => write_geojson(reader, output)?,
-        Format::Flatgeobuf => write_flatgeobuf(reader, output, index)?
+        Format::Flatgeobuf => write_flatgeobuf(reader, output, index)?,
     }
     Ok(())
 }
@@ -55,7 +55,11 @@ fn write_geojson(mut reader: impl GeozeroDatasource, mut output: impl Write) -> 
     Ok(())
 }
 
-fn write_flatgeobuf(mut reader: impl GeozeroDatasource, mut output: impl Write, index: bool) -> Result<()> {
+fn write_flatgeobuf(
+    mut reader: impl GeozeroDatasource,
+    mut output: impl Write,
+    index: bool,
+) -> Result<()> {
     // TODO: would make sense if GeozeroDatasource could provide name and geometry_type?
     let name = "";
     let geometry_type = flatgeobuf::GeometryType::Unknown;
@@ -69,10 +73,21 @@ fn write_flatgeobuf(mut reader: impl GeozeroDatasource, mut output: impl Write, 
     Ok(())
 }
 
-fn transform(inputformat: Format, outputformat: Format, mut input: impl BufRead, output: impl Write, index: bool) -> Result<()> {
+fn transform(
+    inputformat: Format,
+    outputformat: Format,
+    mut input: impl BufRead,
+    output: impl Write,
+    index: bool,
+) -> Result<()> {
     match inputformat {
         Format::Geojson => write(outputformat, GeoJsonReader(&mut input), output, index)?,
-        Format::Flatgeobuf => write(outputformat, FgbSequentialReader::open(&mut input)?.select_all()?, output, index)?
+        Format::Flatgeobuf => write(
+            outputformat,
+            FgbReader::open(&mut input)?.select_all_seq()?,
+            output,
+            index,
+        )?,
     }
     Ok(())
 }
@@ -87,6 +102,12 @@ fn main() -> Result<()> {
         Some(x) => Box::new(BufWriter::new(File::create(x)?)),
         None => Box::new(BufWriter::new(std::io::stdout())),
     };
-    transform(args.inputformat, args.outputformat, input, output, args.index)?;
+    transform(
+        args.inputformat,
+        args.outputformat,
+        input,
+        output,
+        args.index,
+    )?;
     Ok(())
 }
