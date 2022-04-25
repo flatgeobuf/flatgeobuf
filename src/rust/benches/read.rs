@@ -7,8 +7,7 @@ use std::fs::File;
 
 fn read_fgb() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
 
     let mut null_reader = ProcessorSink;
     while let Some(feature) = fgb.next()? {

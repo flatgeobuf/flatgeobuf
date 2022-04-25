@@ -10,8 +10,7 @@ use tempfile::tempfile;
 fn fgb_to_geojson() -> Result<()> {
     // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /tmp/countries-ogr.json ../../test/data/countries.fgb
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
     let mut json = GeoJsonWriter::new(&mut fout);
     fgb.process_features(&mut json)
@@ -20,8 +19,7 @@ fn fgb_to_geojson() -> Result<()> {
 fn fgb_to_geojson_dev_null() -> Result<()> {
     // Comparison: time ogr2ogr -f GeoJSON -oo VERIFY_BUFFERS=NO /dev/null ../../test/data/countries.fgb
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
     fgb.process_features(&mut json)
@@ -29,8 +27,7 @@ fn fgb_to_geojson_dev_null() -> Result<()> {
 
 fn fgb_bbox_to_geojson_dev_null() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let mut fgb = FgbReader::open(&mut filein)?;
-    fgb.select_bbox(8.8, 47.2, 9.5, 55.3)?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3)?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
     fgb.process_features(&mut json)
