@@ -69,7 +69,6 @@ impl<'a> FeatureWriter<'a> {
     }
     fn finish_part(&mut self) {
         let xy = Some(to_fb_vector!(self, xy));
-        self.bbox = NodeItem::create(0);
         let ends = if self.ends.len() > 0 {
             Some(to_fb_vector!(self, ends))
         } else {
@@ -181,6 +180,7 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn point_begin(&mut self, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::Point;
+        self.bbox = NodeItem::create(0);
         self.xy.reserve(2);
         Ok(())
     }
@@ -192,11 +192,13 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multipoint_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::MultiPoint;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn linestring_begin(&mut self, tagged: bool, size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.type_ = GeometryType::LineString;
+            self.bbox = NodeItem::create(0);
         }
         self.xy.reserve(size * 2);
         Ok(())
@@ -212,11 +214,13 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multilinestring_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::MultiLineString;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn polygon_begin(&mut self, tagged: bool, size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.type_ = GeometryType::Polygon;
+            self.bbox = NodeItem::create(0);
         }
         self.ends.reserve(size);
         Ok(())
@@ -229,6 +233,7 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multipolygon_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::MultiPolygon;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn geometrycollection_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
@@ -241,36 +246,44 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn circularstring_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::CircularString;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn compoundcurve_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::CompoundCurve;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn curvepolygon_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::CurvePolygon;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn multicurve_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::MultiCurve;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn multisurface_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::MultiSurface;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn triangle_begin(&mut self, tagged: bool, _size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.type_ = GeometryType::Triangle;
+            self.bbox = NodeItem::create(0);
         }
         Ok(())
     }
     fn polyhedralsurface_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::PolyhedralSurface;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
     fn tin_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.type_ = GeometryType::TIN;
+        self.bbox = NodeItem::create(0);
         Ok(())
     }
 }
@@ -502,6 +515,16 @@ mod test {
             header_buf: header(GeometryType::MultiPolygon),
             feature_buf: fgb_writer.to_feature(),
         };
+        assert_eq!(
+            fgb_writer.bbox,
+            NodeItem {
+                min_x: 166.509144,
+                min_y: -46.641235,
+                max_x: 178.517094,
+                max_y: -34.450662,
+                offset: 0
+            }
+        );
         feat.process(&mut GeoJsonWriter::new(&mut out), 0)?;
         assert_eq!(str::from_utf8(&out).unwrap(), geojson.0);
 
