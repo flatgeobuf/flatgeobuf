@@ -122,7 +122,7 @@ fn json_to_fgb() -> Result<()> {
     })
     .ok();
 
-    // let mut file = BufWriter::new(std::fs::File::create("test_multipoly.fgb")?);
+    // let mut file = BufWriter::new(File::create("test_multipoly.fgb")?);
     let mut file = BufWriter::new(tempfile()?);
     fgb.write(&mut file)?;
 
@@ -135,8 +135,10 @@ fn geozero_to_fgb() -> Result<()> {
     let mut fin = BufReader::new(File::open("../../test/data/countries.geojson")?);
     let mut reader = GeoJsonReader(&mut fin);
     reader.process(&mut fgb)?;
+    // let mut fout = BufWriter::new(File::create("test_multipoly.fgb")?);
     let mut fout = BufWriter::new(tempfile()?);
     fgb.write(&mut fout)?;
+
     Ok(())
 }
 

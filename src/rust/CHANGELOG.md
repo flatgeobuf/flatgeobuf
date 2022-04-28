@@ -2,10 +2,12 @@
 
 ## [0.8.0] - UNRELEASED
 
-- Support for file reading without seek
+- Automatic conversion from single to multi geometry types
 - Support reading files with undefined feature count
   - Breaking: features_count returns None if undefined
+- Support for file reading without seek
 - Make reader state types public
+- Writer: Fix bounding boxes in index
 
 ## [0.7.0] - 2022-03-14
 
