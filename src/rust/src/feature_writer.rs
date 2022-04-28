@@ -121,6 +121,11 @@ impl<'a> FeatureWriter<'a> {
             Ok(())
         }
     }
+    fn reset_bbox(&mut self) {
+        if self.geom_state != GeomState::GeometryCollection {
+            self.bbox = NodeItem::create(0);
+        }
+    }
     fn finish_part(&mut self) {
         let xy = Some(to_fb_vector!(self, xy));
         let ends = if self.ends.len() > 0 {
@@ -234,7 +239,7 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn point_begin(&mut self, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::Point)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         self.xy.reserve(2);
         Ok(())
     }
@@ -246,13 +251,13 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multipoint_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::MultiPoint)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn linestring_begin(&mut self, tagged: bool, size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.set_type(GeometryType::LineString)?;
-            self.bbox = NodeItem::create(0);
+            self.reset_bbox();
         }
         self.xy.reserve(size * 2);
         Ok(())
@@ -273,13 +278,13 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multilinestring_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::MultiLineString)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn polygon_begin(&mut self, tagged: bool, size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.set_type(GeometryType::Polygon)?;
-            self.bbox = NodeItem::create(0);
+            self.reset_bbox();
         }
         self.ends.reserve(size);
         Ok(())
@@ -299,10 +304,11 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn multipolygon_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::MultiPolygon)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn geometrycollection_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
+        self.reset_bbox();
         self.geom_state = GeomState::GeometryCollection;
         Ok(())
     }
@@ -312,44 +318,44 @@ impl GeomProcessor for FeatureWriter<'_> {
     }
     fn circularstring_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::CircularString)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn compoundcurve_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::CompoundCurve)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn curvepolygon_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::CurvePolygon)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn multicurve_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::MultiCurve)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn multisurface_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::MultiSurface)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn triangle_begin(&mut self, tagged: bool, _size: usize, _idx: usize) -> Result<()> {
         if tagged {
             self.set_type(GeometryType::Triangle)?;
-            self.bbox = NodeItem::create(0);
+            self.reset_bbox();
         }
         Ok(())
     }
     fn polyhedralsurface_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::PolyhedralSurface)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
     fn tin_begin(&mut self, _size: usize, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::TIN)?;
-        self.bbox = NodeItem::create(0);
+        self.reset_bbox();
         Ok(())
     }
 }
