@@ -25,7 +25,7 @@ use tempfile::NamedTempFile;
 /// # use std::io::{BufReader, BufWriter};
 ///
 /// # fn json_to_fgb() -> geozero::error::Result<()> {
-/// let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+/// let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
 /// let mut fin = BufReader::new(File::open("countries.geojson")?);
 /// let mut reader = GeoJsonReader(&mut fin);
 /// reader.process(&mut fgb)?;
@@ -45,6 +45,67 @@ pub struct FgbWriter<'a> {
     feat_nodes: Vec<NodeItem>,
 }
 
+/// Options for FlatGeobuf writer
+#[derive(Debug)]
+pub struct FgbWriterOptions<'a> {
+    /// Write index and sort features accordingly.
+    pub write_index: bool,
+    /// Detect geometry type when `geometry_type` is Unknown.
+    pub detect_type: bool,
+    /// Convert single to multi geometries, if `geometry_type` is multi type or Unknown
+    pub promote_to_multi: bool,
+    /// CRS definition
+    pub crs: FgbCrs<'a>,
+    /// Does geometry have Z dimension?
+    pub has_z: bool,
+    /// Does geometry have M dimension?
+    pub has_m: bool,
+    /// Does geometry have T dimension?
+    pub has_t: bool,
+    /// Does geometry have TM dimension?
+    pub has_tm: bool,
+    // Dataset title
+    pub title: Option<&'a str>,
+    // Dataset description (intended for free form long text)
+    pub description: Option<&'a str>,
+    // Dataset metadata (intended to be application specific and
+    pub metadata: Option<&'a str>,
+}
+
+impl Default for FgbWriterOptions<'_> {
+    fn default() -> Self {
+        FgbWriterOptions {
+            write_index: true,
+            detect_type: true,
+            promote_to_multi: true,
+            crs: Default::default(),
+            has_z: false,
+            has_m: false,
+            has_t: false,
+            has_tm: false,
+            title: None,
+            description: None,
+            metadata: None,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct FgbCrs<'a> {
+    /// Case-insensitive name of the defining organization e.g. EPSG or epsg (NULL = EPSG)
+    pub org: Option<&'a str>,
+    /// Numeric ID of the Spatial Reference System assigned by the organization (0 = unknown)
+    pub code: i32,
+    /// Human readable name of this SRS
+    pub name: Option<&'a str>,
+    /// Human readable description of this SRS
+    pub description: Option<&'a str>,
+    /// Well-known Text Representation of the Spatial Reference System
+    pub wkt: Option<&'a str>,
+    /// Text ID of the Spatial Reference System assigned by the organization in the (rare) case when it is not an integer and thus cannot be set into code
+    pub code_string: Option<&'a str>,
+}
+
 // Offsets in temporary file
 struct FeatureOffset {
     offset: usize,
@@ -52,39 +113,84 @@ struct FeatureOffset {
 }
 
 impl<'a> FgbWriter<'a> {
-    /// Configure FlatGeobuf headers for creating a new file
-    ///
-    /// * For reading/writing more than two dimensions set `hasZ=true`, etc.
-    /// * For skipping the index, set `index_node_size=0`
+    /// Configure FlatGeobuf headers for creating a new file with default options
     ///
     /// # Usage example:
     ///
     /// ```
     /// # use flatgeobuf::*;
-    /// let mut fgb = FgbWriter::create(
+    /// let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon).unwrap();
+    /// ```
+    pub fn create(name: &str, geometry_type: GeometryType) -> Result<Self> {
+        let options = FgbWriterOptions {
+            write_index: true,
+            detect_type: true,
+            promote_to_multi: true,
+            ..Default::default()
+        };
+        FgbWriter::create_with_options(name, geometry_type, options)
+    }
+    /// Configure FlatGeobuf headers for creating a new file
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// let mut fgb = FgbWriter::create_with_options(
     ///     "countries",
     ///     GeometryType::MultiPolygon,
-    ///     |fbb, header| {
-    ///         header.description = Some(fbb.create_string("Country polygons"));
+    ///     FgbWriterOptions {
+    ///         description: Some("Country polygons"),
+    ///         write_index: false,
+    ///         crs: FgbCrs {
+    ///             code: 4326,
+    ///             ..Default::default()
+    ///         },
+    ///         ..Default::default()
     ///     },
-    /// ).unwrap();
+    /// )
+    /// .unwrap();
     /// ```
-    pub fn create<F>(name: &str, geometry_type: GeometryType, cfgfn: F) -> Result<Self>
-    where
-        F: FnOnce(&mut FlatBufferBuilder<'a>, &mut HeaderArgs),
-    {
+    pub fn create_with_options(
+        name: &str,
+        geometry_type: GeometryType,
+        options: FgbWriterOptions,
+    ) -> Result<Self> {
         let mut fbb = flatbuffers::FlatBufferBuilder::new();
 
-        let mut header_args = HeaderArgs {
+        let index_node_size = if options.write_index {
+            PackedRTree::DEFAULT_NODE_SIZE
+        } else {
+            0
+        };
+        let crs_args = CrsArgs {
+            org: options.crs.org.map(|v| fbb.create_string(v)),
+            code: options.crs.code,
+            name: options.crs.name.map(|v| fbb.create_string(v)),
+            description: options.crs.description.map(|v| fbb.create_string(v)),
+            wkt: options.crs.wkt.map(|v| fbb.create_string(v)),
+            code_string: options.crs.code_string.map(|v| fbb.create_string(v)),
+        };
+        let header_args = HeaderArgs {
             name: Some(fbb.create_string(name)),
             geometry_type,
-            index_node_size: PackedRTree::DEFAULT_NODE_SIZE,
+            index_node_size,
+            crs: Some(Crs::create(&mut fbb, &crs_args)),
+            hasZ: options.has_z,
+            hasM: options.has_m,
+            hasT: options.has_t,
+            hasTM: options.has_tm,
+            title: options.title.map(|v| fbb.create_string(v)),
+            description: options.description.map(|v| fbb.create_string(v)),
+            metadata: options.metadata.map(|v| fbb.create_string(v)),
             ..Default::default()
         };
 
-        cfgfn(&mut fbb, &mut header_args);
-
-        let mut feat_writer = FeatureWriter::new(header_args.geometry_type, true, true);
+        let mut feat_writer = FeatureWriter::new(
+            header_args.geometry_type,
+            options.detect_type,
+            options.promote_to_multi,
+        );
         feat_writer.dims = CoordDimensions {
             z: header_args.hasZ,
             m: header_args.hasM,
@@ -108,34 +214,13 @@ impl<'a> FgbWriter<'a> {
         })
     }
 
-    /// Set CRS.
-    ///
-    /// # Usage example:
-    ///
-    /// ```
-    /// # use flatgeobuf::*;
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
-    /// fgb.set_crs(4326, |_fbb, _crs| {});
-    /// ```
-    pub fn set_crs<F>(&mut self, code: i32, cfgfn: F)
-    where
-        F: FnOnce(&mut FlatBufferBuilder<'a>, &mut CrsArgs),
-    {
-        let mut crs_args = CrsArgs {
-            code,
-            ..Default::default()
-        };
-        cfgfn(&mut self.fbb, &mut crs_args);
-        self.header_args.crs = Some(Crs::create(&mut self.fbb, &crs_args));
-    }
-
     /// Add a new column.
     ///
     /// # Usage example:
     ///
     /// ```
     /// # use flatgeobuf::*;
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
     /// fgb.add_column("fid", ColumnType::ULong, |_fbb, col| {
     ///     col.nullable = false;
     /// });
@@ -160,7 +245,7 @@ impl<'a> FgbWriter<'a> {
     /// ```
     /// # use flatgeobuf::*;
     /// use geozero::geojson::GeoJson;
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
     /// let geojson = GeoJson(r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "Point", "coordinates": [1, 1]}}"#);
     /// fgb.add_feature(geojson).ok();
     /// ```
@@ -177,7 +262,7 @@ impl<'a> FgbWriter<'a> {
     /// # use flatgeobuf::*;
     /// use geozero::geojson::GeoJson;
     /// use geozero::{ColumnValue, PropertyProcessor};
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point, |_,_| {}).unwrap();
+    /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
     /// let geom = GeoJson(r#"{"type": "Point", "coordinates": [1, 1]}"#);
     /// fgb.add_feature_geom(geom, |feat| {
     ///     feat.property(0, "fid", &ColumnValue::Long(43)).unwrap();

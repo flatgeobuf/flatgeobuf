@@ -1,5 +1,5 @@
 use clap::{ArgEnum, Args, Parser, Subcommand};
-use flatgeobuf::{FallibleStreamingIterator, FgbReader, FgbWriter};
+use flatgeobuf::*;
 use geozero::error::Result;
 use geozero::geojson::{GeoJsonReader, GeoJsonWriter};
 use geozero::GeozeroDatasource;
@@ -93,11 +93,11 @@ fn write_flatgeobuf(
     // TODO: would make sense if GeozeroDatasource could provide name and geometry_type?
     let name = "";
     let geometry_type = flatgeobuf::GeometryType::Unknown;
-    let mut writer = FgbWriter::create(name, geometry_type, |_builder, header_args| {
-        if !index {
-            header_args.index_node_size = 0;
-        }
-    })?;
+    let options = FgbWriterOptions {
+        write_index: index,
+        ..Default::default()
+    };
+    let mut writer = FgbWriter::create_with_options(name, geometry_type, options)?;
     reader.process(&mut writer)?;
     writer.write(&mut output)?;
     Ok(())

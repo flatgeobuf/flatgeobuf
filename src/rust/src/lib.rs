@@ -54,7 +54,7 @@
 //! # use std::io::{BufReader, BufWriter};
 //!
 //! # fn json_to_fgb() -> geozero::error::Result<()> {
-//! let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+//! let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
 //! let mut fin = BufReader::new(File::open("countries.geojson")?);
 //! let mut reader = GeoJsonReader(&mut fin);
 //! reader.process(&mut fgb)?;

@@ -93,14 +93,18 @@ fn verify_header() {
 
 #[test]
 fn json_to_fgb() -> Result<()> {
-    let mut fgb = FgbWriter::create(
+    let mut fgb = FgbWriter::create_with_options(
         "countries",
         GeometryType::MultiPolygon,
-        |fbb, header_args| {
-            header_args.description = Some(fbb.create_string("Country polygons"));
+        FgbWriterOptions {
+            description: Some("Country polygons"),
+            crs: FgbCrs {
+                code: 4326,
+                ..Default::default()
+            },
+            ..Default::default()
         },
     )?;
-    fgb.set_crs(4326, |_fbb, _crs| {});
     fgb.add_column("fid", ColumnType::ULong, |_fbb, col| {
         col.nullable = false;
     });
@@ -131,7 +135,7 @@ fn json_to_fgb() -> Result<()> {
 
 #[test]
 fn geozero_to_fgb() -> Result<()> {
-    let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon, |_, _| {})?;
+    let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
     let mut fin = BufReader::new(File::open("../../test/data/countries.geojson")?);
     let mut reader = GeoJsonReader(&mut fin);
     reader.process(&mut fgb)?;
@@ -157,10 +161,18 @@ fn test_save_fgb_and_load() -> Result<()> {
         geo_types::line_string![(x: 0.0, y: 0.0), (x: 1.0, y: 1.0),],
     ];
 
-    let mut fgb = FgbWriter::create("test_write", GeometryType::LineString, |_fbb, header| {
-        header.index_node_size = 0;
-    })?;
-    fgb.set_crs(4326, |_fbb, _crs| {});
+    let mut fgb = FgbWriter::create_with_options(
+        "test_write",
+        GeometryType::LineString,
+        FgbWriterOptions {
+            write_index: false,
+            crs: FgbCrs {
+                code: 4326,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )?;
 
     for geom in linestrings.iter() {
         let geom: geo_types::Geometry<f64> = geom.to_owned().into();
