@@ -454,7 +454,7 @@ impl<'a, R: Read, State> FgbReader<'a, R, State> {
 mod inspect {
     use super::*;
 
-    impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
+    impl<'a, R: Read> FgbReader<'a, R, Open> {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
