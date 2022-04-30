@@ -147,10 +147,14 @@ impl<'a> FeatureWriter<'a> {
     }
     fn finish_part(&mut self) {
         let xy = Some(to_fb_vector!(self, xy));
-        let ends = if self.ends.len() > 0 {
-            Some(to_fb_vector!(self, ends))
-        } else {
-            None
+        let ends = match self.ends.len() {
+            0 => None,
+            1 => {
+                // Skip single ends to save FlatBuffers size
+                self.ends.truncate(0);
+                None
+            }
+            _ => Some(to_fb_vector!(self, ends)),
         };
         let z = if self.z.len() > 0 {
             Some(to_fb_vector!(self, z))
@@ -260,7 +264,6 @@ impl GeomProcessor for FeatureWriter<'_> {
     fn point_begin(&mut self, _idx: usize) -> Result<()> {
         self.set_type(GeometryType::Point)?;
         self.reset_bbox();
-        self.xy.reserve(2);
         Ok(())
     }
     fn point_end(&mut self, _idx: usize) -> Result<()> {
@@ -279,7 +282,7 @@ impl GeomProcessor for FeatureWriter<'_> {
             self.set_type(GeometryType::LineString)?;
             self.reset_bbox();
         }
-        self.xy.reserve(size * 2);
+        reserve_total(&mut self.xy, size * 2);
         Ok(())
     }
     fn linestring_end(&mut self, tagged: bool, _idx: usize) -> Result<()> {
@@ -304,7 +307,7 @@ impl GeomProcessor for FeatureWriter<'_> {
             self.set_type(GeometryType::Polygon)?;
             self.reset_bbox();
         }
-        self.ends.reserve(size);
+        reserve_total(&mut self.ends, size);
         Ok(())
     }
     fn polygon_end(&mut self, tagged: bool, _idx: usize) -> Result<()> {
@@ -375,6 +378,12 @@ impl GeomProcessor for FeatureWriter<'_> {
         self.set_type(GeometryType::TIN)?;
         self.reset_bbox();
         Ok(())
+    }
+}
+
+fn reserve_total<T>(vec: &mut Vec<T>, capacity: usize) {
+    if capacity > vec.capacity() {
+        vec.reserve(capacity - vec.capacity());
     }
 }
 
