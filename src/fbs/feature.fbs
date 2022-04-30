@@ -3,7 +3,7 @@ include "header.fbs";
 namespace FlatGeobuf;
 
 table Geometry {
-  ends: [uint];          // Array of end index in flat coordinates per geometry part with exterior ring first (null = 1 part)
+  ends: [uint];          // Array of end index in flat coordinates per geometry part with exterior ring first (NOTE: allowed and recommended to be null if 1 part)
   xy: [double];          // Flat x and y coordinate array (flat pairs) (should not be null or empty)
   z: [double];           // Flat z height array (should not be null or empty if header has_z)
   m: [double];           // Flat m measurement array (should not be null or empty if header has_m)
