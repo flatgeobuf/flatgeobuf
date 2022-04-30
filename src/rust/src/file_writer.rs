@@ -84,7 +84,7 @@ impl<'a> FgbWriter<'a> {
 
         cfgfn(&mut fbb, &mut header_args);
 
-        let mut feat_writer = FeatureWriter::new(header_args.geometry_type, true);
+        let mut feat_writer = FeatureWriter::new(header_args.geometry_type, true, true);
         feat_writer.dims = CoordDimensions {
             z: header_args.hasZ,
             m: header_args.hasM,
