@@ -8,6 +8,7 @@
 - Support for file reading without seek
 - Make reader state types public
 - Writer: Fix bounding boxes in index
+- Update to geozero 0.9
 
 ## [0.7.0] - 2022-03-14
 
