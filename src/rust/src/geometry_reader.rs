@@ -198,7 +198,8 @@ fn read_multilinestring<P: GeomProcessor>(
     geometry: &Geometry,
     idx: usize,
 ) -> Result<()> {
-    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() <= 1
+    {
         if let Some(xy) = geometry.xy() {
             processor.multilinestring_begin(1, idx)?;
             read_multilinestring_part(processor, geometry, 0, xy.len(), 0)?;
@@ -230,7 +231,8 @@ fn read_triangle<P: GeomProcessor>(
     tagged: bool,
     idx: usize,
 ) -> Result<()> {
-    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() <= 1
+    {
         if let Some(xy) = geometry.xy() {
             processor.triangle_begin(tagged, 1, idx)?;
             read_multilinestring_part(processor, geometry, 0, xy.len(), 0)?;
@@ -257,7 +259,8 @@ fn read_triangle<P: GeomProcessor>(
 }
 
 fn read_tin<P: GeomProcessor>(processor: &mut P, geometry: &Geometry, idx: usize) -> Result<()> {
-    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() <= 1
+    {
         processor.tin_begin(1, idx)?;
         read_triangle(processor, geometry, false, 0)?;
         processor.tin_end(idx)?;
@@ -276,7 +279,8 @@ fn read_polygon<P: GeomProcessor>(
     tagged: bool,
     idx: usize,
 ) -> Result<()> {
-    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() < 2 {
+    if geometry.ends().is_none() || geometry.ends().ok_or(GeozeroError::GeometryFormat)?.len() <= 1
+    {
         // single ring
         processor.polygon_begin(tagged, 1, idx)?;
         let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
