@@ -1,13 +1,15 @@
 # Changelog
 
-## [0.8.0] - UNRELEASED
+## [0.8.0] - 2022-05-04
 
-- Automatic conversion from single to multi geometry types
+- Breaking: New create methods for FgbWriter, with or without options
+- Optional conversion from single to multi geometry types
 - Support reading files with undefined feature count
   - Breaking: features_count returns None if undefined
 - Support for file reading without seek
 - Make reader state types public
 - Writer: Fix bounding boxes in index
+- Writer: Reduced file size
 - Update to geozero 0.9
 
 ## [0.7.0] - 2022-03-14
