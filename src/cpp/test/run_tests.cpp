@@ -5,3 +5,4 @@
 #include "point.h"
 #include "roundtrips.h"
 #include "packedrtree.h"
+#include "verifier.h"
