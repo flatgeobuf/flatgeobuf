@@ -143,6 +143,7 @@ List the supporting organizations. There must be at least three OGC organization
 ////
 
 * Planet Labs
+* Ordnance Survey
 
 == Intellectual Property Rights
 
