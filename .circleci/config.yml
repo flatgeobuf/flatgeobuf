@@ -118,6 +118,7 @@ jobs:
 
   test-rust:
     executor: rust
+    resource_class: large
     steps:
       - run:
           name: Install Debian dependencies
