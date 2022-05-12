@@ -127,10 +127,10 @@ jobs:
             sudo apt-get -y update
             sudo apt-get -y install libssl-dev
       - checkout
-      - setup-sccache
-      - restore-sccache-cache
+      #- setup-sccache
+      #- restore-sccache-cache
       - run: cd src/rust && cargo test
-      - save-sccache-cache
+      #- save-sccache-cache
 
 workflows:
   main:
