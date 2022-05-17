@@ -55,8 +55,8 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
 describe('geojson module', () => {
     let lws;
 
-    before(() => {
-        lws = LocalWebServer.create(undefined);
+    before(async () => {
+        lws = await LocalWebServer.create();
     });
 
     after(() => {
@@ -528,14 +528,5 @@ describe('geojson module', () => {
             };
             expect(geojson).to.deep.equal(expected);
         });
-
-        /*it('Should parse topp:states fgb produced from GeoServer', () => {
-      const buffer = readFileSync('./test/data/topp_states.fgb')
-      const bytes = new Uint8Array(buffer)
-      const geojson = deserialize(bytes)
-      expect(geojson.features.length).to.eq(49)
-      for (let f of geojson.features)
-        expect((f.geometry.coordinates[0] as number[]).length).to.be.greaterThan(0)
-    })*/
     });
 });

@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import 'mocha';
 import { readFileSync } from 'fs';
 
-import { arrayToStream, takeAsync } from './streams/utils';
-import { deserialize, serialize } from './ol';
+import { arrayToStream, takeAsync } from './streams/utils.js';
+import { deserialize, serialize } from './ol.js';
 
 import { IFeature } from './generic/feature.js';
 
@@ -35,12 +35,6 @@ function makeFeatureCollectionFromArray(
         const f = new Feature({ geometry });
         return f;
     });
-    /*if (properties)
-    features.forEach(f => f.properties = properties)
-  return {
-    type: 'FeatureCollection',
-    features,
-  }*/
     return features;
 }
 
