@@ -127,6 +127,19 @@ The following implementations use the proposed Community standard.
 * [x] Yes
 * [ ] No
 
+*Implementation name: ldproxy
+
+*Date of most recent version: 2022-05-04
+
+*Implementation description: ldproxy is open source implementation to share data via OGC Web APIs; FlatGeobuf support has been added in April 2022 and will be included in version 3.3.0
+
+*Implementation URL: https://github.com/interactive-instruments/ldproxy
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
 == Public availability
 
 Is the proposed Community standard currently publicly available?
@@ -145,7 +158,7 @@ List the supporting organizations. There must be at least three OGC organization
 * CARTO
 * Ordnance Survey
 * Planet Labs
-* Ordnance Survey
+* interactive instruments
 
 == Intellectual Property Rights
 
