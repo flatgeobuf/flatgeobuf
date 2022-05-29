@@ -21,7 +21,7 @@ import { arrayToStream, takeAsync } from './streams/utils.js';
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
-import HeaderMeta from './HeaderMeta.js';
+import HeaderMeta from './header-meta.js';
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,

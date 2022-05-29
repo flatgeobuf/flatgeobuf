@@ -3,7 +3,7 @@ import { default as OLFeature } from 'ol/Feature.js';
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
-import HeaderMeta from '../HeaderMeta.js';
+import HeaderMeta from '../header-meta.js';
 import { createGeometryOl } from './geometry.js';
 import {
     fromFeature as genericFromFeature,

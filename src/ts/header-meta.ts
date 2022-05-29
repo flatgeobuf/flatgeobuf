@@ -1,7 +1,7 @@
 import * as flatbuffers from 'flatbuffers';
 
-import ColumnMeta from './ColumnMeta.js';
-import CrsMeta from './CrsMeta.js';
+import ColumnMeta from './column-meta.js';
+import CrsMeta from './crs-meta.js';
 import { GeometryType } from './flat-geobuf/geometry-type.js';
 import { Header } from './flat-geobuf/header.js';
 

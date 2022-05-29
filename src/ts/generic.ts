@@ -7,7 +7,7 @@ import {
 
 import { Rect } from './packedrtree.js';
 import { IFeature } from './generic/feature.js';
-import HeaderMeta from './HeaderMeta.js';
+import HeaderMeta from './header-meta.js';
 
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 

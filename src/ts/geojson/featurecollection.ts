@@ -1,5 +1,5 @@
-import ColumnMeta from '../ColumnMeta.js';
-import HeaderMeta from '../HeaderMeta.js';
+import ColumnMeta from '../column-meta.js';
+import HeaderMeta from '../header-meta.js';
 
 import { fromFeature } from './feature.js';
 import { parseGeometry, parseGC } from './geometry.js';

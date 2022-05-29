@@ -1,9 +1,9 @@
 import * as flatbuffers from 'flatbuffers';
 
-import ColumnMeta from '../ColumnMeta.js';
+import ColumnMeta from '../column-meta.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import HeaderMeta from '../HeaderMeta.js';
+import HeaderMeta from '../header-meta.js';
 import {
     buildGeometry,
     ISimpleGeometry,

@@ -9,9 +9,9 @@ import {
     streamSearch,
 } from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
-import Config from './Config.js';
-import Logger from './Logger.js';
-import HeaderMeta, { fromByteBuffer } from './HeaderMeta.js';
+import Config from './config.js';
+import Logger from './logger.js';
+import HeaderMeta, { fromByteBuffer } from './header-meta.js';
 import { Feature } from './flat-geobuf/feature.js';
 
 export class HttpReader {

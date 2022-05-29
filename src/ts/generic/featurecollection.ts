@@ -1,18 +1,18 @@
 import * as flatbuffers from 'flatbuffers';
 import slice from 'slice-source';
 
-import ColumnMeta from '../ColumnMeta.js';
+import ColumnMeta from '../column-meta.js';
 
 import { Header } from '../flat-geobuf/header.js';
 
 import { Column } from '../flat-geobuf/column.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import HeaderMeta, { fromByteBuffer } from '../HeaderMeta.js';
+import HeaderMeta, { fromByteBuffer } from '../header-meta.js';
 
 import { buildFeature, IFeature } from './feature.js';
-import { HttpReader } from '../HttpReader.js';
-import Logger from '../Logger.js';
+import { HttpReader } from '../http-reader.js';
+import Logger from '../logger.js';
 import { Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
