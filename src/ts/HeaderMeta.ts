@@ -5,67 +5,62 @@ import CrsMeta from './CrsMeta.js';
 import { GeometryType } from './flat-geobuf/geometry-type.js';
 import { Header } from './flat-geobuf/header.js';
 
-export default class HeaderMeta {
-    constructor(
-        public geometryType: GeometryType,
-        public columns: ColumnMeta[] | null,
-        public envelope: Float64Array | null,
-        public featuresCount: number,
-        public indexNodeSize: number,
-        public crs: CrsMeta | null,
-        public title: string | null,
-        public description: string | null,
-        public metadata: string | null
-    ) {}
+export default interface HeaderMeta {
+    geometryType: GeometryType;
+    columns: ColumnMeta[] | null;
+    envelope: Float64Array | null;
+    featuresCount: number;
+    indexNodeSize: number;
+    crs: CrsMeta | null;
+    title: string | null;
+    description: string | null;
+    metadata: string | null;
+}
 
-    static fromByteBuffer(bb: flatbuffers.ByteBuffer): HeaderMeta {
-        const header = Header.getRootAsHeader(bb);
-        const featuresCount = header.featuresCount();
-        const indexNodeSize = header.indexNodeSize();
+export function fromByteBuffer(bb: flatbuffers.ByteBuffer): HeaderMeta {
+    const header = Header.getRootAsHeader(bb);
+    const featuresCount = header.featuresCount();
+    const indexNodeSize = header.indexNodeSize();
 
-        const columns: ColumnMeta[] = [];
-        for (let j = 0; j < header.columnsLength(); j++) {
-            const column = header.columns(j);
-            if (!column) throw new Error('Column unexpectedly missing');
-            if (!column.name())
-                throw new Error('Column name unexpectedly missing');
-            columns.push(
-                new ColumnMeta(
-                    column.name() as string,
-                    column.type(),
-                    column.title(),
-                    column.description(),
-                    column.width(),
-                    column.precision(),
-                    column.scale(),
-                    column.nullable(),
-                    column.unique(),
-                    column.primaryKey()
-                )
-            );
-        }
-        const crs = header.crs();
-        const crsMeta = crs
-            ? new CrsMeta(
-                  crs.org(),
-                  crs.code(),
-                  crs.name(),
-                  crs.description(),
-                  crs.wkt(),
-                  crs.codeString()
-              )
-            : null;
-        const headerMeta = new HeaderMeta(
-            header.geometryType(),
-            columns,
-            null,
-            Number(featuresCount),
-            indexNodeSize,
-            crsMeta,
-            header.title(),
-            header.description(),
-            header.metadata()
-        );
-        return headerMeta;
+    const columns: ColumnMeta[] = [];
+    for (let j = 0; j < header.columnsLength(); j++) {
+        const column = header.columns(j);
+        if (!column) throw new Error('Column unexpectedly missing');
+        if (!column.name()) throw new Error('Column name unexpectedly missing');
+        columns.push({
+            name: column.name() as string,
+            type: column.type(),
+            title: column.title(),
+            description: column.description(),
+            width: column.width(),
+            precision: column.precision(),
+            scale: column.scale(),
+            nullable: column.nullable(),
+            unique: column.unique(),
+            primary_key: column.primaryKey(),
+        });
     }
+    const crs = header.crs();
+    const crsMeta: CrsMeta | null = crs
+        ? {
+              org: crs.org(),
+              code: crs.code(),
+              name: crs.name(),
+              description: crs.description(),
+              wkt: crs.wkt(),
+              code_string: crs.codeString(),
+          }
+        : null;
+    const headerMeta: HeaderMeta = {
+        geometryType: header.geometryType(),
+        columns: columns,
+        envelope: null,
+        featuresCount: Number(featuresCount),
+        indexNodeSize: indexNodeSize,
+        crs: crsMeta,
+        title: header.title(),
+        description: header.description(),
+        metadata: header.metadata(),
+    };
+    return headerMeta;
 }

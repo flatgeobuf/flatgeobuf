@@ -1,5 +1,4 @@
 import ColumnMeta from '../ColumnMeta.js';
-import { ColumnType } from '../flat-geobuf/column-type.js';
 import HeaderMeta from '../HeaderMeta.js';
 
 import { fromFeature } from './feature.js';
@@ -9,6 +8,7 @@ import {
     deserialize as genericDeserialize,
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
+    mapColumn,
 } from '../generic/featurecollection.js';
 import { Rect } from '../packedrtree.js';
 import { buildFeature, IProperties } from '../generic/feature.js';
@@ -91,17 +91,6 @@ export function deserializeFiltered(
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn);
 }
 
-function valueToType(value: boolean | number | string | unknown): ColumnType {
-    if (typeof value === 'boolean') return ColumnType.Bool;
-    else if (typeof value === 'number')
-        if (value % 1 === 0) return ColumnType.Int;
-        else return ColumnType.Double;
-    else if (typeof value === 'string') return ColumnType.String;
-    else if (value === null) return ColumnType.String;
-    else if (typeof value === 'object') return ColumnType.Json;
-    else throw new Error(`Unknown type (value '${value}')`);
-}
-
 function introspectHeaderMeta(
     featurecollection: GeoJsonFeatureCollection
 ): HeaderMeta {
@@ -110,34 +99,20 @@ function introspectHeaderMeta(
 
     let columns: ColumnMeta[] | null = null;
     if (properties)
-        columns = Object.keys(properties).map(
-            (k) =>
-                new ColumnMeta(
-                    k,
-                    valueToType(properties[k]),
-                    null,
-                    null,
-                    -1,
-                    -1,
-                    -1,
-                    true,
-                    false,
-                    false
-                )
-        );
+        columns = Object.keys(properties).map((k) => mapColumn(properties, k));
 
     const geometryType = inferGeometryType(featurecollection.features);
-    const headerMeta = new HeaderMeta(
+    const headerMeta: HeaderMeta = {
         geometryType,
         columns,
-        null,
-        featurecollection.features.length,
-        0,
-        null,
-        null,
-        null,
-        null
-    );
+        envelope: null,
+        featuresCount: featurecollection.features.length,
+        indexNodeSize: 0,
+        crs: null,
+        title: null,
+        description: null,
+        metadata: null,
+    };
 
     return headerMeta;
 }

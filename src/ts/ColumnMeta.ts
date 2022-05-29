@@ -1,16 +1,14 @@
 import { ColumnType } from './flat-geobuf/column-type.js';
 
-export default class ColumnMeta {
-    constructor(
-        public name: string,
-        public type: ColumnType,
-        public title: string | null,
-        public description: string | null,
-        public width: number,
-        public precision: number,
-        public scale: number,
-        public nullable: boolean,
-        public unique: boolean,
-        public primary_key: boolean
-    ) {}
+export default interface ColumnMeta {
+    name: string;
+    type: ColumnType;
+    title: string | null;
+    description: string | null;
+    width: number;
+    precision: number;
+    scale: number;
+    nullable: boolean;
+    unique: boolean;
+    primary_key: boolean;
 }

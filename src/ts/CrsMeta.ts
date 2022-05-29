@@ -1,10 +1,8 @@
-export default class CrsMeta {
-    constructor(
-        public org: string | null,
-        public code: number,
-        public name: string | null,
-        public description: string | null,
-        public wkt: string | null,
-        public code_string: string | null
-    ) {}
+export default interface CrsMeta {
+    org: string | null;
+    code: number;
+    name: string | null;
+    description: string | null;
+    wkt: string | null;
+    code_string: string | null;
 }
