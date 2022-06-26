@@ -129,7 +129,7 @@ jobs:
       - checkout
       #- setup-sccache
       #- restore-sccache-cache
-      - run: cd src/rust && cargo test
+      - run: cd src/rust && cargo test --no-default-features && cargo test
       #- save-sccache-cache
 
 workflows:
