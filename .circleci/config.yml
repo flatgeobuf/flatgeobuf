@@ -12,7 +12,7 @@ executors:
       - image: mcr.microsoft.com/dotnet/sdk:6.0
   rust:
     docker:
-      - image: cimg/rust:1.60.0
+      - image: cimg/rust:1.62.1
 
 commands:
   setup-sccache:
