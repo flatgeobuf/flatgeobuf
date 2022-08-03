@@ -2,7 +2,7 @@
 name = "flatgeobuf"
 version = "0.8.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
-edition = "2021"
+edition = "2018"
 description = "FlatGeobuf for Rust."
 homepage = "https://flatgeobuf.org/"
 repository = "https://github.com/flatgeobuf/flatgeobuf/tree/master/src/rust"
