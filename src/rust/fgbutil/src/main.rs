@@ -1,10 +1,20 @@
 use clap::{ArgEnum, Args, Parser, Subcommand};
 use flatgeobuf::*;
 use geozero::error::Result;
-use geozero::geojson::{GeoJsonReader, GeoJsonWriter};
+use geozero::geojson::GeoJsonWriter;
+use geozero::geojson::read_geojson_fc;
+use geozero::FeatureProcessor;
 use geozero::GeozeroDatasource;
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{Read, BufRead, BufReader, BufWriter, Write};
+
+pub struct GeoJsonReaderStream<'a, R: Read>(pub &'a mut R);
+
+impl<'a, R: Read> GeozeroDatasource for GeoJsonReaderStream<'a, R> {
+    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
+        read_geojson_fc(&mut self.0, processor)
+    }
+}
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -111,7 +121,7 @@ fn transform(
     index: bool,
 ) -> Result<()> {
     match inputformat {
-        Format::Geojson => write(outputformat, GeoJsonReader(&mut input), output, index)?,
+        Format::Geojson => write(outputformat, GeoJsonReaderStream(&mut input), output, index)?,
         Format::Flatgeobuf => write(
             outputformat,
             FgbReader::open(&mut input)?.select_all_seq()?,
