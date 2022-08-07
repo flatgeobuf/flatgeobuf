@@ -609,7 +609,7 @@ mod test {
                 GeometryType::GeometryCollection
             ))
             .unwrap(),
-            r#"{"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}"#,
+            r#"{"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}]}"#,
         );
 
         let mut geojson = GeoJson(
@@ -675,10 +675,9 @@ mod test {
         let mut fgb_writer = FeatureWriter::new(GeometryType::Unknown, true, false);
         geojson.process(&mut fgb_writer).unwrap();
         let json = write_as_geojson(fgb_writer)?;
-        // assert_eq!(json, geojson.0); // geozero JSON writer skips GeometryCollection
         assert_eq!(
             json,
-            r#"{"type": "Feature", "properties": {"fid": 0, "name": "Collection"}, "geometry": {"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}}"#
+            r#"{"type": "Feature", "properties": {"fid": 0, "name": "Collection"}, "geometry": {"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}]}}"#
         );
         Ok(())
     }
@@ -730,7 +729,7 @@ mod test {
         // assert_eq!(json, single); // geozero JSON writer skips GeometryCollection
         assert_eq!(
             json,
-            r#"{"type": "Feature", "properties": {"fid": 0, "name": "Collection"}, "geometry": {"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}}"#
+            r#"{"type": "Feature", "properties": {"fid": 0, "name": "Collection"}, "geometry": {"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [100.1,0.1]},{"type": "LineString", "coordinates": [[101.1,0.1],[102.1,1.1]]}]}}"#
         );
 
         Ok(())
