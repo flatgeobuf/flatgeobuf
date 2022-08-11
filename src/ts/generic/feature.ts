@@ -105,6 +105,11 @@ export function buildFeature(
                     view.setBigInt64(offset, BigInt(value), true);
                     offset += 8;
                     break;
+                case ColumnType.Float:
+                    prep(4);
+                    view.setFloat32(offset, value as number, true);
+                    offset += 4;
+                    break;
                 case ColumnType.Double:
                     prep(8);
                     view.setFloat64(offset, value as number, true);
@@ -213,6 +218,11 @@ export function parseProperties(
             case ColumnType.ULong: {
                 properties[name] = Number(view.getBigUint64(offset, true));
                 offset += 8;
+                break;
+            }
+            case ColumnType.Float: {
+                properties[name] = view.getFloat32(offset, true);
+                offset += 4;
                 break;
             }
             case ColumnType.Double: {
