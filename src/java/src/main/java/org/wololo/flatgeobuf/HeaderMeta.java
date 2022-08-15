@@ -53,10 +53,16 @@ public class HeaderMeta {
             Crs.addCode(builder, headerMeta.srid);
             crsOffset = Crs.endCrs(builder);
         }
+        int envelopeOffset = 0;
+        if (headerMeta.envelope != null) {
+            envelopeOffset = Header.createEnvelopeVector(builder,
+            new double[] { headerMeta.envelope.getMinX(), headerMeta.envelope.getMinY(), headerMeta.envelope.getMaxX(), headerMeta.envelope.getMaxY() });
+        }
         Header.startHeader(builder);
         Header.addGeometryType(builder, headerMeta.geometryType);
-        Header.addIndexNodeSize(builder, 0);
+        Header.addIndexNodeSize(builder, headerMeta.indexNodeSize );
         Header.addColumns(builder, columnsOffset);
+        Header.addEnvelope(builder, envelopeOffset);
         Header.addName(builder, nameOffset);
         Header.addCrs(builder, crsOffset);
         Header.addFeaturesCount(builder, headerMeta.featuresCount);
