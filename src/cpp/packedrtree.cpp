@@ -220,12 +220,9 @@ std::vector<std::pair<uint64_t, uint64_t>> PackedRTree::generateLevelBounds(cons
     n = numNodes;
     for (auto size : levelNumNodes)
         levelOffsets.push_back(n -= size);
-    std::reverse(levelOffsets.begin(), levelOffsets.end());
-    std::reverse(levelNumNodes.begin(), levelNumNodes.end());
     std::vector<std::pair<uint64_t, uint64_t>> levelBounds;
     for (size_t i = 0; i < levelNumNodes.size(); i++)
         levelBounds.push_back(std::pair<uint64_t, uint64_t>(levelOffsets[i], levelOffsets[i] + levelNumNodes[i]));
-    std::reverse(levelBounds.begin(), levelBounds.end());
     return levelBounds;
 }
 
