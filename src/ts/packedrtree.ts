@@ -55,12 +55,9 @@ export function generateLevelBounds(
         levelOffsets.push(n - size);
         n -= size;
     }
-    levelOffsets.reverse();
-    levelNumNodes.reverse();
     const levelBounds: Array<[number, number]> = [];
     for (let i = 0; i < levelNumNodes.length; i++)
         levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]]);
-    levelBounds.reverse();
     return levelBounds;
 }
 

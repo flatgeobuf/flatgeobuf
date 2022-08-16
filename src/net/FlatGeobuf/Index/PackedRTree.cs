@@ -54,12 +54,9 @@ namespace FlatGeobuf.Index
                 levelOffsets.Add(n - size);
                 n -= size;
             };
-            levelOffsets.Reverse();
-            levelNumNodes.Reverse();
             var levelBounds = new List<(ulong Start, ulong End)>();
             for (var i = 0; i < levelNumNodes.Count; i++)
                 levelBounds.Add((levelOffsets[i], levelOffsets[i] + levelNumNodes[i]));
-            levelBounds.Reverse();
             return levelBounds;
         }
 

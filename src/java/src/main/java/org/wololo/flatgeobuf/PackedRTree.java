@@ -54,12 +54,9 @@ public class PackedRTree {
             levelOffsets.add(n - size);
             n -= size;
         }
-        Collections.reverse(levelOffsets);
-        Collections.reverse(levelNumNodes);
         ArrayList<Integer> levelEnds = new ArrayList<Integer>();
         for (int i = 0; i < levelNumNodes.size(); i++)
             levelEnds.add(levelOffsets.get(i) + levelNumNodes.get(i));
-        Collections.reverse(levelEnds);
         return levelEnds;
     }
 
