@@ -82,10 +82,11 @@ jobs:
             sudo apt-get -y install clang
       - run: ./script/getcppdeps.sh
       - run:
+          name: Build tests and examples
+          command: cd src/cpp && make
+      - run:
           name: Run tests
-          command: |
-            clang++ -std=c++14 -Wall -Wfloat-conversion -Wmissing-declarations -fsanitize=float-divide-by-zero -g -o ./testcpp -Isrc/cpp/include src/cpp/packedrtree.cpp src/cpp/test/run_tests.cpp
-            ./testcpp -d yes
+          command: cd src/cpp && make test
 
   test-java:
     executor: java

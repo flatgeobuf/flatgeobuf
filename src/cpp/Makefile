@@ -21,6 +21,8 @@ build/run_tests: packedrtree.o test/run_tests.o
 build/geojson2fgb: packedrtree.o examples/geojson2fgb.o
 	$(CPP) -o $@ $^
 
+# We don't yet implement any "smart" dependency mgmt, e.g. if getcppdeps gets updated
+# you'd need to run clean_dups && scripts/getcppdeps.sh again
 check_deps: include/flatbuffers include/mapbox include/rapidjson
 
 clean_deps:
