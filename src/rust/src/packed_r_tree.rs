@@ -326,13 +326,10 @@ impl PackedRTree {
             level_offsets.push(n - size);
             n -= size;
         }
-        level_offsets.reverse();
-        level_num_nodes.reverse();
         let mut level_bounds = Vec::with_capacity(level_num_nodes.len());
         for i in 0..level_num_nodes.len() {
             level_bounds.push((level_offsets[i], level_offsets[i] + level_num_nodes[i]));
         }
-        level_bounds.reverse();
         level_bounds
     }
 
