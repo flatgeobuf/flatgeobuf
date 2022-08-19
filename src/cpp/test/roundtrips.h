@@ -21,16 +21,6 @@ const std::string getFixture(const std::string &path)
     return buffer.str();
 }
 
-namespace Catch
-{
-template<>
-struct StringMaker<feature_collection> {
-    static std::string convert( feature_collection const& value ) {
-        return stringify( value );
-    }
-};
-}
-
 feature_collection roundtrip(feature_collection input, bool createIndex = false) {
     std::vector<uint8_t> flatgeobuf;
     serialize(flatgeobuf, input, createIndex);

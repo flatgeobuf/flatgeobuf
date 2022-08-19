@@ -1,2 +1,4 @@
 main
 point.fgb
+*.o
+build/*
