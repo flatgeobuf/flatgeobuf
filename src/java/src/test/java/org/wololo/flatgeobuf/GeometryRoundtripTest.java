@@ -1,4 +1,4 @@
-package org.wololo.flatgeobuf.test;
+package org.wololo.flatgeobuf;
 
 import static org.junit.Assert.assertEquals;
 
