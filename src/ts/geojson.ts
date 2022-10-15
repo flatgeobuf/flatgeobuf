@@ -12,6 +12,7 @@ import { IGeoJsonFeature } from './geojson/feature.js';
 import { HeaderMetaFn } from './generic.js';
 
 /**
+ * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
  */
 export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
@@ -20,10 +21,10 @@ export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
 }
 
 /**
- *
+ * Deserialize FlatGeobuf into GeoJSON
  * @param input Input byte array, stream or string
  * @param rect Filter rectangle
- * @param headerMetaFn Callback that will recieve [[HeaderMeta]] when available
+ * @param headerMetaFn Callback that will recieve header metadata when available
  */
 export function deserialize(
     input: Uint8Array | ReadableStream | string,

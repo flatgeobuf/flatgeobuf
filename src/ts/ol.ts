@@ -9,11 +9,21 @@ import {
 import { HeaderMetaFn } from './generic.js';
 import { Rect } from './packedrtree.js';
 
+/**
+ * Serialize OpenLayers Features to FlatGeobuf
+ * @param features Features to serialize
+ */
 export function serialize(features: IFeature[]): Uint8Array {
     const bytes = fcSerialize(features);
     return bytes;
 }
 
+/**
+ * Deserialize FlatGeobuf into OpenLayers Features
+ * @param input Input byte array, stream or string
+ * @param rect Filter rectangle
+ * @param headerMetaFn Callback that will recieve header metadata when available
+ */
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
