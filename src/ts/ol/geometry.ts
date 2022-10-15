@@ -10,7 +10,7 @@ import MultiLineString from 'ol/geom/MultiLineString.js';
 import Polygon from 'ol/geom/Polygon.js';
 import MultiPolygon from 'ol/geom/MultiPolygon.js';
 
-export function createGeometryOl(
+export function createGeometry(
     geometry: Geometry | null,
     headerGeomType: GeometryType
 ): ISimpleGeometry | undefined {
@@ -43,7 +43,7 @@ export function createGeometryOl(
         const mp = new MultiPolygon([]);
         for (let i = 0; i < geometry.partsLength(); i++)
             mp.appendPolygon(
-                createGeometryOl(
+                createGeometry(
                     geometry.parts(i) as Geometry,
                     GeometryType.Polygon
                 ) as Polygon

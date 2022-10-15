@@ -5,8 +5,6 @@ import { readFileSync } from 'fs';
 import { arrayToStream, takeAsync } from './streams/utils.js';
 import { deserialize, serialize } from './ol.js';
 
-import { IFeature } from './generic/feature.js';
-
 import Feature from 'ol/Feature.js';
 import WKT from 'ol/format/WKT.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
@@ -29,7 +27,7 @@ function makeFeatureCollection(wkt: string /*, properties?: any*/) {
 
 function makeFeatureCollectionFromArray(
     wkts: string[] /*, properties?: any*/
-): IFeature[] {
+): Feature[] {
     const geometries = wkts.map((wkt) => format.readGeometry(wkt));
     const features = geometries.map((geometry) => {
         const f = new Feature({ geometry });
