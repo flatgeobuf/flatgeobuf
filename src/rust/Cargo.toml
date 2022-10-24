@@ -16,11 +16,11 @@ default = ["http"]
 http = ["http-range-client", "bytes"]
 
 [dependencies]
-flatbuffers = "2.1.2"
+flatbuffers = "22.9.29"
 byteorder = "1.4.3"
 geozero = { version = "0.9.5", default-features = false }
 http-range-client = { version = "0.6.0", optional = true }
-bytes = { version = "1.2.0", optional = true }
+bytes = { version = "1.2.1", optional = true }
 log = "0.4.17"
 fallible-streaming-iterator = "0.1.9"
 tempfile = "3.3.0"
@@ -30,11 +30,11 @@ geozero = { version = "0.9.5", default-features = true }
 seek_bufread = "1.2.2"
 rand = "0.8.5"
 hex = "0.4.3"
-criterion = "0.3.6"
-tokio = { version = "1.20.1", default-features = false, features = ["macros"] }
+criterion = "0.4.0"
+tokio = { version = "1.21.2", default-features = false, features = ["macros"] }
 # One test needs SSL support; just use the default system bindings for that.
-reqwest = { version = "0.11.11", default-features = true }
-geo-types = "0.7.6"
+reqwest = { version = "0.11.12", default-features = true }
+geo-types = "0.7.7"
 
 [[bench]]
 name = "read"

@@ -177,10 +177,10 @@ impl<'a> FgbWriter<'a> {
             geometry_type,
             index_node_size,
             crs: Some(Crs::create(&mut fbb, &crs_args)),
-            hasZ: options.has_z,
-            hasM: options.has_m,
-            hasT: options.has_t,
-            hasTM: options.has_tm,
+            has_z: options.has_z,
+            has_m: options.has_m,
+            has_t: options.has_t,
+            has_tm: options.has_tm,
             title: options.title.map(|v| fbb.create_string(v)),
             description: options.description.map(|v| fbb.create_string(v)),
             metadata: options.metadata.map(|v| fbb.create_string(v)),
@@ -193,10 +193,10 @@ impl<'a> FgbWriter<'a> {
             options.promote_to_multi,
         );
         feat_writer.dims = CoordDimensions {
-            z: header_args.hasZ,
-            m: header_args.hasM,
-            t: header_args.hasT,
-            tm: header_args.hasTM,
+            z: header_args.has_z,
+            m: header_args.has_m,
+            t: header_args.has_t,
+            tm: header_args.has_tm,
         };
 
         let tmpfile = NamedTempFile::new()?;

@@ -37,15 +37,16 @@ fn read_file_low_level() -> Result<()> {
     let header = size_prefixed_root_as_header(&header_buf).unwrap();
     assert_eq!(header.name(), Some("countries"));
     assert!(header.envelope().is_some());
+    let safe_vec: Vec<f64> = header.envelope().unwrap().into_iter().collect();
     assert_eq!(
-        header.envelope().unwrap().safe_slice(),
+        safe_vec,
         &[-180.0, -85.609038, 180.0, 83.64513]
     );
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
-    assert_eq!(header.hasZ(), false);
-    assert_eq!(header.hasM(), false);
-    assert_eq!(header.hasT(), false);
-    assert_eq!(header.hasTM(), false);
+    assert_eq!(header.has_t(), false);
+    assert_eq!(header.has_m(), false);
+    assert_eq!(header.has_t(), false);
+    assert_eq!(header.has_tm(), false);
     assert!(header.columns().is_some());
     let columns = header.columns().unwrap();
     assert_eq!(columns.len(), 2);
@@ -558,10 +559,10 @@ fn multi_dim() -> Result<()> {
     let fgb = FgbReader::open(&mut filein)?;
     let geometry_type = fgb.header().geometry_type();
     assert_eq!(geometry_type, GeometryType::MultiPolygon);
-    assert_eq!(fgb.header().hasZ(), true);
-    assert_eq!(fgb.header().hasM(), false);
-    assert_eq!(fgb.header().hasT(), false);
-    assert_eq!(fgb.header().hasTM(), false);
+    assert_eq!(fgb.header().has_z(), true);
+    assert_eq!(fgb.header().has_m(), false);
+    assert_eq!(fgb.header().has_t(), false);
+    assert_eq!(fgb.header().has_tm(), false);
     assert_eq!(fgb.header().features_count(), 87);
 
     let mut fgb = fgb.select_all()?;
