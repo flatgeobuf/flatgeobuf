@@ -30,7 +30,8 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn
 ): AsyncGenerator<OlFeature> | OlFeature[] {
-    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn) as OlFeature[];
+    if (input instanceof Uint8Array)
+        return fcDeserialize(input, headerMetaFn) as OlFeature[];
     else if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn);
     else return fcDeserializeFiltered(input, rect as Rect, headerMetaFn);
