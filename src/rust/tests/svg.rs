@@ -79,7 +79,7 @@ impl FeatureToSvg for Feature<'_> {
 }
 
 fn feature_from_u8<'a>(buf: &'a [u8], loc: usize) -> Feature<'a> {
-    Feature::init_from_table(flatbuffers::Table::new(buf, loc))
+    unsafe { Feature::init_from_table(flatbuffers::Table::new(buf, loc)) }
 }
 
 #[allow(dead_code)]

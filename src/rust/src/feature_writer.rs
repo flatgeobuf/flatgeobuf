@@ -49,7 +49,7 @@ macro_rules! to_fb_vector {
             let mut iter = std::mem::take(&mut $self.$items).into_iter();
             $self.fbb.create_vector_from_iter(&mut iter)
         } else {
-            let items = $self.fbb.create_vector_direct(&$self.$items);
+            let items = $self.fbb.create_vector(&$self.$items);
             $self.$items.truncate(0);
             items
         }
@@ -207,7 +207,7 @@ impl<'a> FeatureWriter<'a> {
                 },
             )
         };
-        let properties = Some(self.fbb.create_vector_direct(&self.properties));
+        let properties = Some(self.fbb.create_vector(&self.properties));
         self.properties.truncate(0);
         let f = Feature::create(
             &mut self.fbb,
