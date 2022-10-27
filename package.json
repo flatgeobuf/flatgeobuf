@@ -3,7 +3,7 @@
   "version": "3.23.1",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
-    "build": "tsc -p config/tsconfig.mjs.json && rollup -c config/rollup.config.js",
+    "build": "rm ./lib -rf && swc ./src/ts -d ./lib && mv ./lib/ts/* ./lib && rm ./lib/ts -rf && rollup -c config/rollup.config.js",
     "lint": "eslint ./src/ts --ext .js,.jsx,.ts,.tsx",
     "test": "TS_NODE_PROJECT=config/tsconfig.test.json node  --loader ts-node/esm ./node_modules/mocha/lib/cli/cli.js -t 20000 src/**/*.spec.ts",
     "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
@@ -15,9 +15,9 @@
     "lib/**/*",
     "dist/**/*"
   ],
-  "types": "lib/mjs/flatgeobuf.d.ts",
-  "module": "lib/mjs/flatgeobuf.js",
-  "main": "lib/mjs/flatgeobuf.js",
+  "types": "lib/flatgeobuf.d.ts",
+  "module": "lib/flatgeobuf.js",
+  "main": "lib/flatgeobuf.js",
   "type": "module",
   "repository": {
     "type": "git",
@@ -67,6 +67,8 @@
     "@babel/preset-env": "7.19.4",
     "@rollup/plugin-babel": "6.0.0",
     "@rollup/plugin-node-resolve": "15.0.0",
+    "@swc/cli": "0.1.57",
+    "@swc/core": "1.3.11",
     "@types/chai": "4.3.3",
     "@types/geojson": "7946.0.10",
     "@types/mocha": "10.0.0",
