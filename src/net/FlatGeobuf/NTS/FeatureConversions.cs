@@ -1,6 +1,6 @@
 using System;
 using NetTopologySuite.Features;
-using FlatBuffers;
+using Google.FlatBuffers;
 using System.Text;
 using System.IO;
 using NTSGeometry = NetTopologySuite.Geometries.Geometry;

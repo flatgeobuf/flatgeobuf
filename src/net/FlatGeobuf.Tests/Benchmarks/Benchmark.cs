@@ -6,7 +6,7 @@ using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-using FlatBuffers;
+using Google.FlatBuffers;
 using FlatGeobuf.NTS;
 using FlatGeobuf.Tests.NTS;
 using NetTopologySuite;

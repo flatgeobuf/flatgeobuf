@@ -8,7 +8,7 @@ import { ColumnType } from '../flat-geobuf/column-type.js';
 export class Column {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
-__init(i:number, bb:flatbuffers.ByteBuffer):Column {
+  __init(i:number, bb:flatbuffers.ByteBuffer):Column {
   this.bb_pos = i;
   this.bb = bb;
   return this;

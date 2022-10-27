@@ -9,7 +9,7 @@ import { Geometry } from '../flat-geobuf/geometry.js';
 export class Feature {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
-__init(i:number, bb:flatbuffers.ByteBuffer):Feature {
+  __init(i:number, bb:flatbuffers.ByteBuffer):Feature {
   this.bb_pos = i;
   this.bb = bb;
   return this;
