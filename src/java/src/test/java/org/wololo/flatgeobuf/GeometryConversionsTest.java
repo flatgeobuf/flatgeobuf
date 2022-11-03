@@ -1,4 +1,4 @@
-package org.wololo.flatgeobuf.test;
+package org.wololo.flatgeobuf;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.Geometry;
