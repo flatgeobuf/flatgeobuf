@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using NetTopologySuite.Geometries;
 using NTSGeometry = NetTopologySuite.Geometries.Geometry;
-using FlatBuffers;
+using Google.FlatBuffers;
 
 namespace FlatGeobuf.NTS
 {

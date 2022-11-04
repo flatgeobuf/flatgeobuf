@@ -8,7 +8,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class Column extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_22_10_26(); }
   public static Column getRootAsColumn(ByteBuffer _bb) { return getRootAsColumn(_bb, new Column()); }
   public static Column getRootAsColumn(ByteBuffer _bb, Column obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -44,7 +44,7 @@ public final class Column extends Table {
       int scale,
       boolean nullable,
       boolean unique,
-      boolean primary_key,
+      boolean primaryKey,
       int metadataOffset) {
     builder.startTable(11);
     Column.addMetadata(builder, metadataOffset);
@@ -54,7 +54,7 @@ public final class Column extends Table {
     Column.addDescription(builder, descriptionOffset);
     Column.addTitle(builder, titleOffset);
     Column.addName(builder, nameOffset);
-    Column.addPrimaryKey(builder, primary_key);
+    Column.addPrimaryKey(builder, primaryKey);
     Column.addUnique(builder, unique);
     Column.addNullable(builder, nullable);
     Column.addType(builder, type);
@@ -63,7 +63,7 @@ public final class Column extends Table {
 
   public static void startColumn(FlatBufferBuilder builder) { builder.startTable(11); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
-  public static void addType(FlatBufferBuilder builder, int type) { builder.addByte(1, (byte)type, (byte)0); }
+  public static void addType(FlatBufferBuilder builder, int type) { builder.addByte(1, (byte) type, (byte) 0); }
   public static void addTitle(FlatBufferBuilder builder, int titleOffset) { builder.addOffset(2, titleOffset, 0); }
   public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(3, descriptionOffset, 0); }
   public static void addWidth(FlatBufferBuilder builder, int width) { builder.addInt(4, width, -1); }

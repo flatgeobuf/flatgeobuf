@@ -5,7 +5,7 @@ import * as flatbuffers from 'flatbuffers';
 export class Crs {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
-__init(i:number, bb:flatbuffers.ByteBuffer):Crs {
+  __init(i:number, bb:flatbuffers.ByteBuffer):Crs {
   this.bb_pos = i;
   this.bb = bb;
   return this;

@@ -8,7 +8,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class Header extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_22_10_26(); }
   public static Header getRootAsHeader(ByteBuffer _bb) { return getRootAsHeader(_bb, new Header()); }
   public static Header getRootAsHeader(ByteBuffer _bb, Header obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -50,20 +50,20 @@ public final class Header extends Table {
   public static int createHeader(FlatBufferBuilder builder,
       int nameOffset,
       int envelopeOffset,
-      int geometry_type,
-      boolean has_z,
-      boolean has_m,
-      boolean has_t,
-      boolean has_tm,
+      int geometryType,
+      boolean hasZ,
+      boolean hasM,
+      boolean hasT,
+      boolean hasTm,
       int columnsOffset,
-      long features_count,
-      int index_node_size,
+      long featuresCount,
+      int indexNodeSize,
       int crsOffset,
       int titleOffset,
       int descriptionOffset,
       int metadataOffset) {
     builder.startTable(14);
-    Header.addFeaturesCount(builder, features_count);
+    Header.addFeaturesCount(builder, featuresCount);
     Header.addMetadata(builder, metadataOffset);
     Header.addDescription(builder, descriptionOffset);
     Header.addTitle(builder, titleOffset);
@@ -71,12 +71,12 @@ public final class Header extends Table {
     Header.addColumns(builder, columnsOffset);
     Header.addEnvelope(builder, envelopeOffset);
     Header.addName(builder, nameOffset);
-    Header.addIndexNodeSize(builder, index_node_size);
-    Header.addHasTm(builder, has_tm);
-    Header.addHasT(builder, has_t);
-    Header.addHasM(builder, has_m);
-    Header.addHasZ(builder, has_z);
-    Header.addGeometryType(builder, geometry_type);
+    Header.addIndexNodeSize(builder, indexNodeSize);
+    Header.addHasTm(builder, hasTm);
+    Header.addHasT(builder, hasT);
+    Header.addHasM(builder, hasM);
+    Header.addHasZ(builder, hasZ);
+    Header.addGeometryType(builder, geometryType);
     return Header.endHeader(builder);
   }
 
@@ -85,7 +85,7 @@ public final class Header extends Table {
   public static void addEnvelope(FlatBufferBuilder builder, int envelopeOffset) { builder.addOffset(1, envelopeOffset, 0); }
   public static int createEnvelopeVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
   public static void startEnvelopeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addGeometryType(FlatBufferBuilder builder, int geometryType) { builder.addByte(2, (byte)geometryType, (byte)0); }
+  public static void addGeometryType(FlatBufferBuilder builder, int geometryType) { builder.addByte(2, (byte) geometryType, (byte) 0); }
   public static void addHasZ(FlatBufferBuilder builder, boolean hasZ) { builder.addBoolean(3, hasZ, false); }
   public static void addHasM(FlatBufferBuilder builder, boolean hasM) { builder.addBoolean(4, hasM, false); }
   public static void addHasT(FlatBufferBuilder builder, boolean hasT) { builder.addBoolean(5, hasT, false); }
@@ -94,7 +94,7 @@ public final class Header extends Table {
   public static int createColumnsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startColumnsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addFeaturesCount(FlatBufferBuilder builder, long featuresCount) { builder.addLong(8, featuresCount, 0L); }
-  public static void addIndexNodeSize(FlatBufferBuilder builder, int indexNodeSize) { builder.addShort(9, (short)indexNodeSize, (short)16); }
+  public static void addIndexNodeSize(FlatBufferBuilder builder, int indexNodeSize) { builder.addShort(9, (short) indexNodeSize, (short) 16); }
   public static void addCrs(FlatBufferBuilder builder, int crsOffset) { builder.addOffset(10, crsOffset, 0); }
   public static void addTitle(FlatBufferBuilder builder, int titleOffset) { builder.addOffset(11, titleOffset, 0); }
   public static void addDescription(FlatBufferBuilder builder, int descriptionOffset) { builder.addOffset(12, descriptionOffset, 0); }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-using FlatBuffers;
+using Google.FlatBuffers;
 using NetTopologySuite.Features;
 using FlatGeobuf.Index;
 using NetTopologySuite.Geometries;
