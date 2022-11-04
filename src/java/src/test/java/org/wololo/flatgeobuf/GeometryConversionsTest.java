@@ -10,7 +10,6 @@ import org.locationtech.jts.geom.MultiPoint;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.wololo.flatgeobuf.GeometryConversions;
 import org.wololo.flatgeobuf.generated.GeometryType;
 
 import java.util.Date;

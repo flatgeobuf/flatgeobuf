@@ -13,7 +13,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
-import org.wololo.flatgeobuf.GeometryConversions;
 
 public class GeometryRoundtripTest {
 

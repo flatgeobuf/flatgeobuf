@@ -5,7 +5,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Stack;
 
 import org.locationtech.jts.geom.Envelope;
 
@@ -14,13 +19,11 @@ public class PackedRTree {
     final static int HILBERT_MAX = (1 << 16) - 1;
     private int numItems;
     private int nodeSize;
-    private NodeItem extent;
     public NodeItem[] nodeItems;
     private long numNodes;
     private List<Pair<Integer, Integer>> levelBounds;
 
-    public PackedRTree(final List<? extends Item> items, final NodeItem extent, final short nodeSize) {
-        this.extent = extent;
+    public PackedRTree(final List<? extends Item> items, final short nodeSize) {
         this.numItems = items.size();
         init(nodeSize);
         for (int i = 0; i < numItems; i++)
@@ -29,12 +32,10 @@ public class PackedRTree {
     }
 
     public void init(int nodeSize) {
-        if (nodeSize < 2) {
+        if (nodeSize < 2)
             throw new RuntimeException("Node size must be at least 2");
-        }
-        if (numItems == 0) {
+        if (numItems == 0)
             throw new RuntimeException("Number of items must be greater than 0");
-        }
         this.nodeSize = Math.min(Math.max(2, nodeSize), HILBERT_MAX);
         this.levelBounds = generateLevelBounds(numItems, this.nodeSize);
         this.numNodes = levelBounds.get(0).second;
@@ -73,12 +74,10 @@ public class PackedRTree {
     public static long hibert(NodeItem nodeItem, int hilbertMax, double minX, double minY, double width, double height) {
         long x = 0;
         long y = 0;
-        if (width != 0.0) {
+        if (width != 0.0)
             x = (long) Math.floor(hilbertMax * ((nodeItem.minX + nodeItem.maxX) / 2 - minX) / width);
-        }
-        if (height != 0.0) {
+        if (height != 0.0)
             y = (long) Math.floor(hilbertMax * ((nodeItem.minY + nodeItem.maxY) / 2 - minY) / height);
-        }
         return hibert(x, y);
     }
 
@@ -245,7 +244,7 @@ public class PackedRTree {
         List<Pair<Integer, Integer>> levelBounds = new LinkedList<>();
         // bounds per level in reversed storage order (top-down)
         for (int i = 0; i < levelNumNodes.size(); i++)
-            levelBounds.add(new Pair(levelOffsets.get(i), levelOffsets.get(i) + levelNumNodes.get(i)));
+            levelBounds.add(new Pair<Integer, Integer>(levelOffsets.get(i), levelOffsets.get(i) + levelNumNodes.get(i)));
         return levelBounds;
     }
 
@@ -387,9 +386,8 @@ public class PackedRTree {
     static void skipNBytes(InputStream stream, long skip) throws IOException {
         long actual = 0;
         long remaining = skip;
-        while (actual < remaining) {
+        while (actual < remaining)
             remaining -= stream.skip(remaining);
-        }
     }
 
     public static class Item {

@@ -2,7 +2,12 @@ package org.wololo.flatgeobuf;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -70,7 +75,7 @@ public class PackedRTreeTest {
         tmpFile.deleteOnExit();
         tmpFile.createNewFile();
         try (FileOutputStream outputStream = new FileOutputStream(tmpFile);) {
-            PackedRTree packedRTree = new PackedRTree(sortNodeItemList, extend, (short) 16);
+            PackedRTree packedRTree = new PackedRTree(sortNodeItemList, (short) 16);
             packedRTree.write(outputStream);
         }
         try (FileInputStream fileInputStream = new FileInputStream(tmpFile)) {
