@@ -6,11 +6,12 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Stack;
+import java.util.LinkedList;
+import java.util.Collections;
+import java.util.Objects;
 
 import org.locationtech.jts.geom.Envelope;
 
@@ -26,8 +27,11 @@ public class PackedRTree {
     public PackedRTree(final List<? extends Item> items, final short nodeSize) {
         this.numItems = items.size();
         init(nodeSize);
-        for (int i = 0; i < numItems; i++)
-            nodeItems[(int) (numNodes - numItems + i)] = items.get(i).nodeItem;
+        int k = (int) (this.numNodes - (long) this.numItems);
+        Iterator<? extends Item> it = items.iterator();
+        for (int i = 0; i < this.numItems; ++i) {
+            this.nodeItems[k++] = it.next().nodeItem;
+        }
         generateNodes();
     }
 
