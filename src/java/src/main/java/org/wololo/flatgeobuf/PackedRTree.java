@@ -26,8 +26,11 @@ public class PackedRTree {
     public PackedRTree(final List<? extends Item> items, final short nodeSize) {
         this.numItems = items.size();
         init(nodeSize);
-        for (int i = 0; i < numItems; i++)
-            nodeItems[(int) (numNodes - numItems + i)] = items.get(i).nodeItem;
+        int k = (int) (this.numNodes - (long) this.numItems);
+        Iterator<? extends Item> it = items.iterator();
+        for (int i = 0; i < this.numItems; ++i) {
+          this.nodeItems[k++] = it.next().nodeItem;
+        }
         generateNodes();
     }
 
