@@ -104,7 +104,7 @@ template <class ITEM_TYPE> void hilbertSort(std::deque<ITEM_TYPE> &items)
     const double height = extent.height();
     std::sort(
         items.begin(), items.end(),
-        [minX, minY, width, height](ITEM_TYPE &a, ITEM_TYPE &b)
+        [minX, minY, width, height](const ITEM_TYPE &a, const ITEM_TYPE &b)
         {
             uint32_t ha =
                 hilbert(a.nodeItem, HILBERT_MAX, minX, minY, width, height);
