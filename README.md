@@ -108,6 +108,7 @@ necessary.
 * [GeoTools](https://geotools.org) (23.0 and forward)
 * [MapServer](https://mapserver.org/input/vector/flatgeobuf.html) (with GDAL >=3.1.0)
 * [PostGIS](https://postgis.net) (3.2.0 and forward)
+* [pyogrio](https://pyogrio.readthedocs.io/en/latest/)
 * [QGIS](https://qgis.org) (3.16 and forward)
 
 ## Documentation
