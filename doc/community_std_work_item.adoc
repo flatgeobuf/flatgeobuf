@@ -16,9 +16,9 @@
 |===
 |{set:cellbgcolor:#FFFFFF}
 |[big]*Open Geospatial Consortium*
-|Submission Date: <yyyy-mm-dd>
+|Submission Date: 2023-01-06
 |Approval Date:   <yyyy-mm-dd>
-|Internal reference number of this OGC(R) document:    YY-nnnrx
+|Internal reference number of this OGC(R) document:    23-004
 |Category: OGC(R) Community Standard Work Item Justification
 |Authors: Björn Harrtell
 |===
@@ -31,7 +31,7 @@
 [cols = "^", frame = "none", grid = "none"]
 |===
 |*Copyright notice*
-|Copyright (C) <year> Open Geospatial Consortium
+|Copyright (C) 2023 Open Geospatial Consortium
 |To obtain additional rights of use, visit http://www.opengeospatial.org/legal/
 |===
 
@@ -164,7 +164,7 @@ List the supporting organizations. There must be at least three OGC organization
 
 Will the contributor retain intellectual property rights?
 
-* [ ] Yes
+* [x] Yes
 * [ ] No
 
 If yes, the contributor will be required to work with OGC staff to properly attribute the submitter’s intellectual property rights.
