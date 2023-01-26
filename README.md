@@ -110,6 +110,7 @@ necessary.
 * [PostGIS](https://postgis.net) (3.2.0 and forward)
 * [pyogrio](https://pyogrio.readthedocs.io/en/latest/)
 * [QGIS](https://qgis.org) (3.16 and forward)
+* [ldproxy](https://github.com/interactive-instruments/ldproxy) (3.3 and forward)
 
 ## Documentation
 
