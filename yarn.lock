@@ -2153,10 +2153,10 @@ flat@^5.0.2:
   resolved "https://registry.yarnpkg.com/flat/-/flat-5.0.2.tgz#8ca6fe332069ffa9d324c327198c598259ceb241"
   integrity sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==
 
-flatbuffers@22.10.26:
-  version "22.10.26"
-  resolved "https://registry.yarnpkg.com/flatbuffers/-/flatbuffers-22.10.26.tgz#1b92e9559f5253ca7dc54e2b0eb63d2bcdbe329b"
-  integrity sha512-sdO3emf/BlLfOogW6KwHuXg16APR/E86jNacDXfSInPzt8SSEzxlHcqDekfM/IJ1CGC5bvDksfNufNhS8h1FRA==
+flatbuffers@23.1.21:
+  version "23.1.21"
+  resolved "https://registry.yarnpkg.com/flatbuffers/-/flatbuffers-23.1.21.tgz#a677f0e79484ce70070e22994c12e2bdeb005133"
+  integrity sha512-7ztssjhUCQKCd7MwQNlQDwNam8iL4reBAMHglf024amlVRn/aIo7B8+ee/igKxxK5B7Wp4nWe4sTYg8lpK2CAQ==
 
 flatted@^3.1.0:
   version "3.2.7"
