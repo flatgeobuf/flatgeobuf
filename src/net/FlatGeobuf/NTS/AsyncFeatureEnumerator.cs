@@ -1,4 +1,5 @@
 ﻿using FlatGeobuf.Index;
+using Google.FlatBuffers;
 using NetTopologySuite;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
@@ -130,6 +131,7 @@ namespace FlatGeobuf.NTS
         public IFeature Current { get; private set; }
 
         /// <inheritdoc/>
+        #pragma warning disable CS1998
         public async ValueTask DisposeAsync()
         {
             _itemEnumerator?.Dispose();
@@ -139,6 +141,7 @@ namespace FlatGeobuf.NTS
             _stream.Dispose();
 #endif
         }
+        #pragma warning restore CS1998
 
         /// <inheritdoc/>
         public async ValueTask<bool> MoveNextAsync()
@@ -181,7 +184,7 @@ namespace FlatGeobuf.NTS
                 return await MoveNextAsync();
 
             // Create the feature
-            Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new FlatBuffers.ByteBuffer(featureData, 0), _header);
+            Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new ByteBuffer(featureData, 0), _header);
 
             // free buffer 
             ArrayPool<byte>.Shared.Return(featureData);

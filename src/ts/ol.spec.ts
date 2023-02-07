@@ -2,10 +2,8 @@ import { expect } from 'chai';
 import 'mocha';
 import { readFileSync } from 'fs';
 
-import { arrayToStream, takeAsync } from './streams/utils';
-import { deserialize, serialize } from './ol';
-
-import { IFeature } from './generic/feature.js';
+import { arrayToStream, takeAsync } from './streams/utils.js';
+import { deserialize, serialize } from './ol.js';
 
 import Feature from 'ol/Feature.js';
 import WKT from 'ol/format/WKT.js';
@@ -29,18 +27,12 @@ function makeFeatureCollection(wkt: string /*, properties?: any*/) {
 
 function makeFeatureCollectionFromArray(
     wkts: string[] /*, properties?: any*/
-): IFeature[] {
+): Feature[] {
     const geometries = wkts.map((wkt) => format.readGeometry(wkt));
     const features = geometries.map((geometry) => {
         const f = new Feature({ geometry });
         return f;
     });
-    /*if (properties)
-    features.forEach(f => f.properties = properties)
-  return {
-    type: 'FeatureCollection',
-    features,
-  }*/
     return features;
 }
 

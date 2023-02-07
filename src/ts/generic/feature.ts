@@ -1,9 +1,9 @@
 import * as flatbuffers from 'flatbuffers';
 
-import ColumnMeta from '../ColumnMeta.js';
+import ColumnMeta from '../column-meta.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import HeaderMeta from '../HeaderMeta.js';
+import HeaderMeta from '../header-meta.js';
 import {
     buildGeometry,
     ISimpleGeometry,
@@ -104,6 +104,11 @@ export function buildFeature(
                     prep(8);
                     view.setBigInt64(offset, BigInt(value), true);
                     offset += 8;
+                    break;
+                case ColumnType.Float:
+                    prep(4);
+                    view.setFloat32(offset, value as number, true);
+                    offset += 4;
                     break;
                 case ColumnType.Double:
                     prep(8);
@@ -213,6 +218,11 @@ export function parseProperties(
             case ColumnType.ULong: {
                 properties[name] = Number(view.getBigUint64(offset, true));
                 offset += 8;
+                break;
+            }
+            case ColumnType.Float: {
+                properties[name] = view.getFloat32(offset, true);
+                offset += 4;
                 break;
             }
             case ColumnType.Double: {

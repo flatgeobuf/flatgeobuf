@@ -17,6 +17,13 @@ func GetRootAsHeader(buf []byte, offset flatbuffers.UOffsetT) *Header {
 	return x
 }
 
+func GetSizePrefixedRootAsHeader(buf []byte, offset flatbuffers.UOffsetT) *Header {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &Header{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
+	return x
+}
+
 func (rcv *Header) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i
@@ -108,7 +115,7 @@ func (rcv *Header) MutateHasT(n bool) bool {
 	return rcv._tab.MutateBoolSlot(14, n)
 }
 
-func (rcv *Header) HasTM() bool {
+func (rcv *Header) HasTm() bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.GetBool(o + rcv._tab.Pos)
@@ -116,7 +123,7 @@ func (rcv *Header) HasTM() bool {
 	return false
 }
 
-func (rcv *Header) MutateHasTM(n bool) bool {
+func (rcv *Header) MutateHasTm(n bool) bool {
 	return rcv._tab.MutateBoolSlot(16, n)
 }
 
@@ -225,8 +232,8 @@ func HeaderAddHasM(builder *flatbuffers.Builder, hasM bool) {
 func HeaderAddHasT(builder *flatbuffers.Builder, hasT bool) {
 	builder.PrependBoolSlot(5, hasT, false)
 }
-func HeaderAddHasTM(builder *flatbuffers.Builder, hasTM bool) {
-	builder.PrependBoolSlot(6, hasTM, false)
+func HeaderAddHasTm(builder *flatbuffers.Builder, hasTm bool) {
+	builder.PrependBoolSlot(6, hasTm, false)
 }
 func HeaderAddColumns(builder *flatbuffers.Builder, columns flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(columns), 0)

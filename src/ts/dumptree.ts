@@ -8,7 +8,7 @@ import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import { readFileSync, writeFileSync } from 'fs';
 
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
-import HeaderMeta from './HeaderMeta.js';
+import { fromByteBuffer } from './header-meta.js';
 import { calcTreeSize, generateLevelBounds } from './packedrtree.js';
 
 const buffer = readFileSync('./test/data/tiger_roads.fgb');
@@ -21,7 +21,7 @@ const bb = new flatbuffers.ByteBuffer(bytes);
 const headerLength = bb.readUint32(magicbytes.length);
 bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
 
-const headerMeta = HeaderMeta.fromByteBuffer(bb);
+const headerMeta = fromByteBuffer(bb);
 
 if (headerMeta.indexNodeSize === 0) throw new Error('No index found');
 

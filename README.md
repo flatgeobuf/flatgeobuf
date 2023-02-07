@@ -108,7 +108,9 @@ necessary.
 * [GeoTools](https://geotools.org) (23.0 and forward)
 * [MapServer](https://mapserver.org/input/vector/flatgeobuf.html) (with GDAL >=3.1.0)
 * [PostGIS](https://postgis.net) (3.2.0 and forward)
+* [pyogrio](https://pyogrio.readthedocs.io/en/latest/)
 * [QGIS](https://qgis.org) (3.16 and forward)
+* [ldproxy](https://github.com/interactive-instruments/ldproxy) (3.3 and forward)
 
 ## Documentation
 
@@ -149,6 +151,10 @@ Separation of concerns and to allow random access.
 
 Default behaviour is to assume untrusted data and verify buffer integrity for safety. If you have trusted data and want maximum performance make sure to set the open option VERIFY_BUFFERS to NO.
 
-### What about vector tiles?
+### What about MapBox Vector Tiles?
 
-FlatGeobuf does not aim to compete with vector tiles. Vector tiles are great for rendering but they are relatively expensive to create and is a lossy format, where as FlatGeobuf is lossless and very fast to write especially if a spatial index is not needed.
+FlatGeobuf does not aim to compete with MapBox Vector Tiles. MVTs are great for rendering but they are relatively expensive to create and is a lossy format, where as FlatGeobuf is lossless and very fast to write especially if a spatial index is not needed.
+
+### Why does it not work with create-react-app?
+
+See https://github.com/flatgeobuf/flatgeobuf/issues/244 for root cause and workaround.

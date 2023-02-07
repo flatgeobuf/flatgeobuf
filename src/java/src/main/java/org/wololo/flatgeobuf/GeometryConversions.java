@@ -32,13 +32,13 @@ public class GeometryConversions {
             int end = 0;
             MultiLineString mls = (MultiLineString) geometry;
             if (mls.getNumGeometries() > 1) {
-                go.ends = new int[mls.getNumGeometries()];
+                go.ends = new long[mls.getNumGeometries()];
                 for (int i = 0; i < mls.getNumGeometries(); i++)
                     go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
             }
         } else if (geometryType == GeometryType.Polygon) {
             Polygon p = (Polygon) geometry;
-            go.ends = new int[p.getNumInteriorRing() + 1];
+            go.ends = new long[p.getNumInteriorRing() + 1];
             int end = p.getExteriorRing().getNumPoints();
             go.ends[0] = end;
             for (int i = 0; i < p.getNumInteriorRing(); i++)

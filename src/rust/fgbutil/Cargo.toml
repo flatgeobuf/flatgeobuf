@@ -5,7 +5,7 @@ edition = "2018"
 
 [dependencies]
 clap = { version = "3.1.0", features = ["derive"] }
-geozero = { version = "0.8.0", default-features = true }
+geozero = { version = "0.9.5", default-features = true }
 
 [dependencies.flatgeobuf]
 path = ".."

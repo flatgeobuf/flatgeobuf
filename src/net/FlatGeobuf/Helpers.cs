@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using FlatBuffers;
+using Google.FlatBuffers;
 using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf {

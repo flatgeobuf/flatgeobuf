@@ -1,5 +1,5 @@
-import Config from './Config.js';
-import Logger from './Logger.js';
+import Config from './config.js';
+import Logger from './logger.js';
 
 export const NODE_ITEM_LEN: number = 8 * 4 + 8;
 // default branching factor of a node in the rtree
@@ -55,12 +55,9 @@ export function generateLevelBounds(
         levelOffsets.push(n - size);
         n -= size;
     }
-    levelOffsets.reverse();
-    levelNumNodes.reverse();
     const levelBounds: Array<[number, number]> = [];
     for (let i = 0; i < levelNumNodes.length; i++)
         levelBounds.push([levelOffsets[i], levelOffsets[i] + levelNumNodes[i]]);
-    levelBounds.reverse();
     return levelBounds;
 }
 

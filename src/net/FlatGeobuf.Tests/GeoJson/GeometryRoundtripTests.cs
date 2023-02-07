@@ -11,11 +11,11 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class GeometryRoundtripTests
     {
-        string MakeFeatureCollection(string wkt) {
+        static string MakeFeatureCollection(string wkt) {
             return MakeFeatureCollection(new string[] { wkt });
         }
 
-        string MakeFeatureCollection(string[] wkts) {
+        static string MakeFeatureCollection(string[] wkts) {
             var fc = new FeatureCollection();
             foreach (var wkt in wkts)
                 fc.Add(MakeFeature(wkt));
@@ -24,7 +24,7 @@ namespace FlatGeobuf.Tests.GeoJson
             return geojson;
         }
 
-        NetTopologySuite.Features.Feature MakeFeature(string wkt) {
+        static NetTopologySuite.Features.Feature MakeFeature(string wkt) {
             var reader = new WKTReader();
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, null);
@@ -137,7 +137,7 @@ namespace FlatGeobuf.Tests.GeoJson
             AssertJson(expected, actual);
         }
 
-        private void AssertJson(string expected, string actual) {
+        private static void AssertJson(string expected, string actual) {
             var compare = new JTokenComparer(new IndexArrayKeySelector());
             var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
             Assert.AreEqual(ComparisonResult.Identical, result.ComparisonResult);

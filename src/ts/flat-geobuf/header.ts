@@ -10,7 +10,7 @@ import { GeometryType } from '../flat-geobuf/geometry-type.js';
 export class Header {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
-__init(i:number, bb:flatbuffers.ByteBuffer):Header {
+  __init(i:number, bb:flatbuffers.ByteBuffer):Header {
   this.bb_pos = i;
   this.bb = bb;
   return this;

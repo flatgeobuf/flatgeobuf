@@ -7,13 +7,13 @@ namespace FlatGeobuf
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct Feature : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_2_0_0(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_1_21(); }
   public static Feature GetRootAsFeature(ByteBuffer _bb) { return GetRootAsFeature(_bb, new Feature()); }
   public static Feature GetRootAsFeature(ByteBuffer _bb, Feature obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -47,10 +47,14 @@ public struct Feature : IFlatbufferObject
   public static void AddProperties(FlatBufferBuilder builder, VectorOffset propertiesOffset) { builder.AddOffset(1, propertiesOffset.Value, 0); }
   public static VectorOffset CreatePropertiesVector(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte(data[i]); return builder.EndVector(); }
   public static VectorOffset CreatePropertiesVectorBlock(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreatePropertiesVectorBlock(FlatBufferBuilder builder, ArraySegment<byte> data) { builder.StartVector(1, data.Count, 1); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreatePropertiesVectorBlock(FlatBufferBuilder builder, IntPtr dataPtr, int sizeInBytes) { builder.StartVector(1, sizeInBytes, 1); builder.Add<byte>(dataPtr, sizeInBytes); return builder.EndVector(); }
   public static void StartPropertiesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
   public static void AddColumns(FlatBufferBuilder builder, VectorOffset columnsOffset) { builder.AddOffset(2, columnsOffset.Value, 0); }
   public static VectorOffset CreateColumnsVector(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, Offset<FlatGeobuf.Column>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, ArraySegment<Offset<FlatGeobuf.Column>> data) { builder.StartVector(4, data.Count, 4); builder.Add(data); return builder.EndVector(); }
+  public static VectorOffset CreateColumnsVectorBlock(FlatBufferBuilder builder, IntPtr dataPtr, int sizeInBytes) { builder.StartVector(1, sizeInBytes, 1); builder.Add<Offset<FlatGeobuf.Column>>(dataPtr, sizeInBytes); return builder.EndVector(); }
   public static void StartColumnsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatGeobuf.Feature> EndFeature(FlatBufferBuilder builder) {
     int o = builder.EndTable();

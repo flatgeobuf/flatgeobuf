@@ -6,7 +6,7 @@ export enum LogLevel {
 }
 
 export default class Logger {
-    static logLevel: LogLevel = LogLevel.Info;
+    static logLevel: LogLevel = LogLevel.Warn;
 
     static debug(...args: any[]): void {
         this.log(LogLevel.Debug, ...args);

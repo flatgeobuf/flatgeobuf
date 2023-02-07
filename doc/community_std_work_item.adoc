@@ -16,9 +16,9 @@
 |===
 |{set:cellbgcolor:#FFFFFF}
 |[big]*Open Geospatial Consortium*
-|Submission Date: <yyyy-mm-dd>
+|Submission Date: 2023-01-06
 |Approval Date:   <yyyy-mm-dd>
-|Internal reference number of this OGC(R) document:    YY-nnnrx
+|Internal reference number of this OGC(R) document:    23-004
 |Category: OGC(R) Community Standard Work Item Justification
 |Authors: Björn Harrtell
 |===
@@ -31,7 +31,7 @@
 [cols = "^", frame = "none", grid = "none"]
 |===
 |*Copyright notice*
-|Copyright (C) <year> Open Geospatial Consortium
+|Copyright (C) 2023 Open Geospatial Consortium
 |To obtain additional rights of use, visit http://www.opengeospatial.org/legal/
 |===
 
@@ -127,6 +127,19 @@ The following implementations use the proposed Community standard.
 * [x] Yes
 * [ ] No
 
+*Implementation name: ldproxy
+
+*Date of most recent version: 2022-05-04
+
+*Implementation description: ldproxy is open source implementation to share data via OGC Web APIs; FlatGeobuf support has been added in April 2022 and will be included in version 3.3.0
+
+*Implementation URL: https://github.com/interactive-instruments/ldproxy
+
+*Is implementation complete?*
+
+* [x] Yes
+* [ ] No
+
 == Public availability
 
 Is the proposed Community standard currently publicly available?
@@ -145,12 +158,13 @@ List the supporting organizations. There must be at least three OGC organization
 * CARTO
 * Ordnance Survey
 * Planet Labs
+* interactive instruments
 
 == Intellectual Property Rights
 
 Will the contributor retain intellectual property rights?
 
-* [ ] Yes
+* [x] Yes
 * [ ] No
 
 If yes, the contributor will be required to work with OGC staff to properly attribute the submitter’s intellectual property rights.

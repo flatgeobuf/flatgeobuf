@@ -1,18 +1,18 @@
 import * as flatbuffers from 'flatbuffers';
 import slice from 'slice-source';
 
-import ColumnMeta from '../ColumnMeta.js';
+import ColumnMeta from '../column-meta.js';
 
 import { Header } from '../flat-geobuf/header.js';
 
 import { Column } from '../flat-geobuf/column.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import HeaderMeta from '../HeaderMeta.js';
+import HeaderMeta, { fromByteBuffer } from '../header-meta.js';
 
 import { buildFeature, IFeature } from './feature.js';
-import { HttpReader } from '../HttpReader.js';
-import Logger from '../Logger.js';
+import { HttpReader } from '../http-reader.js';
+import Logger from '../logger.js';
 import { Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
@@ -22,6 +22,10 @@ import { inferGeometryType } from './header.js';
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
 
+/**
+ * Serialize generic features to FlatGeobuf
+ * @param features
+ */
 export function serialize(features: IFeature[]): Uint8Array {
     const headerMeta = introspectHeaderMeta(features);
     const header = buildHeader(headerMeta);
@@ -64,7 +68,7 @@ export function deserialize(
     const headerLength = bb.readUint32(magicbytes.length);
     bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
 
-    const headerMeta = HeaderMeta.fromByteBuffer(bb);
+    const headerMeta = fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
 
     let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
@@ -101,7 +105,7 @@ export async function* deserializeStream(
     bytes = new Uint8Array(await read(headerLength, 'header data'));
     bb = new flatbuffers.ByteBuffer(bytes);
 
-    const headerMeta = HeaderMeta.fromByteBuffer(bb);
+    const headerMeta = fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
 
     const { indexNodeSize, featuresCount } = headerMeta;
@@ -185,7 +189,23 @@ function valueToType(value: boolean | number | string): ColumnType {
         else return ColumnType.Double;
     else if (typeof value === 'string') return ColumnType.String;
     else if (value === null) return ColumnType.String;
+    else if (typeof value === 'object') return ColumnType.Json;
     else throw new Error(`Unknown type (value '${value}')`);
+}
+
+export function mapColumn(properties: any, k: string): ColumnMeta {
+    return {
+        name: k,
+        type: valueToType(properties[k]),
+        title: null,
+        description: null,
+        width: -1,
+        precision: -1,
+        scale: -1,
+        nullable: true,
+        unique: false,
+        primary_key: false,
+    };
 }
 
 function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
@@ -198,33 +218,19 @@ function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
     if (properties)
         columns = Object.keys(properties)
             .filter((key) => key !== 'geometry')
-            .map(
-                (k) =>
-                    new ColumnMeta(
-                        k,
-                        valueToType(properties[k]),
-                        null,
-                        null,
-                        -1,
-                        -1,
-                        -1,
-                        true,
-                        false,
-                        false
-                    )
-            );
+            .map((k) => mapColumn(properties, k));
 
     const geometryType = inferGeometryType(features);
-    const headerMeta = new HeaderMeta(
+    const headerMeta: HeaderMeta = {
         geometryType,
         columns,
-        null,
-        features.length,
-        0,
-        null,
-        null,
-        null,
-        null
-    );
+        envelope: null,
+        featuresCount: features.length,
+        indexNodeSize: 0,
+        crs: null,
+        title: null,
+        description: null,
+        metadata: null,
+    };
     return headerMeta;
 }

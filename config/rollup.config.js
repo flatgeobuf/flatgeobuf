@@ -1,6 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
-import { terser } from 'rollup-plugin-terser'
+import terser from '@rollup/plugin-terser'
 
 const plugins = [
   resolve({
@@ -26,7 +26,7 @@ export default [{
     file: 'dist/flatgeobuf.min.js',
     format: 'umd',
     name: 'flatgeobuf',
-    sourcemap: true
+    sourcemap: false
   },
   plugins
 },{
@@ -35,7 +35,7 @@ export default [{
     file: 'dist/flatgeobuf-geojson.min.js',
     format: 'umd',
     name: 'flatgeobuf',
-    sourcemap: true
+    sourcemap: false
   },
   plugins
 }, {
@@ -54,7 +54,7 @@ export default [{
     file: 'dist/flatgeobuf-ol.min.js',
     format: 'umd',
     name: 'flatgeobuf',
-    sourcemap: true,
+    sourcemap: false,
     globals: {
       'ol/Feature.js': 'ol.Feature',
       'ol/geom/Point.js': 'ol.geom.Point',
