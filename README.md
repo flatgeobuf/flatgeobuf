@@ -158,3 +158,7 @@ FlatGeobuf does not aim to compete with MapBox Vector Tiles. MVTs are great for 
 ### Why does it not work with create-react-app?
 
 See https://github.com/flatgeobuf/flatgeobuf/issues/244 for root cause and workaround.
+
+### Does FlatGeobuf support mixing features with and without geometry with spatial index?
+
+Currently it likely does not but could in the future, see https://github.com/flatgeobuf/flatgeobuf/discussions/260.
