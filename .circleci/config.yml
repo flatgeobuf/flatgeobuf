@@ -4,12 +4,21 @@ executors:
   node:
     docker:
       - image: cimg/node:lts
-  java:
+  java17:
     docker:
       - image: cimg/openjdk:17.0
-  net:
+  java11:
+    docker:
+      - image: cimg/openjdk:11.0
+  java8:
+    docker:
+      - image: cimg/openjdk:8.0
+  net6:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:6.0
+  net3:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:3.1
   rust:
     docker:
       - image: cimg/rust:1.67.1
@@ -88,8 +97,38 @@ jobs:
           name: Run tests
           command: cd src/cpp && make test
 
-  test-java:
-    executor: java
+  test-java17:
+    executor: java17
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-java-dependencies-{{ checksum "src/java/pom.xml" }}
+            - v1-java-dependencies-
+      - run: cd src/java && mvn dependency:go-offline
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-java-dependencies-{{ checksum "src/java/pom.xml" }}
+      - run: cd src/java && mvn test
+      
+  test-java11:
+    executor: java11
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-java-dependencies-{{ checksum "src/java/pom.xml" }}
+            - v1-java-dependencies-
+      - run: cd src/java && mvn dependency:go-offline
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-java-dependencies-{{ checksum "src/java/pom.xml" }}
+      - run: cd src/java && mvn test
+      
+  test-java8:
+    executor: java8
     steps:
       - checkout
       - restore_cache:
@@ -103,7 +142,21 @@ jobs:
           key: v1-java-dependencies-{{ checksum "src/java/pom.xml" }}
       - run: cd src/java && mvn test
 
-  test-net:
+  test-net6:
+    executor: net
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+            - v1-net-dependencies-
+      - run: cd src/net && ./fetch.sh && dotnet test
+      - save_cache:
+          paths:
+            - ~/.nuget/packages
+          key: v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+          
+  test-net3:
     executor: net
     steps:
       - checkout
@@ -138,6 +191,9 @@ workflows:
     jobs:
       - test-ts
       - test-cpp
-      - test-java
-      - test-net
+      - test-java17
+      - test-java11
+      - test-java8
+      - test-net6
+      - test-net3
       - test-rust
