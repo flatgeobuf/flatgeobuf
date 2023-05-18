@@ -150,7 +150,7 @@ jobs:
           keys:
             - v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
             - v1-net-dependencies-
-      - run: cd src/net && ./fetch.sh && dotnet test
+      - run: cd src/net && ./fetch.sh && dotnet test -f net6
       - save_cache:
           paths:
             - ~/.nuget/packages
@@ -164,7 +164,7 @@ jobs:
           keys:
             - v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
             - v1-net-dependencies-
-      - run: cd src/net && ./fetch.sh && dotnet test
+      - run: cd src/net && ./fetch.sh && dotnet test -f netcoreapp3.1
       - save_cache:
           paths:
             - ~/.nuget/packages
