@@ -12,7 +12,7 @@ namespace FlatGeobuf.Tests.NTS
     [TestClass]
     public class GeometryRoundtripTests
     {
-        private static readonly NetTopologySuite.NtsGeometryServices _services = new(
+        private static readonly NetTopologySuite.NtsGeometryServices _services = new NetTopologySuite.NtsGeometryServices(
             CoordinateArraySequenceFactory.Instance, new PrecisionModel(), 0, GeometryOverlay.NG, new PerOrdinateEqualityComparer());
 
         public static NetTopologySuite.Features.Feature MakeFeature(string wkt, Dictionary<string, object> attr = null) {
