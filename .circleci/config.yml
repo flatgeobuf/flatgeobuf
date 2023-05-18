@@ -143,7 +143,7 @@ jobs:
       - run: cd src/java && mvn test
 
   test-net6:
-    executor: net
+    executor: net6
     steps:
       - checkout
       - restore_cache:
@@ -157,7 +157,7 @@ jobs:
           key: v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
           
   test-net3:
-    executor: net
+    executor: net3
     steps:
       - checkout
       - restore_cache:
