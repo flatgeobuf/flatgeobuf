@@ -162,3 +162,4 @@ See https://github.com/flatgeobuf/flatgeobuf/issues/244 for root cause and worka
 ### Does FlatGeobuf support mixing features with and without geometry with spatial index?
 
 Currently it likely does not but could in the future, see https://github.com/flatgeobuf/flatgeobuf/discussions/260.
+
