@@ -8,12 +8,15 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Stack;
 import java.util.LinkedList;
 import java.util.Collections;
 import java.util.Objects;
 
 import org.locationtech.jts.geom.Envelope;
+
+import com.google.common.io.LittleEndianDataInputStream;
 
 public class PackedRTree {
     private static int NODE_ITEM_LEN = 8 * 4 + 8;
@@ -385,6 +388,31 @@ public class PackedRTree {
         }
         searchResult.pos = dataPos;
         return searchResult;
+    }
+
+    public static long[] readFeatureOffsets(
+            LittleEndianDataInputStream data, long[] fids, HeaderMeta headerMeta)
+            throws IOException {
+        long treeSize = calcSize((int) headerMeta.featuresCount, headerMeta.indexNodeSize);
+        List<Pair<Integer, Integer>> levelBounds =
+                generateLevelBounds((int) headerMeta.featuresCount, headerMeta.indexNodeSize);
+        long bottomLevelOffset = levelBounds.get(0).first * 40;
+
+        long pos = 0;
+        long[] featureOffsets = new long[fids.length];
+        for (int i = 0; i < fids.length; i++) {
+            if (fids[i] > headerMeta.featuresCount - 1) throw new NoSuchElementException();
+            long nodeItemOffset = bottomLevelOffset + (fids[i] * 40);
+            long delta = nodeItemOffset + (8 * 4) - pos;
+            skipNBytes(data, delta);
+            long featureOffset = data.readLong();
+            pos += delta + 8;
+            featureOffsets[i] = featureOffset;
+        }
+        long remainingIndexOffset = treeSize - pos;
+        skipNBytes(data, remainingIndexOffset);
+
+        return featureOffsets;
     }
 
     static void skipNBytes(InputStream stream, long skip) throws IOException {
