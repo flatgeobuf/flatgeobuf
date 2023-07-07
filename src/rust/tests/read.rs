@@ -38,10 +38,7 @@ fn read_file_low_level() -> Result<()> {
     assert_eq!(header.name(), Some("countries"));
     assert!(header.envelope().is_some());
     let safe_vec: Vec<f64> = header.envelope().unwrap().into_iter().collect();
-    assert_eq!(
-        safe_vec,
-        &[-180.0, -85.609038, 180.0, 83.64513]
-    );
+    assert_eq!(safe_vec, &[-180.0, -85.609038, 180.0, 83.64513]);
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
     assert_eq!(header.has_t(), false);
     assert_eq!(header.has_m(), false);
