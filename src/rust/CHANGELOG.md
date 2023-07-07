@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.26.0] - 2023-07-08
+
+- Upgrade to geozero 0.10
+
+## [3.25.0] - 2023-03-08
+
+- Upgrade to Flatbuffers 23.1.21
+
+## [3.24.0] - 2022-11-04
+
+- Upgrade to Flatbuffers 22.10.26
+
 ## [0.8.0] - 2022-05-04
 
 - Breaking: New create methods for FgbWriter, with or without options
