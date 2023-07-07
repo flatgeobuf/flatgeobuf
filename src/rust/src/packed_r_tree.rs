@@ -393,7 +393,7 @@ impl PackedRTree {
         };
         tree.init(node_size)?;
         for i in 0..tree.num_items {
-            tree.node_items[(tree.num_nodes - tree.num_items + i)] = nodes[i].clone();
+            tree.node_items[tree.num_nodes - tree.num_items + i] = nodes[i].clone();
         }
         tree.generate_nodes();
         Ok(tree)
