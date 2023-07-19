@@ -5,13 +5,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Stack;
 import java.util.LinkedList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Objects;
 
 import org.locationtech.jts.geom.Envelope;
@@ -255,8 +256,8 @@ public class PackedRTree {
         return levelBounds;
     }
 
-    private static class StackItem {
-        public StackItem(long nodeIndex, int level) {
+    private static class QueueItem {
+        public QueueItem(long nodeIndex, int level) {
             this.nodeIndex = nodeIndex;
             this.level = level;
         }
@@ -283,10 +284,10 @@ public class PackedRTree {
         double maxY = rect.getMaxY();
         ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
         int numNodes = levelEnds.get(0);
-        Stack<StackItem> stack = new Stack<StackItem>();
-        stack.add(new StackItem(0, levelEnds.size() - 1));
-        while (stack.size() != 0) {
-            StackItem stackItem = stack.pop();
+        Deque<QueueItem> queue = new LinkedList<QueueItem>();
+        queue.add(new QueueItem(0, levelEnds.size() - 1));
+        while (queue.size() != 0) {
+            QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
@@ -314,7 +315,7 @@ public class PackedRTree {
                 if (isLeafNode)
                     searchHits.add(new SearchHit(indexOffset, pos - 1));
                 else
-                    stack.add(new StackItem(indexOffset, level - 1));
+                    queue.add(new QueueItem(indexOffset, level - 1));
             }
         }
         return searchHits;
@@ -336,10 +337,10 @@ public class PackedRTree {
         double maxY = rect.getMaxY();
         ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
         int numNodes = levelEnds.get(0);
-        Stack<StackItem> stack = new Stack<StackItem>();
-        stack.add(new StackItem(0, levelEnds.size() - 1));
-        while (stack.size() != 0) {
-            StackItem stackItem = stack.pop();
+        Deque<QueueItem> queue = new LinkedList<QueueItem>();
+        queue.add(new QueueItem(0, levelEnds.size() - 1));
+        while (queue.size() != 0) {
+            QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
@@ -382,9 +383,8 @@ public class PackedRTree {
                 if (isLeafNode)
                     searchResult.hits.add(new SearchHit(indexOffset, pos - 1));
                 else
-                    stack.add(new StackItem(indexOffset, level - 1));
+                    queue.add(new QueueItem(indexOffset, level - 1));
             }
-            stack.sort((StackItem a, StackItem b) -> (int) (b.nodeIndex - a.nodeIndex));
         }
         searchResult.pos = dataPos;
         return searchResult;
