@@ -775,9 +775,11 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let list = tree.search(102.0, 102.0, 103.0, 103.0)?;
     assert_eq!(list.len(), 4);
-    for i in 0..list.len() {
-        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
-    }
+
+    let indexes: Vec<usize> = list.iter().map(|item| item.index).collect();
+    let expected: Vec<usize> = vec![13, 14, 15, 16];
+    assert_eq!(indexes, expected);
+
     let mut tree_data: Vec<u8> = Vec::new();
     let res = tree.stream_write(&mut tree_data);
     assert!(res.is_ok());
@@ -791,9 +793,10 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     )?;
     let list = tree2.search(102.0, 102.0, 103.0, 103.0)?;
     assert_eq!(list.len(), 4);
-    for i in 0..list.len() {
-        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
-    }
+
+    let indexes: Vec<usize> = list.iter().map(|item| item.index).collect();
+    let expected: Vec<usize> = vec![13, 14, 15, 16];
+    assert_eq!(indexes, expected);
 
     let mut reader = std::io::Cursor::new(&tree_data);
     let list = PackedRTree::stream_search(
@@ -806,9 +809,11 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
         103.0,
     )?;
     assert_eq!(list.len(), 4);
-    for i in 0..list.len() {
-        assert!(nodes[list[i].index].intersects(&NodeItem::new(102.0, 102.0, 103.0, 103.0)));
-    }
+
+    let indexes: Vec<usize> = list.iter().map(|item| item.index).collect();
+    let expected: Vec<usize> = vec![13, 14, 15, 16];
+    assert_eq!(indexes, expected);
+
     Ok(())
 }
 
