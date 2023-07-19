@@ -8,7 +8,7 @@ use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, VecDeque};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
@@ -449,13 +449,11 @@ impl PackedRTree {
             .0;
         let n = NodeItem::new(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
-        let mut queue = HashMap::new(); // C++: std::unordered_map
-        queue.insert(0, self.level_bounds.len() - 1);
-        while queue.len() != 0 {
-            let next = queue.iter().next().ok_or(GeozeroError::GeometryIndex)?;
-            let node_index = *next.0;
-            let level = *next.1;
-            queue.remove(&node_index);
+        let mut queue = VecDeque::new();
+        queue.push_back((0, self.level_bounds.len() - 1));
+        while let Some(next) = queue.pop_front() {
+            let node_index = next.0;
+            let level = next.1;
             let is_leaf_node = node_index >= self.num_nodes - self.num_items;
             // find the end index of the node
             let end = cmp::min(
@@ -474,7 +472,7 @@ impl PackedRTree {
                         index: pos - leaf_nodes_offset,
                     });
                 } else {
-                    queue.insert(node_item.offset as usize, level - 1);
+                    queue.push_back((node_item.offset as usize, level - 1));
                 }
             }
         }
@@ -547,8 +545,6 @@ impl PackedRTree {
         max_x: f64,
         max_y: f64,
     ) -> Result<Vec<SearchResultItem>> {
-        use std::collections::VecDeque;
-
         let item = NodeItem::new(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
