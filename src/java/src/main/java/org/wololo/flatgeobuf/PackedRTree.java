@@ -284,7 +284,7 @@ public class PackedRTree {
         double maxY = rect.getMaxY();
         ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
         int numNodes = levelEnds.get(0);
-        Deque<QueueItem> queue = new ArrayDeque<QueueItem>();
+        Deque<QueueItem> queue = new LinkedList<QueueItem>();
         queue.add(new QueueItem(0, levelEnds.size() - 1));
         while (queue.size() != 0) {
             QueueItem stackItem = queue.pop();
@@ -337,7 +337,7 @@ public class PackedRTree {
         double maxY = rect.getMaxY();
         ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
         int numNodes = levelEnds.get(0);
-        Deque<QueueItem> queue = new ArrayDeque<QueueItem>();
+        Deque<QueueItem> queue = new LinkedList<QueueItem>();
         queue.add(new QueueItem(0, levelEnds.size() - 1));
         while (queue.size() != 0) {
             QueueItem stackItem = queue.pop();
