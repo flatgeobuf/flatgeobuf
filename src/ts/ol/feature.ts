@@ -11,7 +11,7 @@ import { ISimpleGeometry } from '../generic/geometry.js';
 
 function createFeature(
     geometry?: ISimpleGeometry,
-    properties?: Record<string, unknown>
+    properties?: Record<string, unknown>,
 ): IFeature {
     const feature = new OlFeature(geometry) as IFeature;
     if (properties && feature.setProperties) feature.setProperties(properties);

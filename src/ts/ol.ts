@@ -28,7 +28,7 @@ export function serialize(features: OlFeature[]): Uint8Array {
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<OlFeature> | OlFeature[] {
     if (input instanceof Uint8Array)
         return fcDeserialize(input, headerMetaFn) as OlFeature[];

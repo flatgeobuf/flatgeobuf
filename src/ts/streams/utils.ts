@@ -18,7 +18,7 @@ export function arrayToStream(array: ArrayBuffer): ReadableStream {
 
 export async function takeAsync(
     asyncIterable: AsyncIterable<any>,
-    count = Infinity
+    count = Infinity,
 ): Promise<any[]> {
     const result = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();

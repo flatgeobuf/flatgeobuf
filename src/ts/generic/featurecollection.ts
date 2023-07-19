@@ -37,14 +37,14 @@ export function serialize(features: IFeature[]): Uint8Array {
         return buildFeature(
             parseGeometry(f.getGeometry(), headerMeta.geometryType),
             f.getProperties(),
-            headerMeta
+            headerMeta,
         );
     });
     const featuresLength = featureBuffers
         .map((f) => f.length)
         .reduce((a, b) => a + b);
     const uint8 = new Uint8Array(
-        magicbytes.length + header.length + featuresLength
+        magicbytes.length + header.length + featuresLength,
     );
     uint8.set(header, magicbytes.length);
     let offset = magicbytes.length + header.length;
@@ -59,7 +59,7 @@ export function serialize(features: IFeature[]): Uint8Array {
 export function deserialize(
     bytes: Uint8Array,
     fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): IFeature[] {
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
         throw new Error('Not a FlatGeobuf file');
@@ -91,7 +91,7 @@ export function deserialize(
 export async function* deserializeStream(
     stream: ReadableStream,
     fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<IFeature> {
     const reader = slice(stream);
     const read: ReadFn = async (size) => await reader.slice(size);
@@ -122,7 +122,7 @@ export async function* deserializeFiltered(
     url: string,
     rect: Rect,
     fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<IFeature> {
     const reader = await HttpReader.open(url);
     Logger.debug('opened reader');
@@ -136,7 +136,7 @@ export async function* deserializeFiltered(
 async function readFeature(
     read: ReadFn,
     headerMeta: HeaderMeta,
-    fromFeature: FromFeatureFn
+    fromFeature: FromFeatureFn,
 ): Promise<IFeature | undefined> {
     let bytes = new Uint8Array(await read(4, 'feature length'));
     if (bytes.byteLength === 0) return;
@@ -166,7 +166,7 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
     if (header.columns)
         columnOffsets = Header.createColumnsVector(
             builder,
-            header.columns.map((c) => buildColumn(builder, c))
+            header.columns.map((c) => buildColumn(builder, c)),
         );
 
     const nameOffset = builder.createString('L1');

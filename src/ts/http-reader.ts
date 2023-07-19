@@ -24,7 +24,7 @@ export class HttpReader {
         headerClient: BufferedHttpRangeClient,
         header: HeaderMeta,
         headerLength: number,
-        indexLength: number
+        indexLength: number,
     ) {
         this.headerClient = headerClient;
         this.header = header;
@@ -67,12 +67,12 @@ export class HttpReader {
 
         const minReqLength = assumedHeaderLength + assumedIndexLength;
         Logger.debug(
-            `fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`
+            `fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`,
         );
 
         {
             const bytes = new Uint8Array(
-                await headerClient.getRange(0, 8, minReqLength, 'header')
+                await headerClient.getRange(0, 8, minReqLength, 'header'),
             );
             if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) {
                 Logger.error(`bytes: ${bytes} != ${magicbytes}`);
@@ -87,7 +87,7 @@ export class HttpReader {
                 8,
                 4,
                 minReqLength,
-                'header'
+                'header',
             );
             headerLength = new DataView(bytes).getUint32(0, true);
             const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
@@ -102,14 +102,14 @@ export class HttpReader {
             12,
             headerLength,
             minReqLength,
-            'header'
+            'header',
         );
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = fromByteBuffer(bb);
 
         const indexLength = calcTreeSize(
             header.featuresCount,
-            header.indexNodeSize
+            header.indexNodeSize,
         );
 
         Logger.debug('completed: opening http reader');
@@ -123,14 +123,14 @@ export class HttpReader {
         const bufferedClient = this.headerClient;
         const readNode = async function (
             offsetIntoTree: number,
-            size: number
+            size: number,
         ): Promise<ArrayBuffer> {
             const minReqLength = 0;
             return bufferedClient.getRange(
                 lengthBeforeTree + offsetIntoTree,
                 size,
                 minReqLength,
-                'index'
+                'index',
             );
         };
 
@@ -140,7 +140,7 @@ export class HttpReader {
             this.header.featuresCount,
             this.header.indexNodeSize,
             rect,
-            readNode
+            readNode,
         )) {
             const [featureOffset, ,] = searchResult;
             let [, , featureLength] = searchResult;
@@ -165,7 +165,7 @@ export class HttpReader {
             const gap = featureOffset - (prevFeature[0] + prevFeature[1]);
             if (gap > Config.global.extraRequestThreshold()) {
                 Logger.info(
-                    `Pushing new feature batch, since gap ${gap} was too large`
+                    `Pushing new feature batch, since gap ${gap} was too large`,
                 );
                 batches.push(currentBatch);
                 currentBatch = [];
@@ -179,7 +179,7 @@ export class HttpReader {
         }
 
         const promises: AsyncGenerator<Feature, any, any>[] = batches.flatMap(
-            (batch: [number, number][]) => this.readFeatureBatch(batch)
+            (batch: [number, number][]) => this.readFeatureBatch(batch),
         );
 
         // Fetch all batches concurrently, yielding features as they become
@@ -206,7 +206,7 @@ export class HttpReader {
      * `batch`: [offset, length] of features in the batch
      */
     async *readFeatureBatch(
-        batch: [number, number][]
+        batch: [number, number][],
     ): AsyncGenerator<Feature, void, unknown> {
         const [firstFeatureOffset] = batch[0];
         const [lastFeatureOffset, lastFeatureLength] = batch[batch.length - 1];
@@ -222,7 +222,7 @@ export class HttpReader {
             yield await this.readFeature(
                 featureClient,
                 featureOffset,
-                batchSize
+                batchSize,
             );
         }
         featureClient.logUsage('feature');
@@ -231,7 +231,7 @@ export class HttpReader {
     async readFeature(
         featureClient: BufferedHttpRangeClient,
         featureOffset: number,
-        minFeatureReqLength: number
+        minFeatureReqLength: number,
     ): Promise<Feature> {
         const offset = featureOffset + this.lengthBeforeFeatures();
 
@@ -241,7 +241,7 @@ export class HttpReader {
                 offset,
                 4,
                 minFeatureReqLength,
-                'feature length'
+                'feature length',
             );
             featureLength = new DataView(bytes).getUint32(0, true);
         }
@@ -250,7 +250,7 @@ export class HttpReader {
             offset + 4,
             featureLength,
             minFeatureReqLength,
-            'feature data'
+            'feature data',
         );
         const bytes = new Uint8Array(byteBuffer);
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
@@ -284,7 +284,7 @@ class BufferedHttpRangeClient {
         start: number,
         length: number,
         minReqLength: number,
-        purpose: string
+        purpose: string,
     ): Promise<ArrayBuffer> {
         this.bytesEverUsed += length;
 
@@ -298,12 +298,12 @@ class BufferedHttpRangeClient {
 
         this.bytesEverFetched += lengthToFetch;
         Logger.debug(
-            `requesting for new Range: ${start}-${start + length - 1}`
+            `requesting for new Range: ${start}-${start + length - 1}`,
         );
         this.buffer = await this.httpClient.getRange(
             start,
             lengthToFetch,
-            purpose
+            purpose,
         );
         this.head = start;
 
@@ -317,7 +317,7 @@ class BufferedHttpRangeClient {
         const efficiency = ((100.0 * used) / requested).toFixed(2);
 
         Logger.info(
-            `${category} bytes used/requested: ${used} / ${requested} = ${efficiency}%`
+            `${category} bytes used/requested: ${used} / ${requested} = ${efficiency}%`,
         );
     }
 }
@@ -334,14 +334,14 @@ class HttpRangeClient {
     async getRange(
         begin: number,
         length: number,
-        purpose: string
+        purpose: string,
     ): Promise<ArrayBuffer> {
         this.requestsEverMade += 1;
         this.bytesEverRequested += length;
 
         const range = `bytes=${begin}-${begin + length - 1}`;
         Logger.info(
-            `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`
+            `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`,
         );
 
         const response = await fetch(this.url, {

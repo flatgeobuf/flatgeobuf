@@ -10,12 +10,12 @@ export interface IGeoJsonFeature extends IFeature, GeoJsonFeature {}
 
 export function fromFeature(
     feature: Feature,
-    header: HeaderMeta
+    header: HeaderMeta,
 ): IGeoJsonFeature {
     const columns = header.columns;
     const geometry = fromGeometry(
         feature.geometry() as Geometry,
-        header.geometryType
+        header.geometryType,
     );
     const geoJsonfeature: GeoJsonFeature = {
         type: 'Feature',

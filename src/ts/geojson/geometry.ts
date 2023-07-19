@@ -32,7 +32,7 @@ export function parseGeometry(
         | LineString
         | MultiLineString
         | Polygon
-        | MultiPolygon
+        | MultiPolygon,
 ): IParsedGeometry {
     const cs = geometry.coordinates;
     const xy: number[] = [];
@@ -99,7 +99,7 @@ function extractParts(xy: Float64Array, z: Float64Array, ends: Uint32Array) {
         zSlices = Array.from(ends).map((e) => z.slice(s, (s = e)));
     }
     return xySlices.map((xy, i) =>
-        pairFlatCoordinates(xy, zSlices ? zSlices[i] : undefined)
+        pairFlatCoordinates(xy, zSlices ? zSlices[i] : undefined),
     );
 }
 
@@ -124,7 +124,7 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
 
 export function fromGeometry(
     geometry: Geometry,
-    headerType: GeometryType
+    headerType: GeometryType,
 ): GeoJsonGeometry {
     let type = headerType;
     if (type === GeometryType.Unknown) {
@@ -147,8 +147,8 @@ export function fromGeometry(
             geometries.push(
                 fromGeometry(
                     geometry.parts(i) as Geometry,
-                    GeometryType.Polygon
-                )
+                    GeometryType.Polygon,
+                ),
             );
         return {
             type: GeometryType[type],

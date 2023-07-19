@@ -26,7 +26,7 @@ function makeFeatureCollection(wkt: string /*, properties?: any*/) {
 }
 
 function makeFeatureCollectionFromArray(
-    wkts: string[] /*, properties?: any*/
+    wkts: string[] /*, properties?: any*/,
 ): Feature[] {
     const geometries = wkts.map((wkt) => format.readGeometry(wkt));
     const features = geometries.map((geometry) => {
@@ -51,8 +51,8 @@ describe('ol module', () => {
             const stream = arrayToStream(s);
             const actual = await takeAsync(
                 deserialize(
-                    stream as unknown as ReadableStream<any>
-                ) as AsyncGenerator
+                    stream as unknown as ReadableStream<any>,
+                ) as AsyncGenerator,
             );
             expect(g(actual)).to.equal(g(expected));
         });
@@ -68,7 +68,7 @@ describe('ol module', () => {
 
         it('MultiPoint', () => {
             const expected = makeFeatureCollection(
-                'MULTIPOINT(10 40, 40 30, 20 20, 30 10)'
+                'MULTIPOINT(10 40, 40 30, 20 20, 30 10)',
             );
             const actual = deserialize(serialize(expected));
             expect(g(actual)).to.equal(g(expected));
@@ -76,7 +76,7 @@ describe('ol module', () => {
 
         it('LineString', () => {
             const expected = makeFeatureCollection(
-                'LINESTRING(1.2 -2.1, 2.4 -4.8)'
+                'LINESTRING(1.2 -2.1, 2.4 -4.8)',
             );
             const actual = deserialize(serialize(expected));
             expect(g(actual)).to.equal(g(expected));
@@ -92,7 +92,7 @@ describe('ol module', () => {
 
         it('MultiLineStringSinglePart', () => {
             const expected = makeFeatureCollection(
-                `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`
+                `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`,
             );
             const actual = deserialize(serialize(expected));
             expect(g(actual)).to.equal(g(expected));
@@ -100,7 +100,7 @@ describe('ol module', () => {
 
         it('Polygon', () => {
             const expected = makeFeatureCollection(
-                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`
+                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
             );
             const actual = deserialize(serialize(expected));
             expect(g(actual)).to.equal(g(expected));
@@ -142,7 +142,7 @@ describe('ol module', () => {
 
         it('MultiPolygonSinglePart', () => {
             const expected = makeFeatureCollection(
-                `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`
+                `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`,
             );
             const actual = deserialize(serialize(expected));
             expect(g(actual)).to.equal(g(expected));
@@ -197,7 +197,7 @@ describe('ol module', () => {
                 ],
             };
             const actual = deserialize(
-                serialize(geojson.readFeatures(expected))
+                serialize(geojson.readFeatures(expected)),
             );
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
@@ -209,7 +209,7 @@ describe('ol module', () => {
             expect(features.length).to.eq(3221);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length
+                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
                 ).to.be.greaterThan(0);
         });
 
@@ -220,7 +220,7 @@ describe('ol module', () => {
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length
+                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
                 ).to.be.greaterThan(0);
         });
 
@@ -230,13 +230,13 @@ describe('ol module', () => {
             const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync(
                 deserialize(
-                    stream as unknown as ReadableStream<any>
-                ) as AsyncGenerator
+                    stream as unknown as ReadableStream<any>,
+                ) as AsyncGenerator,
             );
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length
+                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
                 ).to.be.greaterThan(0);
         });
 
@@ -250,13 +250,13 @@ describe('ol module', () => {
             const features = await takeAsync(
                 deserialize(
                     'http://flatgeobuf.septima.dk/HNV2021_20210226.fgb',
-                    r
-                ) as AsyncGenerator
+                    r,
+                ) as AsyncGenerator,
             );
             expect(features.length).to.eq(8);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length
+                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
                 ).to.be.greaterThan(0);
         });
 
@@ -309,7 +309,7 @@ describe('ol module', () => {
                 ],
             };
             const actual = deserialize(
-                serialize(geojson.readFeatures(expected))
+                serialize(geojson.readFeatures(expected)),
             );
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
@@ -340,7 +340,7 @@ describe('ol module', () => {
                 ],
             };
             const actual = deserialize(
-                serialize(geojson.readFeatures(expected))
+                serialize(geojson.readFeatures(expected)),
             );
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });

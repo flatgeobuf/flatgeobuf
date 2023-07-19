@@ -29,7 +29,7 @@ export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)

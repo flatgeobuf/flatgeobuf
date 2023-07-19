@@ -29,14 +29,15 @@ export interface IMultiPolygon extends ISimpleGeometry {
 }
 
 export interface ICreateGeometry {
-    (geometry: Geometry | null, type: GeometryType):
-        | ISimpleGeometry
-        | undefined;
+    (
+        geometry: Geometry | null,
+        type: GeometryType,
+    ): ISimpleGeometry | undefined;
 }
 
 export function buildGeometry(
     builder: flatbuffers.Builder,
-    parsedGeometry: IParsedGeometry
+    parsedGeometry: IParsedGeometry,
 ): any {
     const { xy, z, ends, parts, type } = parsedGeometry;
 
@@ -67,7 +68,7 @@ export function buildGeometry(
 export function flat(
     a: any[],
     xy: number[],
-    z: number[]
+    z: number[],
 ): number[] | undefined {
     if (a.length === 0) return;
     if (Array.isArray(a[0])) {
@@ -83,7 +84,7 @@ export function flat(
 
 export function parseGeometry(
     geometry: ISimpleGeometry,
-    headerGeomType: GeometryType
+    headerGeomType: GeometryType,
 ): IParsedGeometry {
     let xy: number[] | undefined;
     let ends: number[] | undefined;
@@ -120,7 +121,7 @@ export function parseGeometry(
 
 export function pairFlatCoordinates(
     xy: Float64Array,
-    z?: Float64Array
+    z?: Float64Array,
 ): number[][] {
     const newArray: number[][] = [];
     for (let i = 0; i < xy.length; i += 2) {

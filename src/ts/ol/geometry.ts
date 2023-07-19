@@ -12,7 +12,7 @@ import MultiPolygon from 'ol/geom/MultiPolygon.js';
 
 export function createGeometry(
     geometry: Geometry | null,
-    headerGeomType: GeometryType
+    headerGeomType: GeometryType,
 ): ISimpleGeometry | undefined {
     let geomType;
     if (headerGeomType === GeometryType.Unknown) {
@@ -45,8 +45,8 @@ export function createGeometry(
             mp.appendPolygon(
                 createGeometry(
                     geometry.parts(i) as Geometry,
-                    GeometryType.Polygon
-                ) as Polygon
+                    GeometryType.Polygon,
+                ) as Polygon,
             );
         return mp;
     }

@@ -23,7 +23,7 @@ export interface IFeature {
 export interface ICreateFeature {
     (
         geometry?: ISimpleGeometry,
-        properties?: Record<string, unknown>
+        properties?: Record<string, unknown>,
     ): IFeature;
 }
 
@@ -35,7 +35,7 @@ export function fromFeature(
     feature: Feature,
     header: HeaderMeta,
     createGeometry: ICreateGeometry,
-    createFeature: ICreateFeature
+    createFeature: ICreateFeature,
 ): IFeature {
     const columns = header.columns;
     const geometry = feature.geometry();
@@ -47,7 +47,7 @@ export function fromFeature(
 export function buildFeature(
     geometry: IParsedGeometry,
     properties: IProperties,
-    header: HeaderMeta
+    header: HeaderMeta,
 ): Uint8Array {
     const columns = header.columns;
     const builder = new flatbuffers.Builder();
@@ -146,7 +146,7 @@ export function buildFeature(
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(
             builder,
-            bytes.slice(0, offset)
+            bytes.slice(0, offset),
         );
 
     const geometryOffset = buildGeometry(builder, geometry);
@@ -160,7 +160,7 @@ export function buildFeature(
 
 export function parseProperties(
     feature: Feature,
-    columns?: ColumnMeta[] | null
+    columns?: ColumnMeta[] | null,
 ): Record<string, unknown> {
     const properties: Record<string, unknown> = {};
     if (!columns || columns.length === 0) return properties;
@@ -235,7 +235,7 @@ export function parseProperties(
                 const length = view.getUint32(offset, true);
                 offset += 4;
                 properties[name] = textDecoder.decode(
-                    array.subarray(offset, offset + length)
+                    array.subarray(offset, offset + length),
                 );
                 offset += length;
                 break;
@@ -244,7 +244,7 @@ export function parseProperties(
                 const length = view.getUint32(offset, true);
                 offset += 4;
                 const str = textDecoder.decode(
-                    array.subarray(offset, offset + length)
+                    array.subarray(offset, offset + length),
                 );
                 properties[name] = JSON.parse(str);
                 offset += length;

@@ -20,7 +20,7 @@ export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     fromFeature: FromFeatureFn,
-    rect?: Rect
+    rect?: Rect,
 ): any[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array)
         return deserializeArray(input, fromFeature);

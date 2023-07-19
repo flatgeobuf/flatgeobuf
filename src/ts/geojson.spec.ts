@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 
 global['fetch'] = fetch as unknown as (
     input: RequestInfo,
-    init?: RequestInit
+    init?: RequestInit,
 ) => Promise<Response>;
 global['TextDecoder'] = TextDecoder;
 global['TextEncoder'] = TextEncoder;
@@ -43,7 +43,7 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
     const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
     const features = geometries.map(
         (geometry) =>
-            ({ type: 'Feature', geometry, properties: {} } as IGeoJsonFeature)
+            ({ type: 'Feature', geometry, properties: {} }) as IGeoJsonFeature,
     );
     if (properties) features.forEach((f) => (f.properties = properties));
     return {
@@ -84,8 +84,8 @@ describe('geojson module', () => {
             const stream = arrayToStream(s);
             const actual = await takeAsync(
                 deserialize(
-                    stream as unknown as ReadableStream<any>
-                ) as AsyncGenerator
+                    stream as unknown as ReadableStream<any>,
+                ) as AsyncGenerator,
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -101,7 +101,7 @@ describe('geojson module', () => {
 
         it('MultiPoint', () => {
             const expected = makeFeatureCollection(
-                'MULTIPOINT(10 40, 40 30, 20 20, 30 10)'
+                'MULTIPOINT(10 40, 40 30, 20 20, 30 10)',
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -109,7 +109,7 @@ describe('geojson module', () => {
 
         it('LineString', () => {
             const expected = makeFeatureCollection(
-                'LINESTRING(1.2 -2.1, 2.4 -4.8)'
+                'LINESTRING(1.2 -2.1, 2.4 -4.8)',
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -117,7 +117,7 @@ describe('geojson module', () => {
 
         it('LineString 3D', () => {
             const expected = makeFeatureCollection(
-                'LINESTRING Z(1.2 -2.1 1.1, 2.4 -4.8 1.2)'
+                'LINESTRING Z(1.2 -2.1 1.1, 2.4 -4.8 1.2)',
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -133,7 +133,7 @@ describe('geojson module', () => {
 
         it('MultiLineStringSinglePart', () => {
             const expected = makeFeatureCollection(
-                `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`
+                `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`,
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -141,7 +141,7 @@ describe('geojson module', () => {
 
         it('Polygon', () => {
             const expected = makeFeatureCollection(
-                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`
+                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -149,14 +149,14 @@ describe('geojson module', () => {
 
         it('Polygon via stream', async () => {
             const expected = makeFeatureCollection(
-                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`
+                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
             );
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
                 deserialize(
-                    stream as unknown as ReadableStream<any>
-                ) as AsyncGenerator
+                    stream as unknown as ReadableStream<any>,
+                ) as AsyncGenerator,
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -196,7 +196,7 @@ describe('geojson module', () => {
 
         it('MultiPolygonSinglePart', () => {
             const expected = makeFeatureCollection(
-                `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`
+                `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`,
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -213,7 +213,7 @@ describe('geojson module', () => {
 
         it('GeometryCollection', () => {
             const expected = makeFeatureCollection(
-                `GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`
+                `GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`,
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -221,7 +221,7 @@ describe('geojson module', () => {
 
         it('GeometryCollection 3D', () => {
             const expected = makeFeatureCollection(
-                `GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`
+                `GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`,
             );
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
@@ -396,7 +396,7 @@ describe('geojson module', () => {
             const geojson = deserialize(
                 bytes,
                 undefined,
-                (header: HeaderMeta) => (headerMeta = header)
+                (header: HeaderMeta) => (headerMeta = header),
             ) as GeoJsonFeatureCollection;
             expect(headerMeta.crs.code).to.eq(4326);
             expect(geojson.features.length).to.eq(179);
@@ -409,7 +409,7 @@ describe('geojson module', () => {
                     | Polygon
                     | MultiPolygon;
                 expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
-                    0
+                    0,
                 );
             }
         });
@@ -419,13 +419,13 @@ describe('geojson module', () => {
             const features = await takeAsync(
                 deserialize(
                     'http://127.0.0.1:8000/test/data/countries.fgb',
-                    r
-                ) as AsyncGenerator
+                    r,
+                ) as AsyncGenerator,
             );
             expect(features.length).to.eq(3);
             for (const f of features)
                 expect(
-                    (f.geometry.coordinates[0] as number[]).length
+                    (f.geometry.coordinates[0] as number[]).length,
                 ).to.be.greaterThan(0);
         });
 
@@ -439,13 +439,13 @@ describe('geojson module', () => {
             const features = await takeAsync(
                 deserialize(
                     'http://flatgeobuf.septima.dk/HNV2021_20210226.fgb',
-                    r
-                ) as AsyncGenerator
+                    r,
+                ) as AsyncGenerator,
             );
             expect(features.length).to.eq(8);
             for (const f of features)
                 expect(
-                    (f.geometry.coordinates[0] as number[]).length
+                    (f.geometry.coordinates[0] as number[]).length,
                 ).to.be.greaterThan(0);
         });
 
@@ -455,13 +455,13 @@ describe('geojson module', () => {
             const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync(
                 deserialize(
-                    stream as unknown as ReadableStream<any>
-                ) as AsyncGenerator
+                    stream as unknown as ReadableStream<any>,
+                ) as AsyncGenerator,
             );
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.geometry.coordinates[0] as number[]).length
+                    (f.geometry.coordinates[0] as number[]).length,
                 ).to.be.greaterThan(0);
         });
 
@@ -479,7 +479,7 @@ describe('geojson module', () => {
                     | Polygon
                     | MultiPolygon;
                 expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
-                    0
+                    0,
                 );
             }
         });

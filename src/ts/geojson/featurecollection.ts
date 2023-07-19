@@ -28,7 +28,7 @@ import {
 } from 'geojson';
 
 export function serialize(
-    featurecollection: GeoJsonFeatureCollection
+    featurecollection: GeoJsonFeatureCollection,
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta);
@@ -43,17 +43,17 @@ export function serialize(
                           | LineString
                           | MultiLineString
                           | Polygon
-                          | MultiPolygon
+                          | MultiPolygon,
                   ),
             f.properties as IProperties,
-            headerMeta
-        )
+            headerMeta,
+        ),
     );
     const featuresLength = features
         .map((f) => f.length)
         .reduce((a, b) => a + b);
     const uint8 = new Uint8Array(
-        magicbytes.length + header.length + featuresLength
+        magicbytes.length + header.length + featuresLength,
     );
     uint8.set(header, magicbytes.length);
     let offset = magicbytes.length + header.length;
@@ -67,7 +67,7 @@ export function serialize(
 
 export function deserialize(
     bytes: Uint8Array,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): GeoJsonFeatureCollection {
     const features = genericDeserialize(bytes, fromFeature, headerMetaFn);
     return {
@@ -78,7 +78,7 @@ export function deserialize(
 
 export function deserializeStream(
     stream: ReadableStream,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<any, void, unknown> {
     return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
@@ -86,13 +86,13 @@ export function deserializeStream(
 export function deserializeFiltered(
     url: string,
     rect: Rect,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<any, void, unknown> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn);
 }
 
 function introspectHeaderMeta(
-    featurecollection: GeoJsonFeatureCollection
+    featurecollection: GeoJsonFeatureCollection,
 ): HeaderMeta {
     const feature = featurecollection.features[0];
     const properties = feature.properties;

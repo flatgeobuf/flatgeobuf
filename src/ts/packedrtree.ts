@@ -32,7 +32,7 @@ export function calcTreeSize(numItems: number, nodeSize: number): number {
  */
 export function generateLevelBounds(
     numItems: number,
-    nodeSize: number
+    nodeSize: number,
 ): Array<[number, number]> {
     if (nodeSize < 2) throw new Error('Node size must be at least 2');
     if (numItems === 0)
@@ -90,7 +90,7 @@ export async function* streamSearch(
     numItems: number,
     nodeSize: number,
     rect: Rect,
-    readNode: ReadNodeFn
+    readNode: ReadNodeFn,
 ): AsyncGenerator<SearchResult, void, unknown> {
     class NodeRange {
         _level: number;
@@ -136,7 +136,7 @@ export async function* streamSearch(
     const queue: Array<NodeRange> = [rootNodeRange];
 
     Logger.debug(
-        `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`
+        `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`,
     );
 
     while (queue.length != 0) {
@@ -156,7 +156,7 @@ export async function* streamSearch(
 
         const buffer = await readNode(
             nodeIndex * NODE_ITEM_LEN,
-            length * NODE_ITEM_LEN
+            length * NODE_ITEM_LEN,
         );
 
         const float64Array = new Float64Array(buffer);
@@ -183,7 +183,7 @@ export async function* streamSearch(
                         const high32Offset = uint32Array[(nextPos << 1) + 9];
                         const nextOffset = readUint52(
                             high32Offset,
-                            low32Offset
+                            low32Offset,
                         );
 
                         return nextOffset - offset;
@@ -214,7 +214,7 @@ export async function* streamSearch(
                 offset < nearestNodeRange.endNode() + extraRequestThresholdNodes
             ) {
                 Logger.debug(
-                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`
+                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`,
                 );
                 nearestNodeRange.extendEndNodeToNewOffset(offset);
                 continue;
@@ -232,11 +232,11 @@ export async function* streamSearch(
                 nearestNodeRange.level() == newNodeRange.level()
             ) {
                 Logger.info(
-                    `Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`
+                    `Same level, but too far away. Pushing new request at offset: ${offset} rather than merging with distant ${nearestNodeRange}`,
                 );
             } else {
                 Logger.info(
-                    `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`
+                    `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`,
                 );
             }
 

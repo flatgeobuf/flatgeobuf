@@ -13,14 +13,14 @@ export { serialize as serialize };
 
 export function deserialize(
     bytes: Uint8Array,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): IFeature[] {
     return genericDeserialize(bytes, fromFeature, headerMetaFn);
 }
 
 export function deserializeStream(
     stream: ReadableStream,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<any, void, unknown> {
     return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
@@ -28,7 +28,7 @@ export function deserializeStream(
 export function deserializeFiltered(
     url: string,
     rect: Rect,
-    headerMetaFn?: HeaderMetaFn
+    headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<any, void, unknown> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn);
 }
