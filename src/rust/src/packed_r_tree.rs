@@ -7,8 +7,7 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, VecDeque};
+use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
 use std::{cmp, f64, u64, usize};
@@ -497,14 +496,14 @@ impl PackedRTree {
         let index_base = data.seek(SeekFrom::Current(0))?;
 
         // use ordered search queue to make index traversal in sequential order
-        let mut queue = BinaryHeap::new();
-        queue.push(Reverse((0, level_bounds.len() - 1)));
+        let mut queue = VecDeque::new();
+        queue.push_back((0, level_bounds.len() - 1));
         let mut results = Vec::new();
 
-        while queue.len() != 0 {
-            let next = queue.pop().ok_or(GeozeroError::GeometryIndex)?.0;
+        while let Some(next) = queue.pop_front() {
             let node_index = next.0;
             let level = next.1;
+            println!("popped next node_index: {node_index}, level: {level}");
             let is_leaf_node = node_index >= num_nodes - num_items;
             // find the end index of the node
             let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
@@ -518,12 +517,15 @@ impl PackedRTree {
                     continue;
                 }
                 if is_leaf_node {
-                    results.push(SearchResultItem {
-                        offset: node_item.offset as usize,
-                        index: pos - leaf_nodes_offset,
-                    });
+                    let index = pos - leaf_nodes_offset;
+                    let offset = node_item.offset as usize;
+                    println!("pushing leaf node. index: {index}, offset: {offset}");
+                    results.push(SearchResultItem { offset, index });
                 } else {
-                    queue.push(Reverse((node_item.offset as usize, level - 1)));
+                    let offset = node_item.offset as usize;
+                    let prev_level = level - 1;
+                    println!("pushing branch node. prev_level: {prev_level}, offset: {offset}");
+                    queue.push_back((offset, prev_level));
                 }
             }
         }
