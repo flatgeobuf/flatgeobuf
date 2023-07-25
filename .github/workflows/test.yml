@@ -4,7 +4,7 @@ on:
       - master
   pull_request:
 
-name: Run tests
+name: CI
 jobs:
   test-ts:
     runs-on: ubuntu-latest
