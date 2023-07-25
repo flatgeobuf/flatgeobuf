@@ -1,6 +1,6 @@
 # ![layout](logo.svg) FlatGeobuf
 
-[![CircleCI](https://img.shields.io/circleci/build/github/flatgeobuf/flatgeobuf.svg)](https://circleci.com/gh/flatgeobuf/flatgeobuf)
+[![CI](https://github.com/flatgeobuf/flatgeobuf/actions/workflows/test.yml/badge.svg)](https://github.com/flatgeobuf/flatgeobuf/actions/workflows/test.yml)
 [![npm](https://img.shields.io/npm/v/flatgeobuf.svg)](https://www.npmjs.com/package/flatgeobuf)
 [![Maven Central](https://img.shields.io/maven-central/v/org.wololo/flatgeobuf.svg)](https://search.maven.org/artifact/org.wololo/flatgeobuf)
 [![Nuget](https://img.shields.io/nuget/v/FlatGeobuf)](https://www.nuget.org/packages/FlatGeobuf/)
