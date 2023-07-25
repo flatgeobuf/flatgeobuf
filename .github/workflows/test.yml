@@ -1,0 +1,138 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+name: Run tests
+jobs:
+  test-ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          cache: 'yarn'
+      - run: yarn
+      - name: Run tests
+        run: yarn test
+      - name: Run tsc compile
+        run: yarn build
+      - name: Run linter
+        run: yarn fmt-check
+
+  test-cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Debian dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get -y update
+          sudo apt-get -y install clang
+      - uses: actions/checkout@v3
+      - run: ./script/getcppdeps.sh
+      - name: Build tests and examples
+        run: cd src/cpp && make
+      - name: Run tests
+        run: cd src/cpp && make test
+
+  test-java:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [17, 11, 8]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Java ${{ matrix.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: temurin
+          cache: maven
+      - run: cd src/java && mvn dependency:go-offline
+      - run: cd src/java && mvn test
+
+  test-net6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .Net 6.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+      - name: Cache nuget dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - run: cd src/net && ./fetch.sh && dotnet test -f net6
+
+  test-net3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .Net 3.1
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 3.1.x
+      - name: Cache nuget dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - run: cd src/net && ./fetch.sh && dotnet test -f netcoreapp3.1
+
+  test-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Debian dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get -y update
+          sudo apt-get -y install libssl-dev
+      - uses: actions/checkout@v3
+      - name: Cache dependencies and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src/rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - run: cd src/rust && cargo test
+
+  test-rust-no-default-features:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v3
+      - name: Install Debian dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get -y update
+          sudo apt-get -y install libssl-dev
+      - name: Cache dependencies and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src/rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - run: cd src/rust && cargo test --no-default-features
