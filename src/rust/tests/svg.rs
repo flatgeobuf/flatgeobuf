@@ -35,18 +35,18 @@ fn svg_writer<'a, W: Write>(
 }
 
 trait GeomToSvg {
-    fn to_svg<'a, W: Write>(
+    fn to_svg<W: Write>(
         &self,
-        out: &'a mut W,
+        out: &mut W,
         geometry_type: GeometryType,
         invert_y: bool,
     ) -> Result<()>;
 }
 
 impl GeomToSvg for Geometry<'_> {
-    fn to_svg<'a, W: Write>(
+    fn to_svg<W: Write>(
         &self,
-        out: &'a mut W,
+        out: &mut W,
         geometry_type: GeometryType,
         invert_y: bool,
     ) -> Result<()> {
@@ -56,9 +56,9 @@ impl GeomToSvg for Geometry<'_> {
 }
 
 trait FeatureToSvg {
-    fn to_svg<'a, W: Write>(
+    fn to_svg<W: Write>(
         &self,
-        out: &'a mut W,
+        out: &mut W,
         geometry_type: GeometryType,
         invert_y: bool,
     ) -> Result<()>;
@@ -66,9 +66,9 @@ trait FeatureToSvg {
 
 impl FeatureToSvg for Feature<'_> {
     /// Convert feature to SVG
-    fn to_svg<'a, W: Write>(
+    fn to_svg<W: Write>(
         &self,
-        out: &'a mut W,
+        out: &mut W,
         geometry_type: GeometryType,
         invert_y: bool,
     ) -> Result<()> {
@@ -78,7 +78,7 @@ impl FeatureToSvg for Feature<'_> {
     }
 }
 
-fn feature_from_u8<'a>(buf: &'a [u8], loc: usize) -> Feature<'a> {
+fn feature_from_u8(buf: &[u8], loc: usize) -> Feature<'_> {
     unsafe { Feature::init_from_table(flatbuffers::Table::new(buf, loc)) }
 }
 

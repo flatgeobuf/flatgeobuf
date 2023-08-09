@@ -52,18 +52,18 @@ fn fgb_bbox_to_geojson_dev_null() -> Result<()> {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("fgb_to_geojson", |b| b.iter(|| fgb_to_geojson()));
+    c.bench_function("fgb_to_geojson", |b| b.iter(fgb_to_geojson));
     c.bench_function("fgb_to_geojson_unchecked", |b| {
-        b.iter(|| fgb_to_geojson_unchecked())
+        b.iter(fgb_to_geojson_unchecked)
     });
     c.bench_function("fgb_to_geojson_dev_null", |b| {
-        b.iter(|| fgb_to_geojson_dev_null())
+        b.iter(fgb_to_geojson_dev_null)
     });
     c.bench_function("fgb_to_geojson_dev_null_unchecked", |b| {
-        b.iter(|| fgb_to_geojson_dev_null_unchecked())
+        b.iter(fgb_to_geojson_dev_null_unchecked)
     });
     c.bench_function("fgb_bbox_to_geojson_dev_null", |b| {
-        b.iter(|| fgb_bbox_to_geojson_dev_null())
+        b.iter(fgb_bbox_to_geojson_dev_null)
     });
 }
 

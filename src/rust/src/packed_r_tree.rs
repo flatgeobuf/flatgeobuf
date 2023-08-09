@@ -241,9 +241,9 @@ fn hilbert(x: u32, y: u32) -> u32 {
     i1 = (i1 | (i1 << 2)) & 0x33333333;
     i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-    let value = (i1 << 1) | i0;
+    
 
-    value
+    (i1 << 1) | i0
 }
 
 fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
@@ -355,7 +355,7 @@ impl PackedRTree {
     fn read_data(&mut self, data: &mut dyn Read) -> Result<()> {
         read_node_vec(&mut self.node_items, data)?;
         for node in &self.node_items {
-            self.extent.expand(&node)
+            self.extent.expand(node)
         }
         Ok(())
     }
@@ -424,7 +424,7 @@ impl PackedRTree {
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::new(),
-            num_items: num_items,
+            num_items,
             num_nodes: 0,
             node_size: 0,
             level_bounds: Vec::new(),
@@ -462,7 +462,7 @@ impl PackedRTree {
             // search through child nodes
             for pos in node_index..end {
                 let node_item = &self.node_items[pos];
-                if !n.intersects(&node_item) {
+                if !n.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -493,7 +493,7 @@ impl PackedRTree {
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
 
         // current position must be start of index
-        let index_base = data.seek(SeekFrom::Current(0))?;
+        let index_base = data.stream_position()?;
 
         // use ordered search queue to make index traversal in sequential order
         let mut queue = VecDeque::new();
@@ -513,7 +513,7 @@ impl PackedRTree {
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(&node_item) {
+                if !item.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -586,7 +586,7 @@ impl PackedRTree {
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(&node_item) {
+                if !item.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -695,7 +695,7 @@ mod inspect {
                         processor.property(0, "levelno", &ColumnValue::ULong(levelno as u64))?;
                     let _ = processor.property(1, "pos", &ColumnValue::ULong(pos as u64))?;
                     let _ =
-                        processor.property(2, "offset", &ColumnValue::ULong(node.offset as u64))?;
+                        processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
                     processor.properties_end()?;
                     processor.geometry_begin()?;
                     processor.polygon_begin(true, 1, 0)?;

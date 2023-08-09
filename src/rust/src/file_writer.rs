@@ -319,9 +319,9 @@ impl<'a> FgbWriter<'a> {
         let header = Header::create(&mut self.fbb, &self.header_args);
         self.fbb.finish_size_prefixed(header, None);
         let buf = self.fbb.finished_data();
-        out.write(&buf)?;
+        out.write(buf)?;
 
-        if self.header_args.index_node_size > 0 && self.feat_nodes.len() > 0 {
+        if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
             // Create sorted index
             hilbert_sort(&mut self.feat_nodes, &extent);
             // Update offsets for index

@@ -412,11 +412,9 @@ impl<'a, R: Read, State> FgbReader<'a, R, State> {
 
     fn read_feature(&mut self) -> Result<()> {
         // Read feature size if not already read in select_all or select_bbox
-        if self.cur_pos != 4 {
-            if self.read_feature_size() {
-                self.finished = true;
-                return Ok(());
-            }
+        if self.cur_pos != 4 && self.read_feature_size() {
+            self.finished = true;
+            return Ok(());
         }
         let sbuf = &self.fbs.feature_buf;
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;

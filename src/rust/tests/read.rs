@@ -40,10 +40,10 @@ fn read_file_low_level() -> Result<()> {
     let safe_vec: Vec<f64> = header.envelope().unwrap().into_iter().collect();
     assert_eq!(safe_vec, &[-180.0, -85.609038, 180.0, 83.64513]);
     assert_eq!(header.geometry_type(), GeometryType::MultiPolygon);
-    assert_eq!(header.has_t(), false);
-    assert_eq!(header.has_m(), false);
-    assert_eq!(header.has_t(), false);
-    assert_eq!(header.has_tm(), false);
+    assert!(!header.has_t());
+    assert!(!header.has_m());
+    assert!(!header.has_t());
+    assert!(!header.has_tm());
     assert!(header.columns().is_some());
     let columns = header.columns().unwrap();
     assert_eq!(columns.len(), 2);
@@ -432,7 +432,7 @@ fn geomcollection_layer() -> Result<()> {
 }
 
 fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
-    let mut filein = BufReader::new(File::open(&format!("../../test/data/{}", fname))?);
+    let mut filein = BufReader::new(File::open(format!("../../test/data/{fname}"))?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
@@ -556,10 +556,10 @@ fn multi_dim() -> Result<()> {
     let fgb = FgbReader::open(&mut filein)?;
     let geometry_type = fgb.header().geometry_type();
     assert_eq!(geometry_type, GeometryType::MultiPolygon);
-    assert_eq!(fgb.header().has_z(), true);
-    assert_eq!(fgb.header().has_m(), false);
-    assert_eq!(fgb.header().has_t(), false);
-    assert_eq!(fgb.header().has_tm(), false);
+    assert!(fgb.header().has_z());
+    assert!(!fgb.header().has_m());
+    assert!(!fgb.header().has_t());
+    assert!(!fgb.header().has_tm());
     assert_eq!(fgb.header().features_count(), 87);
 
     let mut fgb = fgb.select_all()?;
