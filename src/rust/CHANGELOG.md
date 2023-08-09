@@ -93,7 +93,7 @@
 ## [0.3.1] - 2020-04-05
 
 - Rust FlatGeobuf reading via HTTP (#49)
-- Add Rust docs URL and update READMEs (#48)
+- Add Rust docs URL and update README files (#48)
 
 ## [0.3.0] - 2020-03-20
 

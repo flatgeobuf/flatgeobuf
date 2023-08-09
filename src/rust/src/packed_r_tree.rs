@@ -7,10 +7,10 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
+use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
-use std::{cmp, f64, u64, usize};
 
 #[derive(Clone, PartialEq, Debug)]
 #[repr(C)]
@@ -284,7 +284,7 @@ impl PackedRTree {
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(self.num_items > 0, "Cannot create empty tree");
-        self.node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        self.node_size = min(max(node_size, 2u16), 65535u16);
         self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
         self.num_nodes = self
             .level_bounds
@@ -397,7 +397,7 @@ impl PackedRTree {
     }
 
     pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
-        let node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        let node_size = min(max(node_size, 2u16), 65535u16);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
         let mut tree = PackedRTree {
@@ -453,7 +453,7 @@ impl PackedRTree {
             let level = next.1;
             let is_leaf_node = node_index >= self.num_nodes - self.num_items;
             // find the end index of the node
-            let end = cmp::min(
+            let end = min(
                 node_index + self.node_size as usize,
                 self.level_bounds[level].1,
             );
@@ -504,7 +504,7 @@ impl PackedRTree {
             println!("popped next node_index: {node_index}, level: {level}");
             let is_leaf_node = node_index >= num_nodes - num_items;
             // find the end index of the node
-            let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
+            let end = min(node_index + node_size as usize, level_bounds[level].1);
             let length = end - node_index;
             let node_items = read_node_items(data, index_base, node_index, length)?;
             // search through child nodes
@@ -572,7 +572,7 @@ impl PackedRTree {
             let node_index = next.nodes.start;
             let is_leaf_node = node_index >= leaf_nodes_offset;
             // find the end index of the nodes
-            let end = cmp::min(
+            let end = min(
                 next.nodes.end + node_size as usize,
                 level_bounds[next.level].1,
             );
@@ -644,7 +644,7 @@ impl PackedRTree {
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
-        let node_size_min = cmp::min(cmp::max(node_size, 2), 65535) as usize;
+        let node_size_min = min(max(node_size, 2), 65535) as usize;
         // limit so that resulting size in bytes can be represented by uint64_t
         // assert!(
         //     num_items <= 1 << 56,
@@ -794,7 +794,7 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let expected: Vec<usize> = vec![13, 14, 15, 16];
     assert_eq!(indexes, expected);
 
-    let mut reader = std::io::Cursor::new(&tree_data);
+    let mut reader = Cursor::new(&tree_data);
     let list = PackedRTree::stream_search(
         &mut reader,
         nodes.len(),
@@ -842,7 +842,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
     let res = tree.stream_write(&mut tree_data);
     assert!(res.is_ok());
 
-    let mut reader = std::io::Cursor::new(&tree_data);
+    let mut reader = Cursor::new(&tree_data);
     let list2 = PackedRTree::stream_search(
         &mut reader,
         nodes.len(),

@@ -322,8 +322,8 @@ impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected
 /// # }
 /// ```
 impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelected> {
-    type Error = GeozeroError;
     type Item = FgbFeature;
+    type Error = GeozeroError;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {
@@ -373,8 +373,8 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelecte
 /// # }
 /// ```
 impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelectedSeek> {
-    type Error = GeozeroError;
     type Item = FgbFeature;
+    type Error = GeozeroError;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {

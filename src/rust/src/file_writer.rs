@@ -157,7 +157,7 @@ impl<'a> FgbWriter<'a> {
         geometry_type: GeometryType,
         options: FgbWriterOptions,
     ) -> Result<Self> {
-        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let mut fbb = FlatBufferBuilder::new();
 
         let index_node_size = if options.write_index {
             PackedRTree::DEFAULT_NODE_SIZE
@@ -383,7 +383,7 @@ impl PropertyProcessor for FgbWriter<'_> {
                 return Ok(false);
             }
         }
-        // TODO: check name and type against existing declartion
+        // TODO: check name and type against existing declaration
         self.feat_writer.property(i, colname, colval)
     }
 }

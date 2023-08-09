@@ -75,7 +75,8 @@ mod http {
             fgb.err().unwrap().to_string(),
             "http status 404".to_string()
         );
-        let url = "http://wrong.sourcepole.ch/countries.fgb";
+
+        let url = "https://wrong.example.com/countries.fgb";
         let fgb = HttpFgbReader::open(url).await;
         let error_text = fgb.err().unwrap().to_string();
         let expected_error_text = "error trying to connect";
