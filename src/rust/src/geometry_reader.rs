@@ -139,23 +139,24 @@ fn read_coordinate<P: GeomProcessor>(
     idx: usize,
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-    let z = if processor.dimensions().z {
-        geometry.z().map(|dim| dim.get(offset))
+    let dims = processor.dimensions();
+    let z = if dims.z {
+        geometry.z().map(|v| v.get(offset))
     } else {
         None
     };
-    let m = if processor.dimensions().m {
-        geometry.m().map(|dim| dim.get(offset))
+    let m = if dims.m {
+        geometry.m().map(|v| v.get(offset))
     } else {
         None
     };
-    let t = if processor.dimensions().t {
-        geometry.t().map(|dim| dim.get(offset))
+    let t = if dims.t {
+        geometry.t().map(|v| v.get(offset))
     } else {
         None
     };
-    let tm = if processor.dimensions().tm {
-        geometry.tm().map(|dim| dim.get(offset))
+    let tm = if dims.tm {
+        geometry.tm().map(|v| v.get(offset))
     } else {
         None
     };
