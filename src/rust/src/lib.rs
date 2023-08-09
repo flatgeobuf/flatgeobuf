@@ -104,6 +104,10 @@ pub mod reader_state {
 
 // Re-export used traits
 pub use fallible_streaming_iterator::FallibleStreamingIterator;
+
+// Re-export GeoZero to help avoid version conflicts
+pub use geozero;
+// For backward compatibility, keep individual trait re-exports
 pub use geozero::{FeatureAccess, FeatureProperties, GeozeroGeometry};
 
 pub const VERSION: u8 = 3;

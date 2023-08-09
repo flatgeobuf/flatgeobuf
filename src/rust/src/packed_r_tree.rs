@@ -604,7 +604,7 @@ impl PackedRTree {
                 match (queue.back_mut(), node_item.offset as usize) {
                     // There is an existing node for this level, and it's close to this node.
                     // Merge the ranges to avoid an extra request
-                    (Some(mut tail), offset)
+                    (Some(tail), offset)
                         if tail.level == next.level - 1
                             && offset < tail.nodes.end + combine_request_threshold =>
                     {
@@ -728,7 +728,7 @@ fn tree_2items() -> Result<()> {
     assert!(nodes[1].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
@@ -766,7 +766,7 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let extent = calc_extent(&nodes);
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
@@ -873,7 +873,7 @@ fn tree_processing() -> Result<()> {
     nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
     let extent = calc_extent(&nodes);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
