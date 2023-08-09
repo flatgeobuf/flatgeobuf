@@ -191,7 +191,7 @@ impl<'a> FeatureWriter<'a> {
         );
         self.parts.push(g);
     }
-    pub(crate) fn to_feature(&mut self) -> Vec<u8> {
+    pub(crate) fn finish_to_feature(&mut self) -> Vec<u8> {
         let g = if self.parts.is_empty() {
             self.finish_part();
             self.parts.pop().expect("push in finish_part")
@@ -501,7 +501,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let feat = FgbFeature {
             header_buf: header(fgb_writer.dataset_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         // dbg!(&feat.fbs_feature());
         feat.process(&mut GeoJsonWriter::new(&mut out), 0)?;
@@ -515,7 +515,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let f = FgbFeature {
             header_buf: header(geometry_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         let mut json_writer = GeoJsonWriter::new(&mut out);
         json_writer.dims.z = with_z;
@@ -634,7 +634,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let feat = FgbFeature {
             header_buf: header(fgb_writer.dataset_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         assert_eq!(
             fgb_writer.bbox,

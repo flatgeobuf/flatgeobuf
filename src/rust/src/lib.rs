@@ -65,18 +65,20 @@
 //! ```
 //!
 
+#![allow(clippy::manual_range_contains)]
+
 #[cfg(feature = "http")]
 #[macro_use]
 extern crate log;
 
-#[allow(unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case, clippy::all)]
 #[rustfmt::skip]
 mod feature_generated;
 mod feature_writer;
 mod file_reader;
 mod file_writer;
 mod geometry_reader;
-#[allow(unused_imports, non_snake_case)]
+#[allow(unused_imports, non_snake_case, clippy::all)]
 #[rustfmt::skip]
 mod header_generated;
 #[cfg(feature = "http")]

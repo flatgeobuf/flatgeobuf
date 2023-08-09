@@ -241,8 +241,6 @@ fn hilbert(x: u32, y: u32) -> u32 {
     i1 = (i1 | (i1 << 2)) & 0x33333333;
     i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-    
-
     (i1 << 1) | i0
 }
 
@@ -255,7 +253,7 @@ fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
     hilbert(x, y)
 }
 
-pub fn hilbert_sort(items: &mut Vec<NodeItem>, extent: &NodeItem) {
+pub fn hilbert_sort(items: &mut [NodeItem], extent: &NodeItem) {
     items.sort_by(|a, b| {
         let ha = hilbert_bbox(a, HILBERT_MAX, extent);
         let hb = hilbert_bbox(b, HILBERT_MAX, extent);
@@ -263,7 +261,7 @@ pub fn hilbert_sort(items: &mut Vec<NodeItem>, extent: &NodeItem) {
     });
 }
 
-pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
+pub fn calc_extent(nodes: &[NodeItem]) -> NodeItem {
     nodes.iter().fold(NodeItem::create(0), |mut a, b| {
         a.expand(b);
         a
@@ -391,8 +389,8 @@ impl PackedRTree {
             level_bounds: Vec::new(),
         };
         tree.init(node_size)?;
-        for i in 0..tree.num_items {
-            tree.node_items[tree.num_nodes - tree.num_items + i] = nodes[i].clone();
+        for (i, node) in nodes.iter().take(tree.num_items).cloned().enumerate() {
+            tree.node_items[tree.num_nodes - tree.num_items + i] = node;
         }
         tree.generate_nodes();
         Ok(tree)
@@ -537,6 +535,7 @@ impl PackedRTree {
     }
 
     #[cfg(feature = "http")]
+    #[allow(clippy::too_many_arguments)]
     pub async fn http_stream_search(
         client: &mut BufferedHttpRangeClient,
         index_begin: usize,
@@ -694,8 +693,7 @@ mod inspect {
                     let _ =
                         processor.property(0, "levelno", &ColumnValue::ULong(levelno as u64))?;
                     let _ = processor.property(1, "pos", &ColumnValue::ULong(pos as u64))?;
-                    let _ =
-                        processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
+                    let _ = processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
                     processor.properties_end()?;
                     processor.geometry_begin()?;
                     processor.polygon_begin(true, 1, 0)?;
@@ -743,26 +741,28 @@ fn tree_2items() -> Result<()> {
 
 #[test]
 fn tree_19items_roundtrip_stream_search() -> Result<()> {
-    let mut nodes = Vec::new();
-    nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
-    nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
-    nodes.push(NodeItem::new(100.0, 100.0, 110.0, 110.0));
-    nodes.push(NodeItem::new(101.0, 101.0, 111.0, 111.0));
-    nodes.push(NodeItem::new(102.0, 102.0, 112.0, 112.0));
-    nodes.push(NodeItem::new(103.0, 103.0, 113.0, 113.0));
-    nodes.push(NodeItem::new(104.0, 104.0, 114.0, 114.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
+    let mut nodes = vec![
+        NodeItem::new(0.0, 0.0, 1.0, 1.0),
+        NodeItem::new(2.0, 2.0, 3.0, 3.0),
+        NodeItem::new(100.0, 100.0, 110.0, 110.0),
+        NodeItem::new(101.0, 101.0, 111.0, 111.0),
+        NodeItem::new(102.0, 102.0, 112.0, 112.0),
+        NodeItem::new(103.0, 103.0, 113.0, 113.0),
+        NodeItem::new(104.0, 104.0, 114.0, 114.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+    ];
+
     let extent = calc_extent(&nodes);
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;

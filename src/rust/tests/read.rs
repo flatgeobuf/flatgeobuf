@@ -290,7 +290,7 @@ fn file_reader() -> Result<()> {
         assert_eq!(&props["id"], "DNK");
         assert_eq!(&props["name"], "Denmark");
     } else {
-        assert!(false, "find failed");
+        panic!("find failed");
     }
 
     Ok(())
