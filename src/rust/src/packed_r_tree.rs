@@ -549,7 +549,7 @@ impl PackedRTree {
         let item = NodeItem::new(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
-        debug!("http_stream_search - index_begin: {}, num_items: {}, node_size: {}, level_bounds: {:?}, GPS bounds:[({}, {}), ({},{})]", index_begin, num_items, node_size, &level_bounds, min_x, min_y, max_x, max_y);
+        debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
@@ -566,8 +566,7 @@ impl PackedRTree {
 
         while let Some(next) = queue.pop_front() {
             debug!(
-                "popped node: {:?},  remaining queue len: {}",
-                next,
+                "popped node: {next:?},  remaining queue len: {}",
                 queue.len()
             );
             let node_index = next.nodes.start;
@@ -622,11 +621,10 @@ impl PackedRTree {
                             .map(|head| head.level == next.level - 1)
                             .unwrap_or(false)
                         {
-                            debug!("requesting new NodeRange for offset: {} rather than merging with distant NodeRange: {:?}", offset, &tail);
+                            debug!("requesting new NodeRange for offset: {offset} rather than merging with distant NodeRange: {tail:?}");
                         } else {
                             debug!(
-                                "pushing new level for NodeRange: {:?} onto Queue with tail: {:?}",
-                                &node_range,
+                                "pushing new level for NodeRange: {node_range:?} onto Queue with tail: {:?}",
                                 queue.back()
                             );
                         }

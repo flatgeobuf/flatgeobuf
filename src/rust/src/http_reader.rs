@@ -65,7 +65,7 @@ impl HttpFgbReader<Initial> {
         // fetch an extra kb rather than have to issue a second request.
         let assumed_header_size = 2024;
         let min_req_size = assumed_header_size + prefetch_index_bytes;
-        debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
+        debug!("fetching header. min_req_size: {min_req_size} (assumed_header_size: {assumed_header_size}, prefetched_index_bytes: {prefetch_index_bytes})");
 
         let bytes = client
             .get_range(0, 8, min_req_size)

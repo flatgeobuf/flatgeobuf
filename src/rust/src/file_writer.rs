@@ -375,15 +375,11 @@ impl PropertyProcessor for FgbWriter<'_> {
         if i >= self.columns.len() {
             if i == self.columns.len() {
                 info!(
-                    "Undefined property index {}, column: `{}` - adding column declaration",
-                    i, colname
+                    "Undefined property index {i}, column: `{colname}` - adding column declaration"
                 );
                 self.add_column(colname, prop_type(colval), |_, _| {});
             } else {
-                info!(
-                    "Undefined property index {}, column: `{}` - skipping",
-                    i, colname
-                );
+                info!("Undefined property index {i}, column: `{colname}` - skipping");
                 return Ok(false);
             }
         }
