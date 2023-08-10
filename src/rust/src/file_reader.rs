@@ -42,7 +42,7 @@ impl<'a, R: Read> FgbReader<'a, R, Initial> {
     ///
     /// # Safety
     /// This method is unsafe because it does not verify the FlatBuffers header.
-    /// It is still from the Rust safety guarantees perspective, but it may cause
+    /// It is still safe from the Rust safety guarantees perspective, but it may cause
     /// undefined behavior if the FlatBuffers header is invalid.
     pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
         Self::read_header(reader, false)
