@@ -1,14 +1,13 @@
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
 [package]
 name = "fgbutil"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-clap = { version = "3.1.0", features = ["derive"] }
-geozero = { version = "0.9.5", default-features = true }
-
-[dependencies.flatgeobuf]
-path = ".."
-
-[workspace]
-members = ["."]
+clap = { version = "4.3.21", features = ["derive"] }
+flatgeobuf = { path = ".." }
+geozero = "0.10.0"

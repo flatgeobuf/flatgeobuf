@@ -41,7 +41,7 @@ pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {
 impl HttpFgbReader<Initial> {
     pub async fn open(url: &str) -> Result<HttpFgbReader<Open>> {
         trace!("starting: opening http reader, reading header");
-        let mut client = BufferedHttpRangeClient::new(&url);
+        let mut client = BufferedHttpRangeClient::new(url);
 
         // Because we use a buffered HTTP reader, anything extra we fetch here can
         // be utilized to skip subsequent fetches.
@@ -57,7 +57,7 @@ impl HttpFgbReader<Initial> {
             let prefetched_layers: u32 = 3;
 
             (0..prefetched_layers)
-                .map(|i| assumed_branching_factor.pow(i) * std::mem::size_of::<NodeItem>() as usize)
+                .map(|i| assumed_branching_factor.pow(i) * std::mem::size_of::<NodeItem>())
                 .sum()
         };
 
@@ -65,13 +65,13 @@ impl HttpFgbReader<Initial> {
         // fetch an extra kb rather than have to issue a second request.
         let assumed_header_size = 2024;
         let min_req_size = assumed_header_size + prefetch_index_bytes;
-        debug!("fetching header. min_req_size: {} (assumed_header_size: {}, prefetched_index_bytes: {})", min_req_size, assumed_header_size, prefetch_index_bytes);
+        debug!("fetching header. min_req_size: {min_req_size} (assumed_header_size: {assumed_header_size}, prefetched_index_bytes: {prefetch_index_bytes})");
 
         let bytes = client
             .get_range(0, 8, min_req_size)
             .await
             .map_err(from_http_err)?;
-        if !check_magic_bytes(&bytes) {
+        if !check_magic_bytes(bytes) {
             return Err(GeozeroError::GeometryFormat);
         }
         let mut bytes = BytesMut::from(

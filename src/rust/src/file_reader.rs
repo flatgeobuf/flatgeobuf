@@ -39,6 +39,11 @@ impl<'a, R: Read> FgbReader<'a, R, Initial> {
     }
 
     /// Open dataset by reading the header information without FlatBuffers verification
+    ///
+    /// # Safety
+    /// This method is unsafe because it does not verify the FlatBuffers header.
+    /// It is still safe from the Rust safety guarantees perspective, but it may cause
+    /// undefined behavior if the FlatBuffers header is invalid.
     pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
         Self::read_header(reader, false)
     }
@@ -317,8 +322,8 @@ impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected
 /// # }
 /// ```
 impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelected> {
-    type Error = GeozeroError;
     type Item = FgbFeature;
+    type Error = GeozeroError;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {
@@ -368,8 +373,8 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelecte
 /// # }
 /// ```
 impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelectedSeek> {
-    type Error = GeozeroError;
     type Item = FgbFeature;
+    type Error = GeozeroError;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {
@@ -412,11 +417,9 @@ impl<'a, R: Read, State> FgbReader<'a, R, State> {
 
     fn read_feature(&mut self) -> Result<()> {
         // Read feature size if not already read in select_all or select_bbox
-        if self.cur_pos != 4 {
-            if self.read_feature_size() {
-                self.finished = true;
-                return Ok(());
-            }
+        if self.cur_pos != 4 && self.read_feature_size() {
+            self.finished = true;
+            return Ok(());
         }
         let sbuf = &self.fbs.feature_buf;
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;

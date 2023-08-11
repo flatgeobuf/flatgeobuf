@@ -1124,13 +1124,13 @@ pub unsafe fn size_prefixed_root_as_header_unchecked(buf: &[u8]) -> Header {
   flatbuffers::size_prefixed_root_unchecked::<Header>(buf)
 }
 #[inline]
-pub fn finish_header_buffer<'a, 'b>(
-    fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+pub fn finish_header_buffer<'a>(
+    fbb: &mut flatbuffers::FlatBufferBuilder<'a>,
     root: flatbuffers::WIPOffset<Header<'a>>) {
   fbb.finish(root, None);
 }
 
 #[inline]
-pub fn finish_size_prefixed_header_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Header<'a>>) {
+pub fn finish_size_prefixed_header_buffer<'a>(fbb: &mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Header<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }

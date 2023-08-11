@@ -1,22 +1,20 @@
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
 [package]
 name = "flatgeobuf-fuzz"
 version = "0.0.0"
 authors = ["Automatically generated"]
 publish = false
-edition = "2018"
+edition = "2021"
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.3"
-
-[dependencies.flatgeobuf]
-path = ".."
-
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
+libfuzzer-sys = "0.4.6"
+flatgeobuf = { path = ".." }
 
 [[bin]]
 name = "read"

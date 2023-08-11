@@ -14,7 +14,7 @@ fn write_file() -> std::io::Result<()> {
     let points = [[1.0, 1.0], [2.0, 2.0]];
 
     const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', 3, b'f', b'g', b'b', 0];
-    file.write(&MAGIC_BYTES)?;
+    file.write_all(&MAGIC_BYTES)?;
 
     let mut fbb = flatbuffers::FlatBufferBuilder::new();
     let column_args = ColumnArgs {
@@ -35,7 +35,7 @@ fn write_file() -> std::io::Result<()> {
     let header = Header::create(&mut fbb, &header_args);
     fbb.finish_size_prefixed(header, None);
     let buf = fbb.finished_data();
-    file.write(&buf)?;
+    file.write_all(buf)?;
 
     for point in points {
         let mut fbb = flatbuffers::FlatBufferBuilder::new();
@@ -58,7 +58,7 @@ fn write_file() -> std::io::Result<()> {
         let buf = fbb.finished_data();
         assert_eq!(buf.len(), 64);
 
-        file.write(&buf)?;
+        file.write_all(buf)?;
     }
 
     Ok(())
@@ -82,12 +82,12 @@ fn verify_header() {
     let buf = builder.finished_data();
 
     // verify
-    let header = size_prefixed_root_as_header(&buf).unwrap();
+    let header = size_prefixed_root_as_header(buf).unwrap();
     assert_eq!(header.features_count(), 1);
 
     assert!(
         root_as_header(&buf[4..]).is_err(),
-        "Verfication without size prefix fails"
+        "Verification without size prefix fails"
     );
 }
 

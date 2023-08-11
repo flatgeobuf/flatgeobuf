@@ -65,14 +65,14 @@ fn read_bbox_seq() -> Result<()> {
 // }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("read_fgb", |b| b.iter(|| read_fgb()));
+    c.bench_function("read_fgb", |b| b.iter(read_fgb));
     c.bench_function("read_fgb_process_geom", |b| {
-        b.iter(|| read_fgb_process_geom())
+        b.iter(read_fgb_process_geom)
     });
-    c.bench_function("read_fgb_unchecked", |b| b.iter(|| read_fgb_unchecked()));
-    c.bench_function("read_fgb_seq", |b| b.iter(|| read_fgb_seq()));
-    c.bench_function("read_bbox", |b| b.iter(|| read_bbox()));
-    c.bench_function("read_bbox_seq", |b| b.iter(|| read_bbox_seq()));
+    c.bench_function("read_fgb_unchecked", |b| b.iter(read_fgb_unchecked));
+    c.bench_function("read_fgb_seq", |b| b.iter(read_fgb_seq));
+    c.bench_function("read_bbox", |b| b.iter(read_bbox));
+    c.bench_function("read_bbox_seq", |b| b.iter(read_bbox_seq));
     // c.bench_function("select_bbox", move |b| {
     //     b.iter_with_setup(
     //         || read_header("../../test/data/countries.fgb").unwrap(),

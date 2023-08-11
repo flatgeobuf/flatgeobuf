@@ -125,8 +125,7 @@ fn read_geometry_n<P: GeomProcessor>(
         }
         _ => {
             return Err(GeozeroError::Geometry(format!(
-                "Unknown geometry type {:?}",
-                geometry_type
+                "Unknown geometry type {geometry_type:?}"
             )))
         }
     }
@@ -140,23 +139,24 @@ fn read_coordinate<P: GeomProcessor>(
     idx: usize,
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-    let z = if processor.dimensions().z {
-        geometry.z().and_then(|dim| Some(dim.get(offset)))
+    let dims = processor.dimensions();
+    let z = if dims.z {
+        geometry.z().map(|v| v.get(offset))
     } else {
         None
     };
-    let m = if processor.dimensions().m {
-        geometry.m().and_then(|dim| Some(dim.get(offset)))
+    let m = if dims.m {
+        geometry.m().map(|v| v.get(offset))
     } else {
         None
     };
-    let t = if processor.dimensions().t {
-        geometry.t().and_then(|dim| Some(dim.get(offset)))
+    let t = if dims.t {
+        geometry.t().map(|v| v.get(offset))
     } else {
         None
     };
-    let tm = if processor.dimensions().tm {
-        geometry.tm().and_then(|dim| Some(dim.get(offset)))
+    let tm = if dims.tm {
+        geometry.tm().map(|v| v.get(offset))
     } else {
         None
     };
@@ -344,8 +344,7 @@ fn read_curve<P: GeomProcessor>(
             }
             _ => {
                 return Err(GeozeroError::Geometry(format!(
-                    "Unexpected geometry type in curve: {:?}",
-                    geometry_type
+                    "Unexpected geometry type in curve: {geometry_type:?}"
                 )))
             }
         }

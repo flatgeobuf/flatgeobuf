@@ -71,7 +71,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Int => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Int(LittleEndian::read_i32(&bytes[offset..offset + 4])),
                         )?;
                         offset += size_of::<i32>();
@@ -79,7 +79,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Long => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Long(LittleEndian::read_i64(&bytes[offset..offset + 8])),
                         )?;
                         offset += size_of::<i64>();
@@ -87,7 +87,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::ULong => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::ULong(LittleEndian::read_u64(&bytes[offset..offset + 8])),
                         )?;
                         offset += size_of::<u64>();
@@ -95,7 +95,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Double => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Double(LittleEndian::read_f64(
                                 &bytes[offset..offset + 8],
                             )),
@@ -107,7 +107,7 @@ impl geozero::FeatureProperties for FgbFeature {
                         offset += size_of::<u32>();
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::String(
                                 // unsafe variant without UTF-8 checking would be faster...
                                 str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
@@ -120,7 +120,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Byte => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Byte(bytes[offset] as i8),
                         )?;
                         offset += size_of::<i8>();
@@ -128,7 +128,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::UByte => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::UByte(bytes[offset]),
                         )?;
                         offset += size_of::<u8>();
@@ -136,7 +136,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Bool => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Bool(bytes[offset] != 0),
                         )?;
                         offset += size_of::<u8>();
@@ -144,7 +144,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Short => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Short(LittleEndian::read_i16(&bytes[offset..offset + 2])),
                         )?;
                         offset += size_of::<i16>();
@@ -152,7 +152,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::UShort => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::UShort(LittleEndian::read_u16(
                                 &bytes[offset..offset + 2],
                             )),
@@ -162,7 +162,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::UInt => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::UInt(LittleEndian::read_u32(&bytes[offset..offset + 4])),
                         )?;
                         offset += size_of::<u32>();
@@ -170,7 +170,7 @@ impl geozero::FeatureProperties for FgbFeature {
                     ColumnType::Float => {
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Float(LittleEndian::read_f32(&bytes[offset..offset + 4])),
                         )?;
                         offset += size_of::<f32>();
@@ -180,7 +180,7 @@ impl geozero::FeatureProperties for FgbFeature {
                         offset += size_of::<u32>();
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Json(
                                 // JSON may be represented using UTF-8, UTF-16, or UTF-32. The default encoding is UTF-8.
                                 str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
@@ -195,7 +195,7 @@ impl geozero::FeatureProperties for FgbFeature {
                         offset += size_of::<u32>();
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::DateTime(
                                 // unsafe variant without UTF-8 checking would be faster...
                                 str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
@@ -210,7 +210,7 @@ impl geozero::FeatureProperties for FgbFeature {
                         offset += size_of::<u32>();
                         finish = reader.property(
                             i,
-                            &column.name(),
+                            column.name(),
                             &ColumnValue::Binary(&bytes[offset..offset + len]),
                         )?;
                         offset += len;

@@ -128,8 +128,8 @@ impl<'a> FeatureWriter<'a> {
                 }
                 _ => {
                     return Err(GeozeroError::Geometry(format!(
-                        "Cannot mix geometry types - expected type `{:?}`, actual type `{:?}`",
-                        self.dataset_type, geometry_type
+                        "Cannot mix geometry types - expected type `{:?}`, actual type `{geometry_type:?}`",
+                        self.dataset_type
                     )));
                 }
             }
@@ -156,22 +156,22 @@ impl<'a> FeatureWriter<'a> {
             }
             _ => Some(to_fb_vector!(self, ends)),
         };
-        let z = if self.z.len() > 0 {
+        let z = if !self.z.is_empty() {
             Some(to_fb_vector!(self, z))
         } else {
             None
         };
-        let m = if self.m.len() > 0 {
+        let m = if !self.m.is_empty() {
             Some(to_fb_vector!(self, m))
         } else {
             None
         };
-        let t = if self.t.len() > 0 {
+        let t = if !self.t.is_empty() {
             Some(to_fb_vector!(self, t))
         } else {
             None
         };
-        let tm = if self.tm.len() > 0 {
+        let tm = if !self.tm.is_empty() {
             Some(to_fb_vector!(self, tm))
         } else {
             None
@@ -191,8 +191,8 @@ impl<'a> FeatureWriter<'a> {
         );
         self.parts.push(g);
     }
-    pub(crate) fn to_feature(&mut self) -> Vec<u8> {
-        let g = if self.parts.len() == 0 {
+    pub(crate) fn finish_to_feature(&mut self) -> Vec<u8> {
+        let g = if self.parts.is_empty() {
             self.finish_part();
             self.parts.pop().expect("push in finish_part")
         } else {
@@ -501,7 +501,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let feat = FgbFeature {
             header_buf: header(fgb_writer.dataset_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         // dbg!(&feat.fbs_feature());
         feat.process(&mut GeoJsonWriter::new(&mut out), 0)?;
@@ -515,7 +515,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let f = FgbFeature {
             header_buf: header(geometry_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         let mut json_writer = GeoJsonWriter::new(&mut out);
         json_writer.dims.z = with_z;
@@ -542,7 +542,7 @@ mod test {
 
         let geojson = r#"{"type": "MultiPoint", "coordinates": [[1,1],[2,2]]}"#;
         assert_eq!(
-            str::from_utf8(&json_to_fbg_to_json(&geojson, GeometryType::MultiPoint)).unwrap(),
+            str::from_utf8(&json_to_fbg_to_json(geojson, GeometryType::MultiPoint)).unwrap(),
             geojson
         );
 
@@ -572,7 +572,7 @@ mod test {
         let geojson = r#"{"type": "LineString", "coordinates": [[1,1,10],[2,2,20]]}"#;
         assert_eq!(
             str::from_utf8(&json_to_fbg_to_json_n(
-                &geojson,
+                geojson,
                 GeometryType::LineString,
                 true
             ))
@@ -634,7 +634,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         let feat = FgbFeature {
             header_buf: header(fgb_writer.dataset_type),
-            feature_buf: fgb_writer.to_feature(),
+            feature_buf: fgb_writer.finish_to_feature(),
         };
         assert_eq!(
             fgb_writer.bbox,

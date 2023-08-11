@@ -157,7 +157,7 @@ impl<'a> FgbWriter<'a> {
         geometry_type: GeometryType,
         options: FgbWriterOptions,
     ) -> Result<Self> {
-        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let mut fbb = FlatBufferBuilder::new();
 
         let index_node_size = if options.write_index {
             PackedRTree::DEFAULT_NODE_SIZE
@@ -287,7 +287,7 @@ impl<'a> FgbWriter<'a> {
         // Will be replaced with output offset after sorting
         node.offset = self.feat_offsets.len() as u64;
         self.feat_nodes.push(node);
-        let feat_buf = self.feat_writer.to_feature();
+        let feat_buf = self.feat_writer.finish_to_feature();
         let tmpoffset = self
             .feat_offsets
             .last()
@@ -297,14 +297,14 @@ impl<'a> FgbWriter<'a> {
             offset: tmpoffset,
             size: feat_buf.len(),
         });
-        self.tmpout.write(&feat_buf)?;
+        self.tmpout.write_all(&feat_buf)?;
         self.header_args.features_count += 1;
         Ok(())
     }
 
     /// Write the FlatGeobuf dataset (Hilbert sorted)
     pub fn write<W: Write>(mut self, out: &'a mut W) -> Result<()> {
-        out.write(&MAGIC_BYTES)?;
+        out.write_all(&MAGIC_BYTES)?;
 
         let extent = calc_extent(&self.feat_nodes);
 
@@ -319,9 +319,9 @@ impl<'a> FgbWriter<'a> {
         let header = Header::create(&mut self.fbb, &self.header_args);
         self.fbb.finish_size_prefixed(header, None);
         let buf = self.fbb.finished_data();
-        out.write(&buf)?;
+        out.write_all(buf)?;
 
-        if self.header_args.index_node_size > 0 && self.feat_nodes.len() > 0 {
+        if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
             // Create sorted index
             hilbert_sort(&mut self.feat_nodes, &extent);
             // Update offsets for index
@@ -345,13 +345,19 @@ impl<'a> FgbWriter<'a> {
         self.tmpout.flush()?;
         let tmpin = File::open(&self.tmpfn)?;
         let mut reader = BufReader::new(tmpin);
-        let mut buf = Vec::with_capacity(2048);
-        for node in &self.feat_nodes {
-            let feat = &self.feat_offsets[node.offset as usize];
-            reader.seek(SeekFrom::Start(feat.offset as u64))?;
-            buf.resize(feat.size, 0);
-            reader.read_exact(&mut buf)?;
-            out.write(&buf)?;
+
+        // Clippy generates a false-positive here, needs a block to disable, see
+        // https://github.com/rust-lang/rust-clippy/issues/9274
+        #[allow(clippy::read_zero_byte_vec)]
+        {
+            let mut buf = Vec::with_capacity(2048);
+            for node in &self.feat_nodes {
+                let feat = &self.feat_offsets[node.offset as usize];
+                reader.seek(SeekFrom::Start(feat.offset as u64))?;
+                buf.resize(feat.size, 0);
+                reader.read_exact(&mut buf)?;
+                out.write_all(&buf)?;
+            }
         }
 
         Ok(())
@@ -369,19 +375,15 @@ impl PropertyProcessor for FgbWriter<'_> {
         if i >= self.columns.len() {
             if i == self.columns.len() {
                 info!(
-                    "Undefined property index {}, column: `{}` - adding column declaration",
-                    i, colname
+                    "Undefined property index {i}, column: `{colname}` - adding column declaration"
                 );
                 self.add_column(colname, prop_type(colval), |_, _| {});
             } else {
-                info!(
-                    "Undefined property index {}, column: `{}` - skipping",
-                    i, colname
-                );
+                info!("Undefined property index {i}, column: `{colname}` - skipping");
                 return Ok(false);
             }
         }
-        // TODO: check name and type against existing declartion
+        // TODO: check name and type against existing declaration
         self.feat_writer.property(i, colname, colval)
     }
 }

@@ -7,10 +7,10 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
+use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
-use std::{cmp, f64, u64, usize};
 
 #[derive(Clone, PartialEq, Debug)]
 #[repr(C)]
@@ -241,9 +241,7 @@ fn hilbert(x: u32, y: u32) -> u32 {
     i1 = (i1 | (i1 << 2)) & 0x33333333;
     i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-    let value = (i1 << 1) | i0;
-
-    value
+    (i1 << 1) | i0
 }
 
 fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
@@ -255,7 +253,7 @@ fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
     hilbert(x, y)
 }
 
-pub fn hilbert_sort(items: &mut Vec<NodeItem>, extent: &NodeItem) {
+pub fn hilbert_sort(items: &mut [NodeItem], extent: &NodeItem) {
     items.sort_by(|a, b| {
         let ha = hilbert_bbox(a, HILBERT_MAX, extent);
         let hb = hilbert_bbox(b, HILBERT_MAX, extent);
@@ -263,7 +261,7 @@ pub fn hilbert_sort(items: &mut Vec<NodeItem>, extent: &NodeItem) {
     });
 }
 
-pub fn calc_extent(nodes: &Vec<NodeItem>) -> NodeItem {
+pub fn calc_extent(nodes: &[NodeItem]) -> NodeItem {
     nodes.iter().fold(NodeItem::create(0), |mut a, b| {
         a.expand(b);
         a
@@ -286,7 +284,7 @@ impl PackedRTree {
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(self.num_items > 0, "Cannot create empty tree");
-        self.node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        self.node_size = min(max(node_size, 2u16), 65535u16);
         self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
         self.num_nodes = self
             .level_bounds
@@ -355,7 +353,7 @@ impl PackedRTree {
     fn read_data(&mut self, data: &mut dyn Read) -> Result<()> {
         read_node_vec(&mut self.node_items, data)?;
         for node in &self.node_items {
-            self.extent.expand(&node)
+            self.extent.expand(node)
         }
         Ok(())
     }
@@ -391,15 +389,15 @@ impl PackedRTree {
             level_bounds: Vec::new(),
         };
         tree.init(node_size)?;
-        for i in 0..tree.num_items {
-            tree.node_items[tree.num_nodes - tree.num_items + i] = nodes[i].clone();
+        for (i, node) in nodes.iter().take(tree.num_items).cloned().enumerate() {
+            tree.node_items[tree.num_nodes - tree.num_items + i] = node;
         }
         tree.generate_nodes();
         Ok(tree)
     }
 
     pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
-        let node_size = cmp::min(cmp::max(node_size, 2u16), 65535u16);
+        let node_size = min(max(node_size, 2u16), 65535u16);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
         let mut tree = PackedRTree {
@@ -424,7 +422,7 @@ impl PackedRTree {
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::new(),
-            num_items: num_items,
+            num_items,
             num_nodes: 0,
             node_size: 0,
             level_bounds: Vec::new(),
@@ -455,14 +453,14 @@ impl PackedRTree {
             let level = next.1;
             let is_leaf_node = node_index >= self.num_nodes - self.num_items;
             // find the end index of the node
-            let end = cmp::min(
+            let end = min(
                 node_index + self.node_size as usize,
                 self.level_bounds[level].1,
             );
             // search through child nodes
             for pos in node_index..end {
                 let node_item = &self.node_items[pos];
-                if !n.intersects(&node_item) {
+                if !n.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -493,7 +491,7 @@ impl PackedRTree {
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
 
         // current position must be start of index
-        let index_base = data.seek(SeekFrom::Current(0))?;
+        let index_base = data.stream_position()?;
 
         // use ordered search queue to make index traversal in sequential order
         let mut queue = VecDeque::new();
@@ -506,14 +504,14 @@ impl PackedRTree {
             println!("popped next node_index: {node_index}, level: {level}");
             let is_leaf_node = node_index >= num_nodes - num_items;
             // find the end index of the node
-            let end = cmp::min(node_index + node_size as usize, level_bounds[level].1);
+            let end = min(node_index + node_size as usize, level_bounds[level].1);
             let length = end - node_index;
             let node_items = read_node_items(data, index_base, node_index, length)?;
             // search through child nodes
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(&node_item) {
+                if !item.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -537,6 +535,7 @@ impl PackedRTree {
     }
 
     #[cfg(feature = "http")]
+    #[allow(clippy::too_many_arguments)]
     pub async fn http_stream_search(
         client: &mut BufferedHttpRangeClient,
         index_begin: usize,
@@ -550,7 +549,7 @@ impl PackedRTree {
         let item = NodeItem::new(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
-        debug!("http_stream_search - index_begin: {}, num_items: {}, node_size: {}, level_bounds: {:?}, GPS bounds:[({}, {}), ({},{})]", index_begin, num_items, node_size, &level_bounds, min_x, min_y, max_x, max_y);
+        debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
@@ -567,14 +566,13 @@ impl PackedRTree {
 
         while let Some(next) = queue.pop_front() {
             debug!(
-                "popped node: {:?},  remaining queue len: {}",
-                next,
+                "popped node: {next:?},  remaining queue len: {}",
                 queue.len()
             );
             let node_index = next.nodes.start;
             let is_leaf_node = node_index >= leaf_nodes_offset;
             // find the end index of the nodes
-            let end = cmp::min(
+            let end = min(
                 next.nodes.end + node_size as usize,
                 level_bounds[next.level].1,
             );
@@ -586,7 +584,7 @@ impl PackedRTree {
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(&node_item) {
+                if !item.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -604,7 +602,7 @@ impl PackedRTree {
                 match (queue.back_mut(), node_item.offset as usize) {
                     // There is an existing node for this level, and it's close to this node.
                     // Merge the ranges to avoid an extra request
-                    (Some(mut tail), offset)
+                    (Some(tail), offset)
                         if tail.level == next.level - 1
                             && offset < tail.nodes.end + combine_request_threshold =>
                     {
@@ -623,11 +621,10 @@ impl PackedRTree {
                             .map(|head| head.level == next.level - 1)
                             .unwrap_or(false)
                         {
-                            debug!("requesting new NodeRange for offset: {} rather than merging with distant NodeRange: {:?}", offset, &tail);
+                            debug!("requesting new NodeRange for offset: {offset} rather than merging with distant NodeRange: {tail:?}");
                         } else {
                             debug!(
-                                "pushing new level for NodeRange: {:?} onto Queue with tail: {:?}",
-                                &node_range,
+                                "pushing new level for NodeRange: {node_range:?} onto Queue with tail: {:?}",
                                 queue.back()
                             );
                         }
@@ -647,7 +644,7 @@ impl PackedRTree {
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
-        let node_size_min = cmp::min(cmp::max(node_size, 2), 65535) as usize;
+        let node_size_min = min(max(node_size, 2), 65535) as usize;
         // limit so that resulting size in bytes can be represented by uint64_t
         // assert!(
         //     num_items <= 1 << 56,
@@ -694,8 +691,7 @@ mod inspect {
                     let _ =
                         processor.property(0, "levelno", &ColumnValue::ULong(levelno as u64))?;
                     let _ = processor.property(1, "pos", &ColumnValue::ULong(pos as u64))?;
-                    let _ =
-                        processor.property(2, "offset", &ColumnValue::ULong(node.offset as u64))?;
+                    let _ = processor.property(2, "offset", &ColumnValue::ULong(node.offset))?;
                     processor.properties_end()?;
                     processor.geometry_begin()?;
                     processor.polygon_begin(true, 1, 0)?;
@@ -728,7 +724,7 @@ fn tree_2items() -> Result<()> {
     assert!(nodes[1].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
@@ -743,30 +739,32 @@ fn tree_2items() -> Result<()> {
 
 #[test]
 fn tree_19items_roundtrip_stream_search() -> Result<()> {
-    let mut nodes = Vec::new();
-    nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
-    nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
-    nodes.push(NodeItem::new(100.0, 100.0, 110.0, 110.0));
-    nodes.push(NodeItem::new(101.0, 101.0, 111.0, 111.0));
-    nodes.push(NodeItem::new(102.0, 102.0, 112.0, 112.0));
-    nodes.push(NodeItem::new(103.0, 103.0, 113.0, 113.0));
-    nodes.push(NodeItem::new(104.0, 104.0, 114.0, 114.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
-    nodes.push(NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0));
+    let mut nodes = vec![
+        NodeItem::new(0.0, 0.0, 1.0, 1.0),
+        NodeItem::new(2.0, 2.0, 3.0, 3.0),
+        NodeItem::new(100.0, 100.0, 110.0, 110.0),
+        NodeItem::new(101.0, 101.0, 111.0, 111.0),
+        NodeItem::new(102.0, 102.0, 112.0, 112.0),
+        NodeItem::new(103.0, 103.0, 113.0, 113.0),
+        NodeItem::new(104.0, 104.0, 114.0, 114.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+    ];
+
     let extent = calc_extent(&nodes);
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
@@ -796,7 +794,7 @@ fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let expected: Vec<usize> = vec![13, 14, 15, 16];
     assert_eq!(indexes, expected);
 
-    let mut reader = std::io::Cursor::new(&tree_data);
+    let mut reader = Cursor::new(&tree_data);
     let list = PackedRTree::stream_search(
         &mut reader,
         nodes.len(),
@@ -844,7 +842,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
     let res = tree.stream_write(&mut tree_data);
     assert!(res.is_ok());
 
-    let mut reader = std::io::Cursor::new(&tree_data);
+    let mut reader = Cursor::new(&tree_data);
     let list2 = PackedRTree::stream_search(
         &mut reader,
         nodes.len(),
@@ -873,7 +871,7 @@ fn tree_processing() -> Result<()> {
     nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
     let extent = calc_extent(&nodes);
     let mut offset = 0;
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
