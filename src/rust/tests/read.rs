@@ -319,9 +319,7 @@ fn read_etrs89() -> Result<()> {
 
 #[test]
 fn reader_type() -> Result<()> {
-    fn get_opened_reader<R: Read + Seek>(
-        reader: &mut R,
-    ) -> Result<FgbReader<R, reader_state::Open>> {
+    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R, reader_state::Open>> {
         FgbReader::open(reader)
     }
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
@@ -329,7 +327,7 @@ fn reader_type() -> Result<()> {
     assert_eq!(fgb.header().features_count(), 179);
 
     fn get_feature_reader<R: Read + Seek>(
-        reader: &mut R,
+        reader: R,
     ) -> Result<FgbReader<R, reader_state::FeaturesSelectedSeek>> {
         FgbReader::open(reader)?.select_all()
     }

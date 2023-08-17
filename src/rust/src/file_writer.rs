@@ -303,7 +303,7 @@ impl<'a> FgbWriter<'a> {
     }
 
     /// Write the FlatGeobuf dataset (Hilbert sorted)
-    pub fn write<W: Write>(mut self, out: &'a mut W) -> Result<()> {
+    pub fn write(mut self, mut out: impl Write) -> Result<()> {
         out.write_all(&MAGIC_BYTES)?;
 
         let extent = calc_extent(&self.feat_nodes);
@@ -338,7 +338,7 @@ impl<'a> FgbWriter<'a> {
                 })
                 .collect();
             let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
-            tree.stream_write(out)?;
+            tree.stream_write(&mut out)?;
         }
 
         // Copy features from temp file in sort order

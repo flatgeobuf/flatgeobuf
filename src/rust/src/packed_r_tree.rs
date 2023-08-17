@@ -45,7 +45,7 @@ impl NodeItem {
         }
     }
 
-    pub fn from_reader<R: Read + ?Sized>(rdr: &mut R) -> Result<Self> {
+    pub fn from_reader(mut rdr: impl Read) -> Result<Self> {
         Ok(NodeItem {
             min_x: rdr.read_f64::<LittleEndian>()?,
             min_y: rdr.read_f64::<LittleEndian>()?,
@@ -129,10 +129,10 @@ impl NodeItem {
 }
 
 /// Read full capacity of vec from data stream
-fn read_node_vec<R: Read + ?Sized>(node_items: &mut Vec<NodeItem>, data: &mut R) -> Result<()> {
+fn read_node_vec(node_items: &mut Vec<NodeItem>, mut data: impl Read) -> Result<()> {
     node_items.clear();
     for _ in 0..node_items.capacity() {
-        node_items.push(NodeItem::from_reader(data)?);
+        node_items.push(NodeItem::from_reader(&mut data)?);
     }
     Ok(())
 }
@@ -350,7 +350,7 @@ impl PackedRTree {
         }
     }
 
-    fn read_data(&mut self, data: &mut dyn Read) -> Result<()> {
+    fn read_data(&mut self, data: impl Read) -> Result<()> {
         read_node_vec(&mut self.node_items, data)?;
         for node in &self.node_items {
             self.extent.expand(node)
@@ -396,7 +396,7 @@ impl PackedRTree {
         Ok(tree)
     }
 
-    pub fn from_buf(data: &mut dyn Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
+    pub fn from_buf(data: impl Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
         let node_size = min(max(node_size, 2u16), 65535u16);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
