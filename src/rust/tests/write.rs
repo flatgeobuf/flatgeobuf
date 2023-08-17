@@ -133,6 +133,106 @@ fn json_to_fgb() -> Result<()> {
 }
 
 #[test]
+fn column_size() -> Result<()> {
+    let mut fgb = FgbWriter::create_with_options(
+        "countries",
+        GeometryType::Point,
+        FgbWriterOptions {
+            description: Some("My Points"),
+            crs: FgbCrs {
+                code: 4326,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )?;
+    fgb.add_column("max_byte", ColumnType::Byte, |_fbb, _col| {});
+    fgb.add_column("max_ubyte", ColumnType::UByte, |_fbb, _col| {});
+    fgb.add_column("max_bool", ColumnType::Bool, |_fbb, _col| {});
+    fgb.add_column("max_short", ColumnType::Short, |_fbb, _col| {});
+    fgb.add_column("max_ushort", ColumnType::UShort, |_fbb, _col| {});
+    fgb.add_column("max_int", ColumnType::Int, |_fbb, _col| {});
+    fgb.add_column("max_uint", ColumnType::UInt, |_fbb, _col| {});
+    fgb.add_column("max_long", ColumnType::Long, |_fbb, _col| {});
+    fgb.add_column("max_ulong", ColumnType::ULong, |_fbb, _col| {});
+    fgb.add_column("max_float", ColumnType::Float, |_fbb, _col| {});
+    fgb.add_column("max_double", ColumnType::Double, |_fbb, _col| {});
+
+    let geom = GeoJson(r#"{"type": "Point", "coordinates": [100.0,-50.0]}"#);
+    fgb.add_feature_geom(geom, |feat| {
+        feat.property(0, "max_byte", &ColumnValue::Byte(i8::MAX))
+            .unwrap();
+        feat.property(1, "max_ubyte", &ColumnValue::UByte(u8::MAX))
+            .unwrap();
+        feat.property(2, "max_bool", &ColumnValue::Bool(true))
+            .unwrap();
+        feat.property(3, "max_short", &ColumnValue::Short(i16::MAX))
+            .unwrap();
+        feat.property(4, "max_ushort", &ColumnValue::UShort(u16::MAX))
+            .unwrap();
+        feat.property(5, "max_int", &ColumnValue::Int(i32::MAX))
+            .unwrap();
+        feat.property(6, "max_uint", &ColumnValue::UInt(u32::MAX))
+            .unwrap();
+        feat.property(7, "max_long", &ColumnValue::Long(i64::MAX))
+            .unwrap();
+        feat.property(8, "max_ulong", &ColumnValue::ULong(u64::MAX))
+            .unwrap();
+        feat.property(9, "max_float", &ColumnValue::Float(f32::MAX))
+            .unwrap();
+        feat.property(10, "max_double", &ColumnValue::Double(f64::MAX))
+            .unwrap();
+    })
+    .expect("valid feature");
+
+    let mut output = vec![];
+    fgb.write(&mut output).expect("writable");
+
+    let mut reader = FgbReader::open(&*output)
+        .expect("openable")
+        .select_all_seq()
+        .expect("select all");
+    let feature = FallibleStreamingIterator::next(&mut reader)
+        .expect("successful read")
+        .expect("feature exists");
+
+    let max_byte: i8 = feature.property_n(0).expect("valid byte");
+    assert_eq!(max_byte, i8::MAX);
+
+    let max_ubyte: u8 = feature.property_n(1).expect("valid ubyte");
+    assert_eq!(max_ubyte, u8::MAX);
+
+    let max_bool: bool = feature.property_n(2).expect("valid bool");
+    assert_eq!(max_bool, true);
+
+    let max_short: i16 = feature.property_n(3).expect("valid short");
+    assert_eq!(max_short, i16::MAX);
+
+    let max_ushort: u16 = feature.property_n(4).expect("valid ushort");
+    assert_eq!(max_ushort, u16::MAX);
+
+    let max_int: i32 = feature.property_n(5).expect("valid int");
+    assert_eq!(max_int, i32::MAX);
+
+    let max_uint: u32 = feature.property_n(6).expect("valid uint");
+    assert_eq!(max_uint, u32::MAX);
+
+    let max_long: i64 = feature.property_n(7).expect("valid max_long");
+    assert_eq!(max_long, i64::MAX);
+
+    let max_ulong: u64 = feature.property_n(8).expect("valid max_ulong");
+    assert_eq!(max_ulong, u64::MAX);
+
+    let max_float: f32 = feature.property_n(9).expect("valid max_float");
+    assert_eq!(max_float, f32::MAX);
+
+    let max_double: f64 = feature.property_n(10).expect("valid max_double");
+    assert_eq!(max_double, f64::MAX);
+
+    Ok(())
+}
+
+#[test]
 fn geozero_to_fgb() -> Result<()> {
     let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
     let mut fin = BufReader::new(File::open("../../test/data/countries.geojson")?);
