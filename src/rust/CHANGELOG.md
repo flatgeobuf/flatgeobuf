@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fix: Columns of type `short` are now correctly 16 bit, previously they were
+  considered to be 8 bits, resulting in unexpected overflow.
+  - Note that this fix could cause newly appearing breaks in behavior if you
+    have a legacy FGB file (written with version `<= 3.26.0`) which contains a
+    `short` column, because all subsequent property columns would be
+    incorrectly offset.
 - Breaking: Remove lifetimes from FgbReader/FgbWriter
 - FgbReader/FgbWriter as well as borrow, can now own their inner reader/writer
 
