@@ -113,7 +113,7 @@ fn json_to_fgb() -> Result<()> {
     let geojson = GeoJson(
         r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "MultiPolygon", "coordinates": [[[[173.020375,-40.919052],[173.247234,-41.331999],[173.958405,-40.926701],[174.247587,-41.349155],[174.248517,-41.770008],[173.876447,-42.233184],[173.22274,-42.970038],[172.711246,-43.372288],[173.080113,-43.853344],[172.308584,-43.865694],[171.452925,-44.242519],[171.185138,-44.897104],[170.616697,-45.908929],[169.831422,-46.355775],[169.332331,-46.641235],[168.411354,-46.619945],[167.763745,-46.290197],[166.676886,-46.219917],[166.509144,-45.852705],[167.046424,-45.110941],[168.303763,-44.123973],[168.949409,-43.935819],[169.667815,-43.555326],[170.52492,-43.031688],[171.12509,-42.512754],[171.569714,-41.767424],[171.948709,-41.514417],[172.097227,-40.956104],[172.79858,-40.493962],[173.020375,-40.919052]]],[[[174.612009,-36.156397],[175.336616,-37.209098],[175.357596,-36.526194],[175.808887,-36.798942],[175.95849,-37.555382],[176.763195,-37.881253],[177.438813,-37.961248],[178.010354,-37.579825],[178.517094,-37.695373],[178.274731,-38.582813],[177.97046,-39.166343],[177.206993,-39.145776],[176.939981,-39.449736],[177.032946,-39.879943],[176.885824,-40.065978],[176.508017,-40.604808],[176.01244,-41.289624],[175.239567,-41.688308],[175.067898,-41.425895],[174.650973,-41.281821],[175.22763,-40.459236],[174.900157,-39.908933],[173.824047,-39.508854],[173.852262,-39.146602],[174.574802,-38.797683],[174.743474,-38.027808],[174.697017,-37.381129],[174.292028,-36.711092],[174.319004,-36.534824],[173.840997,-36.121981],[173.054171,-35.237125],[172.636005,-34.529107],[173.007042,-34.450662],[173.551298,-35.006183],[174.32939,-35.265496],[174.612009,-36.156397]]]]}}"#,
     );
-    fgb.add_feature(geojson).ok();
+    fgb.add_feature(geojson)?;
 
     // // Process geometry only and use properties API
     let geom = GeoJson(
@@ -123,12 +123,111 @@ fn json_to_fgb() -> Result<()> {
         feat.property(0, "fid", &ColumnValue::Long(43)).unwrap();
         feat.property(1, "name", &ColumnValue::String("South Africa"))
             .unwrap();
-    })
-    .ok();
+    })?;
 
     // let mut file = BufWriter::new(File::create("test_multipoly.fgb")?);
     let mut file = BufWriter::new(tempfile()?);
     fgb.write(&mut file)?;
+
+    Ok(())
+}
+
+#[test]
+fn column_size() -> Result<()> {
+    let mut fgb = FgbWriter::create_with_options(
+        "countries",
+        GeometryType::Point,
+        FgbWriterOptions {
+            description: Some("My Points"),
+            crs: FgbCrs {
+                code: 4326,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )?;
+    fgb.add_column("max_byte", ColumnType::Byte, |_fbb, _col| {});
+    fgb.add_column("max_ubyte", ColumnType::UByte, |_fbb, _col| {});
+    fgb.add_column("max_bool", ColumnType::Bool, |_fbb, _col| {});
+    fgb.add_column("max_short", ColumnType::Short, |_fbb, _col| {});
+    fgb.add_column("max_ushort", ColumnType::UShort, |_fbb, _col| {});
+    fgb.add_column("max_int", ColumnType::Int, |_fbb, _col| {});
+    fgb.add_column("max_uint", ColumnType::UInt, |_fbb, _col| {});
+    fgb.add_column("max_long", ColumnType::Long, |_fbb, _col| {});
+    fgb.add_column("max_ulong", ColumnType::ULong, |_fbb, _col| {});
+    fgb.add_column("max_float", ColumnType::Float, |_fbb, _col| {});
+    fgb.add_column("max_double", ColumnType::Double, |_fbb, _col| {});
+
+    let geom = GeoJson(r#"{"type": "Point", "coordinates": [100.0,-50.0]}"#);
+    fgb.add_feature_geom(geom, |feat| {
+        feat.property(0, "max_byte", &ColumnValue::Byte(i8::MAX))
+            .unwrap();
+        feat.property(1, "max_ubyte", &ColumnValue::UByte(u8::MAX))
+            .unwrap();
+        feat.property(2, "max_bool", &ColumnValue::Bool(true))
+            .unwrap();
+        feat.property(3, "max_short", &ColumnValue::Short(i16::MAX))
+            .unwrap();
+        feat.property(4, "max_ushort", &ColumnValue::UShort(u16::MAX))
+            .unwrap();
+        feat.property(5, "max_int", &ColumnValue::Int(i32::MAX))
+            .unwrap();
+        feat.property(6, "max_uint", &ColumnValue::UInt(u32::MAX))
+            .unwrap();
+        feat.property(7, "max_long", &ColumnValue::Long(i64::MAX))
+            .unwrap();
+        feat.property(8, "max_ulong", &ColumnValue::ULong(u64::MAX))
+            .unwrap();
+        feat.property(9, "max_float", &ColumnValue::Float(f32::MAX))
+            .unwrap();
+        feat.property(10, "max_double", &ColumnValue::Double(f64::MAX))
+            .unwrap();
+    })
+    .expect("valid feature");
+
+    let mut output = vec![];
+    fgb.write(&mut output).expect("writable");
+
+    let mut reader = FgbReader::open(&*output)
+        .expect("openable")
+        .select_all_seq()
+        .expect("select all");
+    let feature = FallibleStreamingIterator::next(&mut reader)
+        .expect("successful read")
+        .expect("feature exists");
+
+    let max_byte: i8 = feature.property_n(0).expect("valid byte");
+    assert_eq!(max_byte, i8::MAX);
+
+    let max_ubyte: u8 = feature.property_n(1).expect("valid ubyte");
+    assert_eq!(max_ubyte, u8::MAX);
+
+    let max_bool: bool = feature.property_n(2).expect("valid bool");
+    assert_eq!(max_bool, true);
+
+    let max_short: i16 = feature.property_n(3).expect("valid short");
+    assert_eq!(max_short, i16::MAX);
+
+    let max_ushort: u16 = feature.property_n(4).expect("valid ushort");
+    assert_eq!(max_ushort, u16::MAX);
+
+    let max_int: i32 = feature.property_n(5).expect("valid int");
+    assert_eq!(max_int, i32::MAX);
+
+    let max_uint: u32 = feature.property_n(6).expect("valid uint");
+    assert_eq!(max_uint, u32::MAX);
+
+    let max_long: i64 = feature.property_n(7).expect("valid max_long");
+    assert_eq!(max_long, i64::MAX);
+
+    let max_ulong: u64 = feature.property_n(8).expect("valid max_ulong");
+    assert_eq!(max_ulong, u64::MAX);
+
+    let max_float: f32 = feature.property_n(9).expect("valid max_float");
+    assert_eq!(max_float, f32::MAX);
+
+    let max_double: f64 = feature.property_n(10).expect("valid max_double");
+    assert_eq!(max_double, f64::MAX);
 
     Ok(())
 }
