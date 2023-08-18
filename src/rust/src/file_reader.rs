@@ -11,8 +11,8 @@ use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
 /// FlatGeobuf dataset reader
-pub struct FgbReader<'a, R, State = Initial> {
-    reader: &'a mut R,
+pub struct FgbReader<R, State = Initial> {
+    reader: R,
     /// FlatBuffers verification
     verify: bool,
     // feature reading requires header access, therefore
@@ -32,9 +32,9 @@ pub struct FgbReader<'a, R, State = Initial> {
     state: PhantomData<State>,
 }
 
-impl<'a, R: Read> FgbReader<'a, R, Initial> {
+impl<R: Read> FgbReader<R, Initial> {
     /// Open dataset by reading the header information
-    pub fn open(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+    pub fn open(reader: R) -> Result<FgbReader<R, Open>> {
         Self::read_header(reader, true)
     }
 
@@ -44,11 +44,11 @@ impl<'a, R: Read> FgbReader<'a, R, Initial> {
     /// This method is unsafe because it does not verify the FlatBuffers header.
     /// It is still safe from the Rust safety guarantees perspective, but it may cause
     /// undefined behavior if the FlatBuffers header is invalid.
-    pub unsafe fn open_unchecked(reader: &'a mut R) -> Result<FgbReader<'a, R, Open>> {
+    pub unsafe fn open_unchecked(reader: R) -> Result<FgbReader<R, Open>> {
         Self::read_header(reader, false)
     }
 
-    fn read_header(reader: &'a mut R, verify: bool) -> Result<FgbReader<'a, R, Open>> {
+    fn read_header(mut reader: R, verify: bool) -> Result<FgbReader<R, Open>> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
@@ -89,11 +89,14 @@ impl<'a, R: Read> FgbReader<'a, R, Initial> {
     }
 }
 
-impl<'a, R: Read> FgbReader<'a, R, Open> {
+impl<R: Read> FgbReader<R, Open> {
     /// Select all features without using seek.
-    pub fn select_all_seq(mut self) -> Result<FgbReader<'a, R, FeaturesSelected>> {
+    pub fn select_all_seq(mut self) -> Result<FgbReader<R, FeaturesSelected>> {
         let index_size = self.index_size();
-        std::io::copy(&mut self.reader.take(index_size), &mut std::io::sink())?;
+        std::io::copy(
+            &mut (&mut self.reader).take(index_size),
+            &mut std::io::sink(),
+        )?;
 
         // Detect empty dataset by reading the first feature size
         let finished = self.read_feature_size();
@@ -118,14 +121,14 @@ impl<'a, R: Read> FgbReader<'a, R, Open> {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<FgbReader<'a, R, FeaturesSelected>> {
+    ) -> Result<FgbReader<R, FeaturesSelected>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(GeozeroError::Geometry("Index missing".to_string()));
         }
         let index = PackedRTree::from_buf(
-            self.reader,
+            &mut self.reader,
             header.features_count() as usize,
             header.index_node_size(),
         )?;
@@ -149,9 +152,9 @@ impl<'a, R: Read> FgbReader<'a, R, Open> {
     }
 }
 
-impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
+impl<R: Read + Seek> FgbReader<R, Open> {
     /// Select all features.
-    pub fn select_all(mut self) -> Result<FgbReader<'a, R, FeaturesSelectedSeek>> {
+    pub fn select_all(mut self) -> Result<FgbReader<R, FeaturesSelectedSeek>> {
         let index_size = self.index_size();
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
 
@@ -177,7 +180,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<FgbReader<'a, R, FeaturesSelectedSeek>> {
+    ) -> Result<FgbReader<R, FeaturesSelectedSeek>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
@@ -211,7 +214,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, Open> {
     }
 }
 
-impl<'a, R: Read, State> FgbReader<'a, R, State> {
+impl<R: Read, State> FgbReader<R, State> {
     /// Header information
     pub fn header(&self) -> Header {
         self.fbs.header()
@@ -250,7 +253,7 @@ impl<'a, R: Read, State> FgbReader<'a, R, State> {
     }
 }
 
-impl<'a, R: Read> FgbReader<'a, R, FeaturesSelected> {
+impl<R: Read> FgbReader<R, FeaturesSelected> {
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
@@ -267,14 +270,14 @@ impl<'a, R: Read> FgbReader<'a, R, FeaturesSelected> {
     }
 }
 
-impl<'a, T: Read> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected> {
+impl<T: Read> GeozeroDatasource for FgbReader<T, FeaturesSelected> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
     }
 }
 
-impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelectedSeek> {
+impl<R: Read + Seek> FgbReader<R, FeaturesSelectedSeek> {
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
@@ -291,7 +294,7 @@ impl<'a, R: Read + Seek> FgbReader<'a, R, FeaturesSelectedSeek> {
     }
 }
 
-impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelectedSeek> {
+impl<T: Read + Seek> GeozeroDatasource for FgbReader<T, FeaturesSelectedSeek> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
@@ -321,7 +324,7 @@ impl<'a, T: Read + Seek> GeozeroDatasource for FgbReader<'a, T, FeaturesSelected
 /// # Ok(())
 /// # }
 /// ```
-impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelected> {
+impl<R: Read> FallibleStreamingIterator for FgbReader<R, FeaturesSelected> {
     type Item = FgbFeature;
     type Error = GeozeroError;
 
@@ -333,7 +336,10 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelecte
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
                 let seek_bytes = item.offset as u64 - self.cur_pos;
-                std::io::copy(&mut self.reader.take(seek_bytes), &mut std::io::sink())?;
+                std::io::copy(
+                    &mut (&mut self.reader).take(seek_bytes),
+                    &mut std::io::sink(),
+                )?;
                 self.cur_pos += seek_bytes;
             }
         }
@@ -372,7 +378,7 @@ impl<'a, R: Read> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelecte
 /// # Ok(())
 /// # }
 /// ```
-impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, FeaturesSelectedSeek> {
+impl<R: Read + Seek> FallibleStreamingIterator for FgbReader<R, FeaturesSelectedSeek> {
     type Item = FgbFeature;
     type Error = GeozeroError;
 
@@ -401,7 +407,7 @@ impl<'a, R: Read + Seek> FallibleStreamingIterator for FgbReader<'a, R, Features
 }
 
 // Shared FallibleStreamingIterator implementation
-impl<'a, R: Read, State> FgbReader<'a, R, State> {
+impl<R: Read, State> FgbReader<R, State> {
     fn advance_finished(&mut self) -> bool {
         if self.finished {
             return true;
@@ -457,7 +463,7 @@ impl<'a, R: Read, State> FgbReader<'a, R, State> {
 mod inspect {
     use super::*;
 
-    impl<'a, R: Read> FgbReader<'a, R, Open> {
+    impl<R: Read> FgbReader<R, Open> {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Breaking: Remove lifetimes from FgbReader/FgbWriter
+- FgbReader/FgbWriter as well as borrow, can now own their inner reader/writer
+
 ## [3.26.0] - 2023-07-08
 
 - Upgrade to geozero 0.10
