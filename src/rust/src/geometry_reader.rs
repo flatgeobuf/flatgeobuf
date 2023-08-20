@@ -284,7 +284,7 @@ fn read_polygon<P: GeomProcessor>(
         // single ring
         processor.polygon_begin(tagged, 1, idx)?;
         let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-        processor.linestring_begin(false, xy.len(), 0)?;
+        processor.linestring_begin(false, xy.len() / 2, 0)?;
         read_coords(processor, geometry, 0, xy.len())?;
         processor.linestring_end(false, 0)?;
         processor.polygon_end(tagged, idx)?;
@@ -323,7 +323,7 @@ fn read_curve<P: GeomProcessor>(
         match geometry_type {
             GeometryType::LineString => {
                 let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
-                processor.linestring_begin(false, xy.len(), i)?;
+                processor.linestring_begin(false, xy.len() / 2, i)?;
                 read_coords(processor, &geometry, 0, xy.len())?;
                 processor.linestring_end(false, i)?;
             }
