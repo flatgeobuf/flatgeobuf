@@ -2,7 +2,9 @@ use flatgeobuf::packed_r_tree::*;
 use flatgeobuf::*;
 use geozero::error::Result;
 use geozero::wkt::WktWriter;
-use geozero::{ColumnValue, CoordDimensions, GeomProcessor, PropertyProcessor, ToWkt};
+use geozero::{
+    ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, PropertyProcessor, ToWkt,
+};
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
@@ -630,6 +632,62 @@ fn json_to_fgb_geometry_only() -> Result<()> {
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
     assert!(feature.properties().is_ok());
+
+    Ok(())
+}
+
+struct SizeCounter {
+    expected_xy: u64,
+    actual_xy: u64,
+}
+
+impl SizeCounter {
+    pub fn new() -> Self {
+        Self {
+            expected_xy: 0,
+            actual_xy: 0,
+        }
+    }
+}
+
+impl GeomProcessor for SizeCounter {
+    fn linestring_begin(&mut self, _tagged: bool, size: usize, _idx: usize) -> Result<()> {
+        self.expected_xy = size as u64;
+        self.actual_xy = 0;
+        Ok(())
+    }
+
+    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> Result<()> {
+        self.actual_xy += 1;
+        Ok(())
+    }
+
+    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
+        assert_eq!(
+            self.expected_xy, self.actual_xy,
+            "Expected xy() to be called {} times, but was called {} times",
+            self.expected_xy, self.actual_xy
+        );
+        Ok(())
+    }
+}
+
+impl PropertyProcessor for SizeCounter {}
+impl FeatureProcessor for SizeCounter {}
+
+#[test]
+fn test_geozero_size_arg() -> Result<()> {
+    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R, reader_state::Open>> {
+        FgbReader::open(reader)
+    }
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let fgb = get_opened_reader(&mut filein)?;
+
+    let mut size_counter = SizeCounter::new();
+    fgb.select_all()
+        .unwrap()
+        .process_features(&mut size_counter)
+        .unwrap();
 
     Ok(())
 }
