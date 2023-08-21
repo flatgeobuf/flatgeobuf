@@ -7,7 +7,7 @@ use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
 use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{self, Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
 /// FlatGeobuf dataset reader
@@ -91,12 +91,12 @@ impl<R: Read> FgbReader<R, Initial> {
 
 impl<R: Read> FgbReader<R, Open> {
     /// Select all features without using seek.
+    ///
+    /// This can be used to read from an input stream.
     pub fn select_all_seq(mut self) -> Result<FgbReader<R, FeaturesSelected>> {
+        // skip index
         let index_size = self.index_size();
-        std::io::copy(
-            &mut (&mut self.reader).take(index_size),
-            &mut std::io::sink(),
-        )?;
+        io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
 
         // Detect empty dataset by reading the first feature size
         let finished = self.read_feature_size();
@@ -115,6 +115,8 @@ impl<R: Read> FgbReader<R, Open> {
     }
 
     /// Select features within a bounding box without using seek.
+    ///
+    /// This can be used to read from an input stream.
     pub fn select_bbox_seq(
         mut self,
         min_x: f64,
@@ -155,6 +157,7 @@ impl<R: Read> FgbReader<R, Open> {
 impl<R: Read + Seek> FgbReader<R, Open> {
     /// Select all features.
     pub fn select_all(mut self) -> Result<FgbReader<R, FeaturesSelectedSeek>> {
+        // skip index
         let index_size = self.index_size();
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
 
@@ -335,11 +338,9 @@ impl<R: Read> FallibleStreamingIterator for FgbReader<R, FeaturesSelected> {
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
+                // skip features
                 let seek_bytes = item.offset as u64 - self.cur_pos;
-                std::io::copy(
-                    &mut (&mut self.reader).take(seek_bytes),
-                    &mut std::io::sink(),
-                )?;
+                io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
                 self.cur_pos += seek_bytes;
             }
         }
@@ -389,6 +390,7 @@ impl<R: Read + Seek> FallibleStreamingIterator for FgbReader<R, FeaturesSelected
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
+                // skip features
                 let seek_bytes = item.offset as u64 - self.cur_pos;
                 self.reader.seek(SeekFrom::Current(seek_bytes as i64))?;
                 self.cur_pos += seek_bytes;
