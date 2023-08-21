@@ -377,6 +377,27 @@ fn point_layer() -> Result<()> {
 }
 
 #[test]
+/// Test single ring polygons encoded with `ends` == null
+fn single_ring() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/poly00.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+
+    let Some(feature) = fgb.find(|feat| feat.property_n(1).ok() == Some("170".to_string()))? else {
+        panic!("find failed");
+    };
+    assert_eq!(feature.to_wkt().unwrap(), "POLYGON((479750.6875 4764702,479658.59375 4764670,479640.09375 4764721,479735.90625 4764752,479750.6875 4764702))");
+
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+
+    let Some(feature) = fgb.find(|feat| feat.property_n(0).ok() == Some("VUT".to_string()))? else {
+        panic!("find failed");
+    };
+    assert_eq!(feature.to_wkt().unwrap(), "MULTIPOLYGON(((167.844877 -16.466333,167.515181 -16.59785,167.180008 -16.159995,167.216801 -15.891846,167.844877 -16.466333)),((167.107712 -14.93392,167.270028 -15.740021,167.001207 -15.614602,166.793158 -15.668811,166.649859 -15.392704,166.629137 -14.626497,167.107712 -14.93392)))");
+    Ok(())
+}
+
+#[test]
 #[ignore]
 fn linestring_layer() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/lines.fgb")?);
