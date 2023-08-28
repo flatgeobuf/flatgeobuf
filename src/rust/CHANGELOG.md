@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [3.27.0] - 2023-08-28
 
 - Fix: Columns of type `short` are now correctly 16 bit, previously they were
   considered to be 8 bits, resulting in unexpected overflow.
@@ -8,8 +8,16 @@
     have a legacy FGB file (written with version `<= 3.26.0`) which contains a
     `short` column, because all subsequent property columns would be
     incorrectly offset.
+- Fix `size` inconsistency with `linestring_begin` (#287)
 - Breaking: Remove lifetimes from FgbReader/FgbWriter
 - FgbReader/FgbWriter as well as borrow, can now own their inner reader/writer
+- Breaking: Replace pub dim field of FeatureWriter with constructor
+- Bump deps & 2021 edition, reexports, clippy (#282)
+- Upgrade to geozero 0.11
+
+## [3.26.1] - 2023-07-19
+
+- Fix inconsistent result ordering (#279)
 
 ## [3.26.0] - 2023-07-08
 
