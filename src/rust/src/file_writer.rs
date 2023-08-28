@@ -187,17 +187,18 @@ impl<'a> FgbWriter<'a> {
             ..Default::default()
         };
 
-        let mut feat_writer = FeatureWriter::new(
-            header_args.geometry_type,
-            options.detect_type,
-            options.promote_to_multi,
-        );
-        feat_writer.dims = CoordDimensions {
+        let dims = CoordDimensions {
             z: header_args.has_z,
             m: header_args.has_m,
             t: header_args.has_t,
             tm: header_args.has_tm,
         };
+        let feat_writer = FeatureWriter::with_dims(
+            header_args.geometry_type,
+            options.detect_type,
+            options.promote_to_multi,
+            dims,
+        );
 
         let tmpfile = NamedTempFile::new()?;
         let tmpfn = tmpfile.path().to_path_buf();

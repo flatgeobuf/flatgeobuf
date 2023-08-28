@@ -8,7 +8,7 @@ use std::{mem::size_of, str};
 
 /// FBG Feature writer.
 pub struct FeatureWriter<'a> {
-    pub dims: CoordDimensions,
+    dims: CoordDimensions,
     // Array of end index in flat coordinates per geometry part
     ends: Vec<u32>,
     // Flat x and y coordinate array (flat pairs)
@@ -62,8 +62,21 @@ impl<'a> FeatureWriter<'a> {
         detect_type: bool,
         promote_to_multi: bool,
     ) -> FeatureWriter<'a> {
+        Self::with_dims(
+            dataset_type,
+            detect_type,
+            promote_to_multi,
+            CoordDimensions::default(),
+        )
+    }
+    pub fn with_dims(
+        dataset_type: GeometryType,
+        detect_type: bool,
+        promote_to_multi: bool,
+        dims: CoordDimensions,
+    ) -> FeatureWriter<'a> {
         FeatureWriter {
-            dims: CoordDimensions::default(),
+            dims,
             ends: Vec::new(),
             xy: Vec::new(),
             z: Vec::new(),
@@ -508,19 +521,17 @@ mod test {
         Ok(String::from_utf8(out).unwrap())
     }
 
-    fn json_to_fbg_to_json_n(geojson: &str, geometry_type: GeometryType, with_z: bool) -> Vec<u8> {
-        let mut fgb_writer = FeatureWriter::new(geometry_type, false, false);
-        fgb_writer.dims.z = with_z;
+    fn json_to_fbg_to_json_n(
+        geojson: &str,
+        geometry_type: GeometryType,
+        dims: CoordDimensions,
+    ) -> Vec<u8> {
+        let mut fgb_writer = FeatureWriter::with_dims(geometry_type, false, false, dims);
         assert!(dbg!(read_geojson_geom(&mut geojson.as_bytes(), &mut fgb_writer)).is_ok());
         let mut out: Vec<u8> = Vec::new();
         let f = FgbFeature {
             header_buf: header(geometry_type),
             feature_buf: fgb_writer.finish_to_feature(),
-        };
-        let dims = if with_z {
-            CoordDimensions::xyz()
-        } else {
-            CoordDimensions::xy()
         };
         let mut json_writer = GeoJsonWriter::with_dims(&mut out, dims);
         dbg!(f
@@ -532,7 +543,7 @@ mod test {
     }
 
     fn json_to_fbg_to_json(geojson: &str, geometry_type: GeometryType) -> Vec<u8> {
-        json_to_fbg_to_json_n(geojson, geometry_type, false)
+        json_to_fbg_to_json_n(geojson, geometry_type, CoordDimensions::xy())
     }
 
     #[test]
@@ -578,7 +589,7 @@ mod test {
             str::from_utf8(&json_to_fbg_to_json_n(
                 geojson,
                 GeometryType::LineString,
-                true
+                CoordDimensions::xyz()
             ))
             .unwrap(),
             geojson
