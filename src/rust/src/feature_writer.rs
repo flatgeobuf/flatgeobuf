@@ -517,8 +517,12 @@ mod test {
             header_buf: header(geometry_type),
             feature_buf: fgb_writer.finish_to_feature(),
         };
-        let mut json_writer = GeoJsonWriter::new(&mut out);
-        json_writer.dims.z = with_z;
+        let dims = if with_z {
+            CoordDimensions::xyz()
+        } else {
+            CoordDimensions::xy()
+        };
+        let mut json_writer = GeoJsonWriter::with_dims(&mut out, dims);
         dbg!(f
             .geometry()
             .unwrap()
