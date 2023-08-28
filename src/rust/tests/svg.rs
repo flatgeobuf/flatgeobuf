@@ -14,12 +14,7 @@ fn invert_y(header: &Header) -> bool {
     false
 }
 
-fn svg_writer<'a, W: Write>(
-    header: &Header,
-    width: u32,
-    height: u32,
-    out: &'a mut W,
-) -> SvgWriter<'a, W> {
+fn svg_writer<W: Write>(header: &Header, width: u32, height: u32, out: W) -> SvgWriter<W> {
     let mut svg = SvgWriter::new(out, invert_y(header));
     if let Some(envelope) = header.envelope() {
         svg.set_dimensions(

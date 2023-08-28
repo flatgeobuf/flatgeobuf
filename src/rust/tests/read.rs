@@ -452,15 +452,14 @@ fn geomcollection_layer() -> Result<()> {
     Ok(())
 }
 
-fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
+fn read_layer_geometry(fname: &str, dims: CoordDimensions) -> Result<String> {
     let mut filein = BufReader::new(File::open(format!("../../test/data/{fname}"))?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let feature = fgb.next()?.unwrap();
     assert!(feature.geometry().is_some());
 
     let mut wkt_data: Vec<u8> = Vec::new();
-    let mut processor = WktWriter::new(&mut wkt_data);
-    processor.dims.z = with_z;
+    let mut processor = WktWriter::with_dims(&mut wkt_data, dims);
     feature.process_geom(&mut processor)?;
     Ok(std::str::from_utf8(&wkt_data).unwrap().to_string())
 }
@@ -468,28 +467,30 @@ fn read_layer_geometry(fname: &str, with_z: bool) -> Result<String> {
 #[test]
 #[ignore]
 fn curve_layers() -> Result<()> {
+    let dims = CoordDimensions::xy();
+
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/circularstring.fgb", false)?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/circularstring.fgb", dims)?,
         "CIRCULARSTRING(0 0,1 1,2 0)"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/compoundcurve.fgb", false)?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/compoundcurve.fgb", dims)?,
         "COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multicurve.fgb", false)?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multicurve.fgb", dims)?,
         "MULTICURVE(CIRCULARSTRING(0 0,1 1,2 0))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/curvepolygon.fgb", false)?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/curvepolygon.fgb", dims)?,
         "CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0)))"
     );
 
     assert_eq!(
-        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multisurface.fgb", false)?,
+        &read_layer_geometry("gdal_sample_v1.2_nonlinear/multisurface.fgb", dims)?,
         "MULTISURFACE(CURVEPOLYGON(COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0),(2 0,3 0,3 -1,0 -1,0 0))))"
     );
 
@@ -499,16 +500,18 @@ fn curve_layers() -> Result<()> {
 #[test]
 #[ignore]
 fn surface_layers() -> Result<()> {
+    let dims = CoordDimensions::xyz();
+
     assert_eq!(
-        &read_layer_geometry("surface/polyhedralsurface.fgb", true)?,
+        &read_layer_geometry("surface/polyhedralsurface.fgb", dims)?,
         "POLYHEDRALSURFACE(((0 0 0,0 0 1,0 1 1,0 1 0,0 0 0)),((0 0 0,0 1 0,1 1 0,1 0 0,0 0 0)),((0 0 0,1 0 0,1 0 1,0 0 1,0 0 0)),((1 1 0,1 1 1,1 0 1,1 0 0,1 1 0)),((0 1 0,0 1 1,1 1 1,1 1 0,0 1 0)),((0 0 1,1 0 1,1 1 1,0 1 1,0 0 1)))"
     );
     assert_eq!(
-        &read_layer_geometry("surface/tin.fgb", true)?,
+        &read_layer_geometry("surface/tin.fgb", dims)?,
         "TIN(((0 0 0,0 0 1,0 1 0,0 0 0)),((0 0 0,0 1 0,1 1 0,0 0 0)))"
     );
     assert_eq!(
-        &read_layer_geometry("surface/triangle.fgb", true)?,
+        &read_layer_geometry("surface/triangle.fgb", dims)?,
         "TRIANGLE((0 0,0 9,9 0,0 0))"
     );
 
