@@ -42,11 +42,13 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     // Apply limits to simulate an "average" connection for benchmarks
     let latency = {
-
         // e.g.
         // FGB_BENCH_LATENCY_MS=50 cargo bench --bench http_read
         let millis = std::env::var("FGB_BENCH_LATENCY_MS")
-            .map(|str| str.parse::<u64>().expect("FGB_BENCH_LATENCY_MS must be an integer"))
+            .map(|str| {
+                str.parse::<u64>()
+                    .expect("FGB_BENCH_LATENCY_MS must be an integer")
+            })
             .unwrap_or(100);
         Duration::from_millis(millis)
     };
@@ -56,7 +58,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     //   10 mbit: FGB_BENCH_BYTES_PER_SEC=1250000 cargo bench --bench http_read
     let bytes_per_second = {
         std::env::var("FGB_BENCH_BYTES_PER_SEC")
-            .map(|str| str.parse::<usize>().expect("FGB_BENCH_BYTES_PER_SEC must be an integer"))
+            .map(|str| {
+                str.parse::<usize>()
+                    .expect("FGB_BENCH_BYTES_PER_SEC must be an integer")
+            })
             .unwrap_or(50_000_000 / 8)
     };
 
