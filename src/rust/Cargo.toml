@@ -35,7 +35,7 @@ tokio = { version = "1.30.0", features = ["rt-multi-thread"] }
 # One test needs SSL support; just use the default system bindings for that.
 reqwest = { version = "0.11.18", default-features = true }
 geo-types = "0.7.11"
-yocalhost = "0.1.0"
+yocalhost = "0.3.0"
 
 [[bench]]
 name = "read"
