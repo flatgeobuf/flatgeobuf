@@ -30,15 +30,21 @@ geozero = { version = "0.11.0", default-features = true }
 seek_bufread = "1.2.2"
 rand = "0.8.5"
 hex = "0.4.3"
-criterion = "0.5.1"
-tokio = { version = "1.30.0", default-features = false, features = ["macros"] }
+criterion = { version = "0.5.1", features = ["async_tokio"] }
+tokio = { version = "1.30.0", features = ["rt-multi-thread"] }
 # One test needs SSL support; just use the default system bindings for that.
 reqwest = { version = "0.11.18", default-features = true }
 geo-types = "0.7.11"
+yocalhost = "0.1.0"
 
 [[bench]]
 name = "read"
 harness = false
+
+[[bench]]
+name = "http_read"
+harness = false
+
 [[bench]]
 name = "geojson"
 harness = false
