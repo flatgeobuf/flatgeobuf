@@ -6,7 +6,6 @@
 [![Nuget](https://img.shields.io/nuget/v/FlatGeobuf)](https://www.nuget.org/packages/FlatGeobuf/)
 [![Crates.io](https://img.shields.io/crates/v/flatgeobuf.svg)](https://crates.io/crates/flatgeobuf)
 [![Discord Chat](https://img.shields.io/discord/754359014917406730.svg)](https://discord.gg/GEHGxKx)
-[![Twitter Follow](https://img.shields.io/twitter/follow/flatgeobuf.svg?style=social)](https://twitter.com/flatgeobuf)
 
 A performant binary encoding for geographic data based on [flatbuffers](http://google.github.io/flatbuffers/) that can hold a collection of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including circular interpolations as defined by SQL-MM Part 3.
 
