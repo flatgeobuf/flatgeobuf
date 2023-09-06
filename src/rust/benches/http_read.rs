@@ -41,8 +41,24 @@ fn criterion_benchmark(c: &mut Criterion) {
     let port = 8001;
 
     // Apply limits to simulate an "average" connection for benchmarks
-    let latency = Duration::from_millis(100);
-    let bytes_per_second = 50_000_000 / 8;
+    let latency = {
+
+        // e.g.
+        // FGB_BENCH_LATENCY_MS=50 cargo bench --bench http_read
+        let millis = std::env::var("FGB_BENCH_LATENCY_MS")
+            .map(|str| str.parse::<u64>().expect("FGB_BENCH_LATENCY_MS must be an integer"))
+            .unwrap_or(100);
+        Duration::from_millis(millis)
+    };
+
+    // e.g.
+    // 1 gigabit: FGB_BENCH_BYTES_PER_SEC=125000000 cargo bench --bench http_read
+    //   10 mbit: FGB_BENCH_BYTES_PER_SEC=1250000 cargo bench --bench http_read
+    let bytes_per_second = {
+        std::env::var("FGB_BENCH_BYTES_PER_SEC")
+            .map(|str| str.parse::<usize>().expect("FGB_BENCH_BYTES_PER_SEC must be an integer"))
+            .unwrap_or(50_000_000 / 8)
+    };
 
     let web_root = "../../test/data";
     let server = ThrottledServer::new(port, latency, bytes_per_second, web_root);
@@ -58,14 +74,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     ] {
         c.bench_function(&format!("{name} select_all"), |b| {
             let runtime = tokio::runtime::Runtime::new().unwrap();
-            b.to_async(runtime)
-                .iter(|| select_all(url, total_count))
+            b.to_async(runtime).iter(|| select_all(url, total_count))
         });
 
         c.bench_function(&format!("{name} select_bbox"), |b| {
             let runtime = tokio::runtime::Runtime::new().unwrap();
-            b.to_async(runtime)
-                .iter(|| select_bbox(url, bbox_count))
+            b.to_async(runtime).iter(|| select_bbox(url, bbox_count))
         });
     }
 }
