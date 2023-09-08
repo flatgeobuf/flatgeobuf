@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+- Ensure reading from tls is supported.
+
 ## [3.27.0] - 2023-08-28
 
 - Fix: Columns of type `short` are now correctly 16 bit, previously they were

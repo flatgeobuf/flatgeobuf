@@ -65,21 +65,14 @@ impl HttpFgbReader<Initial> {
         // fetch an extra kb rather than have to issue a second request.
         let assumed_header_size = 2024;
         let min_req_size = assumed_header_size + prefetch_index_bytes;
+        client.set_min_req_size(min_req_size);
         debug!("fetching header. min_req_size: {min_req_size} (assumed_header_size: {assumed_header_size}, prefetched_index_bytes: {prefetch_index_bytes})");
 
-        let bytes = client
-            .get_range(0, 8, min_req_size)
-            .await
-            .map_err(from_http_err)?;
+        let bytes = client.get_range(0, 8).await.map_err(from_http_err)?;
         if !check_magic_bytes(bytes) {
             return Err(GeozeroError::GeometryFormat);
         }
-        let mut bytes = BytesMut::from(
-            client
-                .get_range(8, 4, min_req_size)
-                .await
-                .map_err(from_http_err)?,
-        );
+        let mut bytes = BytesMut::from(client.get_range(8, 4).await.map_err(from_http_err)?);
         let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
@@ -87,7 +80,7 @@ impl HttpFgbReader<Initial> {
         }
         bytes.put(
             client
-                .get_range(12, header_size, min_req_size)
+                .get_range(12, header_size)
                 .await
                 .map_err(from_http_err)?,
         );
@@ -204,6 +197,7 @@ impl HttpFgbReader<FeaturesSelected> {
     /// Read next feature
     pub async fn next(&mut self) -> Result<Option<&FgbFeature>> {
         let min_req_size = 1_048_576; // 1MB
+        self.client.min_req_size(min_req_size);
         if self.feat_no >= self.count {
             return Ok(None);
         }
@@ -214,7 +208,7 @@ impl HttpFgbReader<FeaturesSelected> {
         self.feat_no += 1;
         let mut bytes = BytesMut::from(
             self.client
-                .get_range(self.pos, 4, min_req_size)
+                .get_range(self.pos, 4)
                 .await
                 .map_err(from_http_err)?,
         );
@@ -222,7 +216,7 @@ impl HttpFgbReader<FeaturesSelected> {
         let feature_size = LittleEndian::read_u32(&bytes) as usize;
         bytes.put(
             self.client
-                .get_range(self.pos, feature_size, min_req_size)
+                .get_range(self.pos, feature_size)
                 .await
                 .map_err(from_http_err)?,
         );

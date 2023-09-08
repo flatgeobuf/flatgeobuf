@@ -164,7 +164,8 @@ async fn read_http_node_items(
     let begin = base + node_index * size_of::<NodeItem>();
     let len = length * size_of::<NodeItem>();
     let bytes = client
-        .get_range(begin, len, min_req_size)
+        .min_req_size(min_req_size)
+        .get_range(begin, len)
         .await
         .map_err(from_http_err)?;
 
@@ -368,7 +369,8 @@ impl PackedRTree {
         let mut pos = index_begin;
         for i in 0..self.num_nodes {
             let bytes = client
-                .get_range(pos, size_of::<NodeItem>(), min_req_size)
+                .min_req_size(min_req_size)
+                .get_range(pos, size_of::<NodeItem>())
                 .await
                 .map_err(from_http_err)?;
             let n = NodeItem::from_bytes(bytes)?;
