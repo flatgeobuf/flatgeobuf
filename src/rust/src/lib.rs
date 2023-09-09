@@ -67,7 +67,6 @@
 
 #![allow(clippy::manual_range_contains)]
 
-#[cfg(feature = "http")]
 #[macro_use]
 extern crate log;
 
