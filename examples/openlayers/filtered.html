@@ -77,7 +77,8 @@
                 };
             }
 
-            const results = new ol.source.Vector();
+            // no need for the spatial index since this is only rendering a small extent
+            const results = new ol.source.Vector({useSpatialIndex: false});
             // track the previous results so we can remove them when adding new results
             async function updateResults() {
                 let mapCenter = map.getView().getCenter();
@@ -96,7 +97,7 @@
             }
 
             // if the user is panning around alot, only update once per second max
-            updateResults = _.debounce(updateResults, 1000);
+            updateResults = _.throttle(updateResults, 1000);
   
             const map = new ol.Map({
                 layers: [
