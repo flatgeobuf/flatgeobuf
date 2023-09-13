@@ -25,7 +25,9 @@ pub struct NodeItem {
 }
 
 impl NodeItem {
-    #[deprecated(note = "Use NodeItem::bounds instead if you're only using the node item for bounds checking")]
+    #[deprecated(
+        note = "Use NodeItem::bounds instead if you're only using the node item for bounds checking"
+    )]
     pub fn new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> NodeItem {
         Self::bounds(min_x, min_y, max_x, max_y)
     }
