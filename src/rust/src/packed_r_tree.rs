@@ -25,7 +25,12 @@ pub struct NodeItem {
 }
 
 impl NodeItem {
+    #[deprecated(note = "Use NodeItem::bounds instead if you're only using the node item for bounds checking")]
     pub fn new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> NodeItem {
+        Self::bounds(min_x, min_y, max_x, max_y)
+    }
+
+    pub fn bounds(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> NodeItem {
         NodeItem {
             min_x,
             min_y,
@@ -446,7 +451,7 @@ impl PackedRTree {
             .first()
             .ok_or(GeozeroError::GeometryIndex)?
             .0;
-        let n = NodeItem::new(min_x, min_y, max_x, max_y);
+        let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
         let mut queue = VecDeque::new();
         queue.push_back((0, self.level_bounds.len() - 1));
@@ -462,7 +467,7 @@ impl PackedRTree {
             // search through child nodes
             for pos in node_index..end {
                 let node_item = &self.node_items[pos];
-                if !n.intersects(node_item) {
+                if !bounds.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -487,7 +492,7 @@ impl PackedRTree {
         max_x: f64,
         max_y: f64,
     ) -> Result<Vec<SearchResultItem>> {
-        let item = NodeItem::new(min_x, min_y, max_x, max_y);
+        let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
         let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
@@ -513,7 +518,7 @@ impl PackedRTree {
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(node_item) {
+                if !bounds.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -548,7 +553,7 @@ impl PackedRTree {
         max_x: f64,
         max_y: f64,
     ) -> Result<Vec<SearchResultItem>> {
-        let item = NodeItem::new(min_x, min_y, max_x, max_y);
+        let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
         debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
@@ -586,7 +591,7 @@ impl PackedRTree {
             for pos in node_index..end {
                 let node_pos = pos - node_index;
                 let node_item = &node_items[node_pos];
-                if !item.intersects(node_item) {
+                if !bounds.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
@@ -718,49 +723,49 @@ mod inspect {
 #[test]
 fn tree_2items() -> Result<()> {
     let mut nodes = Vec::new();
-    nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
-    nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
+    nodes.push(NodeItem::bounds(0.0, 0.0, 1.0, 1.0));
+    nodes.push(NodeItem::bounds(2.0, 2.0, 3.0, 3.0));
     let extent = calc_extent(&nodes);
-    assert_eq!(extent, NodeItem::new(0.0, 0.0, 3.0, 3.0));
-    assert!(nodes[0].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
-    assert!(nodes[1].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
+    assert_eq!(extent, NodeItem::bounds(0.0, 0.0, 3.0, 3.0));
+    assert!(nodes[0].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
+    assert!(nodes[1].intersects(&NodeItem::bounds(2.0, 2.0, 3.0, 3.0)));
     hilbert_sort(&mut nodes, &extent);
     let mut offset = 0;
     for node in &mut nodes {
         node.offset = offset;
         offset += size_of::<NodeItem>() as u64;
     }
-    assert!(nodes[1].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
-    assert!(nodes[0].intersects(&NodeItem::new(2.0, 2.0, 3.0, 3.0)));
+    assert!(nodes[1].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
+    assert!(nodes[0].intersects(&NodeItem::bounds(2.0, 2.0, 3.0, 3.0)));
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let list = tree.search(0.0, 0.0, 1.0, 1.0)?;
     assert_eq!(list.len(), 1);
-    assert!(nodes[list[0].index].intersects(&NodeItem::new(0.0, 0.0, 1.0, 1.0)));
+    assert!(nodes[list[0].index].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
     Ok(())
 }
 
 #[test]
 fn tree_19items_roundtrip_stream_search() -> Result<()> {
     let mut nodes = vec![
-        NodeItem::new(0.0, 0.0, 1.0, 1.0),
-        NodeItem::new(2.0, 2.0, 3.0, 3.0),
-        NodeItem::new(100.0, 100.0, 110.0, 110.0),
-        NodeItem::new(101.0, 101.0, 111.0, 111.0),
-        NodeItem::new(102.0, 102.0, 112.0, 112.0),
-        NodeItem::new(103.0, 103.0, 113.0, 113.0),
-        NodeItem::new(104.0, 104.0, 114.0, 114.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
-        NodeItem::new(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(0.0, 0.0, 1.0, 1.0),
+        NodeItem::bounds(2.0, 2.0, 3.0, 3.0),
+        NodeItem::bounds(100.0, 100.0, 110.0, 110.0),
+        NodeItem::bounds(101.0, 101.0, 111.0, 111.0),
+        NodeItem::bounds(102.0, 102.0, 112.0, 112.0),
+        NodeItem::bounds(103.0, 103.0, 113.0, 113.0),
+        NodeItem::bounds(104.0, 104.0, 114.0, 114.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
+        NodeItem::bounds(10010.0, 10010.0, 10110.0, 10110.0),
     ];
 
     let extent = calc_extent(&nodes);
@@ -827,7 +832,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
     for _ in 0..100000 {
         let x = unifx.sample(&mut rng) as f64;
         let y = unify.sample(&mut rng) as f64;
-        nodes.push(NodeItem::new(x, y, x, y));
+        nodes.push(NodeItem::bounds(x, y, x, y));
     }
 
     let extent = calc_extent(&nodes);
@@ -837,7 +842,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
 
     for i in 0..list.len() {
         assert!(nodes[list[i].index]
-            .intersects(&NodeItem::new(690407.0, 6063692.0, 811682.0, 6176467.0)));
+            .intersects(&NodeItem::bounds(690407.0, 6063692.0, 811682.0, 6176467.0)));
     }
 
     let mut tree_data: Vec<u8> = Vec::new();
@@ -857,7 +862,7 @@ fn tree_100_000_items_in_denmark() -> Result<()> {
     assert_eq!(list2.len(), list.len());
     for i in 0..list2.len() {
         assert!(nodes[list2[i].index]
-            .intersects(&NodeItem::new(690407.0, 6063692.0, 811682.0, 6176467.0)));
+            .intersects(&NodeItem::bounds(690407.0, 6063692.0, 811682.0, 6176467.0)));
     }
     Ok(())
 }
@@ -869,8 +874,8 @@ fn tree_processing() -> Result<()> {
     use tempfile::tempfile;
 
     let mut nodes = Vec::new();
-    nodes.push(NodeItem::new(0.0, 0.0, 1.0, 1.0));
-    nodes.push(NodeItem::new(2.0, 2.0, 3.0, 3.0));
+    nodes.push(NodeItem::bounds(0.0, 0.0, 1.0, 1.0));
+    nodes.push(NodeItem::bounds(2.0, 2.0, 3.0, 3.0));
     let extent = calc_extent(&nodes);
     let mut offset = 0;
     for node in &mut nodes {
