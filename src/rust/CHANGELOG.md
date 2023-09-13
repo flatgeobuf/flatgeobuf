@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+- Breaking: `select_all` and `select_bbox` now return a FeatureIterator instead of a
+  modified Self type.
 - Ensure reading from tls is supported.
 
 ## [3.27.0] - 2023-08-28

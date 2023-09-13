@@ -321,16 +321,13 @@ fn read_etrs89() -> Result<()> {
 
 #[test]
 fn reader_type() -> Result<()> {
-    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R, reader_state::Open>> {
-        FgbReader::open(reader)
-    }
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let fgb = get_opened_reader(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().features_count(), 179);
 
     fn get_feature_reader<R: Read + Seek>(
         reader: R,
-    ) -> Result<FgbReader<R, reader_state::FeaturesSelectedSeek>> {
+    ) -> Result<FeatureIter<R, reader_trait::Seekable>> {
         FgbReader::open(reader)?.select_all()
     }
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
@@ -701,7 +698,7 @@ impl FeatureProcessor for SizeCounter {}
 
 #[test]
 fn test_geozero_size_arg() -> Result<()> {
-    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R, reader_state::Open>> {
+    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R>> {
         FgbReader::open(reader)
     }
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
