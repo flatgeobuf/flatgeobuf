@@ -93,7 +93,7 @@ necessary.
 
 ## Features
 
-* Reference implementation for JavaScript, TypeScript, C++, C#, Java and Rust
+* Reference implementation for JavaScript, TypeScript, C++, C#, Go, Java and Rust
 * Efficient I/O (streaming and random access)
 * [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
 * [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
@@ -126,11 +126,6 @@ necessary.
 ### Node usage
 
 See [this](https://github.com/flatgeobuf/flatgeobuf/tree/master/examples/node) example for a minimal how to depend on and use the flatgeobuf npm package.
-
-## TODO
-
-* Java index support
-* Go language support
 
 ## FAQ
 
