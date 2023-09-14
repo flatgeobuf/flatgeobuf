@@ -24,7 +24,7 @@ export function createGeometry(
     if (!geometry) return;
     const xyArray = geometry.xyArray();
     if (xyArray) {
-        const xy = Array.from(geometry.xyArray() as ArrayLike<number>);
+        const xy = Array.from(xyArray);
         const ends = geometry.endsArray();
         const olEnds = ends ? Array.from(ends.map((e) => e << 1)) : [xy.length];
         switch (geomType) {
