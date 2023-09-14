@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/openly-engineering/flatgeobuf/src/go/flattypes"
-	"github.com/openly-engineering/flatgeobuf/src/go/index"
-	"github.com/openly-engineering/flatgeobuf/src/go/writer"
+	"github.com/flatgeobuf/flatgeobuf/src/go/flattypes"
+	"github.com/flatgeobuf/flatgeobuf/src/go/index"
+	"github.com/flatgeobuf/flatgeobuf/src/go/writer"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )

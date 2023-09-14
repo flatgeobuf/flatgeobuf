@@ -3,7 +3,7 @@ package writer
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
 
-	"github.com/openly-engineering/flatgeobuf/src/go/flattypes"
+	"github.com/flatgeobuf/flatgeobuf/src/go/flattypes"
 )
 
 type Column struct {

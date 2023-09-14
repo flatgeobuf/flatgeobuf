@@ -1,8 +1,8 @@
 package writer
 
 import (
+	"github.com/flatgeobuf/flatgeobuf/src/go/flattypes"
 	flatbuffers "github.com/google/flatbuffers/go"
-	"github.com/openly-engineering/flatgeobuf/src/go/flattypes"
 )
 
 type Feature struct {
