@@ -1,4 +1,4 @@
-module github.com/openly-engineering/flatgeobuf/src/go
+module github.com/flatgeobuf/flatgeobuf/src/go
 
 go 1.20
 

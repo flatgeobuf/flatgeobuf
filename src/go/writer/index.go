@@ -3,7 +3,7 @@ package writer
 import (
 	"io"
 
-	"github.com/openly-engineering/flatgeobuf/src/go/index"
+	"github.com/flatgeobuf/flatgeobuf/src/go/index"
 )
 
 type Index struct {

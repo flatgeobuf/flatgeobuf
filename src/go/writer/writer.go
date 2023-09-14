@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/openly-engineering/flatgeobuf/src/go/index"
+	"github.com/flatgeobuf/flatgeobuf/src/go/index"
 )
 
 // MagicBytes is the identifier sequence for a flatgeobuf file.

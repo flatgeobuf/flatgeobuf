@@ -1,8 +1,8 @@
 package writer
 
 import (
+	"github.com/flatgeobuf/flatgeobuf/src/go/flattypes"
 	flatbuffers "github.com/google/flatbuffers/go"
-	"github.com/openly-engineering/flatgeobuf/src/go/flattypes"
 )
 
 // Crs is a builder for flatgeobuf.Crs, which represents the coordinate reference

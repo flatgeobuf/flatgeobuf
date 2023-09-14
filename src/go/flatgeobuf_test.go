@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/flatgeobuf/flatgeobuf/src/go/flattypes"
+	"github.com/flatgeobuf/flatgeobuf/src/go/writer"
 	flatbuffers "github.com/google/flatbuffers/go"
-	"github.com/openly-engineering/flatgeobuf/src/go/flattypes"
-	"github.com/openly-engineering/flatgeobuf/src/go/writer"
 )
 
 func TestFlatGeoBuf(t *testing.T) {
