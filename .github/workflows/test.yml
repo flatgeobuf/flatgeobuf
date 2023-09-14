@@ -37,6 +37,12 @@ jobs:
       - name: Run tests
         run: cd src/cpp && make test
 
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: cd src/go && go test
+
   test-java:
     runs-on: ubuntu-latest
     strategy:
