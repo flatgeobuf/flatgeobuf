@@ -2,7 +2,6 @@ use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::reader_state::*;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use geozero::error::{GeozeroError, Result};
@@ -11,7 +10,16 @@ use std::io::{self, Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
 /// FlatGeobuf dataset reader
-pub struct FgbReader<R, State = Initial> {
+pub struct FgbReader<R> {
+    reader: R,
+    /// FlatBuffers verification
+    verify: bool,
+    // feature reading requires header access, therefore
+    // header_buf is included in the FgbFeature struct.
+    fbs: FgbFeature,
+}
+
+pub struct FeatureIter<R, S> {
     reader: R,
     /// FlatBuffers verification
     verify: bool,
@@ -28,13 +36,20 @@ pub struct FgbReader<R, State = Initial> {
     cur_pos: u64,
     /// All features read or end of file reached
     finished: bool,
-    /// Reader state
-    state: PhantomData<State>,
+    /// Whether or not the underlying reader is Seek
+    seekable_marker: PhantomData<S>,
 }
 
-impl<R: Read> FgbReader<R, Initial> {
+#[doc(hidden)]
+pub mod reader_trait {
+    pub struct Seekable;
+    pub struct NotSeekable;
+}
+use reader_trait::*;
+
+impl<R: Read> FgbReader<R> {
     /// Open dataset by reading the header information
-    pub fn open(reader: R) -> Result<FgbReader<R, Open>> {
+    pub fn open(reader: R) -> Result<FgbReader<R>> {
         Self::read_header(reader, true)
     }
 
@@ -44,11 +59,11 @@ impl<R: Read> FgbReader<R, Initial> {
     /// This method is unsafe because it does not verify the FlatBuffers header.
     /// It is still safe from the Rust safety guarantees perspective, but it may cause
     /// undefined behavior if the FlatBuffers header is invalid.
-    pub unsafe fn open_unchecked(reader: R) -> Result<FgbReader<R, Open>> {
+    pub unsafe fn open_unchecked(reader: R) -> Result<FgbReader<R>> {
         Self::read_header(reader, false)
     }
 
-    fn read_header(mut reader: R, verify: bool) -> Result<FgbReader<R, Open>> {
+    fn read_header(mut reader: R, verify: bool) -> Result<FgbReader<R>> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
@@ -79,39 +94,18 @@ impl<R: Read> FgbReader<R, Initial> {
                 header_buf,
                 feature_buf: Vec::new(),
             },
-            item_filter: None,
-            count: None,
-            feat_no: 0,
-            cur_pos: 0,
-            finished: false,
-            state: PhantomData::<Open>,
         })
     }
-}
 
-impl<R: Read> FgbReader<R, Open> {
     /// Select all features without using seek.
     ///
     /// This can be used to read from an input stream.
-    pub fn select_all_seq(mut self) -> Result<FgbReader<R, FeaturesSelected>> {
+    pub fn select_all_seq(mut self) -> Result<FeatureIter<R, NotSeekable>> {
         // skip index
         let index_size = self.index_size();
         io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
 
-        // Detect empty dataset by reading the first feature size
-        let finished = self.read_feature_size();
-        let count = self.detect_count(finished);
-        Ok(FgbReader {
-            reader: self.reader,
-            verify: self.verify,
-            fbs: self.fbs,
-            item_filter: None,
-            count,
-            feat_no: 0,
-            cur_pos: 4,
-            finished,
-            state: PhantomData::<FeaturesSelected>,
-        })
+        Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
     }
 
     /// Select features within a bounding box without using seek.
@@ -123,7 +117,7 @@ impl<R: Read> FgbReader<R, Open> {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<FgbReader<R, FeaturesSelected>> {
+    ) -> Result<FeatureIter<R, NotSeekable>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
@@ -137,44 +131,23 @@ impl<R: Read> FgbReader<R, Open> {
         let mut list = index.search(min_x, min_y, max_x, max_y)?;
         list.sort_by(|a, b| a.offset.cmp(&b.offset));
 
-        let finished = self.read_feature_size();
-        let count = Some(list.len());
-
-        Ok(FgbReader {
-            reader: self.reader,
-            verify: self.verify,
-            fbs: self.fbs,
-            item_filter: Some(list),
-            count,
-            feat_no: 0,
-            cur_pos: 4,
-            finished,
-            state: PhantomData::<FeaturesSelected>,
-        })
+        Ok(FeatureIter::new(
+            self.reader,
+            self.verify,
+            self.fbs,
+            Some(list),
+        ))
     }
 }
 
-impl<R: Read + Seek> FgbReader<R, Open> {
+impl<R: Read + Seek> FgbReader<R> {
     /// Select all features.
-    pub fn select_all(mut self) -> Result<FgbReader<R, FeaturesSelectedSeek>> {
+    pub fn select_all(mut self) -> Result<FeatureIter<R, Seekable>> {
         // skip index
         let index_size = self.index_size();
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
 
-        // Detect empty dataset by reading the first feature size
-        let finished = self.read_feature_size();
-        let count = self.detect_count(finished);
-        Ok(FgbReader {
-            reader: self.reader,
-            verify: self.verify,
-            fbs: self.fbs,
-            item_filter: None,
-            count,
-            feat_no: 0,
-            cur_pos: 4,
-            finished,
-            state: PhantomData::<FeaturesSelectedSeek>,
-        })
+        Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
     }
     /// Select features within a bounding box.
     pub fn select_bbox(
@@ -183,7 +156,7 @@ impl<R: Read + Seek> FgbReader<R, Open> {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<FgbReader<R, FeaturesSelectedSeek>> {
+    ) -> Result<FeatureIter<R, Seekable>> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
@@ -200,32 +173,19 @@ impl<R: Read + Seek> FgbReader<R, Open> {
         )?;
         list.sort_by(|a, b| a.offset.cmp(&b.offset));
 
-        let finished = self.read_feature_size();
-        let count = Some(list.len());
-
-        Ok(FgbReader {
-            reader: self.reader,
-            verify: self.verify,
-            fbs: self.fbs,
-            item_filter: Some(list),
-            count,
-            feat_no: 0,
-            cur_pos: 4,
-            finished,
-            state: PhantomData::<FeaturesSelectedSeek>,
-        })
+        Ok(FeatureIter::new(
+            self.reader,
+            self.verify,
+            self.fbs,
+            Some(list),
+        ))
     }
 }
 
-impl<R: Read, State> FgbReader<R, State> {
+impl<R: Read> FgbReader<R> {
     /// Header information
     pub fn header(&self) -> Header {
         self.fbs.header()
-    }
-
-    /// Number of selected features (None for undefined feature count)
-    pub fn features_count(&self) -> Option<usize> {
-        self.count
     }
 
     fn index_size(&self) -> u64 {
@@ -237,26 +197,9 @@ impl<R: Read, State> FgbReader<R, State> {
             0
         }
     }
-
-    /// Read feature size and return true if end of dataset reached
-    fn read_feature_size(&mut self) -> bool {
-        self.fbs.feature_buf.resize(4, 0);
-        self.reader.read_exact(&mut self.fbs.feature_buf).is_err()
-    }
-
-    fn detect_count(&self, finished: bool) -> Option<usize> {
-        let feat_count = self.fbs.header().features_count() as usize;
-        if feat_count > 0 {
-            Some(feat_count)
-        } else if finished {
-            Some(0)
-        } else {
-            None
-        }
-    }
 }
 
-impl<R: Read> FgbReader<R, FeaturesSelected> {
+impl<R: Read> FeatureIter<R, NotSeekable> {
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
@@ -273,14 +216,14 @@ impl<R: Read> FgbReader<R, FeaturesSelected> {
     }
 }
 
-impl<T: Read> GeozeroDatasource for FgbReader<T, FeaturesSelected> {
+impl<T: Read> GeozeroDatasource for FeatureIter<T, NotSeekable> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
     }
 }
 
-impl<R: Read + Seek> FgbReader<R, FeaturesSelectedSeek> {
+impl<R: Read + Seek> FeatureIter<R, Seekable> {
     /// Return current feature
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
@@ -297,7 +240,7 @@ impl<R: Read + Seek> FgbReader<R, FeaturesSelectedSeek> {
     }
 }
 
-impl<T: Read + Seek> GeozeroDatasource for FgbReader<T, FeaturesSelectedSeek> {
+impl<T: Read + Seek> GeozeroDatasource for FeatureIter<T, Seekable> {
     /// Consume and process all selected features.
     fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
         self.process_features(processor)
@@ -327,7 +270,7 @@ impl<T: Read + Seek> GeozeroDatasource for FgbReader<T, FeaturesSelectedSeek> {
 /// # Ok(())
 /// # }
 /// ```
-impl<R: Read> FallibleStreamingIterator for FgbReader<R, FeaturesSelected> {
+impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
     type Item = FgbFeature;
     type Error = GeozeroError;
 
@@ -379,7 +322,7 @@ impl<R: Read> FallibleStreamingIterator for FgbReader<R, FeaturesSelected> {
 /// # Ok(())
 /// # }
 /// ```
-impl<R: Read + Seek> FallibleStreamingIterator for FgbReader<R, FeaturesSelectedSeek> {
+impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
     type Item = FgbFeature;
     type Error = GeozeroError;
 
@@ -409,7 +352,51 @@ impl<R: Read + Seek> FallibleStreamingIterator for FgbReader<R, FeaturesSelected
 }
 
 // Shared FallibleStreamingIterator implementation
-impl<R: Read, State> FgbReader<R, State> {
+impl<R: Read, S> FeatureIter<R, S> {
+    fn new(
+        mut reader: R,
+        verify: bool,
+        mut fbs: FgbFeature,
+        item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
+    ) -> FeatureIter<R, S> {
+        let finished = Self::read_feature_size(&mut fbs, &mut reader);
+        let count = match &item_filter {
+            Some(list) => Some(list.len()),
+            None => {
+                let feat_count = fbs.header().features_count() as usize;
+                if feat_count > 0 {
+                    Some(feat_count)
+                } else if finished {
+                    Some(0)
+                } else {
+                    None
+                }
+            }
+        };
+
+        FeatureIter {
+            reader,
+            verify,
+            fbs,
+            item_filter,
+            count,
+            feat_no: 0,
+            cur_pos: 4,
+            finished,
+            seekable_marker: PhantomData,
+        }
+    }
+
+    /// Header information
+    pub fn header(&self) -> Header {
+        self.fbs.header()
+    }
+
+    /// Number of selected features (None for undefined feature count)
+    pub fn features_count(&self) -> Option<usize> {
+        self.count
+    }
+
     fn advance_finished(&mut self) -> bool {
         if self.finished {
             return true;
@@ -423,9 +410,15 @@ impl<R: Read, State> FgbReader<R, State> {
         false
     }
 
+    /// Read feature size and return true if end of dataset reached
+    fn read_feature_size(fbs: &mut FgbFeature, reader: &mut R) -> bool {
+        fbs.feature_buf.resize(4, 0);
+        reader.read_exact(&mut fbs.feature_buf).is_err()
+    }
+
     fn read_feature(&mut self) -> Result<()> {
         // Read feature size if not already read in select_all or select_bbox
-        if self.cur_pos != 4 && self.read_feature_size() {
+        if self.cur_pos != 4 && Self::read_feature_size(&mut self.fbs, &mut self.reader) {
             self.finished = true;
             return Ok(());
         }
@@ -465,7 +458,7 @@ impl<R: Read, State> FgbReader<R, State> {
 mod inspect {
     use super::*;
 
-    impl<R: Read> FgbReader<R, Open> {
+    impl<R: Read> FgbReader<R> {
         /// Process R-Tree index for debugging purposes
         #[doc(hidden)]
         pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
