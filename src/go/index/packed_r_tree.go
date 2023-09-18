@@ -221,8 +221,9 @@ func (r *PackedRTree) generateNodes() {
 }
 
 func (r *PackedRTree) fromData(data []byte, copyData bool) {
-	finalData := make([]byte, r.Size())
+	var finalData []byte
 	if copyData {
+		finalData = make([]byte, r.Size())
 		copy(finalData, data[:r.Size()])
 	} else {
 		finalData = data
