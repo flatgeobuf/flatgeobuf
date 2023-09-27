@@ -6,6 +6,7 @@ use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::marker::PhantomData;
+use fallible_streaming_iterator::FallibleStreamingIterator;
 
 /// FlatGeobuf dataset reader
 pub struct FgbReader<R> {
@@ -196,14 +197,117 @@ impl<R: Read> FgbReader<R> {
     }
 }
 
+/// `FallibleStreamingIterator` differs from the standard library's `Iterator`
+/// in two ways:
+/// * each call to `next` can fail.
+/// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
+///   reset or finalized.
+///
+/// While these iterators cannot be used with Rust `for` loops, `while let`
+/// loops offer a similar level of ergonomics:
+/// ```rust
+/// use flatgeobuf::*;
+/// # use std::fs::File;
+/// # use std::io::BufReader;
+///
+/// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
+/// # let mut filein = BufReader::new(File::open("countries.fgb")?);
+/// # let mut fgb = FgbReader::open(&mut filein)?.select_all_seq()?;
+/// while let Some(feature) = fgb.next()? {
+///     let props = feature.properties()?;
+///     println!("{}", props["name"]);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
+    type Item = FgbFeature;
+    type Error = Error;
+
+    fn advance(&mut self) -> Result<()> {
+        if self.advance_finished() {
+            return Ok(());
+        }
+        if let Some(filter) = &self.item_filter {
+            let item = &filter[self.feat_no];
+            if item.offset as u64 > self.cur_pos {
+                // skip features
+                let seek_bytes = item.offset as u64 - self.cur_pos;
+                io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
+                self.cur_pos += seek_bytes;
+            }
+        }
+        self.read_feature()
+    }
+
+    fn get(&self) -> Option<&FgbFeature> {
+        self.iter_get()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter_size_hint()
+    }
+}
+
+/// `FallibleStreamingIterator` differs from the standard library's `Iterator`
+/// in two ways:
+/// * each call to `next` can fail.
+/// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
+///   reset or finalized.
+///
+/// While these iterators cannot be used with Rust `for` loops, `while let`
+/// loops offer a similar level of ergonomics:
+/// ```rust
+/// use flatgeobuf::*;
+/// # use std::fs::File;
+/// # use std::io::BufReader;
+///
+/// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
+/// # let mut filein = BufReader::new(File::open("countries.fgb")?);
+/// # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+/// while let Some(feature) = fgb.next()? {
+///     let props = feature.properties()?;
+///     println!("{}", props["name"]);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
+    type Item = FgbFeature;
+    type Error = Error;
+
+    fn advance(&mut self) -> Result<()> {
+        if self.advance_finished() {
+            return Ok(());
+        }
+        if let Some(filter) = &self.item_filter {
+            let item = &filter[self.feat_no];
+            if item.offset as u64 > self.cur_pos {
+                // skip features
+                let seek_bytes = item.offset as u64 - self.cur_pos;
+                self.reader.seek(SeekFrom::Current(seek_bytes as i64))?;
+                self.cur_pos += seek_bytes;
+            }
+        }
+        self.read_feature()
+    }
+
+    fn get(&self) -> Option<&FgbFeature> {
+        self.iter_get()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter_size_hint()
+    }
+}
+
 mod geozero_integration {
     use crate::reader_trait::{NotSeekable, Seekable};
     use crate::{FeatureIter, FgbFeature};
     use fallible_streaming_iterator::FallibleStreamingIterator;
     use geozero::error::GeozeroError;
     use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
-    use std::io;
-    use std::io::{Read, Seek, SeekFrom};
+    use std::io::{Read, Seek};
 
     impl<T: Read> GeozeroDatasource for FeatureIter<T, NotSeekable> {
         /// Consume and process all selected features.
@@ -237,7 +341,7 @@ mod geozero_integration {
         ) -> geozero::error::Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
             let mut cnt = 0;
-            while let Some(feature) = self.next()? {
+            while let Some(feature) = self.next().map_err(|e| GeozeroError::Feature(e.to_string()))? {
                 feature.process(out, cnt)?;
                 cnt += 1;
             }
@@ -257,117 +361,11 @@ mod geozero_integration {
         ) -> geozero::error::Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
             let mut cnt = 0;
-            while let Some(feature) = self.next()? {
+            while let Some(feature) = self.next().map_err(|e| GeozeroError::Feature(e.to_string()))? {
                 feature.process(out, cnt)?;
                 cnt += 1;
             }
             out.dataset_end()
-        }
-    }
-
-    /// `FallibleStreamingIterator` differs from the standard library's `Iterator`
-    /// in two ways:
-    /// * each call to `next` can fail.
-    /// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
-    ///   reset or finalized.
-    ///
-    /// While these iterators cannot be used with Rust `for` loops, `while let`
-    /// loops offer a similar level of ergonomics:
-    /// ```rust
-    /// use flatgeobuf::*;
-    /// # use std::fs::File;
-    /// # use std::io::BufReader;
-    ///
-    /// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
-    /// # let mut fgb = FgbReader::open(&mut filein)?.select_all_seq()?;
-    /// while let Some(feature) = fgb.next()? {
-    ///     let props = feature.properties()?;
-    ///     println!("{}", props["name"]);
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
-        type Item = FgbFeature;
-        type Error = GeozeroError;
-
-        fn advance(&mut self) -> geozero::error::Result<()> {
-            if self.advance_finished() {
-                return Ok(());
-            }
-            if let Some(filter) = &self.item_filter {
-                let item = &filter[self.feat_no];
-                if item.offset as u64 > self.cur_pos {
-                    // skip features
-                    let seek_bytes = item.offset as u64 - self.cur_pos;
-                    io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
-                    self.cur_pos += seek_bytes;
-                }
-            }
-            self.read_feature()
-                .map_err(|e| GeozeroError::Feature(e.to_string()))
-        }
-
-        fn get(&self) -> Option<&FgbFeature> {
-            self.iter_get()
-        }
-
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            self.iter_size_hint()
-        }
-    }
-
-    /// `FallibleStreamingIterator` differs from the standard library's `Iterator`
-    /// in two ways:
-    /// * each call to `next` can fail.
-    /// * returned `FgbFeature` is valid until `next` is called again or `FgbReader` is
-    ///   reset or finalized.
-    ///
-    /// While these iterators cannot be used with Rust `for` loops, `while let`
-    /// loops offer a similar level of ergonomics:
-    /// ```rust
-    /// use flatgeobuf::*;
-    /// # use std::fs::File;
-    /// # use std::io::BufReader;
-    ///
-    /// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
-    /// # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
-    /// while let Some(feature) = fgb.next()? {
-    ///     let props = feature.properties()?;
-    ///     println!("{}", props["name"]);
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
-        type Item = FgbFeature;
-        type Error = GeozeroError;
-
-        fn advance(&mut self) -> geozero::error::Result<()> {
-            if self.advance_finished() {
-                return Ok(());
-            }
-            if let Some(filter) = &self.item_filter {
-                let item = &filter[self.feat_no];
-                if item.offset as u64 > self.cur_pos {
-                    // skip features
-                    let seek_bytes = item.offset as u64 - self.cur_pos;
-                    self.reader.seek(SeekFrom::Current(seek_bytes as i64))?;
-                    self.cur_pos += seek_bytes;
-                }
-            }
-            self.read_feature()
-                .map_err(|e| GeozeroError::Feature(e.to_string()))
-        }
-
-        fn get(&self) -> Option<&FgbFeature> {
-            self.iter_get()
-        }
-
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            self.iter_size_hint()
         }
     }
 
