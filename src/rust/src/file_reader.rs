@@ -1,12 +1,12 @@
-use crate::{Error, Result};
 use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
+use crate::{Error, Result};
+use fallible_streaming_iterator::FallibleStreamingIterator;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::marker::PhantomData;
-use fallible_streaming_iterator::FallibleStreamingIterator;
 
 /// FlatGeobuf dataset reader
 pub struct FgbReader<R> {
@@ -341,7 +341,10 @@ mod geozero_integration {
         ) -> geozero::error::Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
             let mut cnt = 0;
-            while let Some(feature) = self.next().map_err(|e| GeozeroError::Feature(e.to_string()))? {
+            while let Some(feature) = self
+                .next()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))?
+            {
                 feature.process(out, cnt)?;
                 cnt += 1;
             }
@@ -361,7 +364,10 @@ mod geozero_integration {
         ) -> geozero::error::Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
             let mut cnt = 0;
-            while let Some(feature) = self.next().map_err(|e| GeozeroError::Feature(e.to_string()))? {
+            while let Some(feature) = self
+                .next()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))?
+            {
                 feature.process(out, cnt)?;
                 cnt += 1;
             }
