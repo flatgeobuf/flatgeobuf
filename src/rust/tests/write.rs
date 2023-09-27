@@ -1,12 +1,13 @@
 use crate::FgbWriter;
 use flatgeobuf::*;
 use geo_types::{line_string, LineString};
-use geozero::error::Result;
 use geozero::geojson::{GeoJson, GeoJsonReader};
 use geozero::{ColumnValue, GeozeroDatasource, PropertyProcessor};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use tempfile::{tempfile, NamedTempFile};
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[test]
 fn write_file() -> std::io::Result<()> {

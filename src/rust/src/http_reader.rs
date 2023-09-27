@@ -1,3 +1,4 @@
+use crate::{Error, Result};
 use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, NodeItem, PackedRTree};
@@ -5,9 +6,7 @@ use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use geozero::error::{GeozeroError, Result};
-use geozero::{FeatureAccess, FeatureProcessor};
-use http_range_client::{BufferedHttpRangeClient, HttpError};
+use http_range_client::BufferedHttpRangeClient;
 
 /// FlatGeobuf dataset HTTP reader
 pub struct HttpFgbReader {
@@ -32,13 +31,6 @@ pub struct AsyncFeatureIter {
     item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     /// Current position in item_filter
     feat_no: usize,
-}
-
-pub(crate) fn from_http_err(error: HttpError) -> GeozeroError {
-    match error {
-        HttpError::HttpStatus(e) => GeozeroError::HttpStatus(e),
-        HttpError::HttpError(e) => GeozeroError::HttpError(e),
-    }
 }
 
 impl HttpFgbReader {
@@ -71,27 +63,21 @@ impl HttpFgbReader {
         client.set_min_req_size(min_req_size);
         debug!("fetching header. min_req_size: {min_req_size} (assumed_header_size: {assumed_header_size}, prefetched_index_bytes: {prefetch_index_bytes})");
 
-        let bytes = client.get_range(0, 8).await.map_err(from_http_err)?;
+        let bytes = client.get_range(0, 8).await?;
         if !check_magic_bytes(bytes) {
-            return Err(GeozeroError::GeometryFormat);
+            return Err(Error::Malformed("Missing magic bytes"));
         }
-        let mut bytes = BytesMut::from(client.get_range(8, 4).await.map_err(from_http_err)?);
+        let mut bytes = BytesMut::from(client.get_range(8, 4).await?);
         let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
-            return Err(GeozeroError::GeometryFormat);
+            return Err(Error::Malformed("Illegal header size"));
         }
-        bytes.put(
-            client
-                .get_range(12, header_size)
-                .await
-                .map_err(from_http_err)?,
-        );
+        bytes.put(client.get_range(12, header_size).await?);
         let header_buf = bytes.to_vec();
 
         // verify flatbuffer
-        let _header = size_prefixed_root_as_header(&header_buf)
-            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        let _header = size_prefixed_root_as_header(&header_buf)?;
 
         trace!("completed: opening http reader");
         Ok(HttpFgbReader {
@@ -143,7 +129,7 @@ impl HttpFgbReader {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(GeozeroError::Geometry("Index missing".to_string()));
+            return Err(Error::Malformed("Index missing"));
         }
         let count = header.features_count() as usize;
         let header_len = self.header_len();
@@ -199,24 +185,13 @@ impl AsyncFeatureIter {
             self.pos = self.feature_base + item.offset;
         }
         self.feat_no += 1;
-        let mut bytes = BytesMut::from(
-            self.client
-                .get_range(self.pos, 4)
-                .await
-                .map_err(from_http_err)?,
-        );
+        let mut bytes = BytesMut::from(self.client.get_range(self.pos, 4).await?);
         self.pos += 4;
         let feature_size = LittleEndian::read_u32(&bytes) as usize;
-        bytes.put(
-            self.client
-                .get_range(self.pos, feature_size)
-                .await
-                .map_err(from_http_err)?,
-        );
+        bytes.put(self.client.get_range(self.pos, feature_size).await?);
         self.fbs.feature_buf = bytes.to_vec(); // Not zero-copy
                                                // verify flatbuffer
-        let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
-            .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+        let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)?;
         self.pos += feature_size;
         Ok(Some(&self.fbs))
     }
@@ -224,14 +199,26 @@ impl AsyncFeatureIter {
     pub fn cur_feature(&self) -> &FgbFeature {
         &self.fbs
     }
-    /// Read and process all selected features
-    pub async fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
-        out.dataset_begin(self.fbs.header().name())?;
-        let mut cnt = 0;
-        while let Some(feature) = self.next().await? {
-            feature.process(out, cnt)?;
-            cnt += 1;
+}
+
+mod geozero_integration {
+    use crate::AsyncFeatureIter;
+    use geozero::{error::Result, FeatureAccess, FeatureProcessor};
+
+    impl AsyncFeatureIter {
+        /// Read and process all selected features
+        pub async fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
+            out.dataset_begin(self.fbs.header().name())?;
+            let mut cnt = 0;
+            while let Some(feature) = self
+                .next()
+                .await
+                .map_err(|e| geozero::error::GeozeroError::Feature(e.to_string()))?
+            {
+                feature.process(out, cnt)?;
+                cnt += 1;
+            }
+            out.dataset_end()
         }
-        out.dataset_end()
     }
 }

@@ -1,11 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
-use geozero::error::Result;
 use geozero::geojson::GeoJsonWriter;
 use seek_bufread::BufReader;
 use std::fs::File;
 use std::io::BufWriter;
 use tempfile::tempfile;
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn fgb_to_geojson() -> Result<()> {
     // Comparison: time ogr2ogr -f GeoJSON /tmp/countries-ogr.json ../../test/data/countries.fgb
@@ -13,7 +14,7 @@ fn fgb_to_geojson() -> Result<()> {
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
     let mut json = GeoJsonWriter::new(&mut fout);
-    fgb.process_features(&mut json)
+    Ok(fgb.process_features(&mut json)?)
 }
 
 fn fgb_to_geojson_unchecked() -> Result<()> {
@@ -22,7 +23,7 @@ fn fgb_to_geojson_unchecked() -> Result<()> {
     let mut fgb = unsafe { FgbReader::open_unchecked(&mut filein) }?.select_all()?;
     let mut fout = BufWriter::new(tempfile()?); // or File::create("/tmp/countries.json")
     let mut json = GeoJsonWriter::new(&mut fout);
-    fgb.process_features(&mut json)
+    Ok(fgb.process_features(&mut json)?)
 }
 
 fn fgb_to_geojson_dev_null() -> Result<()> {
@@ -31,7 +32,7 @@ fn fgb_to_geojson_dev_null() -> Result<()> {
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
-    fgb.process_features(&mut json)
+    Ok(fgb.process_features(&mut json)?)
 }
 
 fn fgb_to_geojson_dev_null_unchecked() -> Result<()> {
@@ -40,7 +41,7 @@ fn fgb_to_geojson_dev_null_unchecked() -> Result<()> {
     let mut fgb = unsafe { FgbReader::open_unchecked(&mut filein) }?.select_all()?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
-    fgb.process_features(&mut json)
+    Ok(fgb.process_features(&mut json)?)
 }
 
 fn fgb_bbox_to_geojson_dev_null() -> Result<()> {
@@ -48,7 +49,7 @@ fn fgb_bbox_to_geojson_dev_null() -> Result<()> {
     let mut fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3)?;
     let mut fout = std::io::sink();
     let mut json = GeoJsonWriter::new(&mut fout);
-    fgb.process_features(&mut json)
+    Ok(fgb.process_features(&mut json)?)
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

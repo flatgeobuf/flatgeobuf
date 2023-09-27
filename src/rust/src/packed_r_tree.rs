@@ -1,10 +1,9 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
-#[cfg(feature = "http")]
-use crate::http_reader::from_http_err;
+use crate::{Error, Result};
+
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use geozero::error::{GeozeroError, Result};
 #[cfg(feature = "http")]
 use http_range_client::BufferedHttpRangeClient;
 use std::cmp::{max, min};
@@ -173,8 +172,7 @@ async fn read_http_node_items(
     let bytes = client
         .min_req_size(min_req_size)
         .get_range(begin, len)
-        .await
-        .map_err(from_http_err)?;
+        .await?;
 
     let mut node_items = Vec::with_capacity(length);
     for i in 0..length {
@@ -297,7 +295,7 @@ impl PackedRTree {
         self.num_nodes = self
             .level_bounds
             .first()
-            .ok_or(GeozeroError::GeometryIndex)?
+            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
             .1;
         self.node_items = vec![NodeItem::create(0); self.num_nodes]; // Quite slow!
         Ok(())
@@ -378,8 +376,7 @@ impl PackedRTree {
             let bytes = client
                 .min_req_size(min_req_size)
                 .get_range(pos, size_of::<NodeItem>())
-                .await
-                .map_err(from_http_err)?;
+                .await?;
             let n = NodeItem::from_bytes(bytes)?;
             self.extent.expand(&n);
             self.node_items[i] = n;
@@ -408,7 +405,10 @@ impl PackedRTree {
     pub fn from_buf(data: impl Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
         let node_size = min(max(node_size, 2u16), 65535u16);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
-        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
+        let num_nodes = level_bounds
+            .first()
+            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .1;
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::with_capacity(num_nodes),
@@ -451,7 +451,7 @@ impl PackedRTree {
         let leaf_nodes_offset = self
             .level_bounds
             .first()
-            .ok_or(GeozeroError::GeometryIndex)?
+            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
             .0;
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
@@ -496,8 +496,9 @@ impl PackedRTree {
     ) -> Result<Vec<SearchResultItem>> {
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
-        let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
-        let num_nodes = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.1;
+        let (leaf_nodes_offset, num_nodes) = level_bounds
+            .first()
+            .ok_or(Error::Malformed("Unable to determine bounds for index"))?;
 
         // current position must be start of index
         let index_base = data.stream_position()?;
@@ -557,7 +558,10 @@ impl PackedRTree {
     ) -> Result<Vec<SearchResultItem>> {
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
-        let leaf_nodes_offset = level_bounds.first().ok_or(GeozeroError::GeometryIndex)?.0;
+        let leaf_nodes_offset = level_bounds
+            .first()
+            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .0;
         debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
@@ -689,7 +693,10 @@ mod inspect {
     use geozero::{ColumnValue, FeatureProcessor};
 
     impl PackedRTree {
-        pub fn process_index<P: FeatureProcessor>(&self, processor: &mut P) -> Result<()> {
+        pub fn process_index<P: FeatureProcessor>(
+            &self,
+            processor: &mut P,
+        ) -> geozero::error::Result<()> {
             processor.dataset_begin(Some("PackedRTree"))?;
             let mut fid = 0;
             for (levelno, level) in self.level_bounds.iter().rev().enumerate() {
@@ -886,6 +893,7 @@ fn tree_processing() -> Result<()> {
     }
     let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
     let mut fout = BufWriter::new(tempfile()?);
-    tree.process_index(&mut GeoJsonWriter::new(&mut fout))?;
+    tree.process_index(&mut GeoJsonWriter::new(&mut fout))
+        .unwrap();
     Ok(())
 }

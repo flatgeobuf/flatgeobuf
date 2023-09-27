@@ -12,7 +12,7 @@
 //! # use std::fs::File;
 //! # use std::io::BufReader;
 //!
-//! # fn read_fbg() -> geozero::error::Result<()> {
+//! # fn read_fgb() -> std::result::Result<(), Box<dyn std::error::Error>> {
 //! let mut filein = BufReader::new(File::open("countries.fgb")?);
 //! let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
 //! while let Some(feature) = fgb.next()? {
@@ -30,7 +30,7 @@
 //! use geozero::ToWkt;
 //!
 //! # #[cfg(feature = "http")]
-//! # async fn read_fbg() -> geozero::error::Result<()> {
+//! # async fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
 //! let mut fgb = HttpFgbReader::open("https://flatgeobuf.org/test/data/countries.fgb")
 //!     .await?
 //!     .select_bbox(8.8, 47.2, 9.5, 55.3)
@@ -53,7 +53,7 @@
 //! # use std::fs::File;
 //! # use std::io::{BufReader, BufWriter};
 //!
-//! # fn json_to_fgb() -> geozero::error::Result<()> {
+//! # fn json_to_fgb() -> std::result::Result<(), Box<dyn std::error::Error>> {
 //! let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
 //! let mut fin = BufReader::new(File::open("countries.geojson")?);
 //! let mut reader = GeoJsonReader(&mut fin);
@@ -70,6 +70,7 @@
 #[macro_use]
 extern crate log;
 
+mod error;
 #[allow(unused_imports, non_snake_case, clippy::all)]
 #[rustfmt::skip]
 mod feature_generated;
@@ -85,6 +86,7 @@ mod http_reader;
 pub mod packed_r_tree;
 mod properties_reader;
 
+pub use error::{Error, Result};
 pub use feature_generated::*;
 pub use file_reader::*;
 pub use file_writer::*;
