@@ -204,7 +204,7 @@ fn column_size() -> Result<()> {
     assert_eq!(max_ubyte, u8::MAX);
 
     let max_bool: bool = feature.property_n(2).expect("valid bool");
-    assert_eq!(max_bool, true);
+    assert!(max_bool);
 
     let max_short: i16 = feature.property_n(3).expect("valid short");
     assert_eq!(max_short, i16::MAX);
