@@ -11,8 +11,6 @@ use geozero::{
 use log::info;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
-use std::path::PathBuf;
-use tempfile::NamedTempFile;
 
 /// FlatGeobuf dataset writer
 ///
@@ -36,8 +34,7 @@ use tempfile::NamedTempFile;
 /// # }
 /// ```
 pub struct FgbWriter<'a> {
-    tmpfn: PathBuf,
-    tmpout: BufWriter<NamedTempFile>,
+    tmpout: BufWriter<File>,
     fbb: FlatBufferBuilder<'a>,
     header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
@@ -200,12 +197,9 @@ impl<'a> FgbWriter<'a> {
             dims,
         );
 
-        let tmpfile = NamedTempFile::new()?;
-        let tmpfn = tmpfile.path().to_path_buf();
-        let tmpout = BufWriter::new(tmpfile);
+        let tmpout = BufWriter::new(tempfile::tempfile()?);
 
         Ok(FgbWriter {
-            tmpfn,
             tmpout,
             fbb,
             header_args,
@@ -343,9 +337,9 @@ impl<'a> FgbWriter<'a> {
         }
 
         // Copy features from temp file in sort order
-        self.tmpout.flush()?;
-        let tmpin = File::open(&self.tmpfn)?;
-        let mut reader = BufReader::new(tmpin);
+        self.tmpout.rewind()?;
+        let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
+        let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
 
         // Clippy generates a false-positive here, needs a block to disable, see
         // https://github.com/rust-lang/rust-clippy/issues/9274
@@ -354,9 +348,9 @@ impl<'a> FgbWriter<'a> {
             let mut buf = Vec::with_capacity(2048);
             for node in &self.feat_nodes {
                 let feat = &self.feat_offsets[node.offset as usize];
-                reader.seek(SeekFrom::Start(feat.offset as u64))?;
+                unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
                 buf.resize(feat.size, 0);
-                reader.read_exact(&mut buf)?;
+                unsorted_feature_reader.read_exact(&mut buf)?;
                 out.write_all(&buf)?;
             }
         }
