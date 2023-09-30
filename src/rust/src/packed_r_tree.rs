@@ -1,7 +1,7 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
-use crate::{Error, Result};
+use crate::Result;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(feature = "http")]
@@ -295,7 +295,7 @@ impl PackedRTree {
         self.num_nodes = self
             .level_bounds
             .first()
-            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .1;
         self.node_items = vec![NodeItem::create(0); self.num_nodes]; // Quite slow!
         Ok(())
@@ -407,7 +407,7 @@ impl PackedRTree {
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds
             .first()
-            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .1;
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
@@ -451,7 +451,7 @@ impl PackedRTree {
         let leaf_nodes_offset = self
             .level_bounds
             .first()
-            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .0;
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
@@ -498,7 +498,7 @@ impl PackedRTree {
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let (leaf_nodes_offset, num_nodes) = level_bounds
             .first()
-            .ok_or(Error::Malformed("Unable to determine bounds for index"))?;
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0");
 
         // current position must be start of index
         let index_base = data.stream_position()?;
@@ -560,7 +560,7 @@ impl PackedRTree {
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds
             .first()
-            .ok_or(Error::Malformed("Unable to determine bounds for index"))?
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .0;
         debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 

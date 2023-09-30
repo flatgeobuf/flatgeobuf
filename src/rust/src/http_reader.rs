@@ -65,13 +65,13 @@ impl HttpFgbReader {
 
         let bytes = client.get_range(0, 8).await?;
         if !check_magic_bytes(bytes) {
-            return Err(Error::Malformed("Missing magic bytes"));
+            return Err(Error::MissingMagicNumber);
         }
         let mut bytes = BytesMut::from(client.get_range(8, 4).await?);
         let header_size = LittleEndian::read_u32(&bytes) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
-            return Err(Error::Malformed("Illegal header size"));
+            return Err(Error::IllegalHeaderSize(header_size));
         }
         bytes.put(client.get_range(12, header_size).await?);
         let header_buf = bytes.to_vec();
@@ -129,7 +129,7 @@ impl HttpFgbReader {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(Error::Malformed("Index missing"));
+            return Err(Error::NoIndex);
         }
         let count = header.features_count() as usize;
         let header_len = self.header_len();

@@ -66,7 +66,7 @@ impl<R: Read> FgbReader<R> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
-            return Err(Error::Malformed("Missing magic bytes"));
+            return Err(Error::MissingMagicNumber);
         }
 
         let mut size_buf: [u8; 4] = [0; 4];
@@ -74,7 +74,7 @@ impl<R: Read> FgbReader<R> {
         let header_size = u32::from_le_bytes(size_buf) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
-            return Err(Error::Malformed("Illegal header size"));
+            return Err(Error::IllegalHeaderSize(header_size));
         }
         let mut header_buf = Vec::with_capacity(header_size + 4);
         header_buf.extend_from_slice(&size_buf);
@@ -119,7 +119,7 @@ impl<R: Read> FgbReader<R> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(Error::Malformed("Index missing"));
+            return Err(Error::NoIndex);
         }
         let index = PackedRTree::from_buf(
             &mut self.reader,
@@ -158,7 +158,7 @@ impl<R: Read + Seek> FgbReader<R> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(Error::Malformed("Index missing"));
+            return Err(Error::NoIndex);
         }
         let mut list = PackedRTree::stream_search(
             &mut self.reader,

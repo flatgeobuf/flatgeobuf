@@ -3,22 +3,26 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Error {
-    Malformed(&'static str),
-    IO(std::io::Error),
-    InvalidFlatbuffer(InvalidFlatbuffer),
+    MissingMagicNumber,
+    NoIndex,
     #[cfg(feature = "http")]
     HttpClient(http_range_client::HttpError),
+    IllegalHeaderSize(usize),
+    InvalidFlatbuffer(InvalidFlatbuffer),
+    IO(std::io::Error),
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Malformed(description) => description.fmt(f),
-            Error::IO(io) => io.fmt(f),
-            Error::InvalidFlatbuffer(invalid_flatbuffer) => invalid_flatbuffer.fmt(f),
+            Error::MissingMagicNumber => "Missing magic bytes. Is this an fgb file?".fmt(f),
+            Error::NoIndex => "Index missing".fmt(f),
             #[cfg(feature = "http")]
             Error::HttpClient(http_client) => http_client.fmt(f),
+            Error::IllegalHeaderSize(size) => write!(f, "Illegal header size: {size}"),
+            Error::InvalidFlatbuffer(invalid_flatbuffer) => invalid_flatbuffer.fmt(f),
+            Error::IO(io) => io.fmt(f),
         }
     }
 }
