@@ -2,7 +2,8 @@
 mod http {
 
     use flatgeobuf::*;
-    use geozero::error::Result;
+
+    type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[tokio::test]
     async fn http_read() -> Result<()> {
@@ -45,10 +46,7 @@ mod http {
             .await?
             .select_bbox(8.8, 47.2, 9.5, 55.3)
             .await;
-        assert_eq!(
-            fgb.err().unwrap().to_string(),
-            "processing geometry `Index missing`"
-        );
+        assert_eq!(fgb.err().unwrap().to_string(), "Index missing");
         Ok(())
     }
 

@@ -1,12 +1,13 @@
 use crate::FgbWriter;
 use flatgeobuf::*;
 use geo_types::{line_string, LineString};
-use geozero::error::Result;
 use geozero::geojson::{GeoJson, GeoJsonReader};
 use geozero::{ColumnValue, GeozeroDatasource, PropertyProcessor};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use tempfile::{tempfile, NamedTempFile};
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[test]
 fn write_file() -> std::io::Result<()> {
@@ -203,7 +204,7 @@ fn column_size() -> Result<()> {
     assert_eq!(max_ubyte, u8::MAX);
 
     let max_bool: bool = feature.property_n(2).expect("valid bool");
-    assert_eq!(max_bool, true);
+    assert!(max_bool);
 
     let max_short: i16 = feature.property_n(3).expect("valid short");
     assert_eq!(max_short, i16::MAX);

@@ -1,12 +1,13 @@
 use flatgeobuf::packed_r_tree::*;
 use flatgeobuf::*;
-use geozero::error::Result;
 use geozero::wkt::WktWriter;
 use geozero::{
     ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, PropertyProcessor, ToWkt,
 };
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[test]
 fn reader_headers_checked() {
@@ -145,10 +146,7 @@ fn read_empty_dataset() -> Result<()> {
 
     let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
     let fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
-    assert_eq!(
-        fgb.err().unwrap().to_string(),
-        "processing geometry `Index missing`"
-    );
+    assert_eq!(fgb.err().unwrap().to_string(), "Index missing");
 
     let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all_seq()?;
@@ -157,10 +155,7 @@ fn read_empty_dataset() -> Result<()> {
 
     let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
     let fgb = FgbReader::open(&mut filein)?.select_bbox_seq(8.8, 47.2, 9.5, 55.3);
-    assert_eq!(
-        fgb.err().unwrap().to_string(),
-        "processing geometry `Index missing`"
-    );
+    assert_eq!(fgb.err().unwrap().to_string(), "Index missing");
 
     Ok(())
 }
@@ -181,10 +176,7 @@ fn read_unknown_feature_count() -> Result<()> {
 
     let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
     let fgb = FgbReader::open(&mut filein)?.select_bbox(8.8, 47.2, 9.5, 55.3);
-    assert_eq!(
-        fgb.err().unwrap().to_string(),
-        "processing geometry `Index missing`"
-    );
+    assert_eq!(fgb.err().unwrap().to_string(), "Index missing");
     Ok(())
 }
 
@@ -232,17 +224,14 @@ fn read_unknown_feature_count_seq() -> Result<()> {
 
     let mut filein = BufReader::new(File::open("../../test/data/unknown_feature_count.fgb")?);
     let fgb = FgbReader::open(&mut filein)?.select_bbox_seq(8.8, 47.2, 9.5, 55.3);
-    assert_eq!(
-        fgb.err().unwrap().to_string(),
-        "processing geometry `Index missing`"
-    );
+    assert_eq!(fgb.err().unwrap().to_string(), "Index missing");
     Ok(())
 }
 
 struct VertexCounter(u64);
 
 impl GeomProcessor for VertexCounter {
-    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> Result<()> {
+    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> geozero::error::Result<()> {
         self.0 += 1;
         Ok(())
     }
@@ -325,13 +314,8 @@ fn reader_type() -> Result<()> {
     let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().features_count(), 179);
 
-    fn get_feature_reader<R: Read + Seek>(
-        reader: R,
-    ) -> Result<FeatureIter<R, reader_trait::Seekable>> {
-        FgbReader::open(reader)?.select_all()
-    }
-    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let fgb = get_feature_reader(&mut filein)?;
+    let filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let fgb = FgbReader::open(filein)?.select_all()?;
     assert_eq!(fgb.features_count(), Some(179));
 
     Ok(())
@@ -342,7 +326,7 @@ fn magic_byte() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/states.geojson")?);
     assert_eq!(
         FgbReader::open(&mut filein).err().unwrap().to_string(),
-        "geometry format"
+        "Missing magic bytes. Is this an fgb file?"
     );
 
     Ok(())
@@ -558,7 +542,7 @@ impl GeomProcessor for MaxFinder {
         _t: Option<f64>,
         _tm: Option<u64>,
         _idx: usize,
-    ) -> Result<()> {
+    ) -> geozero::error::Result<()> {
         if let Some(z) = z {
             if z > self.0 {
                 self.0 = z
@@ -609,7 +593,7 @@ struct PropChecker<'a> {
 }
 
 impl PropertyProcessor for PropChecker<'_> {
-    fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> Result<bool> {
+    fn property(&mut self, i: usize, _name: &str, v: &ColumnValue) -> geozero::error::Result<bool> {
         assert_eq!(v, &self.expected[i]);
         Ok(false)
     }
@@ -672,18 +656,23 @@ impl SizeCounter {
 }
 
 impl GeomProcessor for SizeCounter {
-    fn linestring_begin(&mut self, _tagged: bool, size: usize, _idx: usize) -> Result<()> {
+    fn linestring_begin(
+        &mut self,
+        _tagged: bool,
+        size: usize,
+        _idx: usize,
+    ) -> geozero::error::Result<()> {
         self.expected_xy = size as u64;
         self.actual_xy = 0;
         Ok(())
     }
 
-    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> Result<()> {
+    fn xy(&mut self, _x: f64, _y: f64, _idx: usize) -> geozero::error::Result<()> {
         self.actual_xy += 1;
         Ok(())
     }
 
-    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
+    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> geozero::error::Result<()> {
         assert_eq!(
             self.expected_xy, self.actual_xy,
             "Expected xy() to be called {} times, but was called {} times",
@@ -698,11 +687,8 @@ impl FeatureProcessor for SizeCounter {}
 
 #[test]
 fn test_geozero_size_arg() -> Result<()> {
-    fn get_opened_reader<R: Read + Seek>(reader: R) -> Result<FgbReader<R>> {
-        FgbReader::open(reader)
-    }
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let fgb = get_opened_reader(&mut filein)?;
+    let fgb = FgbReader::open(&mut filein)?;
 
     let mut size_counter = SizeCounter::new();
     fgb.select_all()

@@ -1,9 +1,9 @@
 use flatgeobuf::*;
-use geozero::error::Result;
 use geozero::svg::SvgWriter;
 use geozero::wkt::WktWriter;
 use std::fs::File;
 use std::io::{BufReader, Write};
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn invert_y(header: &Header) -> bool {
     if let Some(crs) = header.crs() {
@@ -46,7 +46,7 @@ impl GeomToSvg for Geometry<'_> {
         invert_y: bool,
     ) -> Result<()> {
         let mut svg = SvgWriter::new(out, invert_y);
-        self.process(&mut svg, geometry_type)
+        Ok(self.process(&mut svg, geometry_type)?)
     }
 }
 
@@ -69,7 +69,7 @@ impl FeatureToSvg for Feature<'_> {
     ) -> Result<()> {
         let mut svg = SvgWriter::new(out, invert_y);
         let geometry = self.geometry().unwrap();
-        geometry.process(&mut svg, geometry_type)
+        Ok(geometry.process(&mut svg, geometry_type)?)
     }
 }
 

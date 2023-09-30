@@ -1,14 +1,10 @@
-use crate::feature_writer::{prop_type, FeatureWriter};
+use crate::error::Result;
+use crate::feature_writer::FeatureWriter;
 use crate::header_generated::{ColumnType, Crs, CrsArgs, GeometryType};
 use crate::packed_r_tree::{calc_extent, hilbert_sort, NodeItem, PackedRTree};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use flatbuffers::FlatBufferBuilder;
-use geozero::error::Result;
-use geozero::{
-    ColumnValue, CoordDimensions, FeatureProcessor, GeomProcessor, GeozeroDatasource,
-    GeozeroGeometry, PropertyProcessor,
-};
-use log::info;
+use geozero::CoordDimensions;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 
@@ -23,7 +19,7 @@ use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 /// # use std::fs::File;
 /// # use std::io::{BufReader, BufWriter};
 ///
-/// # fn json_to_fgb() -> geozero::error::Result<()> {
+/// # fn json_to_fgb() -> std::result::Result<(), Box<dyn std::error::Error>> {
 /// let mut fgb = FgbWriter::create("countries", GeometryType::MultiPolygon)?;
 /// let mut fin = BufReader::new(File::open("countries.geojson")?);
 /// let mut reader = GeoJsonReader(&mut fin);
@@ -234,48 +230,6 @@ impl<'a> FgbWriter<'a> {
         self.columns.push(Column::create(&mut self.fbb, &col));
     }
 
-    /// Add a new feature.
-    ///
-    /// # Usage example:
-    ///
-    /// ```
-    /// # use flatgeobuf::*;
-    /// use geozero::geojson::GeoJson;
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
-    /// let geojson = GeoJson(r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "Point", "coordinates": [1, 1]}}"#);
-    /// fgb.add_feature(geojson).ok();
-    /// ```
-    pub fn add_feature(&mut self, mut feature: impl GeozeroDatasource) -> Result<()> {
-        feature.process(&mut self.feat_writer)?;
-        self.write_feature()
-    }
-
-    /// Add a new feature from a `GeozeroGeometry`.
-    ///
-    /// # Usage example:
-    ///
-    /// ```
-    /// # use flatgeobuf::*;
-    /// use geozero::geojson::GeoJson;
-    /// use geozero::{ColumnValue, PropertyProcessor};
-    /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
-    /// let geom = GeoJson(r#"{"type": "Point", "coordinates": [1, 1]}"#);
-    /// fgb.add_feature_geom(geom, |feat| {
-    ///     feat.property(0, "fid", &ColumnValue::Long(43)).unwrap();
-    ///     feat.property(1, "name", &ColumnValue::String("South Africa"))
-    ///         .unwrap();
-    /// })
-    /// .ok();
-    /// ```
-    pub fn add_feature_geom<F>(&mut self, geom: impl GeozeroGeometry, cfgfn: F) -> Result<()>
-    where
-        F: FnOnce(&mut FeatureWriter),
-    {
-        geom.process_geom(&mut self.feat_writer)?;
-        cfgfn(&mut self.feat_writer);
-        self.write_feature()
-    }
-
     fn write_feature(&mut self) -> Result<()> {
         let mut node = self.feat_writer.bbox.clone();
         // Offset is index of feat_offsets before sorting
@@ -359,129 +313,186 @@ impl<'a> FgbWriter<'a> {
     }
 }
 
-impl FeatureProcessor for FgbWriter<'_> {
-    fn feature_end(&mut self, _idx: u64) -> Result<()> {
-        self.write_feature()
-    }
-}
+mod geozero_api {
+    use crate::feature_writer::{prop_type, FeatureWriter};
+    use crate::FgbWriter;
+    use geozero::error::GeozeroError;
+    use geozero::{
+        error::Result, ColumnValue, FeatureProcessor, GeomProcessor, GeozeroDatasource,
+        GeozeroGeometry, PropertyProcessor,
+    };
 
-impl PropertyProcessor for FgbWriter<'_> {
-    fn property(&mut self, i: usize, colname: &str, colval: &ColumnValue) -> Result<bool> {
-        if i >= self.columns.len() {
-            if i == self.columns.len() {
-                info!(
+    impl FgbWriter<'_> {
+        /// Add a new feature.
+        ///
+        /// # Usage example:
+        ///
+        /// ```
+        /// # use flatgeobuf::*;
+        /// use geozero::geojson::GeoJson;
+        /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
+        /// let geojson = GeoJson(r#"{"type": "Feature", "properties": {"fid": 42, "name": "New Zealand"}, "geometry": {"type": "Point", "coordinates": [1, 1]}}"#);
+        /// fgb.add_feature(geojson).ok();
+        /// ```
+        pub fn add_feature(&mut self, mut feature: impl GeozeroDatasource) -> Result<()> {
+            feature.process(&mut self.feat_writer)?;
+            self.write_feature()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))
+        }
+
+        /// Add a new feature from a `GeozeroGeometry`.
+        ///
+        /// # Usage example:
+        ///
+        /// ```
+        /// # use flatgeobuf::*;
+        /// use geozero::geojson::GeoJson;
+        /// use geozero::{ColumnValue, PropertyProcessor};
+        /// # let mut fgb = FgbWriter::create("", GeometryType::Point).unwrap();
+        /// let geom = GeoJson(r#"{"type": "Point", "coordinates": [1, 1]}"#);
+        /// fgb.add_feature_geom(geom, |feat| {
+        ///     feat.property(0, "fid", &ColumnValue::Long(43)).unwrap();
+        ///     feat.property(1, "name", &ColumnValue::String("South Africa"))
+        ///         .unwrap();
+        /// })
+        /// .ok();
+        /// ```
+        pub fn add_feature_geom<F>(&mut self, geom: impl GeozeroGeometry, cfgfn: F) -> Result<()>
+        where
+            F: FnOnce(&mut FeatureWriter),
+        {
+            geom.process_geom(&mut self.feat_writer)?;
+            cfgfn(&mut self.feat_writer);
+            self.write_feature()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))
+        }
+    }
+
+    impl FeatureProcessor for FgbWriter<'_> {
+        fn feature_end(&mut self, _idx: u64) -> Result<()> {
+            self.write_feature()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))
+        }
+    }
+
+    impl PropertyProcessor for FgbWriter<'_> {
+        fn property(&mut self, i: usize, colname: &str, colval: &ColumnValue) -> Result<bool> {
+            if i >= self.columns.len() {
+                if i == self.columns.len() {
+                    info!(
                     "Undefined property index {i}, column: `{colname}` - adding column declaration"
                 );
-                self.add_column(colname, prop_type(colval), |_, _| {});
-            } else {
-                info!("Undefined property index {i}, column: `{colname}` - skipping");
-                return Ok(false);
+                    self.add_column(colname, prop_type(colval), |_, _| {});
+                } else {
+                    info!("Undefined property index {i}, column: `{colname}` - skipping");
+                    return Ok(false);
+                }
             }
+            // TODO: check name and type against existing declaration
+            self.feat_writer.property(i, colname, colval)
         }
-        // TODO: check name and type against existing declaration
-        self.feat_writer.property(i, colname, colval)
     }
-}
 
-// Delegate GeomProcessor to self.feat_writer
-impl GeomProcessor for FgbWriter<'_> {
-    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
-        self.feat_writer.xy(x, y, idx)
-    }
-    fn coordinate(
-        &mut self,
-        x: f64,
-        y: f64,
-        z: Option<f64>,
-        m: Option<f64>,
-        t: Option<f64>,
-        tm: Option<u64>,
-        idx: usize,
-    ) -> Result<()> {
-        self.feat_writer.coordinate(x, y, z, m, t, tm, idx)
-    }
-    fn point_begin(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.point_begin(idx)
-    }
-    fn point_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.point_end(idx)
-    }
-    fn multipoint_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.multipoint_begin(size, idx)
-    }
-    fn multipoint_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.multipoint_end(idx)
-    }
-    fn linestring_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.linestring_begin(tagged, size, idx)
-    }
-    fn linestring_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
-        self.feat_writer.linestring_end(tagged, idx)
-    }
-    fn multilinestring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.multilinestring_begin(size, idx)
-    }
-    fn multilinestring_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.multilinestring_end(idx)
-    }
-    fn polygon_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.polygon_begin(tagged, size, idx)
-    }
-    fn polygon_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
-        self.feat_writer.polygon_end(tagged, idx)
-    }
-    fn multipolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.multipolygon_begin(size, idx)
-    }
-    fn multipolygon_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.multipolygon_end(idx)
-    }
-    fn circularstring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.circularstring_begin(size, idx)
-    }
-    fn circularstring_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.circularstring_end(idx)
-    }
-    fn compoundcurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.compoundcurve_begin(size, idx)
-    }
-    fn compoundcurve_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.compoundcurve_end(idx)
-    }
-    fn curvepolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.curvepolygon_begin(size, idx)
-    }
-    fn curvepolygon_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.curvepolygon_end(idx)
-    }
-    fn multicurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.multicurve_begin(size, idx)
-    }
-    fn multicurve_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.multicurve_end(idx)
-    }
-    fn multisurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.multisurface_begin(size, idx)
-    }
-    fn multisurface_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.multisurface_end(idx)
-    }
-    fn triangle_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.triangle_begin(tagged, size, idx)
-    }
-    fn triangle_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
-        self.feat_writer.triangle_end(tagged, idx)
-    }
-    fn polyhedralsurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.polyhedralsurface_begin(size, idx)
-    }
-    fn polyhedralsurface_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.polyhedralsurface_end(idx)
-    }
-    fn tin_begin(&mut self, size: usize, idx: usize) -> Result<()> {
-        self.feat_writer.tin_begin(size, idx)
-    }
-    fn tin_end(&mut self, idx: usize) -> Result<()> {
-        self.feat_writer.tin_end(idx)
+    // Delegate GeomProcessor to self.feat_writer
+    impl GeomProcessor for FgbWriter<'_> {
+        fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
+            self.feat_writer.xy(x, y, idx)
+        }
+        fn coordinate(
+            &mut self,
+            x: f64,
+            y: f64,
+            z: Option<f64>,
+            m: Option<f64>,
+            t: Option<f64>,
+            tm: Option<u64>,
+            idx: usize,
+        ) -> Result<()> {
+            self.feat_writer.coordinate(x, y, z, m, t, tm, idx)
+        }
+        fn point_begin(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.point_begin(idx)
+        }
+        fn point_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.point_end(idx)
+        }
+        fn multipoint_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.multipoint_begin(size, idx)
+        }
+        fn multipoint_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.multipoint_end(idx)
+        }
+        fn linestring_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.linestring_begin(tagged, size, idx)
+        }
+        fn linestring_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+            self.feat_writer.linestring_end(tagged, idx)
+        }
+        fn multilinestring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.multilinestring_begin(size, idx)
+        }
+        fn multilinestring_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.multilinestring_end(idx)
+        }
+        fn polygon_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.polygon_begin(tagged, size, idx)
+        }
+        fn polygon_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+            self.feat_writer.polygon_end(tagged, idx)
+        }
+        fn multipolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.multipolygon_begin(size, idx)
+        }
+        fn multipolygon_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.multipolygon_end(idx)
+        }
+        fn circularstring_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.circularstring_begin(size, idx)
+        }
+        fn circularstring_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.circularstring_end(idx)
+        }
+        fn compoundcurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.compoundcurve_begin(size, idx)
+        }
+        fn compoundcurve_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.compoundcurve_end(idx)
+        }
+        fn curvepolygon_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.curvepolygon_begin(size, idx)
+        }
+        fn curvepolygon_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.curvepolygon_end(idx)
+        }
+        fn multicurve_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.multicurve_begin(size, idx)
+        }
+        fn multicurve_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.multicurve_end(idx)
+        }
+        fn multisurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.multisurface_begin(size, idx)
+        }
+        fn multisurface_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.multisurface_end(idx)
+        }
+        fn triangle_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.triangle_begin(tagged, size, idx)
+        }
+        fn triangle_end(&mut self, tagged: bool, idx: usize) -> Result<()> {
+            self.feat_writer.triangle_end(tagged, idx)
+        }
+        fn polyhedralsurface_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.polyhedralsurface_begin(size, idx)
+        }
+        fn polyhedralsurface_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.polyhedralsurface_end(idx)
+        }
+        fn tin_begin(&mut self, size: usize, idx: usize) -> Result<()> {
+            self.feat_writer.tin_begin(size, idx)
+        }
+        fn tin_end(&mut self, idx: usize) -> Result<()> {
+            self.feat_writer.tin_end(idx)
+        }
     }
 }

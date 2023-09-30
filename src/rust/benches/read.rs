@@ -1,9 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use flatgeobuf::*;
-use geozero::error::Result;
 use geozero::ProcessorSink;
 use seek_bufread::BufReader;
 use std::fs::File;
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn read_fgb() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);

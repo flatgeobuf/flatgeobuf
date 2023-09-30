@@ -3,9 +3,8 @@ use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
+use crate::{Error, Result};
 use fallible_streaming_iterator::FallibleStreamingIterator;
-use geozero::error::{GeozeroError, Result};
-use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
@@ -67,7 +66,7 @@ impl<R: Read> FgbReader<R> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
-            return Err(GeozeroError::GeometryFormat);
+            return Err(Error::MissingMagicBytes);
         }
 
         let mut size_buf: [u8; 4] = [0; 4];
@@ -75,7 +74,7 @@ impl<R: Read> FgbReader<R> {
         let header_size = u32::from_le_bytes(size_buf) as usize;
         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
             // minimum size check avoids panic in FlatBuffers header decoding
-            return Err(GeozeroError::GeometryFormat);
+            return Err(Error::IllegalHeaderSize(header_size));
         }
         let mut header_buf = Vec::with_capacity(header_size + 4);
         header_buf.extend_from_slice(&size_buf);
@@ -83,8 +82,7 @@ impl<R: Read> FgbReader<R> {
         reader.read_exact(&mut header_buf[4..])?;
 
         if verify {
-            let _header = size_prefixed_root_as_header(&header_buf)
-                .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+            let _header = size_prefixed_root_as_header(&header_buf)?;
         }
 
         Ok(FgbReader {
@@ -121,7 +119,7 @@ impl<R: Read> FgbReader<R> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(GeozeroError::Geometry("Index missing".to_string()));
+            return Err(Error::NoIndex);
         }
         let index = PackedRTree::from_buf(
             &mut self.reader,
@@ -160,7 +158,7 @@ impl<R: Read + Seek> FgbReader<R> {
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
         if header.index_node_size() == 0 || header.features_count() == 0 {
-            return Err(GeozeroError::Geometry("Index missing".to_string()));
+            return Err(Error::NoIndex);
         }
         let mut list = PackedRTree::stream_search(
             &mut self.reader,
@@ -199,54 +197,6 @@ impl<R: Read> FgbReader<R> {
     }
 }
 
-impl<R: Read> FeatureIter<R, NotSeekable> {
-    /// Return current feature
-    pub fn cur_feature(&self) -> &FgbFeature {
-        &self.fbs
-    }
-    /// Read and process all selected features
-    pub fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
-        out.dataset_begin(self.fbs.header().name())?;
-        let mut cnt = 0;
-        while let Some(feature) = self.next()? {
-            feature.process(out, cnt)?;
-            cnt += 1;
-        }
-        out.dataset_end()
-    }
-}
-
-impl<T: Read> GeozeroDatasource for FeatureIter<T, NotSeekable> {
-    /// Consume and process all selected features.
-    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
-        self.process_features(processor)
-    }
-}
-
-impl<R: Read + Seek> FeatureIter<R, Seekable> {
-    /// Return current feature
-    pub fn cur_feature(&self) -> &FgbFeature {
-        &self.fbs
-    }
-    /// Read and process all selected features
-    pub fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
-        out.dataset_begin(self.fbs.header().name())?;
-        let mut cnt = 0;
-        while let Some(feature) = self.next()? {
-            feature.process(out, cnt)?;
-            cnt += 1;
-        }
-        out.dataset_end()
-    }
-}
-
-impl<T: Read + Seek> GeozeroDatasource for FeatureIter<T, Seekable> {
-    /// Consume and process all selected features.
-    fn process<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
-        self.process_features(processor)
-    }
-}
-
 /// `FallibleStreamingIterator` differs from the standard library's `Iterator`
 /// in two ways:
 /// * each call to `next` can fail.
@@ -260,7 +210,7 @@ impl<T: Read + Seek> GeozeroDatasource for FeatureIter<T, Seekable> {
 /// # use std::fs::File;
 /// # use std::io::BufReader;
 ///
-/// # fn read_fbg() -> geozero::error::Result<()> {
+/// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
 /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
 /// # let mut fgb = FgbReader::open(&mut filein)?.select_all_seq()?;
 /// while let Some(feature) = fgb.next()? {
@@ -272,7 +222,7 @@ impl<T: Read + Seek> GeozeroDatasource for FeatureIter<T, Seekable> {
 /// ```
 impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
     type Item = FgbFeature;
-    type Error = GeozeroError;
+    type Error = Error;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {
@@ -312,7 +262,7 @@ impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
 /// # use std::fs::File;
 /// # use std::io::BufReader;
 ///
-/// # fn read_fbg() -> geozero::error::Result<()> {
+/// # fn read_fbg() -> std::result::Result<(), Box<dyn std::error::Error>> {
 /// # let mut filein = BufReader::new(File::open("countries.fgb")?);
 /// # let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
 /// while let Some(feature) = fgb.next()? {
@@ -324,7 +274,7 @@ impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
 /// ```
 impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
     type Item = FgbFeature;
-    type Error = GeozeroError;
+    type Error = Error;
 
     fn advance(&mut self) -> Result<()> {
         if self.advance_finished() {
@@ -348,6 +298,117 @@ impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter_size_hint()
+    }
+}
+
+mod geozero_api {
+    use crate::reader_trait::{NotSeekable, Seekable};
+    use crate::{FeatureIter, FgbFeature};
+    use fallible_streaming_iterator::FallibleStreamingIterator;
+    use geozero::error::GeozeroError;
+    use geozero::{FeatureAccess, FeatureProcessor, GeozeroDatasource};
+    use std::io::{Read, Seek};
+
+    impl<T: Read> GeozeroDatasource for FeatureIter<T, NotSeekable> {
+        /// Consume and process all selected features.
+        fn process<P: FeatureProcessor>(
+            &mut self,
+            processor: &mut P,
+        ) -> geozero::error::Result<()> {
+            self.process_features(processor)
+        }
+    }
+
+    impl<T: Read + Seek> GeozeroDatasource for FeatureIter<T, Seekable> {
+        /// Consume and process all selected features.
+        fn process<P: FeatureProcessor>(
+            &mut self,
+            processor: &mut P,
+        ) -> geozero::error::Result<()> {
+            self.process_features(processor)
+        }
+    }
+
+    impl<R: Read> FeatureIter<R, NotSeekable> {
+        /// Return current feature
+        pub fn cur_feature(&self) -> &FgbFeature {
+            &self.fbs
+        }
+        /// Read and process all selected features
+        pub fn process_features<W: FeatureProcessor>(
+            &mut self,
+            out: &mut W,
+        ) -> geozero::error::Result<()> {
+            out.dataset_begin(self.fbs.header().name())?;
+            let mut cnt = 0;
+            while let Some(feature) = self
+                .next()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))?
+            {
+                feature.process(out, cnt)?;
+                cnt += 1;
+            }
+            out.dataset_end()
+        }
+    }
+
+    impl<R: Read + Seek> FeatureIter<R, Seekable> {
+        /// Return current feature
+        pub fn cur_feature(&self) -> &FgbFeature {
+            &self.fbs
+        }
+        /// Read and process all selected features
+        pub fn process_features<W: FeatureProcessor>(
+            &mut self,
+            out: &mut W,
+        ) -> geozero::error::Result<()> {
+            out.dataset_begin(self.fbs.header().name())?;
+            let mut cnt = 0;
+            while let Some(feature) = self
+                .next()
+                .map_err(|e| GeozeroError::Feature(e.to_string()))?
+            {
+                feature.process(out, cnt)?;
+                cnt += 1;
+            }
+            out.dataset_end()
+        }
+    }
+
+    mod inspect {
+        use super::*;
+        use crate::packed_r_tree::PackedRTree;
+        use crate::FgbReader;
+
+        impl<R: Read> FgbReader<R> {
+            /// Process R-Tree index for debugging purposes
+            #[doc(hidden)]
+            pub fn process_index<P: FeatureProcessor>(
+                &mut self,
+                processor: &mut P,
+            ) -> geozero::error::Result<()> {
+                let features_count = self.header().features_count() as usize;
+                let index_node_size = self.header().index_node_size();
+                let index =
+                    PackedRTree::from_buf(&mut self.reader, features_count, index_node_size)
+                        .map_err(|_| GeozeroError::GeometryIndex)?;
+                index.process_index(processor)
+            }
+        }
+
+        #[test]
+        fn dump_index() -> geozero::error::Result<()> {
+            use geozero::geojson::GeoJsonWriter;
+            use std::fs::File;
+            use std::io::{BufReader, BufWriter};
+
+            let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+            let mut fgb = FgbReader::open(&mut filein).map_err(|_| GeozeroError::GeometryIndex)?;
+            let mut fout = BufWriter::new(File::create("/tmp/countries-index.json")?);
+
+            fgb.process_index(&mut GeoJsonWriter::new(&mut fout))?;
+            Ok(())
+        }
     }
 }
 
@@ -427,8 +488,7 @@ impl<R: Read, S> FeatureIter<R, S> {
         self.fbs.feature_buf.resize(feature_size + 4, 0);
         self.reader.read_exact(&mut self.fbs.feature_buf[4..])?;
         if self.verify {
-            let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)
-                .map_err(|e| GeozeroError::Geometry(e.to_string()))?;
+            let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)?;
         }
         self.feat_no += 1;
         self.cur_pos += self.fbs.feature_buf.len() as u64;
@@ -452,34 +512,5 @@ impl<R: Read, S> FeatureIter<R, S> {
         } else {
             (0, None)
         }
-    }
-}
-
-mod inspect {
-    use super::*;
-
-    impl<R: Read> FgbReader<R> {
-        /// Process R-Tree index for debugging purposes
-        #[doc(hidden)]
-        pub fn process_index<P: FeatureProcessor>(&mut self, processor: &mut P) -> Result<()> {
-            let features_count = self.header().features_count() as usize;
-            let index_node_size = self.header().index_node_size();
-            let index = PackedRTree::from_buf(&mut self.reader, features_count, index_node_size)?;
-            index.process_index(processor)
-        }
-    }
-
-    #[test]
-    fn dump_index() -> Result<()> {
-        use geozero::geojson::GeoJsonWriter;
-        use std::fs::File;
-        use std::io::{BufReader, BufWriter};
-
-        let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-        let mut fgb = FgbReader::open(&mut filein)?;
-        let mut fout = BufWriter::new(File::create("/tmp/countries-index.json")?);
-
-        fgb.process_index(&mut GeoJsonWriter::new(&mut fout))?;
-        Ok(())
     }
 }
