@@ -201,7 +201,7 @@ impl AsyncFeatureIter {
     }
 }
 
-mod geozero_integration {
+mod geozero_api {
     use crate::AsyncFeatureIter;
     use geozero::{error::Result, FeatureAccess, FeatureProcessor};
 

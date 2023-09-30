@@ -301,7 +301,7 @@ impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
     }
 }
 
-mod geozero_integration {
+mod geozero_api {
     use crate::reader_trait::{NotSeekable, Seekable};
     use crate::{FeatureIter, FgbFeature};
     use fallible_streaming_iterator::FallibleStreamingIterator;

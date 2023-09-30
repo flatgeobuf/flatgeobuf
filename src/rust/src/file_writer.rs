@@ -319,7 +319,7 @@ impl<'a> FgbWriter<'a> {
     }
 }
 
-mod geozero_integration {
+mod geozero_api {
     use crate::feature_writer::{prop_type, FeatureWriter};
     use crate::FgbWriter;
     use geozero::error::GeozeroError;
