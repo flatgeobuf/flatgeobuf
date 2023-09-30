@@ -314,13 +314,8 @@ fn reader_type() -> Result<()> {
     let fgb = FgbReader::open(&mut filein)?;
     assert_eq!(fgb.header().features_count(), 179);
 
-    fn get_feature_reader<R: Read + Seek>(
-        reader: R,
-    ) -> Result<FeatureIter<R, reader_trait::Seekable>> {
-        Ok(FgbReader::open(reader)?.select_all()?)
-    }
-    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
-    let fgb = get_feature_reader(&mut filein)?;
+    let filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let fgb = FgbReader::open(filein)?.select_all()?;
     assert_eq!(fgb.features_count(), Some(179));
 
     Ok(())
