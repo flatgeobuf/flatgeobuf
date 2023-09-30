@@ -326,7 +326,7 @@ fn magic_byte() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/states.geojson")?);
     assert_eq!(
         FgbReader::open(&mut filein).err().unwrap().to_string(),
-        "Missing magic bytes"
+        "Missing magic bytes. Is this an fgb file?"
     );
 
     Ok(())
