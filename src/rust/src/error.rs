@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Error {
-    MissingMagicNumber,
+    MissingMagicBytes,
     NoIndex,
     #[cfg(feature = "http")]
     HttpClient(http_range_client::HttpError),
@@ -16,7 +16,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::MissingMagicNumber => "Missing magic bytes. Is this an fgb file?".fmt(f),
+            Error::MissingMagicBytes => "Missing magic bytes. Is this an fgb file?".fmt(f),
             Error::NoIndex => "Index missing".fmt(f),
             #[cfg(feature = "http")]
             Error::HttpClient(http_client) => http_client.fmt(f),

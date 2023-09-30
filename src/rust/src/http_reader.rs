@@ -65,7 +65,7 @@ impl HttpFgbReader {
 
         let bytes = client.get_range(0, 8).await?;
         if !check_magic_bytes(bytes) {
-            return Err(Error::MissingMagicNumber);
+            return Err(Error::MissingMagicBytes);
         }
         let mut bytes = BytesMut::from(client.get_range(8, 4).await?);
         let header_size = LittleEndian::read_u32(&bytes) as usize;

@@ -66,7 +66,7 @@ impl<R: Read> FgbReader<R> {
         let mut magic_buf: [u8; 8] = [0; 8];
         reader.read_exact(&mut magic_buf)?;
         if !check_magic_bytes(&magic_buf) {
-            return Err(Error::MissingMagicNumber);
+            return Err(Error::MissingMagicBytes);
         }
 
         let mut size_buf: [u8; 4] = [0; 4];
