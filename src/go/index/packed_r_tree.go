@@ -137,7 +137,7 @@ func (r *PackedRTree) Size() uint64 {
 // with NewPackedRTreeFromData.
 func (r *PackedRTree) Write(w io.Writer) (int, error) {
 	// Fast conversion from  []NodeItems to []byte.
-	data := (*(*[1 << 31]byte)(unsafe.Pointer(
+	data := (*(*[1 << 31 - 1]byte)(unsafe.Pointer(
 		&r.nodeItems[0])))[:r.Size()]
 
 	return w.Write(data)
@@ -230,7 +230,7 @@ func (r *PackedRTree) fromData(data []byte, copyData bool) {
 	}
 
 	// Fast conversion from []byte to []NodeItem.
-	r.nodeItems = (*[1 << 31]NodeItem)(unsafe.Pointer(&finalData[0]))[:r.numNodes]
+	r.nodeItems = (*[1 << 31 - 1]NodeItem)(unsafe.Pointer(&finalData[0]))[:r.numNodes]
 
 	for i := 0; i < int(r.numNodes); i++ {
 		r.extent.Expand(r.nodeItems[i])
