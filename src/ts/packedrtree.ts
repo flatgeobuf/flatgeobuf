@@ -159,18 +159,15 @@ export async function* streamSearch(
             length * NODE_ITEM_LEN,
         );
 
-        const float64Array = new Float64Array(buffer);
-        const uint32Array = new Uint32Array(buffer);
+        const dataView = new DataView(buffer);
         for (let pos = nodeIndex; pos < end; pos++) {
-            const nodePos = (pos - nodeIndex) * 5;
-            if (maxX < float64Array[nodePos + 0]) continue; // maxX < nodeMinX
-            if (maxY < float64Array[nodePos + 1]) continue; // maxY < nodeMinY
-            if (minX > float64Array[nodePos + 2]) continue; // minX > nodeMaxX
-            if (minY > float64Array[nodePos + 3]) continue; // minY > nodeMaxY
+            const nodePos = (pos - nodeIndex) * 40;
+            if (maxX < dataView.getFloat64(nodePos + 0, true)) continue; // maxX < nodeMinX
+            if (maxY < dataView.getFloat64(nodePos + 8, true)) continue; // maxY < nodeMinY
+            if (minX > dataView.getFloat64(nodePos + 16, true)) continue; // minX > nodeMaxX
+            if (minY > dataView.getFloat64(nodePos + 24, true)) continue; // minY > nodeMaxY
 
-            const low32Offset = uint32Array[(nodePos << 1) + 8];
-            const high32Offset = uint32Array[(nodePos << 1) + 9];
-            const offset = readUint52(high32Offset, low32Offset);
+            const offset = dataView.getBigUint64(nodePos + 32, true);
 
             if (isLeafNode) {
                 const featureLength = (() => {
@@ -178,14 +175,8 @@ export async function* streamSearch(
                         // Since features are tightly packed, we infer the
                         // length of _this_ feature by measuring to the _next_
                         // feature's start.
-                        const nextPos = (pos - nodeIndex + 1) * 5;
-                        const low32Offset = uint32Array[(nextPos << 1) + 8];
-                        const high32Offset = uint32Array[(nextPos << 1) + 9];
-                        const nextOffset = readUint52(
-                            high32Offset,
-                            low32Offset,
-                        );
-
+                        const nextPos = (pos - nodeIndex + 1) * 40;
+                        const nextOffset = dataView.getBigUint64(nextPos + 32, true);
                         return nextOffset - offset;
                     } else {
                         // This is the last feature - there's no "next" feature
@@ -195,7 +186,7 @@ export async function* streamSearch(
                 })();
 
                 // Logger.debug(`offset: ${offset}, pos: ${pos}, featureLength: ${featureLength}`);
-                yield [offset, pos - leafNodesOffset, featureLength];
+                yield [Number(offset), pos - leafNodesOffset, Number(featureLength)];
                 continue;
             }
 
@@ -216,13 +207,13 @@ export async function* streamSearch(
                 Logger.debug(
                     `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNode()} -> ${offset}`,
                 );
-                nearestNodeRange.extendEndNodeToNewOffset(offset);
+                nearestNodeRange.extendEndNodeToNewOffset(Number(offset));
                 continue;
             }
 
             const newNodeRange: NodeRange = (() => {
                 const level = nodeRange.level() - 1;
-                const range: [number, number] = [offset, offset + 1];
+                const range: [number, number] = [Number(offset), Number(offset) + 1];
                 return new NodeRange(range, level);
             })();
 
@@ -243,28 +234,4 @@ export async function* streamSearch(
             queue.push(newNodeRange);
         }
     }
-}
-
-/**
- * Returns a 64-bit uint value by combining it's decomposed lower and higher
- * 32-bit halves. Though because JS `number` is a floating point, it cannot
- * accurately represent an int beyond 52 bits.
- *
- * In practice, "52-bits ought to be enough for anybody", or at least into the
- * pebibytes.
- *
- * Note: `BigInt` does exist to hold larger numbers, but we'd have to adapt a
- * lot of code to support using it.
- */
-function readUint52(high32Bits: number, low32Bits: number) {
-    // javascript integers can only be 52 bits, verify the top 12 bits
-    // are unused.
-    if ((high32Bits & 0xfff00000) != 0) {
-        throw Error('integer is too large to be safely represented');
-    }
-
-    // Note: we multiply by 2**32 because bitshift operations wrap at 32, so `high32Bits << 32` would be a NOOP.
-    const result = low32Bits + high32Bits * 2 ** 32;
-
-    return result;
 }
