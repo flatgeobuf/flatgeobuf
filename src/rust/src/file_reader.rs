@@ -126,8 +126,11 @@ impl<R: Read> FgbReader<R> {
             header.features_count() as usize,
             header.index_node_size(),
         )?;
-        let mut list = index.search(min_x, min_y, max_x, max_y)?;
-        list.sort_by(|a, b| a.offset.cmp(&b.offset));
+        let list = index.search(min_x, min_y, max_x, max_y)?;
+        debug_assert!(
+            list.windows(2).all(|w| w[0].offset < w[1].offset),
+            "Since the tree is traversed breadth first, list should be sorted by construction."
+        );
 
         Ok(FeatureIter::new(
             self.reader,
@@ -160,7 +163,7 @@ impl<R: Read + Seek> FgbReader<R> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(Error::NoIndex);
         }
-        let mut list = PackedRTree::stream_search(
+        let list = PackedRTree::stream_search(
             &mut self.reader,
             header.features_count() as usize,
             PackedRTree::DEFAULT_NODE_SIZE,
@@ -169,7 +172,10 @@ impl<R: Read + Seek> FgbReader<R> {
             max_x,
             max_y,
         )?;
-        list.sort_by(|a, b| a.offset.cmp(&b.offset));
+        debug_assert!(
+            list.windows(2).all(|w| w[0].offset < w[1].offset),
+            "Since the tree is traversed breadth first, list should be sorted by construction."
+        );
 
         Ok(FeatureIter::new(
             self.reader,
