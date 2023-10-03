@@ -133,7 +133,8 @@ impl HttpFgbReader {
         }
         let count = header.features_count() as usize;
         let header_len = self.header_len();
-        let mut list = PackedRTree::http_stream_search(
+
+        let list = PackedRTree::http_stream_search(
             &mut self.client,
             header_len,
             count,
@@ -144,7 +145,11 @@ impl HttpFgbReader {
             max_y,
         )
         .await?;
-        list.sort_by(|a, b| a.offset.cmp(&b.offset));
+        debug_assert!(
+            list.windows(2).all(|w| w[0].offset < w[1].offset),
+            "Since the tree is traversed breadth first, list should be sorted by construction."
+        );
+
         let index_size = PackedRTree::index_size(count, header.index_node_size());
         let feature_base = self.header_len() + index_size;
         let count = list.len();
