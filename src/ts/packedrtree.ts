@@ -176,7 +176,10 @@ export async function* streamSearch(
                         // length of _this_ feature by measuring to the _next_
                         // feature's start.
                         const nextPos = (pos - nodeIndex + 1) * 40;
-                        const nextOffset = dataView.getBigUint64(nextPos + 32, true);
+                        const nextOffset = dataView.getBigUint64(
+                            nextPos + 32,
+                            true,
+                        );
                         return nextOffset - offset;
                     } else {
                         // This is the last feature - there's no "next" feature
@@ -186,7 +189,11 @@ export async function* streamSearch(
                 })();
 
                 // Logger.debug(`offset: ${offset}, pos: ${pos}, featureLength: ${featureLength}`);
-                yield [Number(offset), pos - leafNodesOffset, Number(featureLength)];
+                yield [
+                    Number(offset),
+                    pos - leafNodesOffset,
+                    Number(featureLength),
+                ];
                 continue;
             }
 
@@ -213,7 +220,10 @@ export async function* streamSearch(
 
             const newNodeRange: NodeRange = (() => {
                 const level = nodeRange.level() - 1;
-                const range: [number, number] = [Number(offset), Number(offset) + 1];
+                const range: [number, number] = [
+                    Number(offset),
+                    Number(offset) + 1,
+                ];
                 return new NodeRange(range, level);
             })();
 
