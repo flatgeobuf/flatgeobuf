@@ -623,7 +623,6 @@ impl PackedRTree {
                         });
                     } else {
                         debug_assert_eq!(node_pos, num_items);
-                        debug!("No next length (final item)");
                         results.push(HttpSearchResultItem {
                             range: HttpRange::RangeFrom(start..),
                             index: node_id,

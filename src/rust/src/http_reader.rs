@@ -251,7 +251,6 @@ impl SelectBbox {
         let mut next_buffer = None;
         while next_buffer.is_none() {
             let Some(feature_batch) = self.feature_batches.last_mut() else {
-                debug!("no batches remain");
                 break;
             };
             let Some(buffer) = feature_batch.next_buffer(client).await? else {
@@ -308,7 +307,7 @@ impl FeatureBatch {
                 }
                 latest_batch.push(search_result_item.range)
             } else {
-                debug!("creating a new request for batch rather than wasting {wasted_bytes} bytes");
+                trace!("creating a new request for batch rather than wasting {wasted_bytes} bytes");
                 batched_ranges.push(vec![search_result_item.range]);
             }
         }
