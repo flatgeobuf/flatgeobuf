@@ -188,7 +188,7 @@ async fn read_http_node_items(
 pub struct SearchResultItem {
     /// Byte offset in feature data section
     pub offset: usize,
-    /// Feature number (REVIEW: why do we need this?)
+    /// Feature number
     pub index: usize,
 }
 
@@ -619,13 +619,11 @@ impl PackedRTree {
                         let end = feature_begin + next_node_item.offset as usize;
                         results.push(HttpSearchResultItem {
                             range: HttpRange::Range(start..end),
-                            index: node_id,
                         });
                     } else {
                         debug_assert_eq!(node_pos, num_items);
                         results.push(HttpSearchResultItem {
                             range: HttpRange::RangeFrom(start..),
-                            index: node_id,
                         });
                     }
                     continue;
@@ -757,8 +755,6 @@ pub(crate) mod http {
     pub struct HttpSearchResultItem {
         /// Byte offset in feature data section
         pub range: HttpRange,
-        /// Feature number (REVIEW: why do we need this?)
-        pub index: usize,
     }
 }
 #[cfg(feature = "http")]
