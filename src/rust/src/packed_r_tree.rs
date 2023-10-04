@@ -162,20 +162,20 @@ fn read_node_items<R: Read + Seek>(
 #[cfg(feature = "http")]
 async fn read_http_node_items(
     client: &mut BufferedHttpRangeClient,
-    min_req_size: usize,
     base: usize,
     node_index: usize,
-    length: usize,
+    num_nodes: usize,
 ) -> Result<Vec<NodeItem>> {
     let begin = base + node_index * size_of::<NodeItem>();
-    let len = length * size_of::<NodeItem>();
+    let length = num_nodes * size_of::<NodeItem>();
     let bytes = client
-        .min_req_size(min_req_size)
-        .get_range(begin, len)
+        // we've  already determined precisely which nodes to fetch - no need for extra.
+        .min_req_size(0)
+        .get_range(begin, length)
         .await?;
 
-    let mut node_items = Vec::with_capacity(length);
-    for i in 0..length {
+    let mut node_items = Vec::with_capacity(num_nodes);
+    for i in 0..num_nodes {
         node_items.push(NodeItem::from_bytes(
             &bytes[i * size_of::<NodeItem>()..(i + 1) * size_of::<NodeItem>()],
         )?);
@@ -555,14 +555,19 @@ impl PackedRTree {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<Vec<SearchResultItem>> {
+        combine_request_threshold: usize,
+    ) -> Result<Vec<HttpSearchResultItem>> {
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
+        if num_items == 0 {
+            return Ok(vec![]);
+        }
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let leaf_nodes_offset = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .0;
-        debug!("http_stream_search - index_begin: {index_begin}, num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
+        let feature_begin = index_begin + PackedRTree::index_size(num_items, node_size);
+        debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
@@ -582,34 +587,50 @@ impl PackedRTree {
                 "popped node: {next:?},  remaining queue len: {}",
                 queue.len()
             );
-            let node_index = next.nodes.start;
-            let is_leaf_node = node_index >= leaf_nodes_offset;
+            let start_node = next.nodes.start;
+            let is_leaf_node = start_node >= leaf_nodes_offset;
             // find the end index of the nodes
-            let end = min(
+            let mut end_node = min(
                 next.nodes.end + node_size as usize,
                 level_bounds[next.level].1,
             );
-            let length = end - node_index;
+            if is_leaf_node && end_node < num_items {
+                // We can infer the length of *this* feature by getting the start of the *next*
+                // feature, so we get an extra node.
+                // This approach doesn't work for the final node in the index,
+                // but in that case we know that the feature runs to the end of the FGB file and
+                // can make an open ended range request to get "the rest of the data".
+                end_node += 1;
+            }
+            let num_nodes = end_node - start_node;
             let node_items =
-                read_http_node_items(client, 0, index_begin, node_index, length).await?;
+                read_http_node_items(client, index_begin, start_node, num_nodes).await?;
 
             // search through child nodes
-            for pos in node_index..end {
-                let node_pos = pos - node_index;
+            for node_id in start_node..end_node {
+                let node_pos = node_id - start_node;
                 let node_item = &node_items[node_pos];
                 if !bounds.intersects(node_item) {
                     continue;
                 }
                 if is_leaf_node {
-                    results.push(SearchResultItem {
-                        offset: node_item.offset as usize,
-                        index: pos - leaf_nodes_offset,
-                    });
+                    let start = feature_begin + node_item.offset as usize;
+                    if let Some(next_node_item) = &node_items.get(node_pos + 1) {
+                        let end = feature_begin + next_node_item.offset as usize;
+                        results.push(HttpSearchResultItem {
+                            range: HttpRange::Range(start..end),
+                        });
+                    } else {
+                        debug_assert_eq!(node_pos, num_items);
+                        results.push(HttpSearchResultItem {
+                            range: HttpRange::RangeFrom(start..),
+                        });
+                    }
                     continue;
                 }
 
-                // request up to this many extra bytes if it means we can eliminate an extra request
-                let combine_request_threshold = 256 * 1024 / size_of::<NodeItem>();
+                let combine_request_node_threshold =
+                    combine_request_threshold / size_of::<NodeItem>();
 
                 // Add node to search recursion
                 match (queue.back_mut(), node_item.offset as usize) {
@@ -617,7 +638,7 @@ impl PackedRTree {
                     // Merge the ranges to avoid an extra request
                     (Some(tail), offset)
                         if tail.level == next.level - 1
-                            && offset < tail.nodes.end + combine_request_threshold =>
+                            && offset < tail.nodes.end + combine_request_node_threshold =>
                     {
                         debug_assert!(tail.nodes.end < offset);
                         tail.nodes.end = offset;
@@ -687,6 +708,57 @@ impl PackedRTree {
         self.extent.clone()
     }
 }
+
+#[cfg(feature = "http")]
+pub(crate) mod http {
+    use std::ops::{Range, RangeFrom};
+
+    /// Byte range within a file. Suitable for an HTTP Range request.
+    #[derive(Debug, Clone)]
+    pub enum HttpRange {
+        Range(Range<usize>),
+        RangeFrom(RangeFrom<usize>),
+    }
+
+    impl HttpRange {
+        pub fn start(&self) -> usize {
+            match self {
+                Self::Range(range) => range.start,
+                Self::RangeFrom(range) => range.start,
+            }
+        }
+
+        pub fn end(&self) -> Option<usize> {
+            match self {
+                Self::Range(range) => Some(range.end),
+                Self::RangeFrom(_) => None,
+            }
+        }
+
+        pub fn with_end(self, end: Option<usize>) -> Self {
+            match end {
+                Some(end) => Self::Range(self.start()..end),
+                None => Self::RangeFrom(self.start()..),
+            }
+        }
+
+        pub fn length(&self) -> Option<usize> {
+            match self {
+                Self::Range(range) => Some(range.end - range.start),
+                Self::RangeFrom(_) => None,
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    /// Bbox filter search result
+    pub struct HttpSearchResultItem {
+        /// Byte offset in feature data section
+        pub range: HttpRange,
+    }
+}
+#[cfg(feature = "http")]
+pub(crate) use http::*;
 
 mod inspect {
     use super::*;
