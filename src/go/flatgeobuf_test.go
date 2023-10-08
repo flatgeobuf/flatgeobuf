@@ -70,29 +70,38 @@ func TestCreateFGBFileAndBasicSearch(t *testing.T) {
 
 	// four features that are the standard quadrants of the Cartesian plane, unit-sized
 	// the uint32 property attached to each is the quadrant number
-	fgen := &fg{
-		Features: []*writer.Feature{
-			createSquareFeature(0, 0, 1, 1, 1),
-			createSquareFeature(-1, 0, 0, 1, 2),
-			createSquareFeature(-1, -1, 0, 0, 3),
-			createSquareFeature(0, -1, 1, 0, 4),
-		}}
+	fgen := func() *fg {
+		return &fg{
+			Features: []*writer.Feature{
+				createSquareFeature(0, 0, 1, 1, 1),
+				createSquareFeature(-1, 0, 0, 1, 2),
+				createSquareFeature(-1, -1, 0, 0, 3),
+				createSquareFeature(0, -1, 1, 0, 4),
+			},
+		}
+	}
+
 	hu := &hu{
 		MetadataStr: `{"TotalHouseholds": 10}`,
 	}
 
-	headerBuilder := flatbuffers.NewBuilder(0)
-	header := writer.NewHeader(headerBuilder).
-		SetName("Households ShapeFile Data").
-		SetTitle("Households ShapeFile Data").
-		SetGeometryType(flattypes.GeometryTypePolygon)
-	householdsCol := writer.NewColumn(headerBuilder).
-		SetName("Households").
-		SetType(flattypes.ColumnTypeUInt)
-	header.SetColumns([]*writer.Column{householdsCol})
+	hgen := func() *writer.Header {
+		headerBuilder := flatbuffers.NewBuilder(0)
+		header := writer.NewHeader(headerBuilder).
+			SetName("Households ShapeFile Data").
+			SetTitle("Households ShapeFile Data").
+			SetGeometryType(flattypes.GeometryTypePolygon)
+		householdsCol := writer.NewColumn(headerBuilder).
+			SetName("Households").
+			SetType(flattypes.ColumnTypeUInt)
+		header.SetColumns([]*writer.Column{householdsCol})
+		return header
+	}
+
+	header := hgen()
 
 	var mockFile bytes.Buffer
-	wr := writer.NewWriter(header, true, fgen, hu)
+	wr := writer.NewWriter(header, true, fgen(), hu)
 	wr.Write(&mockFile)
 
 	// TEST:
@@ -147,6 +156,14 @@ func TestCreateFGBFileAndBasicSearch(t *testing.T) {
 		if !reflect.DeepEqual(gotSet, wantSet) {
 			t.Errorf("Unexpected search results. (want = %v, got = %v)", wantSet, gotSet)
 		}
+	}
+
+	// Check writer.WithMemory produces the same result
+	var got bytes.Buffer
+	mwr := writer.NewWriter(hgen(), true, fgen(), hu, writer.WithMemory())
+	mwr.Write(&got)
+	if !reflect.DeepEqual(got.Bytes(), mockFile.Bytes()) {
+		t.Error("Unexpected results using writer.WithMemory")
 	}
 }
 
