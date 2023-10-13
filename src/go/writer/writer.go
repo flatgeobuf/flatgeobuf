@@ -43,6 +43,8 @@ type writerOption func(*Writer)
 // Use memory instead of temporary file when generating index
 // or execute HeaderUpdater.
 // Effective only when includeIndex is true or when HeaderUpdater is provided.
+//
+// Warning: this option could use arbitrarily large amounts of memory.
 func WithMemory() writerOption {
 	return func(w *Writer) {
 		w.useMemory = true
