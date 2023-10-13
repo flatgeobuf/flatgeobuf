@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"bytes"
 	"io"
 	"os"
 
@@ -20,6 +21,8 @@ type Writer struct {
 	headerUpdater HeaderUpdater
 
 	includeIndex bool
+
+	useMemory bool
 }
 
 // featureItem is an Index entry for a specific Feature.
@@ -34,19 +37,41 @@ func (f *featureItem) NodeItem() index.NodeItem {
 	return *f.nodeItem
 }
 
+// writerOption is the additional option to be passed into Writer.
+type writerOption func(*Writer)
+
+// Use memory instead of temporary file when generating index
+// or execute HeaderUpdater.
+// Effective only when includeIndex is true or when HeaderUpdater is provided.
+//
+// Warning: this option could use arbitrarily large amounts of memory.
+func WithMemory() writerOption {
+	return func(w *Writer) {
+		w.useMemory = true
+	}
+}
+
 // NewWriter returns a new writer instance that will write a flatgeobuf file
 // with the given Header, a possible Index (depending on includeIndex), a
 // FeatureGenerator that will provide the Features to be written and a
 // HeaderUpdater that will be used to update the Header after all features
 // have been generated.
 func NewWriter(header *Header, includeIndex bool,
-	featureGenerator FeatureGenerator, headerUpdater HeaderUpdater) *Writer {
-	return &Writer{
+	featureGenerator FeatureGenerator, headerUpdater HeaderUpdater,
+	opts ...writerOption,
+) *Writer {
+	w := &Writer{
 		header:           header,
 		featureGenerator: featureGenerator,
 		headerUpdater:    headerUpdater,
 		includeIndex:     includeIndex,
 	}
+
+	for _, opt := range opts {
+		opt(w)
+	}
+
+	return w
 }
 
 func writeFeature(feature *Feature, w io.Writer) (int, error) {
@@ -91,20 +116,26 @@ func (w *Writer) Write(ioWriter io.Writer) (int, error) {
 		// and also adjust the header to match.
 
 		// Create a temporary io.Writer to keep the generated features.
-		tmpFile, err := os.CreateTemp("", "flatgeobuf_features_")
+		var featureStore featureStorer
+		var err error
+
+		if w.useMemory {
+			featureStore, err = newMemoryBuffer()
+		} else {
+			featureStore, err = newTempFile("flatgeobuf_features_")
+		}
 		if err != nil {
 			return 0, err
 		}
-		defer tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
+
+		defer featureStore.Close()
 
 		// Add the features to the temporary file and collect tems for the index.
 		featureOffset := uint64(0)
 		items := []index.Item{}
 		extent := index.NewNodeItem(0)
-		for feature := w.featureGenerator.Generate(); feature != nil; feature =
-			w.featureGenerator.Generate() {
-			n, err = writeFeature(feature, tmpFile)
+		for feature := w.featureGenerator.Generate(); feature != nil; feature = w.featureGenerator.Generate() {
+			n, err = writeFeature(feature, featureStore)
 			if err != nil {
 				return totalBytesWritten, err
 			}
@@ -125,7 +156,7 @@ func (w *Writer) Write(ioWriter io.Writer) (int, error) {
 
 			featureOffset += uint64(n)
 		}
-		err = tmpFile.Sync()
+		err = featureStore.Sync()
 		if err != nil {
 			return totalBytesWritten, err
 		}
@@ -165,14 +196,14 @@ func (w *Writer) Write(ioWriter io.Writer) (int, error) {
 			return totalBytesWritten, err
 		}
 
-		_, err = tmpFile.Seek(0, 0)
+		_, err = featureStore.Seek(0, 0)
 		if err != nil {
 			return totalBytesWritten, err
 		}
 
 		// Copy features from temporary file to destination file.
 		var written int64
-		if written, err = io.Copy(ioWriter, tmpFile); err != nil {
+		if written, err = io.Copy(ioWriter, featureStore); err != nil {
 			return totalBytesWritten, err
 		}
 
@@ -180,4 +211,55 @@ func (w *Writer) Write(ioWriter io.Writer) (int, error) {
 	}
 
 	return totalBytesWritten, nil
+}
+
+type featureStorer interface {
+	io.WriteCloser
+	io.ReadSeeker
+	Sync() error
+}
+
+type tempFile struct {
+	*os.File
+}
+
+func newTempFile(pattern string) (*tempFile, error) {
+	f, err := os.CreateTemp("", pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tempFile{
+		File: f,
+	}, nil
+}
+
+func (f *tempFile) Close() error {
+	if err := f.File.Close(); err != nil {
+		return err
+	}
+
+	return os.Remove(f.Name())
+}
+
+type memoryBuffer struct {
+	*bytes.Buffer
+}
+
+func newMemoryBuffer() (*memoryBuffer, error) {
+	return &memoryBuffer{
+		Buffer: &bytes.Buffer{},
+	}, nil
+}
+
+func (b *memoryBuffer) Seek(_offset int64, _whence int) (int64, error) {
+	return 0, nil
+}
+
+func (b *memoryBuffer) Close() error {
+	return nil
+}
+
+func (b *memoryBuffer) Sync() error {
+	return nil
 }
