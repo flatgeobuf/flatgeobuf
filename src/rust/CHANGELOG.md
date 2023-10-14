@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## [4.0.0] - 2023-10-14
 
 - Breaking: `select_all` and `select_bbox` now return a FeatureIter instead of a
   modified Self type.
