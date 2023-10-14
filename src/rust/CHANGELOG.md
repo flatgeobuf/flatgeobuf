@@ -2,9 +2,12 @@
 
 ## UNRELEASED
 
-- Breaking: `select_all` and `select_bbox` now return a FeatureIterator instead of a
+- Breaking: `select_all` and `select_bbox` now return a FeatureIter instead of a
   modified Self type.
 - Ensure reading from tls is supported.
+- Breaking: Added flatgeobuf::Error with more specific errors and use it where possible
+  rather than geozero::GeozeroError.
+- Added feature batching for HTTP client to optimize remote reading.
 
 ## [3.27.0] - 2023-08-28
 
