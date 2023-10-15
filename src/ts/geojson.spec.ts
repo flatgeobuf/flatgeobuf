@@ -5,16 +5,6 @@ import 'mocha';
 import LocalWebServer from 'local-web-server';
 
 import { readFileSync } from 'fs';
-import { TextDecoder, TextEncoder } from 'util';
-
-import fetch from 'node-fetch';
-
-global['fetch'] = fetch as unknown as (
-    input: RequestInfo,
-    init?: RequestInit,
-) => Promise<Response>;
-global['TextDecoder'] = TextDecoder;
-global['TextEncoder'] = TextEncoder;
 
 import { arrayToStream, takeAsync } from './streams/utils.js';
 
