@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
 import { readFileSync } from 'fs';
@@ -9,7 +9,7 @@ import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
 
-global.fetch = fetch;
+global.fetch = fetch as any;
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
