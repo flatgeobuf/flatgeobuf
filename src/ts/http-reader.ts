@@ -278,7 +278,7 @@ class BufferedHttpRangeClient {
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
-            throw new Error('Unknown source ')
+            throw new Error('Unknown source ');
         }
     }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 
 import { arrayToStream, takeAsync } from './streams/utils.js';
