@@ -1,17 +1,15 @@
-import { expect } from 'chai';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
-import 'mocha';
-import LocalWebServer from 'local-web-server';
-
 import { readFileSync } from 'fs';
-
+import fetch from 'node-fetch';
 import { arrayToStream, takeAsync } from './streams/utils.js';
-
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
+
+global.fetch = fetch;
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
@@ -43,16 +41,6 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
 }
 
 describe('geojson module', () => {
-    let lws;
-
-    before(async () => {
-        lws = await LocalWebServer.create();
-    });
-
-    after(() => {
-        if (lws) lws.server.close();
-    });
-
     describe('Geometry roundtrips', () => {
         it('Point', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
@@ -73,9 +61,7 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync(
-                deserialize(
-                    stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator,
+                deserialize(stream) as AsyncGenerator,
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -408,31 +394,11 @@ describe('geojson module', () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
             const features = await takeAsync(
                 deserialize(
-                    'http://127.0.0.1:8000/test/data/countries.fgb',
+                    'http://flatgeobuf.septima.dk/countries.fgb',
                     r,
                 ) as AsyncGenerator,
             );
             expect(features.length).to.eq(3);
-            for (const f of features)
-                expect(
-                    (f.geometry.coordinates[0] as number[]).length,
-                ).to.be.greaterThan(0);
-        });
-
-        xit('GeoJSON HNV2021 filtered', async () => {
-            const r: Rect = {
-                minX: 881145.8872756235,
-                minY: 6123357.718314062,
-                maxX: 881643.4182304569,
-                maxY: 6123742.7125053005,
-            };
-            const features = await takeAsync(
-                deserialize(
-                    'http://flatgeobuf.septima.dk/HNV2021_20210226.fgb',
-                    r,
-                ) as AsyncGenerator,
-            );
-            expect(features.length).to.eq(8);
             for (const f of features)
                 expect(
                     (f.geometry.coordinates[0] as number[]).length,

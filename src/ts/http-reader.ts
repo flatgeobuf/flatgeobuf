@@ -275,8 +275,10 @@ class BufferedHttpRangeClient {
     constructor(source: string | HttpRangeClient) {
         if (typeof source === 'string') {
             this.httpClient = new HttpRangeClient(source);
-        } else {
+        } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
+        } else {
+            throw new Error('Unknown source ')
         }
     }
 

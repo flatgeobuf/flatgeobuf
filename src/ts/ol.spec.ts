@@ -1,5 +1,4 @@
-import { expect } from 'chai';
-import 'mocha';
+import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs';
 
 import { arrayToStream, takeAsync } from './streams/utils.js';
@@ -10,7 +9,6 @@ import WKT from 'ol/format/WKT.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { TextDecoder, TextEncoder } from 'util';
 import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
-import { Rect } from './packedrtree.js';
 import Geometry from 'ol/geom/Geometry.js';
 
 global['TextDecoder'] = TextDecoder;
@@ -234,26 +232,6 @@ describe('ol module', () => {
                 ) as AsyncGenerator,
             );
             expect(features.length).to.eq(179);
-            for (const f of features)
-                expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
-                ).to.be.greaterThan(0);
-        });
-
-        xit('OL HNV2021 filtered', async () => {
-            const r: Rect = {
-                minX: 881145.8872756235,
-                minY: 6123357.718314062,
-                maxX: 881643.4182304569,
-                maxY: 6123742.7125053005,
-            };
-            const features = await takeAsync(
-                deserialize(
-                    'http://flatgeobuf.septima.dk/HNV2021_20210226.fgb',
-                    r,
-                ) as AsyncGenerator,
-            );
-            expect(features.length).to.eq(8);
             for (const f of features)
                 expect(
                     (f.getGeometry() as SimpleGeometry).getCoordinates().length,
