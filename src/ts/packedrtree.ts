@@ -171,7 +171,7 @@ export async function* streamSearch(
 
             if (isLeafNode) {
                 const featureLength = (() => {
-                    if (pos < numItems - 1) {
+                    if (pos < end - 1) {
                         // Since features are tightly packed, we infer the
                         // length of _this_ feature by measuring to the _next_
                         // feature's start.
