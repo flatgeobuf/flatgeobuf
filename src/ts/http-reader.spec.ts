@@ -20,17 +20,17 @@ describe('http reader', () => {
             maxX: -101.11,
             maxY: 41.24,
         };
-        let reader = await HttpReader.open(testUrl);
+        const reader = await HttpReader.open(testUrl);
 
-        let features = [];
+        const features = [];
         for await (const feature of reader.selectBbox(rect)) {
             features.push(fromFeature(feature, reader.header));
         }
         expect(features.length).toBe(86);
-        let actual = features
+        const actual = features
             .slice(0, 4)
             .map((f) => `${f.properties.NAME}, ${f.properties.STATE}`);
-        let expected = [
+        const expected = [
             'Cheyenne, KS',
             'Rawlins, KS',
             'Yuma, CO',

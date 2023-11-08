@@ -157,7 +157,7 @@ export async function* streamSearch(
         // find the end index of the node
         const nodeRangeEndIdx = (() => {
             const [, levelBound] = levelBounds[nodeRange.level()];
-            let nodeIdx = Math.min(
+            const nodeIdx = Math.min(
                 nodeRange.endNodeIdx() + nodeSize,
                 levelBound,
             );
@@ -187,7 +187,7 @@ export async function* streamSearch(
             nodeIdx < nodeRangeEndIdx;
             nodeIdx++
         ) {
-            let nodeIdxInDataView = nodeIdx - nodeRangeStartIdx;
+            const nodeIdxInDataView = nodeIdx - nodeRangeStartIdx;
             const dataViewByteStart = nodeIdxInDataView * NODE_ITEM_BYTE_LEN;
             if (maxX < dataView.getFloat64(dataViewByteStart + 0, true))
                 continue; // maxX < nodeMinX
@@ -226,7 +226,7 @@ export async function* streamSearch(
                 })();
 
                 // Logger.debug(`featureByteOffset: ${featureByteOffset}, nodeIdx: ${nodeIdx}, featureLength: ${featureLength}`);
-                let featureIdx = nodeIdx - firstLeafNodeIdx;
+                const featureIdx = nodeIdx - firstLeafNodeIdx;
                 yield [
                     Number(featureByteOffset),
                     featureIdx,
