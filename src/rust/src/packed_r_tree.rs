@@ -605,7 +605,7 @@ impl PackedRTree {
                 next.nodes.end + node_size as usize,
                 level_bounds[next.level].1,
             );
-            if is_leaf_node && end_node < num_items {
+            if is_leaf_node && end_node < level_bounds[next.level].1 {
                 // We can infer the length of *this* feature by getting the start of the *next*
                 // feature, so we get an extra node.
                 // This approach doesn't work for the final node in the index,
