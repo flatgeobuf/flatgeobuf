@@ -157,7 +157,21 @@ export async function* streamSearch(
         // find the end index of the node
         const nodeRangeEndIdx = (() => {
             const [, levelBound] = levelBounds[nodeRange.level()];
-            return Math.min(nodeRange.endNodeIdx() + nodeSize, levelBound);
+            let nodeIdx = Math.min(
+                nodeRange.endNodeIdx() + nodeSize,
+                levelBound,
+            );
+
+            if (isLeafNode && nodeIdx < levelBound) {
+                // We can infer the length of *this* feature by getting the start of the *next*
+                // feature, so we get an extra node.
+                // This approach doesn't work for the final node in the index,
+                // but in that case we know that the feature runs to the end of the FGB file and
+                // could make an open ended range request to get "the rest of the data".
+                return nodeIdx + 1;
+            } else {
+                return nodeIdx;
+            }
         })();
 
         const numNodesInRange = nodeRangeEndIdx - nodeRangeStartIdx;
