@@ -278,9 +278,8 @@ pub fn calc_extent(nodes: &[NodeItem]) -> NodeItem {
 pub struct PackedRTree {
     extent: NodeItem,
     node_items: Vec<NodeItem>,
-    num_items: usize,
-    num_nodes: usize,
-    node_size: u16,
+    num_leaf_nodes: usize,
+    branching_factor: u16,
     level_bounds: Vec<(usize, usize)>,
 }
 
@@ -289,15 +288,16 @@ impl PackedRTree {
 
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
-        assert!(self.num_items > 0, "Cannot create empty tree");
-        self.node_size = min(max(node_size, 2u16), 65535u16);
-        self.level_bounds = PackedRTree::generate_level_bounds(self.num_items, self.node_size);
-        self.num_nodes = self
+        assert!(self.num_leaf_nodes > 0, "Cannot create empty tree");
+        self.branching_factor = min(max(node_size, 2u16), 65535u16);
+        self.level_bounds =
+            PackedRTree::generate_level_bounds(self.num_leaf_nodes, self.branching_factor);
+        let num_nodes = self
             .level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .1;
-        self.node_items = vec![NodeItem::create(0); self.num_nodes]; // Quite slow!
+        self.node_items = vec![NodeItem::create(0); num_nodes]; // Quite slow!
         Ok(())
     }
 
@@ -337,21 +337,24 @@ impl PackedRTree {
     }
 
     fn generate_nodes(&mut self) {
-        for i in 0..self.level_bounds.len() - 1 {
-            let mut pos = self.level_bounds[i].0;
-            let end = self.level_bounds[i].1;
-            let mut newpos = self.level_bounds[i + 1].0;
-            while pos < end {
-                let mut node = NodeItem::create(pos as u64);
-                for _j in 0..self.node_size {
-                    if pos >= end {
+        for level in 0..self.level_bounds.len() - 1 {
+            let start_of_children_level = self.level_bounds[level].0;
+            let end_of_children_level = self.level_bounds[level].1;
+            let start_of_parent_level = self.level_bounds[level + 1].0;
+
+            let mut parent_idx = start_of_parent_level;
+            let mut child_idx = start_of_children_level;
+            while child_idx < end_of_children_level {
+                let mut parent_node = NodeItem::create(child_idx as u64);
+                for _j in 0..self.branching_factor {
+                    if child_idx >= end_of_children_level {
                         break;
                     }
-                    node.expand(&self.node_items[pos]);
-                    pos += 1;
+                    parent_node.expand(&self.node_items[child_idx]);
+                    child_idx += 1;
                 }
-                self.node_items[newpos] = node;
-                newpos += 1;
+                self.node_items[parent_idx] = parent_node;
+                parent_idx += 1;
             }
         }
     }
@@ -372,7 +375,7 @@ impl PackedRTree {
     ) -> Result<()> {
         let min_req_size = self.size(); // read full index at once
         let mut pos = index_begin;
-        for i in 0..self.num_nodes {
+        for i in 0..self.num_nodes() {
             let bytes = client
                 .min_req_size(min_req_size)
                 .get_range(pos, size_of::<NodeItem>())
@@ -385,18 +388,22 @@ impl PackedRTree {
         Ok(())
     }
 
+    fn num_nodes(&self) -> usize {
+        self.node_items.len()
+    }
+
     pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
         let mut tree = PackedRTree {
             extent: extent.clone(),
             node_items: Vec::new(),
-            num_items: nodes.len(),
-            num_nodes: 0,
-            node_size: 0,
+            num_leaf_nodes: nodes.len(),
+            branching_factor: 0,
             level_bounds: Vec::new(),
         };
         tree.init(node_size)?;
-        for (i, node) in nodes.iter().take(tree.num_items).cloned().enumerate() {
-            tree.node_items[tree.num_nodes - tree.num_items + i] = node;
+        let num_nodes = tree.num_nodes();
+        for (i, node) in nodes.iter().take(tree.num_leaf_nodes).cloned().enumerate() {
+            tree.node_items[num_nodes - tree.num_leaf_nodes + i] = node;
         }
         tree.generate_nodes();
         Ok(tree)
@@ -412,9 +419,8 @@ impl PackedRTree {
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::with_capacity(num_nodes),
-            num_items,
-            num_nodes,
-            node_size,
+            num_leaf_nodes: num_items,
+            branching_factor: node_size,
             level_bounds,
         };
         tree.read_data(data)?;
@@ -431,9 +437,8 @@ impl PackedRTree {
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::new(),
-            num_items,
-            num_nodes: 0,
-            node_size: 0,
+            num_leaf_nodes: num_items,
+            branching_factor: 0,
             level_bounds: Vec::new(),
         };
         tree.init(node_size)?;
@@ -460,10 +465,10 @@ impl PackedRTree {
         while let Some(next) = queue.pop_front() {
             let node_index = next.0;
             let level = next.1;
-            let is_leaf_node = node_index >= self.num_nodes - self.num_items;
+            let is_leaf_node = node_index >= self.num_nodes() - self.num_leaf_nodes;
             // find the end index of the node
             let end = min(
-                node_index + self.node_size as usize,
+                node_index + self.branching_factor as usize,
                 self.level_bounds[level].1,
             );
             // search through child nodes
@@ -588,7 +593,13 @@ impl PackedRTree {
                 queue.len()
             );
             let start_node = next.nodes.start;
-            let is_leaf_node = start_node >= leaf_nodes_offset;
+            let is_leaf_node = next.level == 0;
+            if is_leaf_node {
+                assert!(start_node >= leaf_nodes_offset);
+            } else {
+                assert!(start_node < leaf_nodes_offset);
+                assert!(next.nodes.end < leaf_nodes_offset);
+            }
             // find the end index of the nodes
             let mut end_node = min(
                 next.nodes.end + node_size as usize,
@@ -672,7 +683,7 @@ impl PackedRTree {
     }
 
     pub fn size(&self) -> usize {
-        self.num_nodes * size_of::<NodeItem>()
+        self.num_nodes() * size_of::<NodeItem>()
     }
 
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
