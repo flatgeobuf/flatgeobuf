@@ -59,6 +59,24 @@ jobs:
       - run: cd src/java && mvn dependency:go-offline
       - run: cd src/java && mvn test
 
+  test-net8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .Net 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+      - name: Cache nuget dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - run: cd src/net && ./fetch.sh && dotnet test -f net8
+
   test-net6:
     runs-on: ubuntu-latest
     steps:
@@ -76,24 +94,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget
       - run: cd src/net && ./fetch.sh && dotnet test -f net6
-
-  test-net3:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup .Net 3.1
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 3.1.x
-      - name: Cache nuget dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.nuget/packages
-          # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget
-      - run: cd src/net && ./fetch.sh && dotnet test -f netcoreapp3.1
 
   test-rust:
     runs-on: ubuntu-latest
