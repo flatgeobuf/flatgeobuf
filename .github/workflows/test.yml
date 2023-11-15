@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java-version: [17, 11, 8]
+        java-version: [21, 17, 11, 8]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Java ${{ matrix.java-version }}
