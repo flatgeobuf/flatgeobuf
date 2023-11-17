@@ -67,6 +67,7 @@ namespace FlatGeobuf.Index
             var maxX = rect.MaxX;
             var maxY = rect.MaxY;
             var levelBounds = GenerateLevelBounds(numItems, nodeSize);
+            var leafNodesOffset = levelBounds.First().Start;
             var numNodes = levelBounds.First().End;
             var stack = new Stack<(ulong NodeIndex, int Level)>();
             stack.Push((0UL, levelBounds.Count() - 1));
@@ -91,7 +92,7 @@ namespace FlatGeobuf.Index
                     if (minY > reader.ReadDouble()) continue; // minY > nodeMaxY
                     var offset = reader.ReadUInt64();
                     if (isLeafNode)
-                        res.Add(((long)offset, pos - 1));
+                        res.Add(((long)offset, pos - leafNodesOffset));
                     else
                         stack.Push((offset, level - 1));
                 }
@@ -108,6 +109,7 @@ namespace FlatGeobuf.Index
             var maxX = rect.MaxX;
             var maxY = rect.MaxY;
             var levelBounds = GenerateLevelBounds(numItems, nodeSize);
+            var leafNodesOffset = levelBounds.First().Start;
             var numNodes = levelBounds.First().End;
             var stack = new Stack<(ulong NodeIndex, int Level)>();
             stack.Push((0UL, levelBounds.Count() - 1));
@@ -132,7 +134,7 @@ namespace FlatGeobuf.Index
                     if (minY > reader.ReadDouble()) continue; // minY > nodeMaxY
                     var offset = reader.ReadUInt64();
                     if (isLeafNode)
-                        yield return (offset, pos - 1);
+                        yield return (offset, pos - leafNodesOffset);
                     else
                         stack.Push((offset, level - 1));
                 }
