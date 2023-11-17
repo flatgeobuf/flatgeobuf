@@ -100,6 +100,10 @@ public class PackedRTreeTest {
 
         ArrayList<SearchHit> result = PackedRTree.search(bb, headerMeta.offset, (int) headerMeta.featuresCount, headerMeta.indexNodeSize, env);
 
+        assertEquals(46, result.get(0).index);
+        assertEquals(48, result.get(1).index);
+        assertEquals(162, result.get(2).index);
+
         assertEquals(3, result.size());
     }
 
@@ -122,6 +126,10 @@ public class PackedRTreeTest {
         InputStream stream = new ByteArrayInputStream(treeBytes);
 
         SearchResult result = PackedRTree.search(stream, headerMeta.offset, (int) headerMeta.featuresCount, headerMeta.indexNodeSize, env);
+
+        assertEquals(46, result.hits.get(0).index);
+        assertEquals(48, result.hits.get(1).index);
+        assertEquals(162, result.hits.get(2).index);
 
         assertEquals(3, result.hits.size());
     }
