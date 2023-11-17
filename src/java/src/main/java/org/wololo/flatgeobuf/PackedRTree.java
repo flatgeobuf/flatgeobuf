@@ -194,36 +194,6 @@ public class PackedRTree {
         return numNodes * NODE_ITEM_LEN;
     }
 
-    static ArrayList<Integer> generateLevelEnds(int numItems, int nodeSize) {
-        if (nodeSize < 2)
-            throw new RuntimeException("Node size must be at least 2");
-        if (numItems == 0)
-            throw new RuntimeException("Number of items must be greater than 0");
-
-        // number of nodes per level in bottom-up order
-        int n = numItems;
-        int numNodes = n;
-        ArrayList<Integer> levelNumNodes = new ArrayList<Integer>();
-        levelNumNodes.add(n);
-        do {
-            n = (n + nodeSize - 1) / nodeSize;
-            numNodes += n;
-            levelNumNodes.add(n);
-        } while (n != 1);
-
-        // offsets per level in reversed storage order (top-down)
-        ArrayList<Integer> levelOffsets = new ArrayList<Integer>();
-        n = numNodes;
-        for (int size : levelNumNodes) {
-            levelOffsets.add(n - size);
-            n -= size;
-        }
-        ArrayList<Integer> levelEnds = new ArrayList<Integer>();
-        for (int i = 0; i < levelNumNodes.size(); i++)
-            levelEnds.add(levelOffsets.get(i) + levelNumNodes.get(i));
-        return levelEnds;
-    }
-
     static List<Pair<Integer, Integer>> generateLevelBounds(int numItems, int nodeSize) {
         if (nodeSize < 2)
             throw new RuntimeException("Node size must be at least 2");
@@ -244,14 +214,12 @@ public class PackedRTree {
         // offsets per level in reversed storage order (top-down)
         ArrayList<Integer> levelOffsets = new ArrayList<Integer>();
         n = numNodes;
-        for (int size : levelNumNodes) {
-            levelOffsets.add(n - size);
-            n -= size;
-        }
+        for (int size : levelNumNodes)
+            levelOffsets.add(n -= size);
         List<Pair<Integer, Integer>> levelBounds = new LinkedList<>();
         // bounds per level in reversed storage order (top-down)
         for (int i = 0; i < levelNumNodes.size(); i++)
-            levelBounds.add(new Pair<Integer, Integer>(levelOffsets.get(i), levelOffsets.get(i) + levelNumNodes.get(i)));
+            levelBounds.add(new Pair<>(levelOffsets.get(i), levelOffsets.get(i) + levelNumNodes.get(i)));
         return levelBounds;
     }
 
@@ -281,17 +249,18 @@ public class PackedRTree {
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
         double maxY = rect.getMaxY();
-        ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
-        int numNodes = levelEnds.get(0);
+        List<Pair<Integer, Integer>> levelBounds = generateLevelBounds(numItems, nodeSize);
+        int leafNodesOffset = levelBounds.get(0).first;
+        int numNodes = levelBounds.get(0).second;
         Deque<QueueItem> queue = new LinkedList<QueueItem>();
-        queue.add(new QueueItem(0, levelEnds.size() - 1));
+        queue.add(new QueueItem(0, levelBounds.size() - 1));
         while (queue.size() != 0) {
             QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
             // find the end index of the node
-            int levelEnd = levelEnds.get(level);
+            int levelEnd = levelBounds.get(level).second;
             int end = Math.min(nodeIndex + nodeSize, levelEnd);
             int nodeStart = start + (nodeIndex * NODE_ITEM_LEN);
             // int length = end - nodeIndex;
@@ -312,7 +281,7 @@ public class PackedRTree {
                     continue;
                 long indexOffset = bb.getLong(offset + 32);
                 if (isLeafNode)
-                    searchHits.add(new SearchHit(indexOffset, pos - 1));
+                    searchHits.add(new SearchHit(indexOffset, pos - leafNodesOffset));
                 else
                     queue.add(new QueueItem(indexOffset, level - 1));
             }
@@ -334,17 +303,18 @@ public class PackedRTree {
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
         double maxY = rect.getMaxY();
-        ArrayList<Integer> levelEnds = generateLevelEnds(numItems, nodeSize);
-        int numNodes = levelEnds.get(0);
+        List<Pair<Integer, Integer>> levelBounds = generateLevelBounds(numItems, nodeSize);
+        int leafNodesOffset = levelBounds.get(0).first;
+        int numNodes = levelBounds.get(0).second;
         Deque<QueueItem> queue = new LinkedList<QueueItem>();
-        queue.add(new QueueItem(0, levelEnds.size() - 1));
+        queue.add(new QueueItem(0, levelBounds.size() - 1));
         while (queue.size() != 0) {
             QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
             boolean isLeafNode = nodeIndex >= numNodes - numItems;
             // find the end index of the node
-            int levelBound = levelEnds.get(level);
+            int levelBound = levelBounds.get(level).second;
             int end = Math.min(nodeIndex + nodeSize, levelBound);
             int nodeStart = nodeIndex * NODE_ITEM_LEN;
             skip = nodeStart - dataPos;
@@ -380,7 +350,7 @@ public class PackedRTree {
                 long indexOffset = data.readLong();
                 dataPos += 8;
                 if (isLeafNode)
-                    searchResult.hits.add(new SearchHit(indexOffset, pos - 1));
+                    searchResult.hits.add(new SearchHit(indexOffset, pos - leafNodesOffset));
                 else
                     queue.add(new QueueItem(indexOffset, level - 1));
             }
