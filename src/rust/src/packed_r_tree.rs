@@ -569,10 +569,6 @@ impl PackedRTree {
             return Ok(vec![]);
         }
         let level_bounds = PackedRTree::generate_level_bounds(num_items, branching_factor);
-        let leaf_nodes_offset = level_bounds
-            .first()
-            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
-            .start;
         let feature_begin = index_begin + PackedRTree::index_size(num_items, branching_factor);
         debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, branching_factor: {branching_factor}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
@@ -589,41 +585,16 @@ impl PackedRTree {
         });
         let mut results = Vec::new();
 
-        while let Some(mut node_range) = queue.pop_front() {
-            debug!(
-                "popped node: {node_range:?},  remaining queue len: {}",
-                queue.len()
-            );
-            let is_leaf_node = node_range.level == 0;
-            if is_leaf_node {
-                assert!(node_range.nodes.start >= leaf_nodes_offset);
-            } else {
-                assert!(node_range.nodes.start < leaf_nodes_offset);
-                assert!(node_range.nodes.end < leaf_nodes_offset);
-            }
-            if is_leaf_node {
-                // We can infer the length of *this* feature by getting the start of the *next*
-                // feature, so we get an extra node.
-                // This approach doesn't work for the final node in the index,
-                // but in that case we know that the feature runs to the end of the FGB file and
-                // can make an open ended range request to get "the rest of the data".
-                node_range.nodes.end += 1;
-            }
-
-            // find the end index of the nodes
-            node_range.nodes.end = min(
-                node_range.nodes.end + branching_factor as usize,
-                level_bounds[node_range.level].end,
-            );
-
+        while let Some(node_range) = queue.pop_front() {
+            debug!("next: {node_range:?}. {} items left in queue", queue.len());
             let node_items = read_http_node_items(client, index_begin, &node_range.nodes).await?;
-
-            // search through child nodes
             for (node_pos, node_item) in node_items.iter().enumerate() {
                 if !bounds.intersects(node_item) {
                     continue;
                 }
-                if is_leaf_node {
+
+                if node_range.level == 0 {
+                    // leaf node
                     let start = feature_begin + node_item.offset as usize;
                     if let Some(next_node_item) = &node_items.get(node_pos + 1) {
                         let end = feature_begin + next_node_item.offset as usize;
@@ -636,45 +607,58 @@ impl PackedRTree {
                             range: HttpRange::RangeFrom(start..),
                         });
                     }
-                    continue;
-                }
-
-                let combine_request_node_threshold =
-                    combine_request_threshold / size_of::<NodeItem>();
-
-                // Add node to search recursion
-                match (queue.back_mut(), node_item.offset as usize) {
-                    // There is an existing node for this level, and it's close to this node.
-                    // Merge the ranges to avoid an extra request
-                    (Some(tail), offset)
-                        if tail.level == node_range.level - 1
-                            && offset < tail.nodes.end + combine_request_node_threshold =>
-                    {
-                        debug_assert!(tail.nodes.end < offset);
-                        tail.nodes.end = offset;
+                } else {
+                    let children_level = node_range.level - 1;
+                    let mut children_nodes = node_item.offset as usize
+                        ..(node_item.offset + branching_factor as u64) as usize;
+                    if children_level == 0 {
+                        // Children are leaf nodes.
+                        //
+                        // We can right-size our feature requests if we know the size of our features.
+                        //
+                        // We can infer the length of *this* feature by getting the start of the *next*
+                        // feature, so we get an extra node.
+                        children_nodes.end += 1;
                     }
+                    // stay within level's bounds
+                    children_nodes.end = min(children_nodes.end, level_bounds[children_level].end);
 
-                    (tail, offset) => {
-                        let children_range = NodeRange {
-                            nodes: offset..(offset + 1),
-                            level: node_range.level - 1,
-                        };
+                    let children_range = NodeRange {
+                        nodes: children_nodes,
+                        level: children_level,
+                    };
 
-                        if tail
-                            .as_ref()
-                            .map(|head| head.level == node_range.level - 1)
-                            .unwrap_or(false)
-                        {
-                            debug!("requesting new NodeRange for offset: {offset} rather than merging with distant NodeRange: {tail:?}");
-                        } else {
-                            debug!(
-                                "pushing new level for children NodeRange: {children_range:?} onto Queue with tail: {:?}",
-                                queue.back()
-                            );
-                        }
-
+                    let Some(tail) = queue.back_mut() else {
+                        debug!("Adding new request onto empty queue: {children_range:?}");
                         queue.push_back(children_range);
+                        continue;
+                    };
+
+                    if tail.level != children_level {
+                        debug!("Adding new request for new level: {children_range:?} (existing queue tail: {tail:?})");
+                        queue.push_back(children_range);
+                        continue;
                     }
+
+                    let wasted_bytes = {
+                        if children_range.nodes.start >= tail.nodes.end {
+                            (children_range.nodes.start - tail.nodes.end) * size_of::<NodeItem>()
+                        } else {
+                            // For leaf nodes we try to fetch an extra node - make sure we don't overflow
+                            // due to that off by one.
+                            assert_eq!(children_range.nodes.start, tail.nodes.end - 1);
+                            0
+                        }
+                    };
+                    if wasted_bytes > combine_request_threshold {
+                        debug!("Adding new request for: {children_range:?} rather than merging with distant NodeRange: {tail:?} (would waste {wasted_bytes} bytes)");
+                        queue.push_back(children_range);
+                        continue;
+                    }
+
+                    // Merge the ranges to avoid an extra request
+                    debug!("Extending existing request {tail:?} with nearby children: {:?} (wastes {wasted_bytes} bytes)", &children_range.nodes);
+                    tail.nodes.end = children_range.nodes.end;
                 }
             }
         }
