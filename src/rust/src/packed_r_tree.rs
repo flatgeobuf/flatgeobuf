@@ -557,7 +557,7 @@ impl PackedRTree {
         client: &mut BufferedHttpRangeClient,
         index_begin: usize,
         num_items: usize,
-        node_size: u16,
+        branching_factor: u16,
         min_x: f64,
         min_y: f64,
         max_x: f64,
@@ -568,13 +568,13 @@ impl PackedRTree {
         if num_items == 0 {
             return Ok(vec![]);
         }
-        let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
+        let level_bounds = PackedRTree::generate_level_bounds(num_items, branching_factor);
         let leaf_nodes_offset = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .start;
-        let feature_begin = index_begin + PackedRTree::index_size(num_items, node_size);
-        debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
+        let feature_begin = index_begin + PackedRTree::index_size(num_items, branching_factor);
+        debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, branching_factor: {branching_factor}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
@@ -612,7 +612,7 @@ impl PackedRTree {
 
             // find the end index of the nodes
             node_range.nodes.end = min(
-                node_range.nodes.end + node_size as usize,
+                node_range.nodes.end + branching_factor as usize,
                 level_bounds[node_range.level].end,
             );
 
