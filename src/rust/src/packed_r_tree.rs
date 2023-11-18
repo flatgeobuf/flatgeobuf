@@ -175,10 +175,9 @@ async fn read_http_node_items(
         .await?;
 
     let mut node_items = Vec::with_capacity(node_ids.len());
-    for (idx, _node_id) in node_ids.clone().enumerate() {
-        node_items.push(NodeItem::from_bytes(
-            &bytes[idx * size_of::<NodeItem>()..(idx + 1) * size_of::<NodeItem>()],
-        )?);
+    debug_assert_eq!(bytes.len(), length);
+    for node_item_bytes in bytes.chunks(size_of::<NodeItem>()) {
+        node_items.push(NodeItem::from_bytes(node_item_bytes)?);
     }
     Ok(node_items)
 }
