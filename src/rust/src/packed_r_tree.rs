@@ -10,6 +10,7 @@ use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
+use std::ops::Range;
 
 #[derive(Clone, PartialEq, Debug)]
 #[repr(C)]
@@ -163,21 +164,20 @@ fn read_node_items<R: Read + Seek>(
 async fn read_http_node_items(
     client: &mut BufferedHttpRangeClient,
     base: usize,
-    node_index: usize,
-    num_nodes: usize,
+    node_ids: &Range<usize>,
 ) -> Result<Vec<NodeItem>> {
-    let begin = base + node_index * size_of::<NodeItem>();
-    let length = num_nodes * size_of::<NodeItem>();
+    let begin = base + node_ids.start * size_of::<NodeItem>();
+    let length = node_ids.len() * size_of::<NodeItem>();
     let bytes = client
         // we've  already determined precisely which nodes to fetch - no need for extra.
         .min_req_size(0)
         .get_range(begin, length)
         .await?;
 
-    let mut node_items = Vec::with_capacity(num_nodes);
-    for i in 0..num_nodes {
+    let mut node_items = Vec::with_capacity(node_ids.len());
+    for (idx, _node_id) in node_ids.clone().enumerate() {
         node_items.push(NodeItem::from_bytes(
-            &bytes[i * size_of::<NodeItem>()..(i + 1) * size_of::<NodeItem>()],
+            &bytes[idx * size_of::<NodeItem>()..(idx + 1) * size_of::<NodeItem>()],
         )?);
     }
     Ok(node_items)
@@ -280,7 +280,7 @@ pub struct PackedRTree {
     node_items: Vec<NodeItem>,
     num_leaf_nodes: usize,
     branching_factor: u16,
-    level_bounds: Vec<(usize, usize)>,
+    level_bounds: Vec<Range<usize>>,
 }
 
 impl PackedRTree {
@@ -296,12 +296,12 @@ impl PackedRTree {
             .level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
-            .1;
+            .end;
         self.node_items = vec![NodeItem::create(0); num_nodes]; // Quite slow!
         Ok(())
     }
 
-    fn generate_level_bounds(num_items: usize, node_size: u16) -> Vec<(usize, usize)> {
+    fn generate_level_bounds(num_items: usize, node_size: u16) -> Vec<Range<usize>> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
         assert!(
@@ -331,23 +331,22 @@ impl PackedRTree {
         }
         let mut level_bounds = Vec::with_capacity(level_num_nodes.len());
         for i in 0..level_num_nodes.len() {
-            level_bounds.push((level_offsets[i], level_offsets[i] + level_num_nodes[i]));
+            level_bounds.push(level_offsets[i]..level_offsets[i] + level_num_nodes[i]);
         }
         level_bounds
     }
 
     fn generate_nodes(&mut self) {
         for level in 0..self.level_bounds.len() - 1 {
-            let start_of_children_level = self.level_bounds[level].0;
-            let end_of_children_level = self.level_bounds[level].1;
-            let start_of_parent_level = self.level_bounds[level + 1].0;
+            let children_level = &self.level_bounds[level];
+            let parent_level = &self.level_bounds[level + 1];
 
-            let mut parent_idx = start_of_parent_level;
-            let mut child_idx = start_of_children_level;
-            while child_idx < end_of_children_level {
+            let mut parent_idx = parent_level.start;
+            let mut child_idx = children_level.start;
+            while child_idx < children_level.end {
                 let mut parent_node = NodeItem::create(child_idx as u64);
                 for _j in 0..self.branching_factor {
-                    if child_idx >= end_of_children_level {
+                    if child_idx >= children_level.end {
                         break;
                     }
                     parent_node.expand(&self.node_items[child_idx]);
@@ -415,7 +414,7 @@ impl PackedRTree {
         let num_nodes = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
-            .1;
+            .end;
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::with_capacity(num_nodes),
@@ -457,7 +456,7 @@ impl PackedRTree {
             .level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
-            .0;
+            .start;
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let mut results = Vec::new();
         let mut queue = VecDeque::new();
@@ -469,7 +468,7 @@ impl PackedRTree {
             // find the end index of the node
             let end = min(
                 node_index + self.branching_factor as usize,
-                self.level_bounds[level].1,
+                self.level_bounds[level].end,
             );
             // search through child nodes
             for pos in node_index..end {
@@ -501,7 +500,10 @@ impl PackedRTree {
     ) -> Result<Vec<SearchResultItem>> {
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
-        let (leaf_nodes_offset, num_nodes) = level_bounds
+        let Range {
+            start: leaf_nodes_offset,
+            end: num_nodes,
+        } = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0");
 
@@ -519,7 +521,7 @@ impl PackedRTree {
             trace!("popped next node_index: {node_index}, level: {level}");
             let is_leaf_node = node_index >= num_nodes - num_items;
             // find the end index of the node
-            let end = min(node_index + node_size as usize, level_bounds[level].1);
+            let end = min(node_index + node_size as usize, level_bounds[level].end);
             let length = end - node_index;
             let node_items = read_node_items(data, index_base, node_index, length)?;
             // search through child nodes
@@ -570,14 +572,14 @@ impl PackedRTree {
         let leaf_nodes_offset = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
-            .0;
+            .start;
         let feature_begin = index_begin + PackedRTree::index_size(num_items, node_size);
         debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, node_size: {node_size}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
 
         #[derive(Debug, PartialEq, Eq)]
         struct NodeRange {
             level: usize,
-            nodes: std::ops::Range<usize>,
+            nodes: Range<usize>,
         }
 
         let mut queue = VecDeque::new();
@@ -587,40 +589,37 @@ impl PackedRTree {
         });
         let mut results = Vec::new();
 
-        while let Some(next) = queue.pop_front() {
+        while let Some(mut next) = queue.pop_front() {
             debug!(
                 "popped node: {next:?},  remaining queue len: {}",
                 queue.len()
             );
-            let start_node = next.nodes.start;
             let is_leaf_node = next.level == 0;
             if is_leaf_node {
-                assert!(start_node >= leaf_nodes_offset);
+                assert!(next.nodes.start >= leaf_nodes_offset);
             } else {
-                assert!(start_node < leaf_nodes_offset);
+                assert!(next.nodes.start < leaf_nodes_offset);
                 assert!(next.nodes.end < leaf_nodes_offset);
             }
-            // find the end index of the nodes
-            let mut end_node = min(
-                next.nodes.end + node_size as usize,
-                level_bounds[next.level].1,
-            );
-            if is_leaf_node && end_node < level_bounds[next.level].1 {
+            if is_leaf_node {
                 // We can infer the length of *this* feature by getting the start of the *next*
                 // feature, so we get an extra node.
                 // This approach doesn't work for the final node in the index,
                 // but in that case we know that the feature runs to the end of the FGB file and
                 // can make an open ended range request to get "the rest of the data".
-                end_node += 1;
+                next.nodes.end += 1;
             }
-            let num_nodes = end_node - start_node;
-            let node_items =
-                read_http_node_items(client, index_begin, start_node, num_nodes).await?;
+
+            // find the end index of the nodes
+            next.nodes.end = min(
+                next.nodes.end + node_size as usize,
+                level_bounds[next.level].end,
+            );
+
+            let node_items = read_http_node_items(client, index_begin, &next.nodes).await?;
 
             // search through child nodes
-            for node_id in start_node..end_node {
-                let node_pos = node_id - start_node;
-                let node_item = &node_items[node_pos];
+            for (node_pos, node_item) in node_items.iter().enumerate() {
                 if !bounds.intersects(node_item) {
                     continue;
                 }
@@ -783,7 +782,7 @@ mod inspect {
             processor.dataset_begin(Some("PackedRTree"))?;
             let mut fid = 0;
             for (levelno, level) in self.level_bounds.iter().rev().enumerate() {
-                for pos in level.0..level.1 {
+                for pos in level.clone() {
                     let node = &self.node_items[pos];
                     processor.feature_begin(fid)?;
                     processor.properties_begin()?;
