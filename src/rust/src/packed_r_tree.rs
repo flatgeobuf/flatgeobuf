@@ -611,15 +611,15 @@ impl PackedRTree {
                     let mut children_nodes = node_item.offset as usize
                         ..(node_item.offset + branching_factor as u64) as usize;
                     if children_level == 0 {
-                        // Children are leaf nodes.
+                        // These children are leaf nodes.
                         //
-                        // We can right-size our feature requests if we know the size of our features.
+                        // We can right-size our feature requests if we know the size of each feature.
                         //
-                        // We can infer the length of *this* feature by getting the start of the *next*
-                        // feature, so we get an extra node.
+                        // To infer the length of *this* feature, we need the start of the *next*
+                        // feature, so we get an extra node here.
                         children_nodes.end += 1;
                     }
-                    // stay within level's bounds
+                    // always stay within level's bounds
                     children_nodes.end = min(children_nodes.end, level_bounds[children_level].end);
 
                     let children_range = NodeRange {
@@ -643,16 +643,19 @@ impl PackedRTree {
                         if children_range.nodes.start >= tail.nodes.end {
                             (children_range.nodes.start - tail.nodes.end) * size_of::<NodeItem>()
                         } else {
-                            // For leaf nodes, we try to fetch one extra node - make sure we don't overflow
-                            // due to that off by one.
+                            // To compute feature size, we fetch an extra leaf node, but computing
+                            // wasted_bytes for adjacent ranges will overflow in that case, so
+                            // we skip that computation.
+                            //
+                            // But let's make sure we're in the state we think we are:
                             debug_assert_eq!(
-                                children_range.nodes.start,
-                                tail.nodes.end - 1,
+                                children_range.nodes.start + 1,
+                                tail.nodes.end,
                                 "we only ever fetch one extra node"
                             );
                             debug_assert_eq!(
                                 children_level, 0,
-                                "extra node fetching should only happen with leaf nodes"
+                                "extra node fetching only happens with leaf nodes"
                             );
                             0
                         }
