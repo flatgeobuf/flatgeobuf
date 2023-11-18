@@ -643,9 +643,17 @@ impl PackedRTree {
                         if children_range.nodes.start >= tail.nodes.end {
                             (children_range.nodes.start - tail.nodes.end) * size_of::<NodeItem>()
                         } else {
-                            // For leaf nodes we try to fetch an extra node - make sure we don't overflow
+                            // For leaf nodes, we try to fetch one extra node - make sure we don't overflow
                             // due to that off by one.
-                            assert_eq!(children_range.nodes.start, tail.nodes.end - 1);
+                            debug_assert_eq!(
+                                children_range.nodes.start,
+                                tail.nodes.end - 1,
+                                "we only ever fetch one extra node"
+                            );
+                            debug_assert_eq!(
+                                children_level, 0,
+                                "extra node fetching should only happen with leaf nodes"
+                            );
                             0
                         }
                     };
