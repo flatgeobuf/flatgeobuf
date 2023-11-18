@@ -589,17 +589,17 @@ impl PackedRTree {
         });
         let mut results = Vec::new();
 
-        while let Some(mut next) = queue.pop_front() {
+        while let Some(mut node_range) = queue.pop_front() {
             debug!(
-                "popped node: {next:?},  remaining queue len: {}",
+                "popped node: {node_range:?},  remaining queue len: {}",
                 queue.len()
             );
-            let is_leaf_node = next.level == 0;
+            let is_leaf_node = node_range.level == 0;
             if is_leaf_node {
-                assert!(next.nodes.start >= leaf_nodes_offset);
+                assert!(node_range.nodes.start >= leaf_nodes_offset);
             } else {
-                assert!(next.nodes.start < leaf_nodes_offset);
-                assert!(next.nodes.end < leaf_nodes_offset);
+                assert!(node_range.nodes.start < leaf_nodes_offset);
+                assert!(node_range.nodes.end < leaf_nodes_offset);
             }
             if is_leaf_node {
                 // We can infer the length of *this* feature by getting the start of the *next*
@@ -607,16 +607,16 @@ impl PackedRTree {
                 // This approach doesn't work for the final node in the index,
                 // but in that case we know that the feature runs to the end of the FGB file and
                 // can make an open ended range request to get "the rest of the data".
-                next.nodes.end += 1;
+                node_range.nodes.end += 1;
             }
 
             // find the end index of the nodes
-            next.nodes.end = min(
-                next.nodes.end + node_size as usize,
-                level_bounds[next.level].end,
+            node_range.nodes.end = min(
+                node_range.nodes.end + node_size as usize,
+                level_bounds[node_range.level].end,
             );
 
-            let node_items = read_http_node_items(client, index_begin, &next.nodes).await?;
+            let node_items = read_http_node_items(client, index_begin, &node_range.nodes).await?;
 
             // search through child nodes
             for (node_pos, node_item) in node_items.iter().enumerate() {
@@ -647,7 +647,7 @@ impl PackedRTree {
                     // There is an existing node for this level, and it's close to this node.
                     // Merge the ranges to avoid an extra request
                     (Some(tail), offset)
-                        if tail.level == next.level - 1
+                        if tail.level == node_range.level - 1
                             && offset < tail.nodes.end + combine_request_node_threshold =>
                     {
                         debug_assert!(tail.nodes.end < offset);
@@ -655,25 +655,25 @@ impl PackedRTree {
                     }
 
                     (tail, offset) => {
-                        let node_range = NodeRange {
+                        let children_range = NodeRange {
                             nodes: offset..(offset + 1),
-                            level: next.level - 1,
+                            level: node_range.level - 1,
                         };
 
                         if tail
                             .as_ref()
-                            .map(|head| head.level == next.level - 1)
+                            .map(|head| head.level == node_range.level - 1)
                             .unwrap_or(false)
                         {
                             debug!("requesting new NodeRange for offset: {offset} rather than merging with distant NodeRange: {tail:?}");
                         } else {
                             debug!(
-                                "pushing new level for NodeRange: {node_range:?} onto Queue with tail: {:?}",
+                                "pushing new level for children NodeRange: {children_range:?} onto Queue with tail: {:?}",
                                 queue.back()
                             );
                         }
 
-                        queue.push_back(node_range);
+                        queue.push_back(children_range);
                     }
                 }
             }
