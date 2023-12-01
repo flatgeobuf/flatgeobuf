@@ -601,7 +601,7 @@ impl PackedRTree {
                             range: HttpRange::Range(start..end),
                         });
                     } else {
-                        debug_assert_eq!(node_pos, num_items);
+                        debug_assert_eq!(node_pos, num_items - 1);
                         results.push(HttpSearchResultItem {
                             range: HttpRange::RangeFrom(start..),
                         });
