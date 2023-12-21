@@ -300,7 +300,7 @@ class BufferedHttpRangeClient {
 
         this.bytesEverFetched += lengthToFetch;
         Logger.debug(
-            `requesting for new Range: ${start}-${start + length - 1}`,
+            `requesting for new Range: ${start}-${start + lengthToFetch - 1}`,
         );
         this.buffer = await this.httpClient.getRange(
             start,

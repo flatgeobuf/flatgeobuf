@@ -253,7 +253,7 @@ export async function* streamSearch(
                     nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
             ) {
                 Logger.debug(
-                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newOffset: ${nearestNodeRange.endNodeIdx()} -> ${firstChildNodeIdx}`,
+                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newEndNodeIdx: ${nearestNodeRange.endNodeIdx()} -> ${firstChildNodeIdx}`,
                 );
                 nearestNodeRange.extendEndNodeIdx(Number(firstChildNodeIdx));
                 continue;
