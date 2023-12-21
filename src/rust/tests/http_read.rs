@@ -32,6 +32,20 @@ mod http {
     }
 
     #[tokio::test]
+    async fn http_bbox_read_last_feature() -> Result<()> {
+        let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
+        let fgb = HttpFgbReader::open(url).await.unwrap();
+        assert_eq!(fgb.header().features_count(), 179);
+        let mut feature_iter = fgb.select_bbox(-180.0, -90.0, 180.0, 90.0).await?;
+        let mut count = 0;
+        while let Some(_next) = feature_iter.next().await? {
+            count += 1;
+        }
+        assert_eq!(count, 179);
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn http_read_unknown_feature_count() -> Result<()> {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/unknown_feature_count.fgb";
         let fgb = HttpFgbReader::open(url).await?;
