@@ -59,7 +59,8 @@ export class HttpReader {
             let result = 0;
             let i: number;
             for (i = 0; i < prefetchedLayers; i++) {
-                const layer_width = assumedBranchingFactor ** i * NODE_ITEM_BYTE_LEN;
+                const layer_width =
+                    assumedBranchingFactor ** i * NODE_ITEM_BYTE_LEN;
                 result += layer_width;
             }
             return result;
@@ -146,14 +147,16 @@ export class HttpReader {
             let [, , featureLength] = searchResult;
             if (!featureLength) {
                 Logger.info('final feature');
-                // Normally we get the length by subtracting between adjacent
-                // nodes from the index, which we can't do for the _very_ last
-                // feature, so we guess. Guessing incorrectly doesn't produce
-                // incorrect results, it only means we're either fetching more
-                // data than we'll use or that we'll automatically issue an
-                // extra request to get any remaining feature data.
-                const guessLength = Config.global.extraRequestThreshold();
-                featureLength = guessLength;
+                // Normally we get the feature length by subtracting between
+                // adjacent nodes from the index, which we can't do for the
+                // _very_ last feature in a dataset.
+                //
+                // We could *guess* the size, but we'd risk overshooting the length,
+                // which will cause some webservers to return HTTP 416: Unsatisfiable range
+                //
+                // So instead we fetch only the final features byte length, stored in the
+                // first 4 bytes.
+                featureLength = 4;
             }
 
             if (currentBatch.length == 0) {
@@ -218,12 +221,20 @@ export class HttpReader {
         // A new feature client is needed for each batch to own the underlying buffer as features are yielded.
         const featureClient = this.buildFeatureClient();
 
+        let minFeatureReqLength = batchSize;
         for (const [featureOffset] of batch) {
             yield await this.readFeature(
                 featureClient,
                 featureOffset,
-                batchSize,
+                minFeatureReqLength,
             );
+            // Only set minFeatureReqLength for the first request.
+            //
+            // This should only affect a batch that contains the final feature, otherwise
+            // we've calculated `batchSize` to get all the data we need for the batch.
+            // For the very final feature in a dataset, we don't know it's length, so we
+            // will end up executing an extra request for that batch.
+            minFeatureReqLength = 0;
         }
         featureClient.logUsage('feature');
     }
