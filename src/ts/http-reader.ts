@@ -5,7 +5,7 @@ import {
     Rect,
     calcTreeSize,
     DEFAULT_NODE_SIZE,
-    NODE_ITEM_LEN,
+    NODE_ITEM_BYTE_LEN,
     streamSearch,
 } from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
@@ -59,7 +59,7 @@ export class HttpReader {
             let result = 0;
             let i: number;
             for (i = 0; i < prefetchedLayers; i++) {
-                const layer_width = assumedBranchingFactor ** i * NODE_ITEM_LEN;
+                const layer_width = assumedBranchingFactor ** i * NODE_ITEM_BYTE_LEN;
                 result += layer_width;
             }
             return result;
