@@ -36,12 +36,13 @@ mod http {
         let url = "https://github.com/flatgeobuf/flatgeobuf/raw/master/test/data/countries.fgb";
         let fgb = HttpFgbReader::open(url).await.unwrap();
         assert_eq!(fgb.header().features_count(), 179);
-        let mut feature_iter = fgb.select_bbox(-180.0, -90.0, 180.0, 90.0).await?;
+        // I externally verified that this covers the final feature by previously iterating over *all* the features in the dataset.
+        let mut feature_iter = fgb.select_bbox(-61.2, -51.85, -60.0, -51.25).await?;
         let mut count = 0;
         while let Some(_next) = feature_iter.next().await? {
             count += 1;
         }
-        assert_eq!(count, 179);
+        assert_eq!(count, 2);
         Ok(())
     }
 

@@ -38,4 +38,23 @@ describe('http reader', () => {
         ];
         expect(actual).toEqual(expected);
     });
+
+    it('can fetch the final feature', async () => {
+        const testUrl = `http://localhost:${lws.config.port}/test/data/countries.fgb`;
+        const rect = {
+            minX: -61.2,
+            minY: -51.85,
+            maxX: -60.0,
+            maxY: -51.25,
+        };
+        const reader = await HttpReader.open(testUrl);
+        expect(179).toBe(reader.header.featuresCount);
+
+        let featureCount = 0;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for await (const _feature of reader.selectBbox(rect)) {
+            featureCount++;
+        }
+        expect(featureCount).toBe(2);
+    });
 });

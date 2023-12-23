@@ -324,14 +324,20 @@ impl FeatureBatch {
         let last = feature_ranges
             .last()
             .expect("We never create empty batches");
-        let covering_range = first.clone().with_end(last.end());
-        let min_request_size = match covering_range.length() {
-            // Should only happen for the final feature batch.
-            None => DEFAULT_HTTP_FETCH_SIZE,
+
+        // `last.length()` should only be None if this batch includes the final feature
+        // in the dataset. Since we can't infer its actual length, we'll fetch only
+        // the first 4 bytes of that feature buffer, which will tell us the actual length
+        // of the feature buffer for the subsequent request.
+        let last_feature_length = last.length().unwrap_or(4);
+
+        let covering_range = first.start()..last.start() + last_feature_length;
+
+        let min_request_size = covering_range
+            .len()
             // Since it's all held in memory, don't fetch more than DEFAULT_HTTP_FETCH_SIZE at a time
             // unless necessary.
-            Some(length) => length.min(DEFAULT_HTTP_FETCH_SIZE),
-        };
+            .min(DEFAULT_HTTP_FETCH_SIZE);
 
         Self {
             feature_ranges: feature_ranges.into_iter(),
@@ -344,6 +350,13 @@ impl FeatureBatch {
         let Some(feature_range) = self.feature_ranges.next() else {
             return Ok(None);
         };
+        // Only set min_request_size for the first request.
+        //
+        // This should only affect a batch that contains the final feature, otherwise
+        // we've calculated `batchSize` to get all the data we need for the batch.
+        // For the very final feature in a dataset, we don't know it's length, so we
+        // will end up executing an extra request for that batch.
+        self.min_request_size = 0;
 
         let mut pos = feature_range.start();
         let mut feature_buffer = BytesMut::from(client.get_range(pos, 4).await?);
