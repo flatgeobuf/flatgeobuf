@@ -1,4 +1,4 @@
-import { IFeature } from './generic/feature.js';
+import { IFeature } from '../generic/feature.js';
 import OlFeature from 'ol/Feature.js';
 
 import {
@@ -6,9 +6,9 @@ import {
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
-} from './ol/featurecollection.js';
-import { HeaderMetaFn } from './generic.js';
-import { Rect } from './packedrtree.js';
+} from './featurecollection.js';
+import { HeaderMetaFn } from '../generic.js';
+import { Rect } from '../packedrtree.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf

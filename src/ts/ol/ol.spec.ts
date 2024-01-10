@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 
-import { arrayToStream, takeAsync } from './streams/utils.js';
+import { arrayToStream, takeAsync } from '../streams/utils.js';
 import { deserialize, serialize } from './ol.js';
 
 import Feature from 'ol/Feature.js';

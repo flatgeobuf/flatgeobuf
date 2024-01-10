@@ -16,9 +16,18 @@
     "lib/**/*",
     "dist/**/*"
   ],
-  "types": "lib/mjs/flatgeobuf.d.ts",
-  "module": "lib/mjs/flatgeobuf.js",
-  "main": "lib/mjs/flatgeobuf.js",
+  "exports": {
+    ".": {
+      "import": "lib/mjs/flatgeobuf.js",
+      "require": "lib/mjs/flatgeobuf.js",
+      "types": "lib/mjs/flatgeobuf.d.ts"
+    },
+    "./ol": {
+      "import": "lib/mjs/ol.js",
+      "require": "lib/mjs/ol.js",
+      "types": "lib/mjs/ol.d.ts"
+    }
+  },
   "type": "module",
   "repository": {
     "type": "git",
