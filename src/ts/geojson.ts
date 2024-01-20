@@ -11,6 +11,7 @@ import { Rect } from './packedrtree.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { HeaderMetaFn } from './generic.js';
 
+
 /**
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
@@ -19,6 +20,43 @@ export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
     const bytes = fcSerialize(geojson);
     return bytes;
 }
+
+/**
+ * Deserialize FlatGeobuf into GeoJSON features
+ * @param input Input byte array
+ * @param fromFeature Callback that receives GeoJSON features
+ * @param rect Filter rectangle
+ */
+export function deserialize(
+    input: Uint8Array,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): GeoJsonFeatureCollection;
+
+/**
+ * Deserialize FlatGeobuf into GeoJSON features
+ * @param input Input string
+ * @param fromFeature Callback that receives GeoJSON features
+ * @param rect Filter rectangle
+ */
+export function deserialize(
+    input: string,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): AsyncGenerator<IGeoJsonFeature, any, unknown>;
+
+/**
+ * Deserialize FlatGeobuf into GeoJSON features
+ * @param input stream
+ * @param fromFeature Callback that receives GeoJSON features
+ * @param rect Filter rectangle
+ */
+export function deserialize(
+    input: ReadableStream,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn
+): AsyncGenerator<IGeoJsonFeature>;
+
 
 /**
  * Deserialize FlatGeobuf into GeoJSON

@@ -9,14 +9,49 @@ import { Rect } from './packedrtree.js';
 import { IFeature } from './generic/feature.js';
 import HeaderMeta from './header-meta.js';
 
+export { GeometryType } from './flat-geobuf/geometry-type.js';
+export { ColumnType } from './flat-geobuf/column-type.js';
+
+/** Callback function for receiving header metadata */
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
  * Deserialize FlatGeobuf into generic features
- * @param input Input byte array, stream or string
- * @param fromFeature Callback that recieves generic features
+ * @param input Input byte array
+ * @param fromFeature Callback that receives generic features
  * @param rect Filter rectangle
  */
+export function deserialize(
+    input: Uint8Array,
+    fromFeature: FromFeatureFn,
+    rect?: Rect,
+): IFeature[];
+
+/**
+ * Deserialize FlatGeobuf into generic features
+ * @param input Input string
+ * @param fromFeature Callback that receives generic features
+ * @param rect Filter rectangle
+ */
+export function deserialize(
+    input: string,
+    fromFeature: FromFeatureFn,
+    rect?: Rect,
+): AsyncGenerator<IFeature, any, unknown>;
+
+/**
+ * Deserialize FlatGeobuf into generic features
+ * @param input stream
+ * @param fromFeature Callback that receives generic features
+ * @param rect Filter rectangle
+ */
+export function deserialize(
+    input: ReadableStream,
+    fromFeature: FromFeatureFn,
+    rect?: Rect,
+): AsyncGenerator<IFeature>;
+
+/** Implementation */
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
     fromFeature: FromFeatureFn,
@@ -30,6 +65,3 @@ export function deserialize(
 }
 
 export { serialize } from './generic/featurecollection.js';
-
-export { GeometryType } from './flat-geobuf/geometry-type.js';
-export { ColumnType } from './flat-geobuf/column-type.js';
