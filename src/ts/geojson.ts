@@ -11,7 +11,6 @@ import { Rect } from './packedrtree.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { HeaderMetaFn } from './generic.js';
 
-
 /**
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
@@ -56,7 +55,6 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn
 ): AsyncGenerator<IGeoJsonFeature>;
-
 
 /**
  * Deserialize FlatGeobuf into GeoJSON
