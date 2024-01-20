@@ -16,39 +16,38 @@ export { ColumnType } from './flat-geobuf/column-type.js';
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
- * Deserialize FlatGeobuf into generic features
- * @param input Input byte array
- * @param fromFeature Callback that receives generic features
- * @param rect Filter rectangle
- */
-export function deserialize(
-    input: Uint8Array,
-    fromFeature: FromFeatureFn,
-    rect?: Rect,
-): IFeature[];
-
-/**
- * Deserialize FlatGeobuf into generic features
+ * Deserialize FlatGeobuf from a URL into generic features
+ * @note Supports spatial filtering
  * @param input Input string
  * @param fromFeature Callback that receives generic features
  * @param rect Filter rectangle
  */
 export function deserialize(
-    input: string,
+    url: string,
     fromFeature: FromFeatureFn,
     rect?: Rect,
 ): AsyncGenerator<IFeature, any, unknown>;
 
 /**
- * Deserialize FlatGeobuf into generic features
- * @param input stream
+ * Deserialize FlatGeobuf from a typed array into generic features
+ * @note Does not support spatial filtering
+ * @param typedArray Input byte array
  * @param fromFeature Callback that receives generic features
- * @param rect Filter rectangle
+ */
+export function deserialize(
+    typedArray: Uint8Array,
+    fromFeature: FromFeatureFn,
+): IFeature[];
+
+/**
+ * Deserialize FlatGeobuf from a stream into generic features
+ * @note Does not support spatial filtering
+ * @param stream stream
+ * @param fromFeature Callback that receives generic features
  */
 export function deserialize(
     input: ReadableStream,
     fromFeature: FromFeatureFn,
-    rect?: Rect,
 ): AsyncGenerator<IFeature>;
 
 /** Implementation */
@@ -56,7 +55,7 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     fromFeature: FromFeatureFn,
     rect?: Rect,
-): any[] | AsyncGenerator<IFeature> {
+): IFeature[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array)
         return deserializeArray(input, fromFeature);
     else if (input instanceof ReadableStream)
