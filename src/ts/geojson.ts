@@ -23,6 +23,7 @@ export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
 /**
  * Deserialize FlatGeobuf into GeoJSON features
  * @param url Input string
+ * @param rect Filter rectangle - NOT USED
  * @param headerMetaFn Callback that will receive header metadata when available
  */
 export function deserialize(
@@ -35,10 +36,12 @@ export function deserialize(
  * Deserialize FlatGeobuf from a typed array into GeoJSON features
  * @note Does not support spatial filtering
  * @param typedArray Input byte array
+ * @param rect Filter rectangle - NOT USED
  * @param headerMetaFn Callback that will receive header metadata when available
  */
 export function deserialize(
     typedArray: Uint8Array,
+    rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
 ): GeoJsonFeatureCollection;
 
@@ -46,22 +49,24 @@ export function deserialize(
  * Deserialize FlatGeobuf from a stream into GeoJSON features
  * @note Does not support spatial filtering
  * @param stream stream
+ * @param rect Filter rectangle
  * @param headerMetaFn Callback that will receive header metadata when available
  */
 export function deserialize(
     stream: ReadableStream,
+    rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /** Implementation */
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
-    rectOrFn?: Rect | HeaderMetaFn,
+    rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array)
-        return fcDeserialize(input, rectOrFn as HeaderMetaFn);
+        return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, rectOrFn as HeaderMetaFn);
-    else return fcDeserializeFiltered(input, rectOrFn as Rect, headerMetaFn);
+        return fcDeserializeStream(input, headerMetaFn);
+    else return fcDeserializeFiltered(input, rect!, headerMetaFn);
 }
