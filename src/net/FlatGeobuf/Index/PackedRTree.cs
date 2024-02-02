@@ -125,7 +125,7 @@ namespace FlatGeobuf.Index
                 var length = end - nodeIndex;
                 var stream = readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN);
                 var start = stream.Position;
-                using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+                using var reader = new BinaryReader(stream, Encoding.UTF8, true);
                 // search through child nodes
                 for (var pos = nodeIndex; pos < end; pos++)
                 {

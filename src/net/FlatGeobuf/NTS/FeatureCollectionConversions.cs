@@ -116,7 +116,7 @@ namespace FlatGeobuf.NTS
 
         public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null)
         {
-            using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, true);
             var header = Helpers.ReadHeader(stream, out var headerSize).UnPack();
 
             var count = header.FeaturesCount;

@@ -13,13 +13,13 @@ namespace FlatGeobuf {
     public static class Helpers {
         public static Header ReadHeader(Stream stream)
         {
-            var reader = new BinaryReader(stream, Encoding.UTF8, false);
+            var reader = new BinaryReader(stream, Encoding.UTF8, true);
             return ReadHeader(reader, out _);
         }
 
         public static Header ReadHeader(Stream stream, out int headerSize)
         {
-            var reader = new BinaryReader(stream, Encoding.UTF8, false);
+            var reader = new BinaryReader(stream, Encoding.UTF8, true);
             return ReadHeader(reader, out headerSize);
         }
 

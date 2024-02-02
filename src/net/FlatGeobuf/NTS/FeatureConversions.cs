@@ -103,7 +103,7 @@ namespace FlatGeobuf.NTS
                 
                 var propertiesArray = feature.GetPropertiesArray();
                 var memoryStream = new MemoryStream(propertiesArray);
-                using var reader = new BinaryReader(memoryStream, Encoding.UTF8, false);
+                using var reader = new BinaryReader(memoryStream, Encoding.UTF8, true);
                 attributesTable = new AttributesTable();
                 while (memoryStream.Position < memoryStream.Length)
                 {
