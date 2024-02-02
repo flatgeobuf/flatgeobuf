@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.FlatBuffers;
@@ -12,13 +13,13 @@ namespace FlatGeobuf {
     public static class Helpers {
         public static Header ReadHeader(Stream stream)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream, Encoding.UTF8, true);
             return ReadHeader(reader, out _);
         }
 
         public static Header ReadHeader(Stream stream, out int headerSize)
         {
-            var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream, Encoding.UTF8, true);
             return ReadHeader(reader, out headerSize);
         }
 

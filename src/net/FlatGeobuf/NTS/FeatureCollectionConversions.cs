@@ -9,6 +9,7 @@ using FlatGeobuf.Index;
 using NetTopologySuite.Geometries;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
+using System.Text;
 
 namespace FlatGeobuf.NTS
 {
@@ -115,7 +116,7 @@ namespace FlatGeobuf.NTS
 
         public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null)
         {
-            var reader = new BinaryReader(stream);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, true);
             var header = Helpers.ReadHeader(stream, out var headerSize).UnPack();
 
             var count = header.FeaturesCount;
