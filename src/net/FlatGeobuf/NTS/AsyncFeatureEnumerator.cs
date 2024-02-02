@@ -200,14 +200,23 @@ namespace FlatGeobuf.NTS
             ReadIndexAsync(HeaderT header, Stream stream, Envelope rect, CancellationToken token)
         {
             int treeSize = (int)PackedRTree.CalcSize(header.FeaturesCount, header.IndexNodeSize);
-            byte[] treeData = ArrayPool<byte>.Shared.Rent(treeSize);
-            int numRead = await stream.ReadAsync(treeData, 0, treeSize, token);
-            if (numRead != treeSize) throw new InvalidDataException("Insufficient stream size");
+            var dataOffset = stream.Position + treeSize;
+            List<(long Offset, ulong Index)> filter;
+            if (stream.CanSeek)
+            {
+                filter = PackedRTree.StreamSearch(stream, header.FeaturesCount, header.IndexNodeSize, rect);
+                stream.Seek(dataOffset, SeekOrigin.Begin);
+            }
+            else
+            {
+                byte[] treeData = ArrayPool<byte>.Shared.Rent(treeSize);
+                int numRead = await stream.ReadAsync(treeData, 0, treeSize, token);
+                if (numRead != treeSize) throw new InvalidDataException("Insufficient stream size");
 
-            // Read the spatial index
-            var filter = PackedRTree.StreamSearch(new MemoryStream(treeData, 0, treeSize), header.FeaturesCount, header.IndexNodeSize, rect);
-
-            ArrayPool<byte>.Shared.Return(treeData);
+                // Read the spatial index
+                filter = PackedRTree.StreamSearch(new MemoryStream(treeData, 0, treeSize), header.FeaturesCount, header.IndexNodeSize, rect);
+                ArrayPool<byte>.Shared.Return(treeData);
+            }
             return filter;
         }
 

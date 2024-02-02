@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.Index
@@ -60,8 +61,9 @@ namespace FlatGeobuf.Index
             return levelBounds;
         }
 
-        internal static List<(long Offset, ulong Index)> StreamSearch(MemoryStream stream, ulong numItems, ushort nodeSize, Envelope rect)
+        internal static List<(long Offset, ulong Index)> StreamSearch(Stream stream, ulong numItems, ushort nodeSize, Envelope rect)
         {
+            var treePosition = stream.Position;
             var minX = rect.MinX;
             var minY = rect.MinY;
             var maxX = rect.MaxX;
@@ -71,7 +73,7 @@ namespace FlatGeobuf.Index
             var numNodes = levelBounds.First().End;
             var stack = new Stack<(ulong NodeIndex, int Level)>();
             stack.Push((0UL, levelBounds.Count() - 1));
-            using var reader = new BinaryReader(stream);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, true);
             var res = new List<(long Offset, ulong Index)>((int)numItems);
             while (stack.Count != 0)
             {
@@ -80,12 +82,12 @@ namespace FlatGeobuf.Index
                 // find the end index of the node
                 var levelBound = levelBounds[level].End;
                 var end = Math.Min(nodeIndex + nodeSize, levelBound);
-                stream.Seek((long)(nodeIndex * NODE_ITEM_LEN), SeekOrigin.Begin);
-                var start = stream.Position;
+                stream.Seek(treePosition + (long)(nodeIndex * NODE_ITEM_LEN), SeekOrigin.Begin);
+                var start = (long)(nodeIndex * NODE_ITEM_LEN);
                 // search through child nodes
                 for (var pos = nodeIndex; pos < end; pos++)
                 {
-                    stream.Seek(start + (long)((pos - nodeIndex) * NODE_ITEM_LEN), SeekOrigin.Begin);
+                    stream.Seek(treePosition + start + (long)((pos - nodeIndex) * NODE_ITEM_LEN), SeekOrigin.Begin);
                     if (maxX < reader.ReadDouble()) continue; // maxX < nodeMinX
                     if (maxY < reader.ReadDouble()) continue; // maxY < nodeMinY
                     if (minX > reader.ReadDouble()) continue; // minX > nodeMaxX
@@ -123,7 +125,7 @@ namespace FlatGeobuf.Index
                 var length = end - nodeIndex;
                 var stream = readNode(nodeIndex * NODE_ITEM_LEN, length * NODE_ITEM_LEN);
                 var start = stream.Position;
-                var reader = new BinaryReader(stream);
+                using var reader = new BinaryReader(stream, Encoding.UTF8, false);
                 // search through child nodes
                 for (var pos = nodeIndex; pos < end; pos++)
                 {
