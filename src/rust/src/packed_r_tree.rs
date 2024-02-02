@@ -5,7 +5,9 @@ use crate::Result;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(feature = "http")]
-use http_range_client::BufferedHttpRangeClient;
+use http_range_client::{
+    AsyncBufferedHttpRangeClient, AsyncHttpRangeClient, BufferedHttpRangeClient,
+};
 use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -161,8 +163,8 @@ fn read_node_items<R: Read + Seek>(
 
 /// Read partial item vec from http
 #[cfg(feature = "http")]
-async fn read_http_node_items(
-    client: &mut BufferedHttpRangeClient,
+async fn read_http_node_items<T: AsyncHttpRangeClient>(
+    client: &mut AsyncBufferedHttpRangeClient<T>,
     base: usize,
     node_ids: &Range<usize>,
 ) -> Result<Vec<NodeItem>> {
@@ -552,8 +554,8 @@ impl PackedRTree {
 
     #[cfg(feature = "http")]
     #[allow(clippy::too_many_arguments)]
-    pub async fn http_stream_search(
-        client: &mut BufferedHttpRangeClient,
+    pub async fn http_stream_search<T: AsyncHttpRangeClient>(
+        client: &mut AsyncBufferedHttpRangeClient<T>,
         index_begin: usize,
         num_items: usize,
         branching_factor: u16,
