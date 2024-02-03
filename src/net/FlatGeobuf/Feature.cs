@@ -13,9 +13,10 @@ public struct Feature : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_3_3(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_5_26(); }
   public static Feature GetRootAsFeature(ByteBuffer _bb) { return GetRootAsFeature(_bb, new Feature()); }
   public static Feature GetRootAsFeature(ByteBuffer _bb, Feature obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static bool VerifyFeature(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, FeatureVerify.Verify); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public Feature __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
@@ -117,5 +118,17 @@ public class FeatureT
   }
 }
 
+
+static public class FeatureVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyTable(tablePos, 4 /*Geometry*/, FlatGeobuf.GeometryVerify.Verify, false)
+      && verifier.VerifyVectorOfData(tablePos, 6 /*Properties*/, 1 /*byte*/, false)
+      && verifier.VerifyVectorOfTables(tablePos, 8 /*Columns*/, FlatGeobuf.ColumnVerify.Verify, false)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }

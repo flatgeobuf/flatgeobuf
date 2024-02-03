@@ -13,7 +13,7 @@ public struct Crs : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_3_3(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_5_26(); }
   public static Crs GetRootAsCrs(ByteBuffer _bb) { return GetRootAsCrs(_bb, new Crs()); }
   public static Crs GetRootAsCrs(ByteBuffer _bb, Crs obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -134,5 +134,20 @@ public class CrsT
   }
 }
 
+
+static public class CrsVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyString(tablePos, 4 /*Org*/, false)
+      && verifier.VerifyField(tablePos, 6 /*Code*/, 4 /*int*/, 4, false)
+      && verifier.VerifyString(tablePos, 8 /*Name*/, false)
+      && verifier.VerifyString(tablePos, 10 /*Description*/, false)
+      && verifier.VerifyString(tablePos, 12 /*Wkt*/, false)
+      && verifier.VerifyString(tablePos, 14 /*CodeString*/, false)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }

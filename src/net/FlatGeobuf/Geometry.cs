@@ -13,7 +13,7 @@ public struct Geometry : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_3_3(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_5_26(); }
   public static Geometry GetRootAsGeometry(ByteBuffer _bb) { return GetRootAsGeometry(_bb, new Geometry()); }
   public static Geometry GetRootAsGeometry(ByteBuffer _bb, Geometry obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -236,5 +236,22 @@ public class GeometryT
   }
 }
 
+
+static public class GeometryVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyVectorOfData(tablePos, 4 /*Ends*/, 4 /*uint*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 6 /*Xy*/, 8 /*double*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 8 /*Z*/, 8 /*double*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 10 /*M*/, 8 /*double*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 12 /*T*/, 8 /*double*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 14 /*Tm*/, 8 /*ulong*/, false)
+      && verifier.VerifyField(tablePos, 16 /*Type*/, 1 /*FlatGeobuf.GeometryType*/, 1, false)
+      && verifier.VerifyVectorOfTables(tablePos, 18 /*Parts*/, FlatGeobuf.GeometryVerify.Verify, false)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }
