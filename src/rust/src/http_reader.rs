@@ -47,14 +47,6 @@ impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
         Self::_open(client).await
     }
 
-    // pub async fn open(url: &str) -> Result<HttpFgbReader<reqwest::Client>> {
-    //     trace!("starting: opening http reader, reading header");
-    //     let mut client = BufferedHttpRangeClient::new(url);
-    //     let x = Self::_open(client).await?;
-    //     Ok(Self::_open(client).await?)
-
-    // }
-
     async fn _open(mut client: AsyncBufferedHttpRangeClient<T>) -> Result<HttpFgbReader<T>> {
         // Because we use a buffered HTTP reader, anything extra we fetch here can
         // be utilized to skip subsequent fetches.
