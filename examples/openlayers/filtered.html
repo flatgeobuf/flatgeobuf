@@ -77,27 +77,24 @@
                 };
             }
 
-            // no need for the spatial index since this is only rendering a small extent
-            const results = new ol.source.Vector({useSpatialIndex: false});
-            // track the previous results so we can remove them when adding new results
-            async function updateResults() {
-                let mapCenter = map.getView().getCenter();
-                results.setLoader(async function () {
-                    let rect = fgbBoundingBox(mapCenter);
+            const results = new ol.source.Vector({
+                strategy: ol.loadingstrategy.bbox,
+                useSpatialIndex: false, // no need for the spatial index since this is only rendering a small extent
+                loader: async function (extent) {
+                    let rect = fgbBoundingBox(ol.extent.getCenter(extent));
                     // Use flatgeobuf JavaScript API to iterate features as geojson.
                     // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                     // rather than the entire file.
                     let iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', rect);
+                    const features = []
                     for await (let feature of iter) {
                         feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
-                        this.addFeature(feature)
+                        features.push(feature)
                     }
-                });
-                results.refresh();
-            }
-
-            // if the user is panning around alot, only update once per second max
-            updateResults = _.throttle(updateResults, 1000);
+                    this.clear()
+                    this.addFeatures(features)
+                }
+            });
   
             const map = new ol.Map({
                 layers: [
@@ -123,14 +120,6 @@
                     popupContent.innerText = `${feature.get("NAME")} ${feature.get("LSAD")}, ${feature.get("STATE")}`;
                     overlay.setPosition(e.coordinate);
                 })
-            });
-
-
-            // show results based on the initial map
-            updateResults();
-            // ...and update the results whenever the map moves
-            map.on("moveend", function(e) {
-                updateResults();
             });
         });
     </script>
