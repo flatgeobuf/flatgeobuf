@@ -6,7 +6,9 @@ use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use crate::{Error, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
-use http_range_client::BufferedHttpRangeClient;
+use http_range_client::{
+    AsyncBufferedHttpRangeClient, AsyncHttpRangeClient, BufferedHttpRangeClient,
+};
 use std::ops::Range;
 
 // The largest request we'll speculatively make.
@@ -14,15 +16,15 @@ use std::ops::Range;
 const DEFAULT_HTTP_FETCH_SIZE: usize = 1_048_576; // 1MB
 
 /// FlatGeobuf dataset HTTP reader
-pub struct HttpFgbReader {
-    client: BufferedHttpRangeClient,
+pub struct HttpFgbReader<T: AsyncHttpRangeClient = reqwest::Client> {
+    client: AsyncBufferedHttpRangeClient<T>,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
 }
 
-pub struct AsyncFeatureIter {
-    client: BufferedHttpRangeClient,
+pub struct AsyncFeatureIter<T: AsyncHttpRangeClient = reqwest::Client> {
+    client: AsyncBufferedHttpRangeClient<T>,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
@@ -32,11 +34,20 @@ pub struct AsyncFeatureIter {
     count: usize,
 }
 
-impl HttpFgbReader {
-    pub async fn open(url: &str) -> Result<HttpFgbReader> {
+impl HttpFgbReader<reqwest::Client> {
+    pub async fn open(url: &str) -> Result<HttpFgbReader<reqwest::Client>> {
         trace!("starting: opening http reader, reading header");
-        let mut client = BufferedHttpRangeClient::new(url);
+        let client = BufferedHttpRangeClient::new(url);
+        Self::_open(client).await
+    }
+}
 
+impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
+    pub async fn new(client: AsyncBufferedHttpRangeClient<T>) -> Result<HttpFgbReader<T>> {
+        Self::_open(client).await
+    }
+
+    async fn _open(mut client: AsyncBufferedHttpRangeClient<T>) -> Result<HttpFgbReader<T>> {
         // Because we use a buffered HTTP reader, anything extra we fetch here can
         // be utilized to skip subsequent fetches.
         // Immediately following the header is the optional spatial index, we deliberately fetch
@@ -95,7 +106,7 @@ impl HttpFgbReader {
         8 + self.fbs.header_buf.len()
     }
     /// Select all features.
-    pub async fn select_all(self) -> Result<AsyncFeatureIter> {
+    pub async fn select_all(self) -> Result<AsyncFeatureIter<T>> {
         let header = self.fbs.header();
         let count = header.features_count();
         // TODO: support reading with unknown feature count
@@ -123,7 +134,7 @@ impl HttpFgbReader {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<AsyncFeatureIter> {
+    ) -> Result<AsyncFeatureIter<T>> {
         trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
@@ -167,7 +178,7 @@ impl HttpFgbReader {
     }
 }
 
-impl AsyncFeatureIter {
+impl<T: AsyncHttpRangeClient> AsyncFeatureIter<T> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
@@ -203,9 +214,9 @@ enum FeatureSelection {
 }
 
 impl FeatureSelection {
-    async fn next_feature_buffer(
+    async fn next_feature_buffer<T: AsyncHttpRangeClient>(
         &mut self,
-        client: &mut BufferedHttpRangeClient,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
     ) -> Result<Option<Bytes>> {
         match self {
             FeatureSelection::SelectAll(select_all) => select_all.next_buffer(client).await,
@@ -223,7 +234,10 @@ struct SelectAll {
 }
 
 impl SelectAll {
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
         client.min_req_size(DEFAULT_HTTP_FETCH_SIZE);
 
         if self.features_left == 0 {
@@ -247,7 +261,10 @@ struct SelectBbox {
 }
 
 impl SelectBbox {
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
         let mut next_buffer = None;
         while next_buffer.is_none() {
             let Some(feature_batch) = self.feature_batches.last_mut() else {
@@ -345,7 +362,10 @@ impl FeatureBatch {
         }
     }
 
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
         client.set_min_req_size(self.min_request_size);
         let Some(feature_range) = self.feature_ranges.next() else {
             return Ok(None);
@@ -371,8 +391,9 @@ impl FeatureBatch {
 mod geozero_api {
     use crate::AsyncFeatureIter;
     use geozero::{error::Result, FeatureAccess, FeatureProcessor};
+    use http_range_client::AsyncHttpRangeClient;
 
-    impl AsyncFeatureIter {
+    impl<T: AsyncHttpRangeClient> AsyncFeatureIter<T> {
         /// Read and process all selected features
         pub async fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
