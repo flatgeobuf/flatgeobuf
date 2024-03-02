@@ -1,4 +1,4 @@
-import { ReadableStream } from 'web-streams-polyfill';
+import 'web-streams-polyfill/polyfill';
 import { ReadableStreamBuffer } from 'stream-buffers';
 import { Readable } from 'stream';
 
