@@ -29,9 +29,10 @@ import {
 
 export function serialize(
     featurecollection: GeoJsonFeatureCollection,
+    crsCode: number = 0
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
-    const header = buildHeader(headerMeta);
+    const header = buildHeader(headerMeta, crsCode);
     const features: Uint8Array[] = featurecollection.features.map((f) =>
         buildFeature(
             f.geometry.type === 'GeometryCollection'

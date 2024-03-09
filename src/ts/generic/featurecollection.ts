@@ -18,6 +18,7 @@ import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
 import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { inferGeometryType } from './header.js';
+import { Crs } from '../flat-geobuf/crs.js';
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
@@ -159,7 +160,7 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     return Column.endColumn(builder);
 }
 
-export function buildHeader(header: HeaderMeta): Uint8Array {
+export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array {
     const builder = new flatbuffers.Builder();
 
     let columnOffsets = null;
@@ -171,7 +172,15 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
 
     const nameOffset = builder.createString('L1');
 
+    let crsOffset;
+    if (crsCode) {
+        Crs.startCrs(builder);
+        Crs.addCode(builder, crsCode);
+        crsOffset = Crs.endCrs(builder);
+    }
     Header.startHeader(builder);
+    if (crsOffset)
+        Header.addCrs(builder, crsOffset);
     Header.addFeaturesCount(builder, BigInt(header.featuresCount));
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);

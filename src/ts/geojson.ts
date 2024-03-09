@@ -15,8 +15,8 @@ import { HeaderMetaFn } from './generic.js';
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
  */
-export function serialize(geojson: GeoJsonFeatureCollection): Uint8Array {
-    const bytes = fcSerialize(geojson);
+export function serialize(geojson: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
+    const bytes = fcSerialize(geojson, crsCode);
     return bytes;
 }
 
