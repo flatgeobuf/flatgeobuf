@@ -72,7 +72,7 @@ namespace FlatGeobuf {
             return header;
         }
 
-        public static Envelope GetEnvelope(Header header) 
+        public static Envelope? GetEnvelope(Header header) 
         {
             if (header.EnvelopeLength == 4)
             {

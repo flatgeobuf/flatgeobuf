@@ -16,7 +16,7 @@ namespace FlatGeobuf.NTS
     /// <summary>
     /// Async enumerator class to access <see cref="IFeature"/> from a <see cref="Stream"/> in an asnychronous way.
     /// </summary>
-    public class AsyncFeatureEnumerator : IAsyncEnumerator<IFeature>
+    public class AsyncFeatureEnumerator : IAsyncEnumerator<IFeature?>
     {
         private static readonly FlatGeobufCoordinateSequenceFactory CsFactory =
             new FlatGeobufCoordinateSequenceFactory();
@@ -28,10 +28,10 @@ namespace FlatGeobuf.NTS
         private readonly CancellationToken _token;
 
         // Index
-        private readonly HashSet<long> _itemsIndex;
-        private readonly IEnumerator<(long Offset, ulong Index)> _itemEnumerator;
+        private readonly HashSet<long>? _itemsIndex;
+        private readonly IEnumerator<(long Offset, ulong Index)>? _itemEnumerator;
 
-        public static async Task<AsyncFeatureEnumerator> Create(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null)
+        public static async Task<AsyncFeatureEnumerator> Create(Stream stream, PrecisionModel? pm = null, Envelope? rect = null, CancellationToken? token = null)
         {
             // Ensure stream is not null
             if (stream == null)
@@ -57,7 +57,7 @@ namespace FlatGeobuf.NTS
 
             // Get filter iterator
             rect ??= new Envelope();
-            IList<(long Offset, ulong Index)> filter = null;
+            IList<(long Offset, ulong Index)>? filter = null;
             if (header.IndexNodeSize > 0)
             {
                 if (rect.IsNull)
@@ -80,7 +80,7 @@ namespace FlatGeobuf.NTS
         /// <param name="header">The header, containg general information about the feature data set</param>
         /// <param name="stream">The stream from which to deserialize the feature data set</param>
         /// <param name="items">An object containing the interesting features</param>
-        private AsyncFeatureEnumerator(GeometryFactory factory, HeaderT header, Stream stream, IList<(long Offset, ulong Index)> items, CancellationToken token)
+        private AsyncFeatureEnumerator(GeometryFactory factory, HeaderT header, Stream stream, IList<(long Offset, ulong Index)>? items, CancellationToken token)
         {
             _factory = factory;
             _header = header;
@@ -128,7 +128,7 @@ namespace FlatGeobuf.NTS
         public CrsT Crs { get => _header.Crs; }
 
         /// <inheritdoc/>
-        public IFeature Current { get; private set; }
+        public IFeature? Current { get; private set; }
 
         /// <inheritdoc/>
         #pragma warning disable CS1998

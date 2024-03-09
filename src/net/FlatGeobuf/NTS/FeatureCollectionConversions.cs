@@ -15,20 +15,20 @@ namespace FlatGeobuf.NTS
 {
     public class ColumnMeta
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public ColumnType Type { get; set; }
     }
 
     public class LayerMeta
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public GeometryType GeometryType { get; set; }
         public byte Dimensions { get; set; }
-        public IList<ColumnMeta> Columns { get; set; }
+        public IList<ColumnMeta>? Columns { get; set; }
     }
 
     public static class FeatureCollectionConversions {
-        public static async Task<byte[]> SerializeAsync(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+        public static async Task<byte[]> SerializeAsync(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta>? columns = null)
         {
             var featureFirst = fc.First();
             if (columns == null && featureFirst.Attributes != null)
@@ -40,7 +40,7 @@ namespace FlatGeobuf.NTS
             return memoryStream.ToArray();
         }
 
-        public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+        public static byte[] Serialize(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta>? columns = null)
         {
             var featureFirst = fc.First();
             if (columns == null && featureFirst.Attributes != null)
@@ -52,7 +52,7 @@ namespace FlatGeobuf.NTS
             return memoryStream.ToArray();
         }
 
-        public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+        public static void Serialize(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta>? columns = null)
         {
             AsyncContext.Run(async () => await SerializeAsync(output, features, geometryType, dimensions, columns));
         }
@@ -74,7 +74,7 @@ namespace FlatGeobuf.NTS
             }
         }
 #else
-        public static async Task SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
+        public static async Task SerializeAsync(Stream output, IEnumerable<IFeature> features, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta>? columns = null)
         {
             await output.WriteAsync(Constants.MagicBytes);
             var headerBuffer = BuildHeader(0, geometryType, dimensions, columns, null);
@@ -114,7 +114,7 @@ namespace FlatGeobuf.NTS
             return fc;
         }
 
-        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope rect = null)
+        public static IEnumerable<IFeature> Deserialize(Stream stream, Envelope? rect = null)
         {
             using var reader = new BinaryReader(stream, Encoding.UTF8, true);
             var header = Helpers.ReadHeader(stream, out var headerSize).UnPack();
@@ -156,7 +156,7 @@ namespace FlatGeobuf.NTS
             }
         }
 
-        public static ByteBuffer BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta> columns, PackedRTree index)
+        public static ByteBuffer BuildHeader(ulong count, GeometryType geometryType, byte dimensions, IList<ColumnMeta>? columns, PackedRTree? index)
         {
             var builder = new FlatBufferBuilder(1024);
             VectorOffset? columnsOffset = null;

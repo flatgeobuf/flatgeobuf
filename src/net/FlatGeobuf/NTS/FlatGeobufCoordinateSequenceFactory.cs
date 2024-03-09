@@ -14,8 +14,8 @@ namespace FlatGeobuf.NTS
             var xy = geometry.GetXyArray();
             var offset = end > 0 ? (int) geometry.Ends(end - 1) : 0;
             var count = geometry.EndsLength > 0 ? (int) geometry.Ends(end) - offset : xy.Length / 2;
-            double[] z = null;
-            double[] m = null;
+            double[]? z = null;
+            double[]? m = null;
             if (header.HasZ)
                 z = geometry.GetZArray();
             if (header.HasM)
@@ -26,8 +26,8 @@ namespace FlatGeobuf.NTS
         public override CoordinateSequence Create(int size, int dimension, int measures)
         {
             double[] xy = new double[size * 2];
-            double[] z = null;
-            double[] m = null;
+            double[]? z = null;
+            double[]? m = null;
             return new FlatGeobufCoordinateSequence(xy, z, m, size, 0);
         }
     }

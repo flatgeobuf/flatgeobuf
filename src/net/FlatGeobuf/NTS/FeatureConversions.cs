@@ -117,7 +117,7 @@ namespace FlatGeobuf.NTS
 
         internal static IFeature FromFeature(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, Feature feature, HeaderT header)
         { 
-            IAttributesTable attributesTable = null;
+            IAttributesTable? attributesTable = null;
             if (feature.PropertiesLength != 0)
             {
                 var propertiesArray = feature.GetPropertiesArray();
@@ -219,7 +219,7 @@ namespace FlatGeobuf.NTS
                 }*/
             }
 
-            NTSGeometry geometry = null;
+            NTSGeometry? geometry = null;
             try
             {
                 if (feature.Geometry.HasValue)
