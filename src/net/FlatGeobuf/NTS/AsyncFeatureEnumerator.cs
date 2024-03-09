@@ -131,7 +131,7 @@ namespace FlatGeobuf.NTS
         public IFeature? Current { get; private set; }
 
         /// <inheritdoc/>
-        #pragma warning disable CS1998
+#pragma warning disable CS1998
         public async ValueTask DisposeAsync()
         {
             _itemEnumerator?.Dispose();
@@ -141,7 +141,7 @@ namespace FlatGeobuf.NTS
             _stream.Dispose();
 #endif
         }
-        #pragma warning restore CS1998
+#pragma warning restore CS1998
 
         /// <inheritdoc/>
         public async ValueTask<bool> MoveNextAsync()

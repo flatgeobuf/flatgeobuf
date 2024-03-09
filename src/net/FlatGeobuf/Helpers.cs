@@ -9,8 +9,10 @@ using System.Threading.Tasks;
 using Google.FlatBuffers;
 using NetTopologySuite.Geometries;
 
-namespace FlatGeobuf {
-    public static class Helpers {
+namespace FlatGeobuf
+{
+    public static class Helpers
+    {
         public static Header ReadHeader(Stream stream)
         {
             var reader = new BinaryReader(stream, Encoding.UTF8, true);
@@ -54,7 +56,7 @@ namespace FlatGeobuf {
             if (numRead != 8) throw new InvalidDataException("Insufficient stream size");
             if (!smallBuffer.Take(4).SequenceEqual(Constants.MagicBytes.Take(4)))
                 throw new InvalidDataException("Not a FlatGeobuf stream");
-            
+
             // Read header size
             numRead = await stream.ReadAsync(smallBuffer, 0, 4, token);
             if (numRead != 4) throw new InvalidDataException("Insufficient stream size");
@@ -72,7 +74,7 @@ namespace FlatGeobuf {
             return header;
         }
 
-        public static Envelope? GetEnvelope(Header header) 
+        public static Envelope? GetEnvelope(Header header)
         {
             if (header.EnvelopeLength == 4)
             {
