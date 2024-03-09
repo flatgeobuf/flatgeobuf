@@ -29,7 +29,7 @@ import {
 
 export function serialize(
     featurecollection: GeoJsonFeatureCollection,
-    crsCode: number = 0
+    crsCode: number = 0,
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta, crsCode);
