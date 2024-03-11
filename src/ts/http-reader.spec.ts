@@ -20,7 +20,7 @@ describe('http reader', () => {
             maxX: -101.11,
             maxY: 41.24,
         };
-        const reader = await HttpReader.open(testUrl);
+        const reader = await HttpReader.open(testUrl, false);
 
         const features = [];
         for await (const feature of reader.selectBbox(rect)) {
@@ -47,7 +47,7 @@ describe('http reader', () => {
             maxX: -60.0,
             maxY: -51.25,
         };
-        const reader = await HttpReader.open(testUrl);
+        const reader = await HttpReader.open(testUrl, true);
         expect(179).toBe(reader.header.featuresCount);
 
         let featureCount = 0;

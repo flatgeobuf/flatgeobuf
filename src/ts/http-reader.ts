@@ -19,29 +19,32 @@ export class HttpReader {
     public header: HeaderMeta;
     private headerLength: number;
     private indexLength: number;
+    private nocache: boolean;
 
     constructor(
         headerClient: BufferedHttpRangeClient,
         header: HeaderMeta,
         headerLength: number,
         indexLength: number,
+        nocache: boolean,
     ) {
         this.headerClient = headerClient;
         this.header = header;
         this.headerLength = headerLength;
         this.indexLength = indexLength;
+        this.nocache = nocache;
     }
 
     // Fetch the header, preparing the reader to read Feature data.
     //
     // and potentially some opportunistic fetching of the index.
-    static async open(url: string): Promise<HttpReader> {
+    static async open(url: string, nocache: boolean): Promise<HttpReader> {
         // In reality, the header is probably less than half this size, but
         // better to overshoot and fetch an extra kb rather than have to issue
         // a second request.
         const assumedHeaderLength = 2024;
 
-        const headerClient = new BufferedHttpRangeClient(url);
+        const headerClient = new BufferedHttpRangeClient(url, nocache);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -114,7 +117,13 @@ export class HttpReader {
         );
 
         Logger.debug('completed: opening http reader');
-        return new HttpReader(headerClient, header, headerLength, indexLength);
+        return new HttpReader(
+            headerClient,
+            header,
+            headerLength,
+            indexLength,
+            nocache,
+        );
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<Feature, void, unknown> {
@@ -182,7 +191,8 @@ export class HttpReader {
         }
 
         const promises: AsyncGenerator<Feature, any, any>[] = batches.flatMap(
-            (batch: [number, number][]) => this.readFeatureBatch(batch),
+            (batch: [number, number][]) =>
+                this.readFeatureBatch(batch, this.nocache),
         );
 
         // Fetch all batches concurrently, yielding features as they become
@@ -199,8 +209,11 @@ export class HttpReader {
         return this.lengthBeforeTree() + this.indexLength;
     }
 
-    buildFeatureClient(): BufferedHttpRangeClient {
-        return new BufferedHttpRangeClient(this.headerClient.httpClient);
+    buildFeatureClient(nocache: boolean): BufferedHttpRangeClient {
+        return new BufferedHttpRangeClient(
+            this.headerClient.httpClient,
+            nocache,
+        );
     }
 
     /**
@@ -210,6 +223,7 @@ export class HttpReader {
      */
     async *readFeatureBatch(
         batch: [number, number][],
+        nocache: boolean,
     ): AsyncGenerator<Feature, void, unknown> {
         const [firstFeatureOffset] = batch[0];
         const [lastFeatureOffset, lastFeatureLength] = batch[batch.length - 1];
@@ -219,7 +233,7 @@ export class HttpReader {
         const batchSize = batchEnd - batchStart;
 
         // A new feature client is needed for each batch to own the underlying buffer as features are yielded.
-        const featureClient = this.buildFeatureClient();
+        const featureClient = this.buildFeatureClient(nocache);
 
         let minFeatureReqLength = batchSize;
         for (const [featureOffset] of batch) {
@@ -283,9 +297,9 @@ class BufferedHttpRangeClient {
     // buffered
     private head = 0;
 
-    constructor(source: string | HttpRangeClient) {
+    constructor(source: string | HttpRangeClient, nocache: boolean) {
         if (typeof source === 'string') {
-            this.httpClient = new HttpRangeClient(source);
+            this.httpClient = new HttpRangeClient(source, nocache);
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
@@ -337,11 +351,13 @@ class BufferedHttpRangeClient {
 
 class HttpRangeClient {
     url: string;
+    nocache: boolean;
     requestsEverMade = 0;
     bytesEverRequested = 0;
 
-    constructor(url: string) {
+    constructor(url: string, nocache: boolean) {
         this.url = url;
+        this.nocache = nocache;
     }
 
     async getRange(
@@ -357,38 +373,39 @@ class HttpRangeClient {
             `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`,
         );
 
-        const response = await fetch(this.url, {
-            headers: {
-                Range: range,
-                // TODO: better parallelize requests on Chrome
-                //
-                // Safari and Firefox have no issue performing Range requests
-                // for a resource in parallel, but Chrome will stall a
-                // subsequent request to the resource until it's received the
-                // response headers of the prior request. So, it still allows
-                // some limited parallelization, but it's not ideal.
-                //
-                // This is seemingly an artifact of how Chrome manages caching
-                // and it might differ between platforms. We could work around it
-                // by setting the request header:
-                //
-                //      'Cache-Control': 'no-cache, no-store'
-                //
-                // This allows requests to be fully parallelized in Chrome, but
-                // then Chrome won't cache the response, so it seems not a
-                // great trade-off.
-                //
-                // Another work around would be to make each Range request for
-                // a separate URL by appending something like
-                // `?cache_buster=<range>` to the URL, but then Chrome will
-                // require an additional CORS preflight OPTIONS requests per
-                // Range, which is also not a great trade-off.
-                //
-                // See:
-                // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
-                // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
-            },
-        });
+        // TODO: better parallelize requests on Chrome
+        //
+        // Safari and Firefox have no issue performing Range requests
+        // for a resource in parallel, but Chrome will stall a
+        // subsequent request to the resource until it's received the
+        // response headers of the prior request. So, it still allows
+        // some limited parallelization, but it's not ideal.
+        //
+        // This is seemingly an artifact of how Chrome manages caching
+        // and it might differ between platforms. We could work around it
+        // by setting the request header:
+        //
+        //      'Cache-Control': 'no-cache, no-store'
+        //
+        // This allows requests to be fully parallelized in Chrome, but
+        // then Chrome won't cache the response, so it seems not a
+        // great trade-off.
+        //
+        // Another work around would be to make each Range request for
+        // a separate URL by appending something like
+        // `?cache_buster=<range>` to the URL, but then Chrome will
+        // require an additional CORS preflight OPTIONS requests per
+        // Range, which is also not a great trade-off.
+        //
+        // See:
+        // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
+        // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
+        const headers: HeadersInit = {
+            Range: range,
+        };
+        if (this.nocache) headers['Cache-Control'] = 'no-cache, no-store';
+
+        const response = await fetch(this.url, { headers });
 
         return response.arrayBuffer();
     }

@@ -15,7 +15,10 @@ import { HeaderMetaFn } from './generic.js';
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
  */
-export function serialize(geojson: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
+export function serialize(
+    geojson: GeoJsonFeatureCollection,
+    crsCode: number = 0,
+): Uint8Array {
     const bytes = fcSerialize(geojson, crsCode);
     return bytes;
 }
@@ -30,6 +33,7 @@ export function deserialize(
     url: string,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache?: boolean,
 ): AsyncGenerator<IGeoJsonFeature, any, unknown>;
 
 /**
@@ -43,6 +47,7 @@ export function deserialize(
     typedArray: Uint8Array,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache?: boolean,
 ): GeoJsonFeatureCollection;
 
 /**
@@ -56,6 +61,7 @@ export function deserialize(
     stream: ReadableStream,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache?: boolean,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /** Implementation */
@@ -63,9 +69,10 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache: boolean = false,
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn);
-    else return fcDeserializeFiltered(input, rect!, headerMetaFn);
+    else return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache);
 }
