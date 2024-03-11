@@ -19,14 +19,16 @@ namespace FlatGeobuf.Benchmarks
 {
     public class Program
     {
-        public struct GeometryFixture {
+        public struct GeometryFixture
+        {
             public FeatureCollection fc;
             public GeometryType geometryType;
             public byte dimensions;
             public byte[] flatgeobuf;
         }
 
-        public struct FeatureFixture {
+        public struct FeatureFixture
+        {
             public FeatureCollection fc;
             public GeometryType geometryType;
             public byte dimensions;
@@ -55,7 +57,8 @@ namespace FlatGeobuf.Benchmarks
             //[Params("Raw")]
             public string Sequence;
 
-            static public LineString MakeLineString(int maxVertices) {
+            static public LineString MakeLineString(int maxVertices)
+            {
                 var factory = new GeometryFactory();
                 var cs = Enumerable.Range(1, maxVertices).Select(x => new Coordinate(x, 100 + x)).ToArray();
                 var geometry = factory.CreateLineString(cs);
@@ -104,7 +107,8 @@ namespace FlatGeobuf.Benchmarks
                 var feature = FeatureConversions.FromByteBuffer(factory, sequenceFactory, bytes, header);
                 var ls = feature.Geometry as LineString;
                 int i;
-                for (i = 0; i < ls.CoordinateSequence.Count; i++) {
+                for (i = 0; i < ls.CoordinateSequence.Count; i++)
+                {
                     ls.CoordinateSequence.GetX(i);
                     ls.CoordinateSequence.GetY(i);
                 }

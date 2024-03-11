@@ -17,11 +17,19 @@ func GetRootAsHeader(buf []byte, offset flatbuffers.UOffsetT) *Header {
 	return x
 }
 
+func FinishHeaderBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsHeader(buf []byte, offset flatbuffers.UOffsetT) *Header {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &Header{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedHeaderBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *Header) Init(buf []byte, i flatbuffers.UOffsetT) {

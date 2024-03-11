@@ -56,37 +56,37 @@
   },
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
-    "@repeaterjs/repeater": "3.0.5",
-    "flatbuffers": "23.5.26",
-    "slice-source": "0.4.1"
+    "@repeaterjs/repeater": "^3.0.5",
+    "flatbuffers": "^24.3.7",
+    "slice-source": "^0.4.1"
   },
   "peerDependencies": {
-    "ol": "7 - 9"
+    "ol": ">=3"
   },
   "devDependencies": {
-    "@babel/core": "7.24.0",
-    "@babel/preset-env": "7.24.0",
-    "@rollup/plugin-babel": "6.0.4",
-    "@rollup/plugin-node-resolve": "15.2.3",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
-    "@types/geojson": "7946.0.14",
-    "@types/node": "20.11.24",
+    "@types/geojson": "^7946.0.14",
+    "@types/node": "^20.11.25",
     "@types/node-fetch": "^2.6.11",
-    "@types/stream-buffers": "3.0.7",
-    "@typescript-eslint/eslint-plugin": "7.1.0",
-    "@typescript-eslint/parser": "7.1.0",
+    "@types/stream-buffers": "^3.0.7",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
     "@vitest/coverage-v8": "^1.3.1",
-    "eslint": "8.57.0",
-    "jsts": "2.11.0",
+    "eslint": "^8.57.0",
+    "jsts": "^2.11.0",
     "local-web-server": "^5.3.1",
     "node-fetch": "^3.3.2",
-    "ol": "9.0.0",
-    "prettier": "3.2.5",
-    "rollup": "4.12.0",
-    "stream-buffers": "3.0.2",
-    "typedoc": "0.25.9",
-    "typescript": "5.3.3",
+    "ol": "^9.0.0",
+    "prettier": "^3.2.5",
+    "rollup": "^4.12.1",
+    "stream-buffers": "^3.0.2",
+    "typedoc": "^0.25.11",
+    "typescript": "^5.4.2",
     "vitest": "^1.3.1",
-    "web-streams-polyfill": "4.0.0"
+    "web-streams-polyfill": "^4.0.0"
   }
 }

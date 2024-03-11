@@ -15,7 +15,8 @@ namespace FlatGeobuf.Tests.NTS
         private static readonly NetTopologySuite.NtsGeometryServices _services = new NetTopologySuite.NtsGeometryServices(
             CoordinateArraySequenceFactory.Instance, new PrecisionModel(), 0, GeometryOverlay.NG, new PerOrdinateEqualityComparer());
 
-        public static NetTopologySuite.Features.Feature MakeFeature(string wkt, Dictionary<string, object> attr = null) {
+        public static NetTopologySuite.Features.Feature MakeFeature(string wkt, Dictionary<string, object> attr = null)
+        {
             var reader = new WKTReader(_services);
             var geometry = reader.Read(wkt);
             var feature = new NetTopologySuite.Features.Feature(geometry, attr != null ? new AttributesTable(attr) : null);

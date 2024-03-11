@@ -16,7 +16,7 @@ default = ["http"]
 http = ["http-range-client", "bytes", "reqwest"]
 
 [dependencies]
-flatbuffers = "23.5.26"
+flatbuffers = "24.3.7"
 byteorder = "1.5.0"
 geozero = { version = "0.12.0", default-features = false }
 http-range-client = { version = "0.7.2", optional = true }

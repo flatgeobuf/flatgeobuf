@@ -1,3 +1,4 @@
+using System;
 using NetTopologySuite.Geometries;
 
 namespace FlatGeobuf.NTS
@@ -7,14 +8,14 @@ namespace FlatGeobuf.NTS
         private readonly int _offset;
 
         private readonly double[] _xy;
-        private readonly double[] _z;
-        private readonly double[] _m;
+        private readonly double[]? _z;
+        private readonly double[]? _m;
 
         public double[] XY { get { return _xy; } }
-        public double[] Z { get { return _z; } }
-        public double[] M { get { return _m; } }
+        public double[]? Z { get { return _z; } }
+        public double[]? M { get { return _m; } }
 
-        public FlatGeobufCoordinateSequence(double[] xy, double[] z, double[] m, int count, int offset)
+        public FlatGeobufCoordinateSequence(double[] xy, double[]? z, double[]? m, int count, int offset)
             : base(count, GetDimension(z, m), m != null ? 1 : 0)
         {
             _offset = offset;
@@ -23,7 +24,7 @@ namespace FlatGeobuf.NTS
             _m = m;
         }
 
-        static int GetDimension(double[] z, double[] m)
+        static int GetDimension(double[]? z, double[]? m)
         {
             var dimension = 2;
             if (z != null)
@@ -36,19 +37,19 @@ namespace FlatGeobuf.NTS
         public override CoordinateSequence Copy()
         {
             double[] xy = new double[Count * 2];
-            System.Buffer.BlockCopy(_xy, _offset * 16, xy, 0, Count * 16);
+            Buffer.BlockCopy(_xy, _offset * 16, xy, 0, Count * 16);
 
-            double[] z = null;
-            if (HasZ)
+            double[]? z = null;
+            if (HasZ && _z != null)
             {
                 z = new double[Count];
-                System.Buffer.BlockCopy(_z, _offset * 8, z, 0, Count * 8);
+                Buffer.BlockCopy(_z, _offset * 8, z, 0, Count * 8);
             }
-            double[] m = null;
-            if (HasM)
+            double[]? m = null;
+            if (HasM && _m != null)
             {
                 m = new double[Count];
-                System.Buffer.BlockCopy(_m, _offset * 8, m, 0, Count * 8);
+                Buffer.BlockCopy(_m, _offset * 8, m, 0, Count * 8);
             }
             return new FlatGeobufCoordinateSequence(xy, z, m, Count, 0);
         }
@@ -93,9 +94,9 @@ namespace FlatGeobuf.NTS
             else if (ordinateIndex == 1)
                 _xy[(_offset + index) * 2 + 1] = value;
             else if (ordinateIndex == 2)
-                _z[_offset + index] = value;
+                _z![_offset + index] = value;
             else if (ordinateIndex == 3)
-                _m[_offset + index] = value;
+                _m![_offset + index] = value;
         }
     }
 }

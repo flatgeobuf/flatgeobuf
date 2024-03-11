@@ -13,11 +13,13 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class AttributeRoundtripTests
     {
-        static string MakeFeatureCollection(IDictionary<string, object> attributes) {
+        static string MakeFeatureCollection(IDictionary<string, object> attributes)
+        {
             return MakeFeatureCollection(new[] { attributes });
         }
 
-        static string MakeFeatureCollection(IDictionary<string, object>[] attributess){
+        static string MakeFeatureCollection(IDictionary<string, object>[] attributess)
+        {
             var fc = new FeatureCollection();
             foreach (var attributes in attributess)
                 fc.Add(MakeFeature(attributes));
@@ -26,10 +28,11 @@ namespace FlatGeobuf.Tests.GeoJson
             return geojson;
         }
 
-        static NetTopologySuite.Features.Feature MakeFeature(IDictionary<string, object> attributes) {
+        static NetTopologySuite.Features.Feature MakeFeature(IDictionary<string, object> attributes)
+        {
             var attributesTable = new AttributesTable(attributes);
             var factory = new GeometryFactory();
-            var point = factory.CreatePoint(new Coordinate(1,1));
+            var point = factory.CreatePoint(new Coordinate(1, 1));
             var feature = new NetTopologySuite.Features.Feature(point, attributesTable);
             return feature;
         }
@@ -74,7 +77,7 @@ namespace FlatGeobuf.Tests.GeoJson
             var actual = GeoJsonConversions.Deserialize(GeoJsonConversions.Serialize(expected));
             AssertJson(expected, actual);
         }
-        
+
         [TestMethod]
         public void NumberTenAttribs()
         {
@@ -149,7 +152,8 @@ namespace FlatGeobuf.Tests.GeoJson
             AssertJson(expected, actual);
         }
 
-        private static void AssertJson(string expected, string actual) {
+        private static void AssertJson(string expected, string actual)
+        {
             var compare = new JTokenComparer(new IndexArrayKeySelector());
             var result = compare.Compare(JObject.Parse(expected), JObject.Parse(actual));
             Assert.AreEqual(ComparisonResult.Identical, result.ComparisonResult);

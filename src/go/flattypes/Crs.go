@@ -17,11 +17,19 @@ func GetRootAsCrs(buf []byte, offset flatbuffers.UOffsetT) *Crs {
 	return x
 }
 
+func FinishCrsBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsCrs(buf []byte, offset flatbuffers.UOffsetT) *Crs {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &Crs{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedCrsBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *Crs) Init(buf []byte, i flatbuffers.UOffsetT) {

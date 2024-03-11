@@ -1,6 +1,6 @@
 #!/bin/sh
-curl -L https://github.com/google/flatbuffers/archive/v23.3.3.tar.gz | \
-    tar xz -C src/cpp/include --strip-components=2 flatbuffers-23.3.3/include
+curl -L https://github.com/google/flatbuffers/archive/v24.3.7.tar.gz | \
+    tar xz -C src/cpp/include --strip-components=2 flatbuffers-24.3.7/include
 curl -L https://github.com/mapbox/geojson-cpp/archive/v0.5.1.tar.gz | \
     tar xz -C src/cpp/include --strip-components=2 geojson-cpp-0.5.1/include
 curl -L https://github.com/mapbox/geometry.hpp/archive/v1.1.0.tar.gz | \

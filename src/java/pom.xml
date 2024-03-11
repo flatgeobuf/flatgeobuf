@@ -38,7 +38,7 @@
     <dependency>
       <groupId>com.google.flatbuffers</groupId>
       <artifactId>flatbuffers-java</artifactId>
-      <version>23.3.3</version>
+      <version>24.3.7</version>
     </dependency>
     <dependency>
       <groupId>org.locationtech.jts</groupId>

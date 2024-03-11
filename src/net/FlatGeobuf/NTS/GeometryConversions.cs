@@ -6,28 +6,30 @@ using Google.FlatBuffers;
 
 namespace FlatGeobuf.NTS
 {
-    public class GeometryOffsets {
-        public uint[] ends = null;
+    public class GeometryOffsets
+    {
+        public uint[]? ends = null;
         public VectorOffset xyOffset = default;
         public VectorOffset zOffset = default;
         public VectorOffset mOffset = default;
         public VectorOffset endsOffset = default;
-        public GeometryOffsets[] gos = null;
+        public GeometryOffsets[]? gos = null;
         public GeometryType Type { get; set; }
     }
 
-    public static class GeometryConversions {
+    public static class GeometryConversions
+    {
 
         public static CoordinateSequence GetCoordinateSequence(NTSGeometry geometry)
         {
             return geometry switch
             {
                 Point p => p.CoordinateSequence,
-                MultiPoint mp => (mp.Geometries[0] as Point).CoordinateSequence,
+                MultiPoint mp => (mp.Geometries[0] as Point)!.CoordinateSequence,
                 LineString ls => ls.CoordinateSequence,
-                MultiLineString mls => (mls.Geometries[0] as LineString).CoordinateSequence,
+                MultiLineString mls => (mls.Geometries[0] as LineString)!.CoordinateSequence,
                 Polygon p => p.Shell.CoordinateSequence,
-                MultiPolygon mp => (mp.Geometries[0] as Polygon).Shell.CoordinateSequence,
+                MultiPolygon mp => (mp.Geometries[0] as Polygon)!.Shell.CoordinateSequence,
                 _ => throw new ApplicationException("Unknown or null geometry"),
             };
         }
@@ -47,26 +49,26 @@ namespace FlatGeobuf.NTS
             if (geometryType == GeometryType.MultiLineString)
             {
                 uint end = 0;
-                MultiLineString mls = (MultiLineString) geometry;
+                MultiLineString mls = (MultiLineString)geometry;
                 if (mls.NumGeometries > 1)
                 {
                     go.ends = new uint[mls.NumGeometries];
                     for (int i = 0; i < mls.NumGeometries; i++)
-                        go.ends[i] = end += (uint) mls.Geometries[i].NumPoints;
+                        go.ends[i] = end += (uint)mls.Geometries[i].NumPoints;
                 }
             }
             else if (geometryType == GeometryType.Polygon)
             {
-                go.ends = CreateEnds(geometry as Polygon);
+                go.ends = CreateEnds((geometry as Polygon)!);
             }
             else if (geometryType == GeometryType.MultiPolygon)
             {
-                MultiPolygon mp = (MultiPolygon) geometry;
+                MultiPolygon mp = (MultiPolygon)geometry;
                 int numGeometries = mp.NumGeometries;
                 GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
                 for (int i = 0; i < numGeometries; i++)
                 {
-                    Polygon p = (Polygon) mp.Geometries[i];
+                    Polygon p = (Polygon)mp.Geometries[i];
                     gos[i] = BuildGeometry(builder, p, GeometryType.Polygon, header);
                 }
                 go.gos = gos;
@@ -111,10 +113,10 @@ namespace FlatGeobuf.NTS
         static uint[] CreateEnds(Polygon polygon)
         {
             var ends = new uint[polygon.NumInteriorRings + 1];
-            uint end = (uint) polygon.ExteriorRing.NumPoints;
+            uint end = (uint)polygon.ExteriorRing.NumPoints;
             ends[0] = end;
             for (int i = 0; i < polygon.NumInteriorRings; i++)
-                ends[i + 1] = end += (uint) polygon.InteriorRings[i].NumPoints;
+                ends[i + 1] = end += (uint)polygon.InteriorRings[i].NumPoints;
             return ends;
         }
 
@@ -128,9 +130,9 @@ namespace FlatGeobuf.NTS
             for (int i = 0; i < count; i++)
             {
                 var pxy = new double[] { xy[i * 2], xy[i * 2 + 1] };
-                var pz = header.HasZ ? new double[] { z[i] } : null;
-                var pm = header.HasM ? new double[] { m[i] } : null;
-                points[i] = factory.CreatePoint(new FlatGeobufCoordinateSequence(pxy, pz, pm, 1, 0));
+                var pz = header.HasZ ? new double[] { z![i] } : null;
+                var pm = header.HasM ? new double[] { m![i] } : null;
+                points[i] = factory.CreatePoint(new FlatGeobufCoordinateSequence(pxy, pz!, pm!, 1, 0));
             }
             return factory.CreateMultiPoint(points);
         }
@@ -138,7 +140,7 @@ namespace FlatGeobuf.NTS
         static MultiLineString ParseFlatbufMultiLineStringSinglePart(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, HeaderT header, ref Geometry geometry)
         {
             var lineString = factory.CreateLineString(seqFactory.Create(header, ref geometry));
-            return factory.CreateMultiLineString(new [] { lineString });
+            return factory.CreateMultiLineString(new[] { lineString });
         }
 
         static MultiLineString ParseFlatbufMultiLineString(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, HeaderT header, ref Geometry geometry)
@@ -161,7 +163,7 @@ namespace FlatGeobuf.NTS
         {
             if (geometry.EndsLength == 0)
                 return ParseFlatbufPolygonSingleRing(factory, seqFactory, header, ref geometry);
-            LinearRing shell = null;
+            LinearRing? shell = null;
             var holes = new LinearRing[geometry.EndsLength - 1];
             for (var i = 0; i < geometry.EndsLength; i++)
             {
@@ -180,8 +182,8 @@ namespace FlatGeobuf.NTS
             Polygon[] polygons = new Polygon[partsLength];
             for (int i = 0; i < geometry.PartsLength; i++)
             {
-                var part = geometry.Parts(i).Value;
-                polygons[i] = (Polygon) FromFlatbuf(factory, seqFactory, ref part, GeometryType.Polygon, header);
+                var part = (Geometry)geometry.Parts(i)!;
+                polygons[i] = (Polygon)FromFlatbuf(factory, seqFactory, ref part, GeometryType.Polygon, header);
             }
             return factory.CreateMultiPolygon(polygons);
         }
