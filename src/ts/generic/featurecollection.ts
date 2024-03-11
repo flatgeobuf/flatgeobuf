@@ -124,8 +124,9 @@ export async function* deserializeFiltered(
     rect: Rect,
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn,
+    nocache: boolean = false,
 ): AsyncGenerator<IFeature> {
-    const reader = await HttpReader.open(url);
+    const reader = await HttpReader.open(url, nocache);
     Logger.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
 

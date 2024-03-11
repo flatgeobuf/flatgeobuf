@@ -88,8 +88,9 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache: boolean = false
 ): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn);
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
 }
 
 function introspectHeaderMeta(

@@ -396,6 +396,8 @@ describe('geojson module', () => {
                 deserialize(
                     'http://flatgeobuf.septima.dk/countries.fgb',
                     r,
+                    undefined,
+                    true
                 ) as AsyncGenerator,
             );
             expect(features.length).to.eq(3);
