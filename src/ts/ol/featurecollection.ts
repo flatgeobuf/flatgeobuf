@@ -29,7 +29,13 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false
+    nocache: boolean = false,
 ): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
+    return genericDeserializeFiltered(
+        url,
+        rect,
+        fromFeature,
+        headerMetaFn,
+        nocache,
+    );
 }

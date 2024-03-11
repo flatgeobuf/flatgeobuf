@@ -161,7 +161,10 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     return Column.endColumn(builder);
 }
 
-export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array {
+export function buildHeader(
+    header: HeaderMeta,
+    crsCode: number = 0,
+): Uint8Array {
     const builder = new flatbuffers.Builder();
 
     let columnOffsets = null;
@@ -180,8 +183,7 @@ export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array
         crsOffset = Crs.endCrs(builder);
     }
     Header.startHeader(builder);
-    if (crsOffset)
-        Header.addCrs(builder, crsOffset);
+    if (crsOffset) Header.addCrs(builder, crsOffset);
     Header.addFeaturesCount(builder, BigInt(header.featuresCount));
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);

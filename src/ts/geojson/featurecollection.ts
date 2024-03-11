@@ -29,7 +29,7 @@ import {
 
 export function serialize(
     featurecollection: GeoJsonFeatureCollection,
-    crsCode: number = 0
+    crsCode: number = 0,
 ): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta, crsCode);
@@ -88,9 +88,15 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false
+    nocache: boolean = false,
 ): AsyncGenerator<any, void, unknown> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
+    return genericDeserializeFiltered(
+        url,
+        rect,
+        fromFeature,
+        headerMetaFn,
+        nocache,
+    );
 }
 
 function introspectHeaderMeta(

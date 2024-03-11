@@ -55,13 +55,20 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     fromFeature: FromFeatureFn,
     rect?: Rect,
-    nocache: boolean = false
+    nocache: boolean = false,
 ): IFeature[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array)
         return deserializeArray(input, fromFeature);
     else if (input instanceof ReadableStream)
         return deserializeStream(input, fromFeature);
-    else return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache);
+    else
+        return deserializeFiltered(
+            input,
+            rect as Rect,
+            fromFeature,
+            undefined,
+            nocache,
+        );
 }
 
 export { serialize } from './generic/featurecollection.js';

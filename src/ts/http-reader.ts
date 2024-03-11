@@ -26,7 +26,7 @@ export class HttpReader {
         header: HeaderMeta,
         headerLength: number,
         indexLength: number,
-        nocache: boolean
+        nocache: boolean,
     ) {
         this.headerClient = headerClient;
         this.header = header;
@@ -117,7 +117,13 @@ export class HttpReader {
         );
 
         Logger.debug('completed: opening http reader');
-        return new HttpReader(headerClient, header, headerLength, indexLength, nocache);
+        return new HttpReader(
+            headerClient,
+            header,
+            headerLength,
+            indexLength,
+            nocache,
+        );
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<Feature, void, unknown> {
@@ -185,7 +191,8 @@ export class HttpReader {
         }
 
         const promises: AsyncGenerator<Feature, any, any>[] = batches.flatMap(
-            (batch: [number, number][]) => this.readFeatureBatch(batch, this.nocache),
+            (batch: [number, number][]) =>
+                this.readFeatureBatch(batch, this.nocache),
         );
 
         // Fetch all batches concurrently, yielding features as they become
@@ -203,7 +210,10 @@ export class HttpReader {
     }
 
     buildFeatureClient(nocache: boolean): BufferedHttpRangeClient {
-        return new BufferedHttpRangeClient(this.headerClient.httpClient, nocache);
+        return new BufferedHttpRangeClient(
+            this.headerClient.httpClient,
+            nocache,
+        );
     }
 
     /**
@@ -391,10 +401,9 @@ class HttpRangeClient {
         // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
         // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
         const headers: HeadersInit = {
-            Range: range
-        }
-        if (this.nocache)
-            headers['Cache-Control'] = 'no-cache, no-store'
+            Range: range,
+        };
+        if (this.nocache) headers['Cache-Control'] = 'no-cache, no-store';
 
         const response = await fetch(this.url, { headers });
 
