@@ -390,7 +390,7 @@ class HttpRangeClient {
         // See:
         // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
         // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
-        const headers = {
+        const headers: HeadersInit = {
             Range: range
         }
         if (this.nocache)
