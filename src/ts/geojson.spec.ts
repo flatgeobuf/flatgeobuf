@@ -28,12 +28,12 @@ function makeFeatureCollection(wkt: string, properties?: any) {
 function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
     const reader = new WKTReader();
     const writer = new GeoJSONWriter();
-    const geometries = wkts.map(wkt => writer.write(reader.read(wkt)));
+    const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
     const features = geometries.map(
         (geometry) =>
             ({ type: 'Feature', geometry, properties: {} }) as IGeoJsonFeature,
     );
-    if (properties) features.forEach(f => f.properties = properties);
+    if (properties) features.forEach((f) => (f.properties = properties));
     return {
         type: 'FeatureCollection',
         features,
