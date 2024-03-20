@@ -26,14 +26,14 @@ function makeFeatureCollection(wkt: string, properties?: any) {
 }
 
 function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
-    const reader: any = new WKTReader(undefined);
-    const writer: any = new GeoJSONWriter();
-    const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
+    const reader = new WKTReader();
+    const writer = new GeoJSONWriter();
+    const geometries = wkts.map(wkt => writer.write(reader.read(wkt)));
     const features = geometries.map(
         (geometry) =>
             ({ type: 'Feature', geometry, properties: {} }) as IGeoJsonFeature,
     );
-    if (properties) features.forEach((f) => (f.properties = properties));
+    if (properties) features.forEach(f => f.properties = properties);
     return {
         type: 'FeatureCollection',
         features,
@@ -368,13 +368,13 @@ describe('geojson module', () => {
         it('Should parse countries fgb produced from GDAL byte array', () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
-            let headerMeta: HeaderMeta;
+            let headerMeta: HeaderMeta | undefined;
             const geojson = deserialize(
                 bytes,
                 undefined,
                 (header: HeaderMeta) => (headerMeta = header),
             ) as GeoJsonFeatureCollection;
-            expect(headerMeta.crs.code).to.eq(4326);
+            expect(headerMeta?.crs?.code).to.eq(4326);
             expect(geojson.features.length).to.eq(179);
             for (const f of geojson.features) {
                 const g = f.geometry as
@@ -397,7 +397,7 @@ describe('geojson module', () => {
                     'http://flatgeobuf.septima.dk/countries.fgb',
                     r,
                     undefined,
-                    true,
+                    false,
                 ) as AsyncGenerator,
             );
             expect(features.length).to.eq(3);

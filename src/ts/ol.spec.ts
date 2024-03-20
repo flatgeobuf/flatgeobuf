@@ -7,17 +7,13 @@ import { deserialize, serialize } from './ol.js';
 import Feature from 'ol/Feature.js';
 import WKT from 'ol/format/WKT.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import { TextDecoder, TextEncoder } from 'util';
 import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 import Geometry from 'ol/geom/Geometry.js';
-
-global['TextDecoder'] = TextDecoder;
-global['TextEncoder'] = TextEncoder;
 
 const format = new WKT();
 const geojson = new GeoJSON();
 
-const g = (features: any) => geojson.writeFeatures(features);
+const g = features => geojson.writeFeatures(features);
 
 function makeFeatureCollection(wkt: string /*, properties?: any*/) {
     return makeFeatureCollectionFromArray([wkt] /*, properties*/);
@@ -207,7 +203,7 @@ describe('ol module', () => {
             expect(features.length).to.eq(3221);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
+                    (f.getGeometry() as SimpleGeometry).getCoordinates()?.length,
                 ).to.be.greaterThan(0);
         });
 
@@ -218,7 +214,7 @@ describe('ol module', () => {
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
+                    (f.getGeometry() as SimpleGeometry).getCoordinates()?.length,
                 ).to.be.greaterThan(0);
         });
 
@@ -234,7 +230,7 @@ describe('ol module', () => {
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.getGeometry() as SimpleGeometry).getCoordinates().length,
+                    (f.getGeometry() as SimpleGeometry).getCoordinates()?.length,
                 ).to.be.greaterThan(0);
         });
 
