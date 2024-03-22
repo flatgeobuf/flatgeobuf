@@ -77,6 +77,9 @@ func TestCreateFGBFileAndBasicSearch(t *testing.T) {
 				createSquareFeature(-1, 0, 0, 1, 2),
 				createSquareFeature(-1, -1, 0, 0, 3),
 				createSquareFeature(0, -1, 1, 0, 4),
+				createMultiPolygonFeature([][]float64{
+					{4, 4, 5, 5}, {5, 5, 6, 6}, {10, 4, 11, 5},
+				}, 5),
 			},
 		}
 	}
@@ -90,7 +93,7 @@ func TestCreateFGBFileAndBasicSearch(t *testing.T) {
 		header := writer.NewHeader(headerBuilder).
 			SetName("Households ShapeFile Data").
 			SetTitle("Households ShapeFile Data").
-			SetGeometryType(flattypes.GeometryTypePolygon)
+			SetGeometryType(flattypes.GeometryTypeUnknown)
 		householdsCol := writer.NewColumn(headerBuilder).
 			SetName("Households").
 			SetType(flattypes.ColumnTypeUInt)
@@ -137,6 +140,8 @@ func TestCreateFGBFileAndBasicSearch(t *testing.T) {
 			expectedResultProperties: []int{1, 2, 3, 4}},
 		{searchMinX: 2, searchMinY: 2, searchMaxX: 3, searchMaxY: 3,
 			expectedResultProperties: []int{}},
+		{searchMinX: 4.5, searchMinY: 4.5, searchMaxX: 4.6, searchMaxY: 4.6,
+			expectedResultProperties: []int{5}},
 	}
 
 	for _, test := range tests {
@@ -178,6 +183,19 @@ func createSquareFeature(xmin, ymin, xmax, ymax float64, propertyCount uint16) *
 		xmax, ymax,
 		xmax, ymin,
 	})
+	return writer.NewFeature(featureBuilder).SetProperties(properties).SetGeometry(geo)
+}
+
+func createMultiPolygonFeature(multiCoords [][]float64, propertyCount uint16) *writer.Feature {
+	properties := make([]byte, 5)
+	binary.LittleEndian.PutUint16(properties[1:], propertyCount)
+
+	featureBuilder := flatbuffers.NewBuilder(0)
+	parts := make([]writer.Geometry, len(multiCoords))
+	for i, coords := range multiCoords {
+		parts[i] = *writer.NewGeometry(featureBuilder).SetXY(coords)
+	}
+	geo := writer.NewGeometry(featureBuilder).SetXY([]float64{}).SetParts(parts)
 	return writer.NewFeature(featureBuilder).SetProperties(properties).SetGeometry(geo)
 }
 
