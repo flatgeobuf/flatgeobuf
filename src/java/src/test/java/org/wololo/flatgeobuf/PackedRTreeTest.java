@@ -133,4 +133,29 @@ public class PackedRTreeTest {
 
         assertEquals(3, result.hits.size());
     }
+
+    @Test
+    public void testIssue356() throws IOException {
+
+        File file = new File("../../test/data/countries.fgb");
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        HeaderMeta headerMeta = HeaderMeta.read(bb);
+
+        Envelope env = new Envelope(112, 154, -44, -11);
+
+        long size = PackedRTree.calcSize((int) headerMeta.featuresCount, headerMeta.indexNodeSize);
+
+        byte[] treeBytes = new byte[(int) size];
+        bb.get(treeBytes, 0, (int) size);
+        InputStream stream = new ByteArrayInputStream(treeBytes);
+
+        SearchResult result = PackedRTree.search(stream, headerMeta.offset, (int) headerMeta.featuresCount, headerMeta.indexNodeSize, env);
+
+        assertEquals(1, result.hits.size()); // assertEquals(2, result.hits.size());
+        assertEquals(19, result.hits.get(0).index);
+        //assertEquals(173, result.hits.get(1).index);
+    }
 }

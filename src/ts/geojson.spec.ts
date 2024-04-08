@@ -407,6 +407,23 @@ describe('geojson module', () => {
                 ).to.be.greaterThan(0);
         });
 
+        it('Reproduction issue xxx', async () => {
+            const r: Rect = { minX: 112, minY: -44, maxX: 154, maxY: -11 };
+            const features = await takeAsync(
+                deserialize(
+                    'http://flatgeobuf.septima.dk/countries.fgb',
+                    r,
+                    undefined,
+                    false,
+                ) as AsyncGenerator,
+            );
+            expect(features.length).to.eq(1);
+            for (const f of features)
+                expect(
+                    (f.geometry.coordinates[0] as number[]).length,
+                ).to.be.greaterThan(0);
+        });
+
         it('Should parse countries fgb produced from GDAL stream no filter', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
