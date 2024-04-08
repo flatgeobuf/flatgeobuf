@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
+import 'core-js/actual/array/from-async';
 
-import { arrayToStream, takeAsync } from './streams/utils.js';
+import toReadableStream from 'to-readable-stream';
 import { deserialize, serialize } from './ol.js';
 
 import Feature from 'ol/Feature.js';
@@ -42,8 +43,8 @@ describe('ol module', () => {
         it('Point via stream', async () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
-            const stream = arrayToStream(s);
-            const actual = await takeAsync(
+            const stream = toReadableStream(s);
+            const actual = await Array.fromAsync(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
                 ) as AsyncGenerator,
@@ -223,8 +224,8 @@ describe('ol module', () => {
         it('Should parse countries fgb produced from GDAL stream', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
-            const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync(
+            const stream = toReadableStream(bytes.buffer);
+            const features = await Array.fromAsync(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
                 ) as AsyncGenerator,
