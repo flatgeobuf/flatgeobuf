@@ -46,6 +46,8 @@ func geomBoundingBox(g *Geometry) (minX, minY, maxX, maxY float64) {
 	}
 
 	if len(g.ends) != 0 {
+		// Ends being the number of point we multiply by 2 to get the last
+		// x y coordinates of the first part
 		firstPartEnd = int(g.ends[0]) * 2
 	}
 	firstPart := g.xy[0:firstPartEnd]
