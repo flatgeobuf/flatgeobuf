@@ -105,11 +105,16 @@ func (g *Geometry) Build() flatbuffers.UOffsetT {
 	}
 	tmOffset := g.builder.EndVector(len(g.tm))
 
-	flattypes.GeometryStartPartsVector(g.builder, len(g.parts))
+	partsOffsets := make([]flatbuffers.UOffsetT, 0, len(g.parts))
 	for i := len(g.parts) - 1; i >= 0; i-- {
-		g.builder.PrependUOffsetT(g.parts[i].Build())
+		partsOffsets = append(partsOffsets, g.parts[i].Build())
 	}
-	partsOffset := g.builder.EndVector(len(g.parts))
+
+	flattypes.GeometryStartPartsVector(g.builder, len(partsOffsets))
+	for _, partOffset := range partsOffsets {
+		g.builder.PrependUOffsetT(partOffset)
+	}
+	partsOffset := g.builder.EndVector(len(partsOffsets))
 
 	flattypes.GeometryStart(g.builder)
 
