@@ -33,7 +33,7 @@ pub struct FeatureIter<R, S> {
     feat_no: usize,
     /// File offset within feature section
     cur_pos: u64,
-    /// All features read or end of file reached
+    /// Reading state
     state: State,
     /// Whether or not the underlying reader is Seek
     seekable_marker: PhantomData<S>,
