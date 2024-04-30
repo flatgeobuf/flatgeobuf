@@ -33,10 +33,18 @@ pub struct FeatureIter<R, S> {
     feat_no: usize,
     /// File offset within feature section
     cur_pos: u64,
-    /// All features read or end of file reached
-    finished: bool,
+    /// Reading state
+    state: State,
     /// Whether or not the underlying reader is Seek
     seekable_marker: PhantomData<S>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum State {
+    Init,
+    ReadFirstFeatureSize,
+    Reading,
+    Finished,
 }
 
 #[doc(hidden)]
@@ -237,6 +245,9 @@ impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
+                if self.state == State::ReadFirstFeatureSize {
+                    self.state = State::Reading;
+                }
                 // skip features
                 let seek_bytes = item.offset as u64 - self.cur_pos;
                 io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
@@ -289,6 +300,9 @@ impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
+                if self.state == State::ReadFirstFeatureSize {
+                    self.state = State::Reading;
+                }
                 // skip features
                 let seek_bytes = item.offset as u64 - self.cur_pos;
                 self.reader.seek(SeekFrom::Current(seek_bytes as i64))?;
@@ -421,19 +435,36 @@ mod geozero_api {
 // Shared FallibleStreamingIterator implementation
 impl<R: Read, S> FeatureIter<R, S> {
     fn new(
-        mut reader: R,
+        reader: R,
         verify: bool,
-        mut fbs: FgbFeature,
+        fbs: FgbFeature,
         item_filter: Option<Vec<packed_r_tree::SearchResultItem>>,
     ) -> FeatureIter<R, S> {
-        let finished = Self::read_feature_size(&mut fbs, &mut reader);
-        let count = match &item_filter {
+        let mut iter = FeatureIter {
+            reader,
+            verify,
+            fbs,
+            item_filter,
+            count: None,
+            feat_no: 0,
+            cur_pos: 0,
+            state: State::Init,
+            seekable_marker: PhantomData,
+        };
+
+        if iter.read_feature_size() {
+            iter.state = State::Finished
+        } else {
+            iter.state = State::ReadFirstFeatureSize
+        };
+
+        iter.count = match &iter.item_filter {
             Some(list) => Some(list.len()),
             None => {
-                let feat_count = fbs.header().features_count() as usize;
+                let feat_count = iter.fbs.header().features_count() as usize;
                 if feat_count > 0 {
                     Some(feat_count)
-                } else if finished {
+                } else if iter.state == State::Finished {
                     Some(0)
                 } else {
                     None
@@ -441,17 +472,7 @@ impl<R: Read, S> FeatureIter<R, S> {
             }
         };
 
-        FeatureIter {
-            reader,
-            verify,
-            fbs,
-            item_filter,
-            count,
-            feat_no: 0,
-            cur_pos: 4,
-            finished,
-            seekable_marker: PhantomData,
-        }
+        iter
     }
 
     /// Header information
@@ -465,12 +486,12 @@ impl<R: Read, S> FeatureIter<R, S> {
     }
 
     fn advance_finished(&mut self) -> bool {
-        if self.finished {
+        if self.state == State::Finished {
             return true;
         }
         if let Some(count) = self.count {
             if self.feat_no >= count {
-                self.finished = true;
+                self.state = State::Finished;
                 return true;
             }
         }
@@ -478,16 +499,33 @@ impl<R: Read, S> FeatureIter<R, S> {
     }
 
     /// Read feature size and return true if end of dataset reached
-    fn read_feature_size(fbs: &mut FgbFeature, reader: &mut R) -> bool {
-        fbs.feature_buf.resize(4, 0);
-        reader.read_exact(&mut fbs.feature_buf).is_err()
+    fn read_feature_size(&mut self) -> bool {
+        self.fbs.feature_buf.resize(4, 0);
+        self.cur_pos += 4;
+        self.reader.read_exact(&mut self.fbs.feature_buf).is_err()
     }
 
     fn read_feature(&mut self) -> Result<()> {
-        // Read feature size if not already read in select_all or select_bbox
-        if self.cur_pos != 4 && Self::read_feature_size(&mut self.fbs, &mut self.reader) {
-            self.finished = true;
-            return Ok(());
+        match self.state {
+            State::ReadFirstFeatureSize => {
+                self.state = State::Reading;
+            }
+            State::Reading => {
+                if self.read_feature_size() {
+                    self.state = State::Finished;
+                    return Ok(());
+                }
+            }
+            State::Finished => {
+                debug_assert!(
+                    false,
+                    "shouldn't call read_feature on already finished Iter"
+                );
+                return Ok(());
+            }
+            State::Init => {
+                unreachable!("should have read first feature size before reading any features")
+            }
         }
         let sbuf = &self.fbs.feature_buf;
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
@@ -497,20 +535,21 @@ impl<R: Read, S> FeatureIter<R, S> {
             let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)?;
         }
         self.feat_no += 1;
-        self.cur_pos += self.fbs.feature_buf.len() as u64;
+        self.cur_pos += feature_size as u64;
         Ok(())
     }
 
     fn iter_get(&self) -> Option<&FgbFeature> {
-        if self.finished {
+        if self.state == State::Finished {
             None
         } else {
+            debug_assert!(self.state == State::Reading);
             Some(&self.fbs)
         }
     }
 
     fn iter_size_hint(&self) -> (usize, Option<usize>) {
-        if self.finished {
+        if self.state == State::Finished {
             (0, Some(0))
         } else if let Some(count) = self.count {
             let remaining = count - self.feat_no;
