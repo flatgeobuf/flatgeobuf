@@ -117,7 +117,8 @@ jobs:
             src/rust/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('src/rust/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - run: cd src/rust && cargo test
+      - run: cd src/rust && cargo test && cargo check --target wasm32-unknown-unknown
+
 
   test-rust-no-default-features:
     runs-on: ubuntu-latest
