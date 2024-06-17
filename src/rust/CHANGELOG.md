@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix WASM build
+
 ## [4.2.0] - 2024-05-28
 
 - Fix "UnexpectedEof" error when bbox results includes first item.
