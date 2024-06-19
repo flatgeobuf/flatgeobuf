@@ -18,10 +18,10 @@ jobs:
         with:
           cache: 'yarn'
       - run: yarn
+      - name: Run build
+        run: yarn build
       - name: Run tests
         run: yarn test
-      - name: Run tsc compile
-        run: yarn build
       - name: Run linter
         run: yarn fmt-check
       - name: Run type check
