@@ -8,6 +8,9 @@ name: CI
 jobs:
   test-ts:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ 18, 20, 22 ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -100,6 +103,8 @@ jobs:
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Install wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
       - name: Install Debian dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -117,7 +122,11 @@ jobs:
             src/rust/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('src/rust/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - run: cd src/rust && cargo test
+      - name: Tests
+        run: cd src/rust && cargo test
+      - name: Check wasm build
+        run: cd src/rust && cargo check --target wasm32-unknown-unknown
+
 
   test-rust-no-default-features:
     runs-on: ubuntu-latest

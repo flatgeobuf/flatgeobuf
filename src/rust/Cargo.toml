@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "4.1.0"
+version = "4.2.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2021"
 description = "FlatGeobuf for Rust"
@@ -18,8 +18,8 @@ http = ["http-range-client", "bytes", "reqwest"]
 [dependencies]
 flatbuffers = "23.5.26"
 byteorder = "1.5.0"
-geozero = { version = "0.12.0", default-features = false }
-http-range-client = { version = "0.7.2", optional = true }
+geozero = { version = "0.13.0", default-features = false }
+http-range-client = { version = "0.7.2", optional = true, default-features = false, features = ["reqwest-async"] }
 bytes = { version = "1.5.0", optional = true }
 log = "0.4.20"
 fallible-streaming-iterator = "0.1.9"
@@ -27,7 +27,7 @@ tempfile = "3.8.1"
 reqwest = { version = "0.11.22", optional = true }
 
 [dev-dependencies]
-geozero = { version = "0.12.0", default-features = true }
+geozero = { version = "0.13.0", default-features = true }
 seek_bufread = "1.2.2"
 rand = "0.8.5"
 hex = "0.4.3"

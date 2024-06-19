@@ -138,6 +138,23 @@ fn read_bbox() -> Result<()> {
 }
 
 #[test]
+fn read_bbox_including_first_feature() -> Result<()> {
+    let mut filein = BufReader::new(File::open("../../test/data/countries.fgb")?);
+    let mut fgb = FgbReader::open(&mut filein)?
+        .select_bbox(-80.0, -70.0, -70.0, -50.0)
+        .unwrap();
+    assert_eq!(fgb.features_count(), Some(3));
+    let mut cnt = 0;
+    while let Some(feature) = fgb.next()? {
+        let _props = feature.properties()?;
+        let _geometry = feature.geometry().unwrap();
+        cnt += 1
+    }
+    assert_eq!(cnt, 3);
+    Ok(())
+}
+
+#[test]
 fn read_empty_dataset() -> Result<()> {
     let mut filein = BufReader::new(File::open("../../test/data/empty.fgb")?);
     let mut fgb = FgbReader::open(&mut filein)?.select_all()?;

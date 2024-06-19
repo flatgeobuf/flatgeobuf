@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Fix WASM build
+
+## [4.2.0] - 2024-05-28
+
+- Fix "UnexpectedEof" error when bbox results includes first item.
+- Upgrade to geozero 0.13.0
+
 ## [4.1.0] - 2024-02-24
 
 - Potentially reduce requests for feature data by correctly including distance
