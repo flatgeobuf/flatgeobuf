@@ -24,6 +24,8 @@ jobs:
         run: yarn build
       - name: Run linter
         run: yarn fmt-check
+      - name: Run type check
+        run: yarn type-check
 
   test-cpp:
     runs-on: ubuntu-latest
