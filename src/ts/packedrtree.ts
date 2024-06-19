@@ -1,5 +1,4 @@
 import Config from './config.js';
-import Logger from './logger.js';
 
 export const NODE_ITEM_BYTE_LEN: number = 8 * 4 + 8;
 /**
@@ -129,7 +128,7 @@ export async function* streamSearch(
     }
 
     const { minX, minY, maxX, maxY } = rect;
-    Logger.info(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
+    console.info(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
     const levelBounds = generateLevelBounds(numItems, nodeSize);
     const firstLeafNodeIdx = levelBounds[0][0];
 
@@ -141,7 +140,7 @@ export async function* streamSearch(
 
     const queue: Array<NodeRange> = [rootNodeRange];
 
-    Logger.debug(
+    console.debug(
         `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`,
     );
 
@@ -149,7 +148,7 @@ export async function* streamSearch(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nodeRange = queue.shift()!;
 
-        Logger.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
+        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
         const nodeRangeStartIdx = nodeRange.startNodeIdx();
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
@@ -225,7 +224,6 @@ export async function* streamSearch(
                     }
                 })();
 
-                // Logger.debug(`featureByteOffset: ${featureByteOffset}, nodeIdx: ${nodeIdx}, featureLength: ${featureLength}`);
                 const featureIdx = nodeIdx - firstLeafNodeIdx;
                 yield [
                     Number(featureByteOffset),
@@ -252,7 +250,7 @@ export async function* streamSearch(
                 firstChildNodeIdx <
                     nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
             ) {
-                Logger.debug(
+                console.debug(
                     `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newEndNodeIdx: ${nearestNodeRange.endNodeIdx()} -> ${firstChildNodeIdx}`,
                 );
                 nearestNodeRange.extendEndNodeIdx(Number(firstChildNodeIdx));
@@ -273,11 +271,11 @@ export async function* streamSearch(
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() == newNodeRange.level()
             ) {
-                Logger.info(
+                console.info(
                     `Same level, but too far away. Pushing new request for nodeIdx: ${firstChildNodeIdx} rather than merging with distant ${nearestNodeRange}`,
                 );
             } else {
-                Logger.info(
+                console.info(
                     `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`,
                 );
             }

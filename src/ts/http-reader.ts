@@ -10,7 +10,6 @@ import {
 } from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './config.js';
-import Logger from './logger.js';
 import HeaderMeta, { fromByteBuffer } from './header-meta.js';
 import { Feature } from './flat-geobuf/feature.js';
 
@@ -70,7 +69,7 @@ export class HttpReader {
         })();
 
         const minReqLength = assumedHeaderLength + assumedIndexLength;
-        Logger.debug(
+        console.debug(
             `fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`,
         );
 
@@ -79,10 +78,10 @@ export class HttpReader {
                 await headerClient.getRange(0, 8, minReqLength, 'header'),
             );
             if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) {
-                Logger.error(`bytes: ${bytes} != ${magicbytes}`);
+                console.error(`bytes: ${bytes} != ${magicbytes}`);
                 throw new Error('Not a FlatGeobuf file');
             }
-            Logger.debug('magic bytes look good');
+            console.debug('magic bytes look good');
         }
 
         let headerLength: number;
@@ -99,7 +98,7 @@ export class HttpReader {
                 // minimum size check avoids panic in FlatBuffers header decoding
                 throw new Error('Invalid header size');
             }
-            Logger.debug(`headerLength: ${headerLength}`);
+            console.debug(`headerLength: ${headerLength}`);
         }
 
         const bytes = await headerClient.getRange(
@@ -116,7 +115,7 @@ export class HttpReader {
             header.indexNodeSize,
         );
 
-        Logger.debug('completed: opening http reader');
+        console.debug('completed: opening http reader');
         return new HttpReader(
             headerClient,
             header,
@@ -155,7 +154,7 @@ export class HttpReader {
             const [featureOffset, ,] = searchResult;
             let [, , featureLength] = searchResult;
             if (!featureLength) {
-                Logger.info('final feature');
+                console.info('final feature');
                 // Normally we get the feature length by subtracting between
                 // adjacent nodes from the index, which we can't do for the
                 // _very_ last feature in a dataset.
@@ -176,7 +175,7 @@ export class HttpReader {
             const prevFeature = currentBatch[currentBatch.length - 1];
             const gap = featureOffset - (prevFeature[0] + prevFeature[1]);
             if (gap > Config.global.extraRequestThreshold()) {
-                Logger.info(
+                console.info(
                     `Pushing new feature batch, since gap ${gap} was too large`,
                 );
                 batches.push(currentBatch);
@@ -324,7 +323,7 @@ class BufferedHttpRangeClient {
         const lengthToFetch = Math.max(length, minReqLength);
 
         this.bytesEverFetched += lengthToFetch;
-        Logger.debug(
+        console.debug(
             `requesting for new Range: ${start}-${start + lengthToFetch - 1}`,
         );
         this.buffer = await this.httpClient.getRange(
@@ -343,7 +342,7 @@ class BufferedHttpRangeClient {
         const requested = this.bytesEverFetched;
         const efficiency = ((100.0 * used) / requested).toFixed(2);
 
-        Logger.info(
+        console.info(
             `${category} bytes used/requested: ${used} / ${requested} = ${efficiency}%`,
         );
     }
@@ -369,7 +368,7 @@ class HttpRangeClient {
         this.bytesEverRequested += length;
 
         const range = `bytes=${begin}-${begin + length - 1}`;
-        Logger.info(
+        console.info(
             `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`,
         );
 

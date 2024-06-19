@@ -12,7 +12,6 @@ import HeaderMeta, { fromByteBuffer } from '../header-meta.js';
 
 import { buildFeature, IFeature } from './feature.js';
 import { HttpReader } from '../http-reader.js';
-import Logger from '../logger.js';
 import { Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
 import { HeaderMetaFn } from '../generic.js';
@@ -127,7 +126,7 @@ export async function* deserializeFiltered(
     nocache: boolean = false,
 ): AsyncGenerator<IFeature> {
     const reader = await HttpReader.open(url, nocache);
-    Logger.debug('opened reader');
+    console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
 
     for await (const feature of reader.selectBbox(rect)) {
