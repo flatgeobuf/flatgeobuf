@@ -2,14 +2,13 @@ import { describe, it, expect } from 'vitest';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
 import { readFileSync } from 'fs';
-import fetch from 'node-fetch';
-import { arrayToStream, takeAsync } from './streams/utils.js';
+import toReadableStream from 'to-readable-stream';
+import 'core-js/actual/array/from-async';
+
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
-
-global.fetch = fetch as any;
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
@@ -59,10 +58,8 @@ describe('geojson module', () => {
         it('Point via stream', async () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
-            const stream = arrayToStream(s);
-            const actual = await takeAsync(
-                deserialize(stream) as AsyncGenerator,
-            );
+            const stream = toReadableStream(s);
+            const actual = await Array.fromAsync(deserialize(stream) as AsyncGenerator);
             expect(actual).to.deep.equal(expected.features);
         });
 
@@ -128,8 +125,8 @@ describe('geojson module', () => {
                 `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
             );
             const s = serialize(expected);
-            const stream = arrayToStream(s);
-            const actual = await takeAsync(
+            const stream = toReadableStream(s);
+            const actual = await Array.fromAsync(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
                 ) as AsyncGenerator,
@@ -392,7 +389,7 @@ describe('geojson module', () => {
 
         it('Should parse countries fgb produced from GDAL stream filter', async () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
-            const features = await takeAsync(
+            const features = await Array.fromAsync(
                 deserialize(
                     'http://flatgeobuf.septima.dk/countries.fgb',
                     r,
@@ -410,8 +407,8 @@ describe('geojson module', () => {
         it('Should parse countries fgb produced from GDAL stream no filter', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
-            const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync(
+            const stream = toReadableStream(bytes.buffer);
+            const features = await Array.fromAsync(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
                 ) as AsyncGenerator,
