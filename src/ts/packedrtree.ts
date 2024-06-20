@@ -148,7 +148,9 @@ export async function* streamSearch(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nodeRange = queue.shift()!;
 
-        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
+        console.debug(
+            `popped node: ${nodeRange}, queueLength: ${queue.length}`,
+        );
 
         const nodeRangeStartIdx = nodeRange.startNodeIdx();
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
