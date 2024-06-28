@@ -2,7 +2,7 @@ import * as flatbuffers from 'flatbuffers';
 import { Repeater } from '@repeaterjs/repeater';
 
 import {
-    Rect,
+    type Rect,
     calcTreeSize,
     DEFAULT_NODE_SIZE,
     NODE_ITEM_BYTE_LEN,
@@ -10,7 +10,8 @@ import {
 } from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './config.js';
-import HeaderMeta, { fromByteBuffer } from './header-meta.js';
+import type HeaderMeta from './header-meta.js';
+import { fromByteBuffer } from './header-meta.js';
 import { Feature } from './flat-geobuf/feature.js';
 
 export class HttpReader {

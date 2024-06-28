@@ -7,7 +7,7 @@ import {
 
 import { type FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 
-import { Rect } from './packedrtree.js';
+import { type Rect } from './packedrtree.js';
 import { type IGeoJsonFeature } from './geojson/feature.js';
 import { type HeaderMetaFn } from './generic.js';
 

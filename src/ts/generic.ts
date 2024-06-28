@@ -2,7 +2,7 @@ import {
     deserialize as deserializeArray,
     deserializeStream,
     deserializeFiltered,
-    FromFeatureFn,
+    type FromFeatureFn,
 } from './generic/featurecollection.js';
 
 import { type Rect } from './packedrtree.js';

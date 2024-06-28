@@ -4,7 +4,7 @@ import type HeaderMeta from '../header-meta.js';
 import { fromGeometry } from './geometry.js';
 import { type IFeature, parseProperties } from '../generic/feature.js';
 
-import { Feature as GeoJsonFeature } from 'geojson';
+import { type Feature as GeoJsonFeature } from 'geojson';
 
 export interface IGeoJsonFeature extends IFeature, GeoJsonFeature {}
 

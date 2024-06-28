@@ -4,10 +4,10 @@ import {
     deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
 } from '../generic/featurecollection.js';
-import { IFeature } from '../generic/feature.js';
+import { type IFeature } from '../generic/feature.js';
 import { fromFeature } from './feature.js';
-import { HeaderMetaFn } from '../generic.js';
-import { Rect } from '../packedrtree.js';
+import { type HeaderMetaFn } from '../generic.js';
+import { type Rect } from '../packedrtree.js';
 
 export { serialize as serialize };
 
