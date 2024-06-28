@@ -5,11 +5,11 @@ import {
     serialize as fcSerialize,
 } from './geojson/featurecollection.js';
 
-import { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
+import { type FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 
 import { Rect } from './packedrtree.js';
-import { IGeoJsonFeature } from './geojson/feature.js';
-import { HeaderMetaFn } from './generic.js';
+import { type IGeoJsonFeature } from './geojson/feature.js';
+import { type HeaderMetaFn } from './generic.js';
 
 /**
  * Serialize GeoJSON to FlatGeobuf

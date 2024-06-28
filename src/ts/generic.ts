@@ -5,9 +5,9 @@ import {
     FromFeatureFn,
 } from './generic/featurecollection.js';
 
-import { Rect } from './packedrtree.js';
-import { IFeature } from './generic/feature.js';
-import HeaderMeta from './header-meta.js';
+import { type Rect } from './packedrtree.js';
+import { type IFeature } from './generic/feature.js';
+import type HeaderMeta from './header-meta.js';
 
 export { GeometryType } from './flat-geobuf/geometry-type.js';
 export { ColumnType } from './flat-geobuf/column-type.js';

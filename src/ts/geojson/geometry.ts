@@ -1,7 +1,7 @@
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 
-import {
+import type {
     Geometry as GeoJsonGeometry,
     Point,
     MultiPoint,
@@ -13,7 +13,7 @@ import {
 } from 'geojson';
 
 import {
-    IParsedGeometry,
+    type IParsedGeometry,
     flat,
     pairFlatCoordinates,
     toGeometryType,
