@@ -41,6 +41,11 @@ Encoding of any string value is assumed to be UTF-8.
 
 A changelog of the specification is available [here](doc/format-changelog.md).
 
+I recommend these blog posts by Horace Williams provides more details and explanations:
+
+* https://worace.works/2022/02/23/kicking-the-tires-flatgeobuf/
+* https://worace.works/2022/03/12/flatgeobuf-implementers-guide/
+
 ## Performance
 
 Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from [download.geofabrik.de](https://download.geofabrik.de), containing 906602 LineString features with a set of attributes.
