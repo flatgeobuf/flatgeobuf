@@ -1,6 +1,6 @@
 {
   "name": "flatgeobuf",
-  "version": "3.32.0",
+  "version": "3.32.1",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
     "build": "rm lib -rf && swc ./src/ts -d lib/mjs && mv ./lib/mjs/src/ts/* ./lib/mjs -f && rm ./lib/mjs/src -rf && tsc -p config/tsconfig.mjs.json --emitDeclarationOnly && rollup -c config/rollup.config.js",
