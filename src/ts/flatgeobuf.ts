@@ -12,8 +12,8 @@ export { type FromFeatureFn } from './generic/featurecollection.js';
 
 export { type IGeoJsonFeature } from './geojson/feature.js';
 
-export { default as HeaderMeta } from './header-meta.js';
-export { default as ColumnMeta } from './column-meta.js';
-export { default as CrsMeta } from './crs-meta.js';
+export { type default as HeaderMeta } from './header-meta.js';
+export { type default as ColumnMeta } from './column-meta.js';
+export { type default as CrsMeta } from './crs-meta.js';
 
-export { Rect } from './packedrtree.js';
+export { type Rect } from './packedrtree.js';
