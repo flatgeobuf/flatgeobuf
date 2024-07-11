@@ -142,7 +142,7 @@ export function buildFeature(
         }
     }
 
-    let propertiesOffset = null;
+    let propertiesOffset = 0;
     if (offset > 0)
         propertiesOffset = Feature.createPropertiesVector(
             builder,

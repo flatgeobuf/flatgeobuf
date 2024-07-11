@@ -167,7 +167,7 @@ export function buildHeader(
 ): Uint8Array {
     const builder = new flatbuffers.Builder();
 
-    let columnOffsets = null;
+    let columnOffsets = 0;
     if (header.columns)
         columnOffsets = Header.createColumnsVector(
             builder,

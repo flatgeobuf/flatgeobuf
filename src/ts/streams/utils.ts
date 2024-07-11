@@ -20,7 +20,7 @@ export async function takeAsync(
     asyncIterable: AsyncIterable<any>,
     count = Infinity,
 ): Promise<any[]> {
-    const result = [];
+    const result: any[] = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();
     while (result.length < count) {
         const { value, done } = await iterator.next();

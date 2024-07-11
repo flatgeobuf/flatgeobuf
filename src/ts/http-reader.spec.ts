@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { HttpReader } from './http-reader';
-import { fromFeature } from './geojson/feature';
+import { fromFeature, IGeoJsonFeature } from './geojson/feature';
 import LocalWebServer from 'local-web-server';
 
 describe('http reader', () => {
@@ -22,14 +22,14 @@ describe('http reader', () => {
         };
         const reader = await HttpReader.open(testUrl, false);
 
-        const features = [];
+        const features: IGeoJsonFeature[] = [];
         for await (const feature of reader.selectBbox(rect)) {
             features.push(fromFeature(feature, reader.header));
         }
         expect(features.length).toBe(86);
         const actual = features
             .slice(0, 4)
-            .map((f) => `${f.properties.NAME}, ${f.properties.STATE}`);
+            .map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
         const expected = [
             'Cheyenne, KS',
             'Rawlins, KS',
