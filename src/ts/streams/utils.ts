@@ -16,11 +16,11 @@ export function arrayToStream(array: ArrayBuffer): ReadableStream {
     return webReader;
 }
 
-export async function takeAsync(
-    asyncIterable: AsyncIterable<any>,
+export async function takeAsync<T>(
+    asyncIterable: AsyncIterable<T>,
     count = Infinity,
-): Promise<any[]> {
-    const result: any[] = [];
+): Promise<T[]> {
+    const result: T[] = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();
     while (result.length < count) {
         const { value, done } = await iterator.next();

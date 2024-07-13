@@ -19,6 +19,7 @@ import {
     MultiLineString,
     Polygon,
     MultiPolygon,
+    Position,
 } from 'geojson';
 
 function makeFeatureCollection(wkt: string, properties?: any) {
@@ -60,8 +61,8 @@ describe('geojson module', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync(
-                deserialize(stream) as AsyncGenerator,
+            const actual = await takeAsync<IGeoJsonFeature>(
+                deserialize(stream),
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -129,10 +130,8 @@ describe('geojson module', () => {
             );
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync(
-                deserialize(
-                    stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator,
+            const actual = await takeAsync<IGeoJsonFeature>(
+                deserialize(stream as unknown as ReadableStream<any>),
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -384,26 +383,27 @@ describe('geojson module', () => {
                     | MultiLineString
                     | Polygon
                     | MultiPolygon;
-                expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
-                    0,
-                );
+                expect(
+                    (g.coordinates[0] as Position[]).length,
+                ).to.be.greaterThan(0);
             }
         });
 
         it('Should parse countries fgb produced from GDAL stream filter', async () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
-            const features = await takeAsync(
+            const features = await takeAsync<IGeoJsonFeature>(
                 deserialize(
                     'http://flatgeobuf.septima.dk/countries.fgb',
                     r,
                     undefined,
                     false,
-                ) as AsyncGenerator,
+                ),
             );
             expect(features.length).to.eq(3);
             for (const f of features)
                 expect(
-                    (f.geometry.coordinates[0] as number[]).length,
+                    ((f.geometry as Polygon).coordinates[0] as Position[])
+                        .length,
                 ).to.be.greaterThan(0);
         });
 
@@ -411,15 +411,14 @@ describe('geojson module', () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync(
-                deserialize(
-                    stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator,
+            const features = await takeAsync<IGeoJsonFeature>(
+                deserialize(stream as unknown as ReadableStream<any>),
             );
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect(
-                    (f.geometry.coordinates[0] as number[]).length,
+                    ((f.geometry as Polygon).coordinates[0] as Position[])
+                        .length,
                 ).to.be.greaterThan(0);
         });
 

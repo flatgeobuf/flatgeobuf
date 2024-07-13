@@ -13,7 +13,8 @@ import Geometry from 'ol/geom/Geometry.js';
 const format = new WKT();
 const geojson = new GeoJSON();
 
-const g = (features) => geojson.writeFeatures(features);
+const g = (features: Array<Feature<Geometry>>) =>
+    geojson.writeFeatures(features);
 
 function makeFeatureCollection(wkt: string /*, properties?: any*/) {
     return makeFeatureCollectionFromArray([wkt] /*, properties*/);
@@ -35,7 +36,7 @@ describe('ol module', () => {
         it('Point', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
-            const actual = deserialize(s);
+            const actual = deserialize(s) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -43,10 +44,10 @@ describe('ol module', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync(
+            const actual = await takeAsync<Feature>(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator,
+                ) as AsyncGenerator<Feature>,
             );
             expect(g(actual)).to.equal(g(expected));
         });
@@ -56,7 +57,7 @@ describe('ol module', () => {
                 'POINT(1.2 -2.1)',
                 'POINT(2.4 -4.8)',
             ]);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -64,7 +65,7 @@ describe('ol module', () => {
             const expected = makeFeatureCollection(
                 'MULTIPOINT(10 40, 40 30, 20 20, 30 10)',
             );
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -72,7 +73,7 @@ describe('ol module', () => {
             const expected = makeFeatureCollection(
                 'LINESTRING(1.2 -2.1, 2.4 -4.8)',
             );
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -80,7 +81,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
  (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -88,7 +89,7 @@ describe('ol module', () => {
             const expected = makeFeatureCollection(
                 `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`,
             );
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -96,7 +97,7 @@ describe('ol module', () => {
             const expected = makeFeatureCollection(
                 `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
             );
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -104,7 +105,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -112,7 +113,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30), (20 30, 35 35, 30 20, 20 30))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -120,7 +121,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
             expect(g(actual)).to.equal(g(expected));
         });
@@ -129,7 +130,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
             expect(g(actual)).to.equal(g(expected));
         });
@@ -138,7 +139,7 @@ describe('ol module', () => {
             const expected = makeFeatureCollection(
                 `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`,
             );
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -146,7 +147,7 @@ describe('ol module', () => {
             const expected =
                 makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`);
-            const actual = deserialize(serialize(expected));
+            const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -192,7 +193,7 @@ describe('ol module', () => {
             };
             const actual = deserialize(
                 serialize(geojson.readFeatures(expected)),
-            );
+            ) as Feature[];
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
 
@@ -224,10 +225,10 @@ describe('ol module', () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync(
+            const features = await takeAsync<Feature>(
                 deserialize(
                     stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator,
+                ) as AsyncGenerator<Feature>,
             );
             expect(features.length).to.eq(179);
             for (const f of features)
@@ -287,7 +288,7 @@ describe('ol module', () => {
             };
             const actual = deserialize(
                 serialize(geojson.readFeatures(expected)),
-            );
+            ) as Feature[];
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
 
@@ -318,7 +319,7 @@ describe('ol module', () => {
             };
             const actual = deserialize(
                 serialize(geojson.readFeatures(expected)),
-            );
+            ) as Feature[];
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
     });
