@@ -25,6 +25,7 @@ log = "0.4.20"
 fallible-streaming-iterator = "0.1.9"
 tempfile = "3.8.1"
 reqwest = { version = "0.11.22", optional = true }
+async-trait = "0.1.81"
 
 [dev-dependencies]
 geozero = { version = "0.13.0", default-features = true }
