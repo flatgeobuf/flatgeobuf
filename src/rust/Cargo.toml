@@ -37,6 +37,7 @@ tokio = { version = "1.34.0", features = ["rt-multi-thread"] }
 reqwest = { version = "0.11.22", default-features = true }
 geo-types = "0.7.12"
 yocalhost = "0.3.0"
+async-trait = "0.1.81"
 
 [[bench]]
 name = "read"

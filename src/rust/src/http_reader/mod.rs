@@ -9,7 +9,11 @@ use bytes::{BufMut, Bytes, BytesMut};
 use http_range_client::{
     AsyncBufferedHttpRangeClient, AsyncHttpRangeClient, BufferedHttpRangeClient,
 };
+use std::collections::VecDeque;
 use std::ops::Range;
+
+#[cfg(test)]
+mod mock_http_range_client;
 
 // The largest request we'll speculatively make.
 // If a single huge feature requires, we'll necessarily exceed this limit.
@@ -286,12 +290,7 @@ impl SelectBbox {
 
 struct FeatureBatch {
     /// The byte location of each feature within the file
-    feature_ranges: std::vec::IntoIter<HttpRange>,
-
-    /// When fetching new data, how many bytes should we fetch at once.
-    /// It was computed based on the specific feature ranges of the batch
-    /// to optimize number of requests vs. wasted bytes vs. resident memory
-    min_request_size: usize,
+    feature_ranges: VecDeque<HttpRange>,
 }
 
 impl FeatureBatch {
@@ -303,15 +302,19 @@ impl FeatureBatch {
 
         for search_result_item in feature_ranges.into_iter() {
             let Some(latest_batch) = batched_ranges.last_mut() else {
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
                 continue;
             };
 
-            let previous_item = latest_batch.last().expect("we never push an empty batch");
+            let previous_item = latest_batch.back().expect("we never push an empty batch");
 
             let HttpRange::Range(Range { end: prev_end, .. }) = previous_item else {
                 debug_assert!(false, "This shouldn't happen. Only the very last feature is expected to have an unknown length");
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
                 continue;
             };
 
@@ -322,10 +325,12 @@ impl FeatureBatch {
                 } else {
                     trace!("wasting {wasted_bytes} to avoid an extra request");
                 }
-                latest_batch.push(search_result_item.range)
+                latest_batch.push_back(search_result_item.range)
             } else {
                 trace!("creating a new request for batch rather than wasting {wasted_bytes} bytes");
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
             }
         }
 
@@ -334,13 +339,20 @@ impl FeatureBatch {
         Ok(batches)
     }
 
-    fn new(feature_ranges: Vec<HttpRange>) -> Self {
-        let first = feature_ranges
-            .first()
-            .expect("We never create empty batches");
-        let last = feature_ranges
-            .last()
-            .expect("We never create empty batches");
+    fn new(feature_ranges: VecDeque<HttpRange>) -> Self {
+        Self { feature_ranges }
+    }
+
+    /// When fetching new data, how many bytes should we fetch at once.
+    /// It was computed based on the specific feature ranges of the batch
+    /// to optimize number of requests vs. wasted bytes vs. resident memory
+    fn request_size(&self) -> usize {
+        let Some(first) = self.feature_ranges.front() else {
+            return 0;
+        };
+        let Some(last) = self.feature_ranges.back() else {
+            return 0;
+        };
 
         // `last.length()` should only be None if this batch includes the final feature
         // in the dataset. Since we can't infer its actual length, we'll fetch only
@@ -350,33 +362,22 @@ impl FeatureBatch {
 
         let covering_range = first.start()..last.start() + last_feature_length;
 
-        let min_request_size = covering_range
+        covering_range
             .len()
             // Since it's all held in memory, don't fetch more than DEFAULT_HTTP_FETCH_SIZE at a time
             // unless necessary.
-            .min(DEFAULT_HTTP_FETCH_SIZE);
-
-        Self {
-            feature_ranges: feature_ranges.into_iter(),
-            min_request_size,
-        }
+            .min(DEFAULT_HTTP_FETCH_SIZE)
     }
 
     async fn next_buffer<T: AsyncHttpRangeClient>(
         &mut self,
         client: &mut AsyncBufferedHttpRangeClient<T>,
     ) -> Result<Option<Bytes>> {
-        client.set_min_req_size(self.min_request_size);
-        let Some(feature_range) = self.feature_ranges.next() else {
+        let request_size = self.request_size();
+        client.set_min_req_size(request_size);
+        let Some(feature_range) = self.feature_ranges.pop_front() else {
             return Ok(None);
         };
-        // Only set min_request_size for the first request.
-        //
-        // This should only affect a batch that contains the final feature, otherwise
-        // we've calculated `batchSize` to get all the data we need for the batch.
-        // For the very final feature in a dataset, we don't know it's length, so we
-        // will end up executing an extra request for that batch.
-        self.min_request_size = 0;
 
         let mut pos = feature_range.start();
         let mut feature_buffer = BytesMut::from(client.get_range(pos, 4).await?);
@@ -407,6 +408,46 @@ mod geozero_api {
                 cnt += 1;
             }
             out.dataset_end()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::HttpFgbReader;
+
+    #[tokio::test]
+    async fn fgb_max_request_size() {
+        let (fgb, stats) = HttpFgbReader::mock_from_file("../../test/data/UScounties.fgb")
+            .await
+            .unwrap();
+
+        {
+            // The read guard needs to be in a scoped block, else we won't release the lock and the test will hang when
+            // the actual FGB client code tries to update the stats.
+            let stats = stats.read().unwrap();
+            assert_eq!(stats.request_count, 1);
+            // This number might change a little if the test data or logic changes, but they should be in the same ballpark.
+            assert_eq!(stats.bytes_requested, 12944);
+        }
+
+        // This bbox covers a large swathe of the dataset. The idea is that at least one request should be limited by the
+        // max request size `DEFAULT_HTTP_FETCH_SIZE`, but that we should still have a reasonable number of requests.
+        let mut iter = fgb.select_bbox(-118.0, 42.0, -100.0, 47.0).await.unwrap();
+
+        let mut feature_count = 0;
+        while let Some(_feature) = iter.next().await.unwrap() {
+            feature_count += 1;
+        }
+        assert_eq!(feature_count, 169);
+
+        {
+            // The read guard needs to be in a scoped block, else we won't release the lock and the test will hang when
+            // the actual FGB client code tries to update the stats.
+            let stats = stats.read().unwrap();
+            // These numbers might change a little if the test data or logic changes, but they should be in the same ballpark.
+            assert_eq!(stats.request_count, 5);
+            assert_eq!(stats.bytes_requested, 2131152);
         }
     }
 }
