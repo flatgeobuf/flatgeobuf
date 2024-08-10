@@ -59,7 +59,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let bytes_per_second = {
         std::env::var("FGB_BENCH_BYTES_PER_SEC")
             .map(|str| {
-                str.parse::<usize>()
+                str.parse::<u64>()
                     .expect("FGB_BENCH_BYTES_PER_SEC must be an integer")
             })
             .unwrap_or(50_000_000 / 8)
