@@ -92,10 +92,10 @@ mod http {
         let url = "https://wrong.example.com/countries.fgb";
         let fgb = HttpFgbReader::open(url).await;
         let error_text = fgb.err().unwrap().to_string();
-        let expected_error_text = "error trying to connect";
+        let expected_error_text = "error sending request";
         assert!(
             error_text.contains(expected_error_text),
-            "expected to find {expected_error_text} in {error_text}"
+            "expected to find '{expected_error_text}' in '{error_text}'"
         );
     }
 }
