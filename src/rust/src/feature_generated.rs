@@ -40,8 +40,8 @@ impl<'a> Geometry<'a> {
     Geometry { _tab: table }
   }
   #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
+    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
     args: &'args GeometryArgs<'args>
   ) -> flatbuffers::WIPOffset<Geometry<'bldr>> {
     let mut builder = GeometryBuilder::new(_fbb);
@@ -160,11 +160,11 @@ impl<'a> Default for GeometryArgs<'a> {
   }
 }
 
-pub struct GeometryBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+pub struct GeometryBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b> GeometryBuilder<'a, 'b> {
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> GeometryBuilder<'a, 'b, A> {
   #[inline]
   pub fn add_ends(&mut self, ends: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u32>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Geometry::VT_ENDS, ends);
@@ -198,7 +198,7 @@ impl<'a: 'b, 'b> GeometryBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Geometry::VT_PARTS, parts);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> GeometryBuilder<'a, 'b> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> GeometryBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     GeometryBuilder {
       fbb_: _fbb,
@@ -251,8 +251,8 @@ impl<'a> Feature<'a> {
     Feature { _tab: table }
   }
   #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
+    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
     args: &'args FeatureArgs<'args>
   ) -> flatbuffers::WIPOffset<Feature<'bldr>> {
     let mut builder = FeatureBuilder::new(_fbb);
@@ -316,11 +316,11 @@ impl<'a> Default for FeatureArgs<'a> {
   }
 }
 
-pub struct FeatureBuilder<'a: 'b, 'b> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+pub struct FeatureBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b> FeatureBuilder<'a, 'b> {
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> FeatureBuilder<'a, 'b, A> {
   #[inline]
   pub fn add_geometry(&mut self, geometry: flatbuffers::WIPOffset<Geometry<'b >>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Geometry>>(Feature::VT_GEOMETRY, geometry);
@@ -334,7 +334,7 @@ impl<'a: 'b, 'b> FeatureBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Feature::VT_COLUMNS, columns);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> FeatureBuilder<'a, 'b> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> FeatureBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FeatureBuilder {
       fbb_: _fbb,
@@ -418,13 +418,13 @@ pub unsafe fn size_prefixed_root_as_feature_unchecked(buf: &[u8]) -> Feature {
   flatbuffers::size_prefixed_root_unchecked::<Feature>(buf)
 }
 #[inline]
-pub fn finish_feature_buffer<'a, 'b>(
-    fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+pub fn finish_feature_buffer<'a, 'b, A: flatbuffers::Allocator + 'a>(
+    fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
     root: flatbuffers::WIPOffset<Feature<'a>>) {
   fbb.finish(root, None);
 }
 
 #[inline]
-pub fn finish_size_prefixed_feature_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Feature<'a>>) {
+pub fn finish_size_prefixed_feature_buffer<'a, 'b, A: flatbuffers::Allocator + 'a>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>, root: flatbuffers::WIPOffset<Feature<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }

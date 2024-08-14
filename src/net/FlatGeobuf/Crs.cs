@@ -13,7 +13,7 @@ public struct Crs : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_5_26(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
   public static Crs GetRootAsCrs(ByteBuffer _bb) { return GetRootAsCrs(_bb, new Crs()); }
   public static Crs GetRootAsCrs(ByteBuffer _bb, Crs obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }

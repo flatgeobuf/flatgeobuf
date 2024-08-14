@@ -59,7 +59,7 @@
   "homepage": "https://github.com/flatgeobuf/flatgeobuf#readme",
   "dependencies": {
     "@repeaterjs/repeater": "3.0.6",
-    "flatbuffers": "23.5.26",
+    "flatbuffers": "24.3.25",
     "slice-source": "0.4.1"
   },
   "optionalDependencies": {
