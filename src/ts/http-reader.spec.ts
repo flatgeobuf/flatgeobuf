@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { HttpReader } from './http-reader';
 import { fromFeature, IGeoJsonFeature } from './geojson/feature';
-import LocalWebServer from 'local-web-server';
+import Lws from 'lws';
 
 describe('http reader', () => {
-    let lws: LocalWebServer;
+    let lws: Lws;
     beforeAll(async () => {
-        lws = await LocalWebServer.create();
+        lws = await Lws.create({ stack: ['lws-range', 'lws-static'] });
     });
     afterAll(() => {
         if (lws) lws.server.close();

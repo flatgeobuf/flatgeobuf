@@ -145,7 +145,6 @@ export async function* streamSearch(
     );
 
     while (queue.length != 0) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nodeRange = queue.shift()!;
 
         console.debug(
