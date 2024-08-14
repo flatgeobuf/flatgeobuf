@@ -17,11 +17,19 @@ func GetRootAsFeature(buf []byte, offset flatbuffers.UOffsetT) *Feature {
 	return x
 }
 
+func FinishFeatureBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsFeature(buf []byte, offset flatbuffers.UOffsetT) *Feature {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &Feature{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedFeatureBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *Feature) Init(buf []byte, i flatbuffers.UOffsetT) {
