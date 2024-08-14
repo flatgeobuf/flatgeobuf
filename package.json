@@ -62,7 +62,7 @@
     "flatbuffers": "23.5.26",
     "slice-source": "0.4.1"
   },
-  "peerDependencies": {
+  "optionalDependencies": {
     "ol": ">3"
   },
   "devDependencies": {
@@ -70,26 +70,26 @@
     "@babel/preset-env": "7.24.7",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-node-resolve": "15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@swc/cli": "^0.3.12",
-    "@swc/core": "^1.6.3",
+    "@rollup/plugin-terser": "0.4.4",
+    "@swc/cli": "0.3.12",
+    "@swc/core": "1.6.3",
     "@types/geojson": "7946.0.14",
     "@types/node": "20.14.6",
     "@types/stream-buffers": "3.0.7",
     "@typescript-eslint/eslint-plugin": "7.13.1",
     "@typescript-eslint/parser": "7.13.1",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "1.6.0",
     "eslint": "9.5.0",
     "jsts": "2.11.3",
-    "local-web-server": "^5.3.3",
-    "node-fetch": "^3.3.2",
-    "ol": "9.2.4",
+    "local-web-server": "5.3.3",
+    "node-fetch": "3.3.2",
+    "ol": ">3",
     "prettier": "3.3.2",
     "rollup": "4.18.0",
     "stream-buffers": "3.0.3",
     "typedoc": "0.25.13",
     "typescript": "5.5.3",
-    "vitest": "^1.6.0",
+    "vitest": "1.6.0",
     "web-streams-polyfill": "4.0.0"
   }
 }
