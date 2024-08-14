@@ -1,7 +1,7 @@
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 
-import {
+import type {
     Geometry as GeoJsonGeometry,
     Point,
     MultiPoint,
@@ -13,7 +13,7 @@ import {
 } from 'geojson';
 
 import {
-    IParsedGeometry,
+    type IParsedGeometry,
     flat,
     pairFlatCoordinates,
     toGeometryType,
@@ -77,7 +77,7 @@ export function parseGeometry(
 
 export function parseGC(geometry: GeometryCollection): IParsedGeometry {
     const type: GeometryType = toGeometryType(geometry.type);
-    const parts = [];
+    const parts: IParsedGeometry[] = [];
     for (let i = 0; i < geometry.geometries.length; i++) {
         const g = geometry.geometries[i];
         if (g.type === 'GeometryCollection') parts.push(parseGC(g));
@@ -131,7 +131,7 @@ export function fromGeometry(
         type = geometry.type();
     }
     if (type === GeometryType.GeometryCollection) {
-        const geometries = [];
+        const geometries: GeoJsonGeometry[] = [];
         for (let i = 0; i < geometry.partsLength(); i++) {
             const part = geometry.parts(i) as Geometry;
             const partType = part.type() as GeometryType;
@@ -142,7 +142,7 @@ export function fromGeometry(
             geometries,
         } as GeoJsonGeometry;
     } else if (type === GeometryType.MultiPolygon) {
-        const geometries = [];
+        const geometries: GeoJsonGeometry[] = [];
         for (let i = 0; i < geometry.partsLength(); i++)
             geometries.push(
                 fromGeometry(

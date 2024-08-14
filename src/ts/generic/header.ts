@@ -1,7 +1,7 @@
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { toGeometryType } from '../generic/geometry.js';
-import { IFeature } from './feature.js';
-import { IGeoJsonFeature } from '../geojson/feature.js';
+import { type IFeature } from './feature.js';
+import { type IGeoJsonFeature } from '../geojson/feature.js';
 
 function featureGeomType(feature: IFeature | IGeoJsonFeature): GeometryType {
     if (feature.getGeometry) {

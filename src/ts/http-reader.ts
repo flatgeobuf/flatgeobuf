@@ -2,16 +2,16 @@ import * as flatbuffers from 'flatbuffers';
 import { Repeater } from '@repeaterjs/repeater';
 
 import {
-    Rect,
+    type Rect,
     calcTreeSize,
     DEFAULT_NODE_SIZE,
-    NODE_ITEM_LEN,
+    NODE_ITEM_BYTE_LEN,
     streamSearch,
 } from './packedrtree.js';
 import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './config.js';
-import Logger from './logger.js';
-import HeaderMeta, { fromByteBuffer } from './header-meta.js';
+import type HeaderMeta from './header-meta.js';
+import { fromByteBuffer } from './header-meta.js';
 import { Feature } from './flat-geobuf/feature.js';
 
 export class HttpReader {
@@ -19,29 +19,32 @@ export class HttpReader {
     public header: HeaderMeta;
     private headerLength: number;
     private indexLength: number;
+    private nocache: boolean;
 
     constructor(
         headerClient: BufferedHttpRangeClient,
         header: HeaderMeta,
         headerLength: number,
         indexLength: number,
+        nocache: boolean,
     ) {
         this.headerClient = headerClient;
         this.header = header;
         this.headerLength = headerLength;
         this.indexLength = indexLength;
+        this.nocache = nocache;
     }
 
     // Fetch the header, preparing the reader to read Feature data.
     //
     // and potentially some opportunistic fetching of the index.
-    static async open(url: string): Promise<HttpReader> {
+    static async open(url: string, nocache: boolean): Promise<HttpReader> {
         // In reality, the header is probably less than half this size, but
         // better to overshoot and fetch an extra kb rather than have to issue
         // a second request.
         const assumedHeaderLength = 2024;
 
-        const headerClient = new BufferedHttpRangeClient(url);
+        const headerClient = new BufferedHttpRangeClient(url, nocache);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -59,14 +62,15 @@ export class HttpReader {
             let result = 0;
             let i: number;
             for (i = 0; i < prefetchedLayers; i++) {
-                const layer_width = assumedBranchingFactor ** i * NODE_ITEM_LEN;
+                const layer_width =
+                    assumedBranchingFactor ** i * NODE_ITEM_BYTE_LEN;
                 result += layer_width;
             }
             return result;
         })();
 
         const minReqLength = assumedHeaderLength + assumedIndexLength;
-        Logger.debug(
+        console.debug(
             `fetching header. minReqLength: ${minReqLength} (assumedHeaderLength: ${assumedHeaderLength}, assumedIndexLength: ${assumedIndexLength})`,
         );
 
@@ -75,10 +79,10 @@ export class HttpReader {
                 await headerClient.getRange(0, 8, minReqLength, 'header'),
             );
             if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) {
-                Logger.error(`bytes: ${bytes} != ${magicbytes}`);
+                console.error(`bytes: ${bytes} != ${magicbytes}`);
                 throw new Error('Not a FlatGeobuf file');
             }
-            Logger.debug('magic bytes look good');
+            console.debug('magic bytes look good');
         }
 
         let headerLength: number;
@@ -95,7 +99,7 @@ export class HttpReader {
                 // minimum size check avoids panic in FlatBuffers header decoding
                 throw new Error('Invalid header size');
             }
-            Logger.debug(`headerLength: ${headerLength}`);
+            console.debug(`headerLength: ${headerLength}`);
         }
 
         const bytes = await headerClient.getRange(
@@ -112,8 +116,14 @@ export class HttpReader {
             header.indexNodeSize,
         );
 
-        Logger.debug('completed: opening http reader');
-        return new HttpReader(headerClient, header, headerLength, indexLength);
+        console.debug('completed: opening http reader');
+        return new HttpReader(
+            headerClient,
+            header,
+            headerLength,
+            indexLength,
+            nocache,
+        );
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<Feature, void, unknown> {
@@ -145,15 +155,17 @@ export class HttpReader {
             const [featureOffset, ,] = searchResult;
             let [, , featureLength] = searchResult;
             if (!featureLength) {
-                Logger.info('final feature');
-                // Normally we get the length by subtracting between adjacent
-                // nodes from the index, which we can't do for the _very_ last
-                // feature, so we guess. Guessing incorrectly doesn't produce
-                // incorrect results, it only means we're either fetching more
-                // data than we'll use or that we'll automatically issue an
-                // extra request to get any remaining feature data.
-                const guessLength = Config.global.extraRequestThreshold();
-                featureLength = guessLength;
+                console.info('final feature');
+                // Normally we get the feature length by subtracting between
+                // adjacent nodes from the index, which we can't do for the
+                // _very_ last feature in a dataset.
+                //
+                // We could *guess* the size, but we'd risk overshooting the length,
+                // which will cause some webservers to return HTTP 416: Unsatisfiable range
+                //
+                // So instead we fetch only the final features byte length, stored in the
+                // first 4 bytes.
+                featureLength = 4;
             }
 
             if (currentBatch.length == 0) {
@@ -164,7 +176,7 @@ export class HttpReader {
             const prevFeature = currentBatch[currentBatch.length - 1];
             const gap = featureOffset - (prevFeature[0] + prevFeature[1]);
             if (gap > Config.global.extraRequestThreshold()) {
-                Logger.info(
+                console.info(
                     `Pushing new feature batch, since gap ${gap} was too large`,
                 );
                 batches.push(currentBatch);
@@ -179,7 +191,8 @@ export class HttpReader {
         }
 
         const promises: AsyncGenerator<Feature, any, any>[] = batches.flatMap(
-            (batch: [number, number][]) => this.readFeatureBatch(batch),
+            (batch: [number, number][]) =>
+                this.readFeatureBatch(batch, this.nocache),
         );
 
         // Fetch all batches concurrently, yielding features as they become
@@ -196,8 +209,11 @@ export class HttpReader {
         return this.lengthBeforeTree() + this.indexLength;
     }
 
-    buildFeatureClient(): BufferedHttpRangeClient {
-        return new BufferedHttpRangeClient(this.headerClient.httpClient);
+    buildFeatureClient(nocache: boolean): BufferedHttpRangeClient {
+        return new BufferedHttpRangeClient(
+            this.headerClient.httpClient,
+            nocache,
+        );
     }
 
     /**
@@ -207,6 +223,7 @@ export class HttpReader {
      */
     async *readFeatureBatch(
         batch: [number, number][],
+        nocache: boolean,
     ): AsyncGenerator<Feature, void, unknown> {
         const [firstFeatureOffset] = batch[0];
         const [lastFeatureOffset, lastFeatureLength] = batch[batch.length - 1];
@@ -216,14 +233,22 @@ export class HttpReader {
         const batchSize = batchEnd - batchStart;
 
         // A new feature client is needed for each batch to own the underlying buffer as features are yielded.
-        const featureClient = this.buildFeatureClient();
+        const featureClient = this.buildFeatureClient(nocache);
 
+        let minFeatureReqLength = batchSize;
         for (const [featureOffset] of batch) {
             yield await this.readFeature(
                 featureClient,
                 featureOffset,
-                batchSize,
+                minFeatureReqLength,
             );
+            // Only set minFeatureReqLength for the first request.
+            //
+            // This should only affect a batch that contains the final feature, otherwise
+            // we've calculated `batchSize` to get all the data we need for the batch.
+            // For the very final feature in a dataset, we don't know it's length, so we
+            // will end up executing an extra request for that batch.
+            minFeatureReqLength = 0;
         }
         featureClient.logUsage('feature');
     }
@@ -272,9 +297,9 @@ class BufferedHttpRangeClient {
     // buffered
     private head = 0;
 
-    constructor(source: string | HttpRangeClient) {
+    constructor(source: string | HttpRangeClient, nocache: boolean) {
         if (typeof source === 'string') {
-            this.httpClient = new HttpRangeClient(source);
+            this.httpClient = new HttpRangeClient(source, nocache);
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
@@ -299,8 +324,8 @@ class BufferedHttpRangeClient {
         const lengthToFetch = Math.max(length, minReqLength);
 
         this.bytesEverFetched += lengthToFetch;
-        Logger.debug(
-            `requesting for new Range: ${start}-${start + length - 1}`,
+        console.debug(
+            `requesting for new Range: ${start}-${start + lengthToFetch - 1}`,
         );
         this.buffer = await this.httpClient.getRange(
             start,
@@ -318,7 +343,7 @@ class BufferedHttpRangeClient {
         const requested = this.bytesEverFetched;
         const efficiency = ((100.0 * used) / requested).toFixed(2);
 
-        Logger.info(
+        console.info(
             `${category} bytes used/requested: ${used} / ${requested} = ${efficiency}%`,
         );
     }
@@ -326,11 +351,13 @@ class BufferedHttpRangeClient {
 
 class HttpRangeClient {
     url: string;
+    nocache: boolean;
     requestsEverMade = 0;
     bytesEverRequested = 0;
 
-    constructor(url: string) {
+    constructor(url: string, nocache: boolean) {
         this.url = url;
+        this.nocache = nocache;
     }
 
     async getRange(
@@ -342,42 +369,43 @@ class HttpRangeClient {
         this.bytesEverRequested += length;
 
         const range = `bytes=${begin}-${begin + length - 1}`;
-        Logger.info(
+        console.info(
             `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`,
         );
 
-        const response = await fetch(this.url, {
-            headers: {
-                Range: range,
-                // TODO: better parallelize requests on Chrome
-                //
-                // Safari and Firefox have no issue performing Range requests
-                // for a resource in parallel, but Chrome will stall a
-                // subsequent request to the resource until it's received the
-                // response headers of the prior request. So, it still allows
-                // some limited parallelization, but it's not ideal.
-                //
-                // This is seemingly an artifact of how Chrome manages caching
-                // and it might differ between platforms. We could work around it
-                // by setting the request header:
-                //
-                //      'Cache-Control': 'no-cache, no-store'
-                //
-                // This allows requests to be fully parallelized in Chrome, but
-                // then Chrome won't cache the response, so it seems not a
-                // great trade-off.
-                //
-                // Another work around would be to make each Range request for
-                // a separate URL by appending something like
-                // `?cache_buster=<range>` to the URL, but then Chrome will
-                // require an additional CORS preflight OPTIONS requests per
-                // Range, which is also not a great trade-off.
-                //
-                // See:
-                // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
-                // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
-            },
-        });
+        // TODO: better parallelize requests on Chrome
+        //
+        // Safari and Firefox have no issue performing Range requests
+        // for a resource in parallel, but Chrome will stall a
+        // subsequent request to the resource until it's received the
+        // response headers of the prior request. So, it still allows
+        // some limited parallelization, but it's not ideal.
+        //
+        // This is seemingly an artifact of how Chrome manages caching
+        // and it might differ between platforms. We could work around it
+        // by setting the request header:
+        //
+        //      'Cache-Control': 'no-cache, no-store'
+        //
+        // This allows requests to be fully parallelized in Chrome, but
+        // then Chrome won't cache the response, so it seems not a
+        // great trade-off.
+        //
+        // Another work around would be to make each Range request for
+        // a separate URL by appending something like
+        // `?cache_buster=<range>` to the URL, but then Chrome will
+        // require an additional CORS preflight OPTIONS requests per
+        // Range, which is also not a great trade-off.
+        //
+        // See:
+        // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
+        // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
+        const headers: HeadersInit = {
+            Range: range,
+        };
+        if (this.nocache) headers['Cache-Control'] = 'no-cache, no-store';
+
+        const response = await fetch(this.url, { headers });
 
         return response.arrayBuffer();
     }

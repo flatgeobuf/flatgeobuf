@@ -33,9 +33,9 @@ index 2e13dfc..da4b07e 100644
 +++ b/examples/leaflet/filtered.html
 @@ -4,7 +4,7 @@
      <link rel="stylesheet" href="/examples/site.css" />
-     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
+     <script src="https://unpkg.com/underscore@1.13.6/underscore-min.js"></script>
      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
--    <script src="https://unpkg.com/flatgeobuf@3.26.2/dist/flatgeobuf-geojson.min.js"></script>
+-    <script src="https://unpkg.com/flatgeobuf@3.32.0/dist/flatgeobuf-geojson.min.js"></script>
 +    <script src="/dist/flatgeobuf-geojson.min.js"></script>
      <script src="https://unpkg.com/json-formatter-js"></script>
 ```

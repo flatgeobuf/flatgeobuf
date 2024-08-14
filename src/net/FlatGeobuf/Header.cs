@@ -13,9 +13,10 @@ public struct Header : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_3_3(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
   public static Header GetRootAsHeader(ByteBuffer _bb) { return GetRootAsHeader(_bb, new Header()); }
   public static Header GetRootAsHeader(ByteBuffer _bb, Header obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static bool VerifyHeader(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, HeaderVerify.Verify); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public Header __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
@@ -233,5 +234,28 @@ public class HeaderT
   }
 }
 
+
+static public class HeaderVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyString(tablePos, 4 /*Name*/, false)
+      && verifier.VerifyVectorOfData(tablePos, 6 /*Envelope*/, 8 /*double*/, false)
+      && verifier.VerifyField(tablePos, 8 /*GeometryType*/, 1 /*FlatGeobuf.GeometryType*/, 1, false)
+      && verifier.VerifyField(tablePos, 10 /*HasZ*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyField(tablePos, 12 /*HasM*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyField(tablePos, 14 /*HasT*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyField(tablePos, 16 /*HasTm*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyVectorOfTables(tablePos, 18 /*Columns*/, FlatGeobuf.ColumnVerify.Verify, false)
+      && verifier.VerifyField(tablePos, 20 /*FeaturesCount*/, 8 /*ulong*/, 8, false)
+      && verifier.VerifyField(tablePos, 22 /*IndexNodeSize*/, 2 /*ushort*/, 2, false)
+      && verifier.VerifyTable(tablePos, 24 /*Crs*/, FlatGeobuf.CrsVerify.Verify, false)
+      && verifier.VerifyString(tablePos, 26 /*Title*/, false)
+      && verifier.VerifyString(tablePos, 28 /*Description*/, false)
+      && verifier.VerifyString(tablePos, 30 /*Metadata*/, false)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }

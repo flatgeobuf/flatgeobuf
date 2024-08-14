@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
-        "module": "ES6",
-        "moduleResolution": "node",
+        "module": "ES2022",
+        "moduleResolution": "Node",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
@@ -9,11 +9,14 @@
         "declaration": true,
         "outDir": "../lib/mjs",
         "sourceMap": true,
-        "target": "ES2020",
+        "target": "ES2023",
         "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "isolatedModules": true,
+        "verbatimModuleSyntax": true
+
     },
     "include": [
         "../src/ts"

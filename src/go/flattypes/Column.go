@@ -17,11 +17,19 @@ func GetRootAsColumn(buf []byte, offset flatbuffers.UOffsetT) *Column {
 	return x
 }
 
+func FinishColumnBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsColumn(buf []byte, offset flatbuffers.UOffsetT) *Column {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &Column{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedColumnBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *Column) Init(buf []byte, i flatbuffers.UOffsetT) {

@@ -1,6 +1,6 @@
 [package]
 name = "flatgeobuf"
-version = "4.0.0"
+version = "4.2.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2021"
 description = "FlatGeobuf for Rust"
@@ -13,29 +13,34 @@ keywords = ["geo", "r-tree", "spatial"]
 
 [features]
 default = ["http"]
-http = ["http-range-client", "bytes"]
+http = ["http-range-client", "bytes", "reqwest"]
 
 [dependencies]
-flatbuffers = "23.5.26"
+# chore: FlatBuffers does not follow SemVer, but rather uses a format of the date of the release.
+# So we should match versions exactly and bump only explicitly.
+# Updates are typically synchronized across all FGB clients, and codegen should be rerun after updating.
+flatbuffers = "=24.3.25"
 byteorder = "1.5.0"
-geozero = { version = "0.11.0", default-features = false }
-http-range-client = { version = "0.7.2", optional = true }
+geozero = { version = "0.13.0", default-features = false }
+http-range-client = { version = "0.8.0", optional = true, default-features = false, features = ["reqwest-async"] }
 bytes = { version = "1.5.0", optional = true }
 log = "0.4.20"
 fallible-streaming-iterator = "0.1.9"
 tempfile = "3.8.1"
+reqwest = { version = "0.12.5", optional = true }
 
 [dev-dependencies]
-geozero = { version = "0.11.0", default-features = true }
+geozero = { version = "0.13.0", default-features = true }
 seek_bufread = "1.2.2"
 rand = "0.8.5"
 hex = "0.4.3"
 criterion = { version = "0.5.1", features = ["async_tokio"] }
 tokio = { version = "1.34.0", features = ["rt-multi-thread"] }
 # One test needs SSL support; just use the default system bindings for that.
-reqwest = { version = "0.11.22", default-features = true }
+reqwest = { version = "0.12.5", default-features = true }
 geo-types = "0.7.12"
-yocalhost = "0.3.0"
+yocalhost = "0.5.0"
+async-trait = "0.1.81"
 
 [[bench]]
 name = "read"
@@ -49,9 +54,10 @@ harness = false
 name = "geojson"
 harness = false
 
-#[patch.crates-io]
-# Patch geozero dependencies (dev only)
-#geozero = { path = "../../../../rust/geozero/geozero" }
+# [patch.crates-io]
+# # Patch geozero dependencies (dev only)
+# geozero = { path = "../../../geozero/geozero" }
+# geozero = { git = "https://github.com/georust/geozero", branch = "release/v0.12.0" }
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,4 +1,4 @@
-import { IFeature } from './generic/feature.js';
+import { type IFeature } from './generic/feature.js';
 import OlFeature from 'ol/Feature.js';
 
 import {
@@ -7,8 +7,8 @@ import {
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
 } from './ol/featurecollection.js';
-import { HeaderMetaFn } from './generic.js';
-import { Rect } from './packedrtree.js';
+import { type HeaderMetaFn } from './generic.js';
+import { type Rect } from './packedrtree.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
@@ -29,10 +29,17 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
+    nocache: boolean = false,
 ): AsyncGenerator<OlFeature> | OlFeature[] {
     if (input instanceof Uint8Array)
         return fcDeserialize(input, headerMetaFn) as OlFeature[];
     else if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn);
-    else return fcDeserializeFiltered(input, rect as Rect, headerMetaFn);
+    else
+        return fcDeserializeFiltered(
+            input,
+            rect as Rect,
+            headerMetaFn,
+            nocache,
+        );
 }

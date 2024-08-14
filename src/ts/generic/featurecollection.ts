@@ -1,23 +1,24 @@
 import * as flatbuffers from 'flatbuffers';
 import slice from 'slice-source';
 
-import ColumnMeta from '../column-meta.js';
+import type ColumnMeta from '../column-meta.js';
 
 import { Header } from '../flat-geobuf/header.js';
 
 import { Column } from '../flat-geobuf/column.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import HeaderMeta, { fromByteBuffer } from '../header-meta.js';
+import type HeaderMeta from '../header-meta.js';
+import { fromByteBuffer } from '../header-meta.js';
 
-import { buildFeature, IFeature } from './feature.js';
+import { buildFeature, type IFeature } from './feature.js';
 import { HttpReader } from '../http-reader.js';
-import Logger from '../logger.js';
-import { Rect, calcTreeSize } from '../packedrtree.js';
+import { type Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
-import { HeaderMetaFn } from '../generic.js';
+import { type HeaderMetaFn } from '../generic.js';
 import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { inferGeometryType } from './header.js';
+import { Crs } from '../flat-geobuf/crs.js';
 
 export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
@@ -123,9 +124,10 @@ export async function* deserializeFiltered(
     rect: Rect,
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn,
+    nocache: boolean = false,
 ): AsyncGenerator<IFeature> {
-    const reader = await HttpReader.open(url);
-    Logger.debug('opened reader');
+    const reader = await HttpReader.open(url, nocache);
+    console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
 
     for await (const feature of reader.selectBbox(rect)) {
@@ -159,10 +161,13 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     return Column.endColumn(builder);
 }
 
-export function buildHeader(header: HeaderMeta): Uint8Array {
+export function buildHeader(
+    header: HeaderMeta,
+    crsCode: number = 0,
+): Uint8Array {
     const builder = new flatbuffers.Builder();
 
-    let columnOffsets = null;
+    let columnOffsets = 0;
     if (header.columns)
         columnOffsets = Header.createColumnsVector(
             builder,
@@ -171,7 +176,14 @@ export function buildHeader(header: HeaderMeta): Uint8Array {
 
     const nameOffset = builder.createString('L1');
 
+    let crsOffset;
+    if (crsCode) {
+        Crs.startCrs(builder);
+        Crs.addCode(builder, crsCode);
+        crsOffset = Crs.endCrs(builder);
+    }
     Header.startHeader(builder);
+    if (crsOffset) Header.addCrs(builder, crsOffset);
     Header.addFeaturesCount(builder, BigInt(header.featuresCount));
     Header.addGeometryType(builder, header.geometryType);
     Header.addIndexNodeSize(builder, 0);

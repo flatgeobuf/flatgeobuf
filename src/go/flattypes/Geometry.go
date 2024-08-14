@@ -17,11 +17,19 @@ func GetRootAsGeometry(buf []byte, offset flatbuffers.UOffsetT) *Geometry {
 	return x
 }
 
+func FinishGeometryBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsGeometry(buf []byte, offset flatbuffers.UOffsetT) *Geometry {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &Geometry{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedGeometryBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *Geometry) Init(buf []byte, i flatbuffers.UOffsetT) {

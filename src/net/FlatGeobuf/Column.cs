@@ -13,7 +13,7 @@ public struct Column : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_3_3(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
   public static Column GetRootAsColumn(ByteBuffer _bb) { return GetRootAsColumn(_bb, new Column()); }
   public static Column GetRootAsColumn(ByteBuffer _bb, Column obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -168,5 +168,25 @@ public class ColumnT
   }
 }
 
+
+static public class ColumnVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyString(tablePos, 4 /*Name*/, true)
+      && verifier.VerifyField(tablePos, 6 /*Type*/, 1 /*FlatGeobuf.ColumnType*/, 1, false)
+      && verifier.VerifyString(tablePos, 8 /*Title*/, false)
+      && verifier.VerifyString(tablePos, 10 /*Description*/, false)
+      && verifier.VerifyField(tablePos, 12 /*Width*/, 4 /*int*/, 4, false)
+      && verifier.VerifyField(tablePos, 14 /*Precision*/, 4 /*int*/, 4, false)
+      && verifier.VerifyField(tablePos, 16 /*Scale*/, 4 /*int*/, 4, false)
+      && verifier.VerifyField(tablePos, 18 /*Nullable*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyField(tablePos, 20 /*Unique*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyField(tablePos, 22 /*PrimaryKey*/, 1 /*bool*/, 1, false)
+      && verifier.VerifyString(tablePos, 24 /*Metadata*/, false)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }

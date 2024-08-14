@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { HttpReader } from './http-reader';
-import { fromFeature } from './geojson/feature';
-import LocalWebServer from 'local-web-server';
+import { fromFeature, IGeoJsonFeature } from './geojson/feature';
+import Lws from 'lws';
 
 describe('http reader', () => {
-    let lws: LocalWebServer;
+    let lws: Lws;
     beforeAll(async () => {
-        lws = await LocalWebServer.create();
+        lws = await Lws.create({ stack: ['lws-range', 'lws-static'] });
     });
     afterAll(() => {
         if (lws) lws.server.close();
@@ -20,16 +20,16 @@ describe('http reader', () => {
             maxX: -101.11,
             maxY: 41.24,
         };
-        const reader = await HttpReader.open(testUrl);
+        const reader = await HttpReader.open(testUrl, false);
 
-        const features = [];
+        const features: IGeoJsonFeature[] = [];
         for await (const feature of reader.selectBbox(rect)) {
             features.push(fromFeature(feature, reader.header));
         }
         expect(features.length).toBe(86);
         const actual = features
             .slice(0, 4)
-            .map((f) => `${f.properties.NAME}, ${f.properties.STATE}`);
+            .map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
         const expected = [
             'Cheyenne, KS',
             'Rawlins, KS',
@@ -37,5 +37,24 @@ describe('http reader', () => {
             'Washington, CO',
         ];
         expect(actual).toEqual(expected);
+    });
+
+    it('can fetch the final feature', async () => {
+        const testUrl = `http://localhost:${lws.config.port}/test/data/countries.fgb`;
+        const rect = {
+            minX: -61.2,
+            minY: -51.85,
+            maxX: -60.0,
+            maxY: -51.25,
+        };
+        const reader = await HttpReader.open(testUrl, true);
+        expect(179).toBe(reader.header.featuresCount);
+
+        let featureCount = 0;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for await (const _feature of reader.selectBbox(rect)) {
+            featureCount++;
+        }
+        expect(featureCount).toBe(2);
     });
 });

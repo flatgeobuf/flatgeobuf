@@ -6,23 +6,29 @@ use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use crate::{Error, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
-use http_range_client::BufferedHttpRangeClient;
+use http_range_client::{
+    AsyncBufferedHttpRangeClient, AsyncHttpRangeClient, BufferedHttpRangeClient,
+};
+use std::collections::VecDeque;
 use std::ops::Range;
+
+#[cfg(test)]
+mod mock_http_range_client;
 
 // The largest request we'll speculatively make.
 // If a single huge feature requires, we'll necessarily exceed this limit.
 const DEFAULT_HTTP_FETCH_SIZE: usize = 1_048_576; // 1MB
 
 /// FlatGeobuf dataset HTTP reader
-pub struct HttpFgbReader {
-    client: BufferedHttpRangeClient,
+pub struct HttpFgbReader<T: AsyncHttpRangeClient = reqwest::Client> {
+    client: AsyncBufferedHttpRangeClient<T>,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
 }
 
-pub struct AsyncFeatureIter {
-    client: BufferedHttpRangeClient,
+pub struct AsyncFeatureIter<T: AsyncHttpRangeClient = reqwest::Client> {
+    client: AsyncBufferedHttpRangeClient<T>,
     // feature reading requires header access, therefore
     // header_buf is included in the FgbFeature struct.
     fbs: FgbFeature,
@@ -32,11 +38,20 @@ pub struct AsyncFeatureIter {
     count: usize,
 }
 
-impl HttpFgbReader {
-    pub async fn open(url: &str) -> Result<HttpFgbReader> {
+impl HttpFgbReader<reqwest::Client> {
+    pub async fn open(url: &str) -> Result<HttpFgbReader<reqwest::Client>> {
         trace!("starting: opening http reader, reading header");
-        let mut client = BufferedHttpRangeClient::new(url);
+        let client = BufferedHttpRangeClient::new(url);
+        Self::_open(client).await
+    }
+}
 
+impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
+    pub async fn new(client: AsyncBufferedHttpRangeClient<T>) -> Result<HttpFgbReader<T>> {
+        Self::_open(client).await
+    }
+
+    async fn _open(mut client: AsyncBufferedHttpRangeClient<T>) -> Result<HttpFgbReader<T>> {
         // Because we use a buffered HTTP reader, anything extra we fetch here can
         // be utilized to skip subsequent fetches.
         // Immediately following the header is the optional spatial index, we deliberately fetch
@@ -95,7 +110,7 @@ impl HttpFgbReader {
         8 + self.fbs.header_buf.len()
     }
     /// Select all features.
-    pub async fn select_all(self) -> Result<AsyncFeatureIter> {
+    pub async fn select_all(self) -> Result<AsyncFeatureIter<T>> {
         let header = self.fbs.header();
         let count = header.features_count();
         // TODO: support reading with unknown feature count
@@ -123,7 +138,7 @@ impl HttpFgbReader {
         min_y: f64,
         max_x: f64,
         max_y: f64,
-    ) -> Result<AsyncFeatureIter> {
+    ) -> Result<AsyncFeatureIter<T>> {
         trace!("starting: select_bbox, traversing index");
         // Read R-Tree index and build filter for features within bbox
         let header = self.fbs.header();
@@ -167,7 +182,7 @@ impl HttpFgbReader {
     }
 }
 
-impl AsyncFeatureIter {
+impl<T: AsyncHttpRangeClient> AsyncFeatureIter<T> {
     pub fn header(&self) -> Header {
         self.fbs.header()
     }
@@ -203,9 +218,9 @@ enum FeatureSelection {
 }
 
 impl FeatureSelection {
-    async fn next_feature_buffer(
+    async fn next_feature_buffer<T: AsyncHttpRangeClient>(
         &mut self,
-        client: &mut BufferedHttpRangeClient,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
     ) -> Result<Option<Bytes>> {
         match self {
             FeatureSelection::SelectAll(select_all) => select_all.next_buffer(client).await,
@@ -223,7 +238,10 @@ struct SelectAll {
 }
 
 impl SelectAll {
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
         client.min_req_size(DEFAULT_HTTP_FETCH_SIZE);
 
         if self.features_left == 0 {
@@ -247,7 +265,10 @@ struct SelectBbox {
 }
 
 impl SelectBbox {
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
         let mut next_buffer = None;
         while next_buffer.is_none() {
             let Some(feature_batch) = self.feature_batches.last_mut() else {
@@ -269,12 +290,7 @@ impl SelectBbox {
 
 struct FeatureBatch {
     /// The byte location of each feature within the file
-    feature_ranges: std::vec::IntoIter<HttpRange>,
-
-    /// When fetching new data, how many bytes should we fetch at once.
-    /// It was computed based on the specific feature ranges of the batch
-    /// to optimize number of requests vs. wasted bytes vs. resident memory
-    min_request_size: usize,
+    feature_ranges: VecDeque<HttpRange>,
 }
 
 impl FeatureBatch {
@@ -286,15 +302,19 @@ impl FeatureBatch {
 
         for search_result_item in feature_ranges.into_iter() {
             let Some(latest_batch) = batched_ranges.last_mut() else {
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
                 continue;
             };
 
-            let previous_item = latest_batch.last().expect("we never push an empty batch");
+            let previous_item = latest_batch.back().expect("we never push an empty batch");
 
             let HttpRange::Range(Range { end: prev_end, .. }) = previous_item else {
                 debug_assert!(false, "This shouldn't happen. Only the very last feature is expected to have an unknown length");
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
                 continue;
             };
 
@@ -305,10 +325,12 @@ impl FeatureBatch {
                 } else {
                     trace!("wasting {wasted_bytes} to avoid an extra request");
                 }
-                latest_batch.push(search_result_item.range)
+                latest_batch.push_back(search_result_item.range)
             } else {
                 trace!("creating a new request for batch rather than wasting {wasted_bytes} bytes");
-                batched_ranges.push(vec![search_result_item.range]);
+                let mut new_batch = VecDeque::new();
+                new_batch.push_back(search_result_item.range);
+                batched_ranges.push(new_batch);
             }
         }
 
@@ -317,31 +339,43 @@ impl FeatureBatch {
         Ok(batches)
     }
 
-    fn new(feature_ranges: Vec<HttpRange>) -> Self {
-        let first = feature_ranges
-            .first()
-            .expect("We never create empty batches");
-        let last = feature_ranges
-            .last()
-            .expect("We never create empty batches");
-        let covering_range = first.clone().with_end(last.end());
-        let min_request_size = match covering_range.length() {
-            // Should only happen for the final feature batch.
-            None => DEFAULT_HTTP_FETCH_SIZE,
-            // Since it's all held in memory, don't fetch more than DEFAULT_HTTP_FETCH_SIZE at a time
-            // unless necessary.
-            Some(length) => length.min(DEFAULT_HTTP_FETCH_SIZE),
-        };
-
-        Self {
-            feature_ranges: feature_ranges.into_iter(),
-            min_request_size,
-        }
+    fn new(feature_ranges: VecDeque<HttpRange>) -> Self {
+        Self { feature_ranges }
     }
 
-    async fn next_buffer(&mut self, client: &mut BufferedHttpRangeClient) -> Result<Option<Bytes>> {
-        client.set_min_req_size(self.min_request_size);
-        let Some(feature_range) = self.feature_ranges.next() else {
+    /// When fetching new data, how many bytes should we fetch at once.
+    /// It was computed based on the specific feature ranges of the batch
+    /// to optimize number of requests vs. wasted bytes vs. resident memory
+    fn request_size(&self) -> usize {
+        let Some(first) = self.feature_ranges.front() else {
+            return 0;
+        };
+        let Some(last) = self.feature_ranges.back() else {
+            return 0;
+        };
+
+        // `last.length()` should only be None if this batch includes the final feature
+        // in the dataset. Since we can't infer its actual length, we'll fetch only
+        // the first 4 bytes of that feature buffer, which will tell us the actual length
+        // of the feature buffer for the subsequent request.
+        let last_feature_length = last.length().unwrap_or(4);
+
+        let covering_range = first.start()..last.start() + last_feature_length;
+
+        covering_range
+            .len()
+            // Since it's all held in memory, don't fetch more than DEFAULT_HTTP_FETCH_SIZE at a time
+            // unless necessary.
+            .min(DEFAULT_HTTP_FETCH_SIZE)
+    }
+
+    async fn next_buffer<T: AsyncHttpRangeClient>(
+        &mut self,
+        client: &mut AsyncBufferedHttpRangeClient<T>,
+    ) -> Result<Option<Bytes>> {
+        let request_size = self.request_size();
+        client.set_min_req_size(request_size);
+        let Some(feature_range) = self.feature_ranges.pop_front() else {
             return Ok(None);
         };
 
@@ -358,8 +392,9 @@ impl FeatureBatch {
 mod geozero_api {
     use crate::AsyncFeatureIter;
     use geozero::{error::Result, FeatureAccess, FeatureProcessor};
+    use http_range_client::AsyncHttpRangeClient;
 
-    impl AsyncFeatureIter {
+    impl<T: AsyncHttpRangeClient> AsyncFeatureIter<T> {
         /// Read and process all selected features
         pub async fn process_features<W: FeatureProcessor>(&mut self, out: &mut W) -> Result<()> {
             out.dataset_begin(self.fbs.header().name())?;
@@ -373,6 +408,46 @@ mod geozero_api {
                 cnt += 1;
             }
             out.dataset_end()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::HttpFgbReader;
+
+    #[tokio::test]
+    async fn fgb_max_request_size() {
+        let (fgb, stats) = HttpFgbReader::mock_from_file("../../test/data/UScounties.fgb")
+            .await
+            .unwrap();
+
+        {
+            // The read guard needs to be in a scoped block, else we won't release the lock and the test will hang when
+            // the actual FGB client code tries to update the stats.
+            let stats = stats.read().unwrap();
+            assert_eq!(stats.request_count, 1);
+            // This number might change a little if the test data or logic changes, but they should be in the same ballpark.
+            assert_eq!(stats.bytes_requested, 12944);
+        }
+
+        // This bbox covers a large swathe of the dataset. The idea is that at least one request should be limited by the
+        // max request size `DEFAULT_HTTP_FETCH_SIZE`, but that we should still have a reasonable number of requests.
+        let mut iter = fgb.select_bbox(-118.0, 42.0, -100.0, 47.0).await.unwrap();
+
+        let mut feature_count = 0;
+        while let Some(_feature) = iter.next().await.unwrap() {
+            feature_count += 1;
+        }
+        assert_eq!(feature_count, 169);
+
+        {
+            // The read guard needs to be in a scoped block, else we won't release the lock and the test will hang when
+            // the actual FGB client code tries to update the stats.
+            let stats = stats.read().unwrap();
+            // These numbers might change a little if the test data or logic changes, but they should be in the same ballpark.
+            assert_eq!(stats.request_count, 5);
+            assert_eq!(stats.bytes_requested, 2131152);
         }
     }
 }

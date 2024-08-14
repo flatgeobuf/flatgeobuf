@@ -8,19 +8,25 @@ name: CI
 jobs:
   test-ts:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ 18, 20, 22 ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           cache: 'yarn'
+          node-version: ${{ matrix.node }}
       - run: yarn
+      - name: Run build
+        run: yarn build
       - name: Run tests
         run: yarn test
-      - name: Run tsc compile
-        run: yarn build
       - name: Run linter
         run: yarn fmt-check
+      - name: Run type check
+        run: yarn type-check
 
   test-cpp:
     runs-on: ubuntu-latest
@@ -30,7 +36,7 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install clang
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: ./script/getcppdeps.sh
       - name: Build tests and examples
         run: cd src/cpp && make
@@ -40,7 +46,7 @@ jobs:
   test-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: cd src/go && go test
 
   test-java:
@@ -49,9 +55,9 @@ jobs:
       matrix:
         java-version: [21, 17, 11, 8]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Java ${{ matrix.java-version }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java-version }}
           distribution: temurin
@@ -62,13 +68,13 @@ jobs:
   test-net8:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .Net 8.0
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
       - name: Cache nuget dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -80,13 +86,13 @@ jobs:
   test-net6:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .Net 6.0
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.x
       - name: Cache nuget dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -100,14 +106,16 @@ jobs:
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Install wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
       - name: Install Debian dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache dependencies and build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -117,21 +125,25 @@ jobs:
             src/rust/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('src/rust/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - run: cd src/rust && cargo test
+      - name: Tests
+        run: cd src/rust && cargo test
+      - name: Check wasm build
+        run: cd src/rust && cargo check --target wasm32-unknown-unknown
+
 
   test-rust-no-default-features:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Debian dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev
       - name: Cache dependencies and build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/

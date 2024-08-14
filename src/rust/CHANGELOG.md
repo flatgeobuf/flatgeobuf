@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+- Fix WASM build
+
+## [4.2.0] - 2024-05-28
+
+- Fix "UnexpectedEof" error when bbox results includes first item.
+- Upgrade to geozero 0.13.0
+
+## [4.1.0] - 2024-02-24
+
+- Potentially reduce requests for feature data by correctly including distance
+  to the next feature in the index traversal in all cases.
+- Fix HTTP 416 on webservers that don't support Range requests that extend
+  beyond the end of the file. This was only applicable to bbox requests.
+- Upgrade to geozero 0.12.0
+- Make HttpFgbReader generic
+
 ## [4.0.0] - 2023-10-14
 
 - Breaking: `select_all` and `select_bbox` now return a FeatureIter instead of a
