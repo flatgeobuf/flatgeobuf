@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## [4.3.0] - 2024-08-16
 
-- Fix WASM build
+- [all] Upgrade to flatbuffers 24.3.25 (#380)
+- Update flatbuffers, reqwest, yocalhost (#378)
+- Fix too-small request sizing after making a large request. (#376)
+
+## [4.2.1] - 2024-06-17
+
+- Fix WASM build for Rust (#366)
 
 ## [4.2.0] - 2024-05-28
 
