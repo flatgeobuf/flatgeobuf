@@ -8,9 +8,8 @@ import { bbox } from 'ol/loadingstrategy';
 
 import { createLoader } from '../../src/ts/ol';
 
-const source = new VectorSource({ strategy: bbox });
-
 const url = '/data/countries.fgb';
+const source = new VectorSource({ strategy: bbox });
 source.setLoader(createLoader(source, url, 'EPSG:4326', bbox));
 
 new Map({

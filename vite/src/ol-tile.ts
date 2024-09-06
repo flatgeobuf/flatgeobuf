@@ -4,44 +4,17 @@ import TileLayer from 'ol/layer/Tile.js';
 import View from 'ol/View.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
-import { transformExtent } from 'ol/proj.js';
 
-import { deserialize } from '../../src/ts/ol';
-import Feature from 'ol/Feature';
-import VectorTile from 'ol/VectorTile';
-import { UrlFunction, type LoadFunction } from 'ol/Tile';
-import { FeatureLoader } from 'ol/featureloader';
+import { createTileLoadFunction, tileUrlFunction } from '../../src/ts/ol';
 
-const tileUrlFunction: UrlFunction = (tileCoord) => JSON.stringify(tileCoord);
-
-const tileLoadFunction: LoadFunction = (tile) => {
-    const vectorTile = tile as VectorTile<Feature>;
-    const loader: FeatureLoader = async (extent) => {
-        const [minX, minY, maxX, maxY] = transformExtent(
-            extent,
-            'EPSG:3857',
-            'EPSG:4326',
-        );
-        const rect = { minX, minY, maxX, maxY };
-        const it = deserialize('/data/countries.fgb', rect);
-        const features: Feature[] = [];
-        for await (const feature of it) features.push(feature);
-        features.forEach((f) =>
-            f.getGeometry()?.transform('EPSG:4326', 'EPSG:3857'),
-        );
-        vectorTile.setFeatures(features);
-    };
-    vectorTile.setLoader(loader);
-};
+const url = '/data/countries.fgb';
+const source = new VectorTileSource({ tileUrlFunction });
+source.setTileLoadFunction(createTileLoadFunction(source, url));
 
 new Map({
     layers: [
-        new TileLayer({
-            source: new OSM(),
-        }),
-        new VectorTileLayer({
-            source: new VectorTileSource({ tileUrlFunction, tileLoadFunction }),
-        }),
+        new TileLayer({ source: new OSM() }),
+        new VectorTileLayer({ source }),
     ],
     controls: [],
     target: 'map',

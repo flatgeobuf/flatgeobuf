@@ -17,8 +17,7 @@ export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
  * Deserialize FlatGeobuf from a URL into generic features
- * @note Supports spatial filtering
- * @param input Input string
+ * @param url Input string
  * @param fromFeature Callback that receives generic features
  * @param rect Filter rectangle
  */
@@ -30,7 +29,7 @@ export function deserialize(
 
 /**
  * Deserialize FlatGeobuf from a typed array into generic features
- * @note Does not support spatial filtering
+ * NOTE: Does not support spatial filtering
  * @param typedArray Input byte array
  * @param fromFeature Callback that receives generic features
  */
@@ -41,8 +40,8 @@ export function deserialize(
 
 /**
  * Deserialize FlatGeobuf from a stream into generic features
- * @note Does not support spatial filtering
- * @param stream stream
+ * NOTE: Does not support spatial filtering
+ * @param input stream
  * @param fromFeature Callback that receives generic features
  */
 export function deserialize(

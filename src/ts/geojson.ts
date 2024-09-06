@@ -38,7 +38,7 @@ export function deserialize(
 
 /**
  * Deserialize FlatGeobuf from a typed array into GeoJSON features
- * @note Does not support spatial filtering
+ * NOTE: Does not support spatial filtering
  * @param typedArray Input byte array
  * @param rect Filter rectangle - NOT USED
  * @param headerMetaFn Callback that will receive header metadata when available
@@ -52,7 +52,7 @@ export function deserialize(
 
 /**
  * Deserialize FlatGeobuf from a stream into GeoJSON features
- * @note Does not support spatial filtering
+ * NOTE: Does not support spatial filtering
  * @param stream stream
  * @param rect Filter rectangle
  * @param headerMetaFn Callback that will receive header metadata when available

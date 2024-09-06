@@ -4,6 +4,9 @@ import { FeatureLoader } from 'ol/featureloader';
 import { Projection, transformExtent } from 'ol/proj';
 import { Extent } from 'ol/extent';
 import VectorSource, { LoadingStrategy } from 'ol/source/Vector.js';
+import { type LoadFunction } from 'ol/Tile';
+import VectorTileSource from 'ol/source/VectorTile.js';
+import VectorTile from 'ol/VectorTile';
 import { all } from 'ol/loadingstrategy';
 
 import { type IFeature } from './generic/feature.js';
@@ -16,6 +19,7 @@ import {
 } from './ol/featurecollection.js';
 import { type HeaderMetaFn } from './generic.js';
 import { type Rect } from './packedrtree.js';
+import { TileCoord } from 'ol/tilecoord.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
@@ -71,6 +75,15 @@ async function createIterator(
     }
 }
 
+/**
+ * Intended to be used with VectorSource and setLoader to setup
+ * a single file FlatGeobuf as source.
+ * @param source
+ * @param url
+ * @param srs
+ * @param strategy
+ * @returns
+ */
 export function createLoader(
     source: VectorSource,
     url: string,
@@ -90,4 +103,46 @@ export function createLoader(
         }
     };
     return loader;
+}
+
+/**
+ * Intended to be used with VectorTileSource as pseudo URL to key requests.
+ * @param tileCoord
+ * @returns
+ */
+export const tileUrlFunction = (tileCoord: TileCoord) =>
+    JSON.stringify(tileCoord);
+
+/**
+ * Intended to be used with VectorTileSource and setTileLoadFunction to setup
+ * a single file FlatGeobuf as source.
+ * @param source
+ * @param url
+ * @param srs
+ * @returns
+ */
+export function createTileLoadFunction(
+    source: VectorTileSource,
+    url: string,
+    srs: string = 'EPSG:4326',
+) {
+    const projection = source.getProjection();
+    const code = projection?.getCode() ?? 'EPSG:3857';
+    const tileLoadFunction: LoadFunction = (tile) => {
+        const vectorTile = tile as VectorTile<Feature>;
+        const loader: FeatureLoader = async (extent) => {
+            const [minX, minY, maxX, maxY] =
+                srs && code !== srs
+                    ? transformExtent(extent, code, srs)
+                    : extent;
+            const rect = { minX, minY, maxX, maxY };
+            const it = deserialize(url, rect);
+            const features: Feature[] = [];
+            for await (const feature of it) features.push(feature);
+            features.forEach((f) => f.getGeometry()?.transform(srs, code));
+            vectorTile.setFeatures(features);
+        };
+        vectorTile.setLoader(loader);
+    };
+    return tileLoadFunction;
 }
