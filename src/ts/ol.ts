@@ -20,7 +20,6 @@ import { type IFeature } from './generic/feature.js';
 import { type HeaderMetaFn } from './generic.js';
 import { type Rect } from './packedrtree.js';
 
-
 /**
  * Serialize OpenLayers Features to FlatGeobuf
  * @param features Features to serialize
