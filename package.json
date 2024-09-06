@@ -3,6 +3,7 @@
   "version": "3.33.0",
   "description": "A performant binary encoding for geographic data",
   "scripts": {
+    "dev": "vite",
     "build": "rm lib -rf && swc ./src/ts -d lib/mjs && mv ./lib/mjs/src/ts/* ./lib/mjs -f && rm ./lib/mjs/src -rf && tsc -p config/tsconfig.mjs.json --emitDeclarationOnly && rollup -c config/rollup.config.js",
     "type-check": "tsc -p config/tsconfig.mjs.json --noEmit",
     "lint": "eslint ./src/ts",
@@ -91,6 +92,7 @@
     "stream-buffers": "3.0.3",
     "typedoc": "0.26.5",
     "typescript": "5.5.4",
+    "vite": "5.4.3",
     "vitest": "2.0.5",
     "web-streams-polyfill": "4.0.0"
   }
