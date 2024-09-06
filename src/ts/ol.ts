@@ -1,25 +1,25 @@
 import OlFeature from 'ol/Feature.js';
 import Feature from 'ol/Feature';
-import { FeatureLoader } from 'ol/featureloader';
+import { type FeatureLoader } from 'ol/featureloader';
 import { Projection, transformExtent } from 'ol/proj';
-import { Extent } from 'ol/extent';
-import VectorSource, { LoadingStrategy } from 'ol/source/Vector.js';
+import { type Extent } from 'ol/extent';
+import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
 import { type LoadFunction } from 'ol/Tile';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import VectorTile from 'ol/VectorTile';
 import { all } from 'ol/loadingstrategy';
-
-import { type IFeature } from './generic/feature.js';
-
+import { type TileCoord } from 'ol/tilecoord.js';
 import {
     deserialize as fcDeserialize,
     deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
     serialize as fcSerialize,
 } from './ol/featurecollection.js';
+
+import { type IFeature } from './generic/feature.js';
 import { type HeaderMetaFn } from './generic.js';
 import { type Rect } from './packedrtree.js';
-import { TileCoord } from 'ol/tilecoord.js';
+
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
