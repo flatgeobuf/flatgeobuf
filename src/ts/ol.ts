@@ -1,13 +1,13 @@
 import OlFeature from 'ol/Feature.js';
-import Feature from 'ol/Feature';
-import { type FeatureLoader } from 'ol/featureloader';
-import { Projection, transformExtent } from 'ol/proj';
-import { type Extent } from 'ol/extent';
+import Feature from 'ol/Feature.js';
+import { type FeatureLoader } from 'ol/featureloader.js';
+import { Projection, transformExtent } from 'ol/proj.js';
+import { type Extent } from 'ol/extent.js';
 import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
-import { type LoadFunction } from 'ol/Tile';
+import { type LoadFunction } from 'ol/Tile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
-import VectorTile from 'ol/VectorTile';
-import { all } from 'ol/loadingstrategy';
+import VectorTile from 'ol/VectorTile.js';
+import { all } from 'ol/loadingstrategy.js';
 import { type TileCoord } from 'ol/tilecoord.js';
 import {
     deserialize as fcDeserialize,
@@ -88,12 +88,14 @@ export function createLoader(
     url: string,
     srs: string = 'EPSG:4326',
     strategy: LoadingStrategy = all,
+    clear: boolean = false
 ) {
     const loader: FeatureLoader<Feature> = async (
         extent,
         _resolution,
         projection,
     ) => {
+        if (clear) source.clear()
         const it = await createIterator(url, srs, extent, projection, strategy);
         for await (const feature of it) {
             if (srs && projection.getCode() !== srs)

@@ -48,7 +48,9 @@ export default [{
     'ol/geom/MultiLineString.js',
     'ol/geom/Polygon.js',
     'ol/geom/MultiPolygon.js',
-    'ol/geom/GeometryLayout.js'
+    'ol/geom/GeometryLayout.js',
+    'ol/loadingstrategy.js',
+    'ol/proj.js'
   ],
   output: {
     file: 'dist/flatgeobuf-ol.min.js',
@@ -63,7 +65,9 @@ export default [{
       'ol/geom/MultiLineString.js': 'ol.geom.MultiLineString',
       'ol/geom/Polygon.js': 'ol.geom.Polygon',
       'ol/geom/MultiPolygon.js': 'ol.geom.MultiPolygon',
-      'ol/geom/GeometryLayout.js': 'ol.geom.GeometryLayout'
+      'ol/geom/GeometryLayout.js': 'ol.geom.GeometryLayout',
+      'ol/loadingstrategy.js': 'ol.loadingstrategy',
+      'ol/proj.js': 'ol.proj'
     }
   },
   plugins

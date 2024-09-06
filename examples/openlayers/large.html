@@ -1,10 +1,10 @@
 <html>
 <head>
     <link rel="stylesheet" href="/examples/site.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.1.0/ol.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.1.0/dist/ol.js"></script>
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@3.32.0/dist/flatgeobuf-ol.min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@3.35.0/dist/flatgeobuf-ol.min.js"></script>
 </head>
 <body>
     <ul class="primary-navigation">
@@ -58,57 +58,25 @@
                 return false;
             };
 
-            // convert the rect into the format flatgeobuf expects
-            function fgbBoundingBox(centerCoords) {
-                let widthMeters = 2000;
-                const minPoint = new ol.geom.Point(centerCoords);
-                minPoint.translate(widthMeters/-2, widthMeters/-2);
-                minPoint.transform('EPSG:3857', 'EPSG:4326')
-
-                const maxPoint = new ol.geom.Point(centerCoords);
-                maxPoint.translate(widthMeters/2, widthMeters/2);
-                maxPoint.transform('EPSG:3857', 'EPSG:4326')
-
-                return {
-                    minX: minPoint.getCoordinates()[0],
-                    minY: minPoint.getCoordinates()[1],
-                    maxX: maxPoint.getCoordinates()[0],
-                    maxY: maxPoint.getCoordinates()[1],
-                };
+            function createBufferedExtent(coord) {
+                const extent =  ol.extent.boundingExtent([coord]);
+                const bufferedExtent = ol.extent.buffer(extent, 1000);
+                return bufferedExtent;
             }
 
-            // no need for the spatial index since this is only rendering a small extent
-            const results = new ol.source.Vector({
-                strategy: ol.loadingstrategy.bbox,
-                useSpatialIndex: false,
-                loader: async function (extent) {
-                    let rect = fgbBoundingBox(ol.extent.getCenter(extent));
-                    // Use flatgeobuf JavaScript API to iterate features as geojson.
-                    // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
-                    // rather than the entire file.
-                    let iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', rect, undefined, true);
-                    const features = []
-                    for await (let feature of iter) {
-                        feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
-                        features.push(feature)
-                    }
-                    this.clear()
-                    this.addFeatures(features)
-                }
-            });
+            const strategy = (extent) => [createBufferedExtent(ol.extent.getCenter(extent))];
+            const source = new ol.source.Vector({ strategy });
+            const layer = new ol.layer.Vector({ source })
+            const loader = flatgeobuf.createLoader(source, 'https://flatgeobuf.septima.dk/population_areas.fgb', "EPSG:4326", strategy, true);
+            source.setLoader(loader)
 
             const map = new ol.Map({
                 layers: [
-                    new ol.layer.Tile({
-                        source: new ol.source.OSM()
-                    }),
-                    new ol.layer.Vector({
-                        source: results
-                    })
+                    new ol.layer.Tile({ source: new ol.source.OSM() }),
+                    new ol.layer.Vector({ source })
                 ],
                 overlays: [overlay],
                 target: 'map',
-
                 view: new ol.View({
                     center: ol.proj.fromLonLat([-73.98, 40.766]),
                     zoom: 14
