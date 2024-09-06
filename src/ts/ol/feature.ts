@@ -10,14 +10,27 @@ import {
 import { type ISimpleGeometry } from '../generic/geometry.js';
 
 function createFeature(
+    id: number,
     geometry?: ISimpleGeometry,
     properties?: Record<string, unknown>,
 ): IFeature {
-    const feature = new OlFeature(geometry) as IFeature;
+    const olFeature = new OlFeature(geometry);
+    olFeature.setId(id);
+    const feature = olFeature as IFeature;
     if (properties && feature.setProperties) feature.setProperties(properties);
     return feature;
 }
 
-export function fromFeature(feature: Feature, header: HeaderMeta): IFeature {
-    return genericFromFeature(feature, header, createGeometry, createFeature);
+export function fromFeature(
+    id: number,
+    feature: Feature,
+    header: HeaderMeta,
+): IFeature {
+    return genericFromFeature(
+        id,
+        feature,
+        header,
+        createGeometry,
+        createFeature,
+    );
 }

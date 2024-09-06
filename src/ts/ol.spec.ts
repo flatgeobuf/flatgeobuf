@@ -24,8 +24,9 @@ function makeFeatureCollectionFromArray(
     wkts: string[] /*, properties?: any*/,
 ): Feature[] {
     const geometries = wkts.map((wkt) => format.readGeometry(wkt));
-    const features = geometries.map((geometry) => {
+    const features = geometries.map((geometry, index) => {
         const f = new Feature({ geometry });
+        f.setId(index);
         return f;
     });
     return features;
@@ -157,6 +158,7 @@ describe('ol module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: { test: 1 },
                         geometry: {
                             type: 'MultiPolygon',
@@ -244,6 +246,7 @@ describe('ol module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: { name: 'The Bahamas' },
                         geometry: {
                             type: 'MultiPolygon',
@@ -298,6 +301,7 @@ describe('ol module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: { name: 'A' },
                         geometry: {
                             type: 'Point',
@@ -306,6 +310,7 @@ describe('ol module', () => {
                     },
                     {
                         type: 'Feature',
+                        id: 1,
                         properties: { name: 'B' },
                         geometry: {
                             type: 'LineString',

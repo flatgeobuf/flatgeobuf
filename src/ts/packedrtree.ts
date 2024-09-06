@@ -128,7 +128,7 @@ export async function* streamSearch(
     }
 
     const { minX, minY, maxX, maxY } = rect;
-    console.info(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
+    console.debug(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
     const levelBounds = generateLevelBounds(numItems, nodeSize);
     const firstLeafNodeIdx = levelBounds[0][0];
 
@@ -272,11 +272,11 @@ export async function* streamSearch(
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() == newNodeRange.level()
             ) {
-                console.info(
+                console.debug(
                     `Same level, but too far away. Pushing new request for nodeIdx: ${firstChildNodeIdx} rather than merging with distant ${nearestNodeRange}`,
                 );
             } else {
-                console.info(
+                console.debug(
                     `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`,
                 );
             }

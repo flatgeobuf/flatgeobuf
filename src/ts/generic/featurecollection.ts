@@ -20,7 +20,11 @@ import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { inferGeometryType } from './header.js';
 import { Crs } from '../flat-geobuf/crs.js';
 
-export type FromFeatureFn = (feature: Feature, header: HeaderMeta) => IFeature;
+export type FromFeatureFn = (
+    id: number,
+    feature: Feature,
+    header: HeaderMeta,
+) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
 
 /**
@@ -82,7 +86,7 @@ export function deserialize(
         const featureLength = bb.readUint32(offset);
         bb.setPosition(offset + SIZE_PREFIX_LEN);
         const feature = Feature.getRootAsFeature(bb);
-        features.push(fromFeature(feature, headerMeta));
+        features.push(fromFeature(features.length, feature, headerMeta));
         offset += SIZE_PREFIX_LEN + featureLength;
     }
 
@@ -115,7 +119,8 @@ export async function* deserializeStream(
         await read(treeSize, 'entire index, w/o rect');
     }
     let feature: IFeature | undefined;
-    while ((feature = await readFeature(read, headerMeta, fromFeature)))
+    let id = 0;
+    while ((feature = await readFeature(read, headerMeta, fromFeature, id++)))
         yield feature;
 }
 
@@ -129,16 +134,15 @@ export async function* deserializeFiltered(
     const reader = await HttpReader.open(url, nocache);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
-
-    for await (const feature of reader.selectBbox(rect)) {
-        yield fromFeature(feature, reader.header);
-    }
+    for await (const feature of reader.selectBbox(rect))
+        yield fromFeature(feature.id, feature.feature, reader.header);
 }
 
 async function readFeature(
     read: ReadFn,
     headerMeta: HeaderMeta,
     fromFeature: FromFeatureFn,
+    id: number,
 ): Promise<IFeature | undefined> {
     let bytes = new Uint8Array(await read(4, 'feature length'));
     if (bytes.byteLength === 0) return;
@@ -150,7 +154,7 @@ async function readFeature(
     bb = new flatbuffers.ByteBuffer(bytesAligned);
     bb.setPosition(SIZE_PREFIX_LEN);
     const feature = Feature.getRootAsFeature(bb);
-    return fromFeature(feature, headerMeta);
+    return fromFeature(id, feature, headerMeta);
 }
 
 function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {

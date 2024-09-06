@@ -16,12 +16,14 @@ const textDecoder = new TextDecoder();
 
 export interface IFeature {
     getGeometry?(): ISimpleGeometry;
+    getId?(): number;
     getProperties?(): any;
     setProperties?(properties: Record<string, unknown>): any;
 }
 
 export interface ICreateFeature {
     (
+        id: number,
         geometry?: ISimpleGeometry,
         properties?: Record<string, unknown>,
     ): IFeature;
@@ -32,6 +34,7 @@ export interface IProperties {
 }
 
 export function fromFeature(
+    id: number,
     feature: Feature,
     header: HeaderMeta,
     createGeometry: ICreateGeometry,
@@ -41,7 +44,7 @@ export function fromFeature(
     const geometry = feature.geometry();
     const simpleGeometry = createGeometry(geometry, header.geometryType);
     const properties = parseProperties(feature, columns as ColumnMeta[]);
-    return createFeature(simpleGeometry, properties);
+    return createFeature(id, simpleGeometry, properties);
 }
 
 export function buildFeature(
