@@ -1,5 +1,12 @@
-import { type IFeature } from './generic/feature.js';
 import OlFeature from 'ol/Feature.js';
+import Feature from 'ol/Feature';
+import { FeatureLoader } from 'ol/featureloader';
+import { Projection, transformExtent } from 'ol/proj';
+import { Extent } from 'ol/extent';
+import VectorSource, { LoadingStrategy } from 'ol/source/Vector.js';
+import { all } from 'ol/loadingstrategy';
+
+import { type IFeature } from './generic/feature.js';
 
 import {
     deserialize as fcDeserialize,
@@ -42,4 +49,45 @@ export function deserialize(
             headerMetaFn,
             nocache,
         );
+}
+
+async function createIterator(
+    url: string,
+    srs: string,
+    extent: Extent,
+    projection: Projection,
+    strategy: LoadingStrategy,
+) {
+    if (strategy === all) {
+        const response = await fetch(url);
+        return deserialize(response.body as ReadableStream);
+    } else {
+        const [minX, minY, maxX, maxY] =
+            srs && projection.getCode() !== srs
+                ? transformExtent(extent, projection.getCode(), srs)
+                : extent;
+        const rect = { minX, minY, maxX, maxY };
+        return deserialize(url, rect);
+    }
+}
+
+export function createLoader(
+    source: VectorSource,
+    url: string,
+    srs: string = 'EPSG:4326',
+    strategy: LoadingStrategy = all,
+) {
+    const loader: FeatureLoader<Feature> = async (
+        extent,
+        _resolution,
+        projection,
+    ) => {
+        const it = await createIterator(url, srs, extent, projection, strategy);
+        for await (const feature of it) {
+            if (srs && projection.getCode() !== srs)
+                feature.getGeometry()?.transform(srs, projection.getCode());
+            source.addFeature(feature);
+        }
+    };
+    return loader;
 }
