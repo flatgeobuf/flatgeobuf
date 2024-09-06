@@ -24,7 +24,9 @@ describe('http reader', () => {
 
         const features: IGeoJsonFeature[] = [];
         for await (const feature of reader.selectBbox(rect)) {
-            features.push(fromFeature(feature, reader.header));
+            features.push(
+                fromFeature(feature.id, feature.feature, reader.header),
+            );
         }
         expect(features.length).toBe(86);
         const actual = features

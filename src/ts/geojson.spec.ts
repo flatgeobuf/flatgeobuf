@@ -31,8 +31,13 @@ function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
     const writer = new GeoJSONWriter();
     const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
     const features = geometries.map(
-        (geometry) =>
-            ({ type: 'Feature', geometry, properties: {} }) as IGeoJsonFeature,
+        (geometry, index) =>
+            ({
+                type: 'Feature',
+                id: index,
+                geometry,
+                properties: {},
+            }) as IGeoJsonFeature,
     );
     if (properties) features.forEach((f) => (f.properties = properties));
     return {
@@ -208,6 +213,7 @@ describe('geojson module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: { name: 'The Bahamas' },
                         geometry: {
                             type: 'MultiPolygon',
@@ -270,6 +276,7 @@ describe('geojson module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: {
                             veryLong1: Array(1024 * 10)
                                 .fill('X')
@@ -450,11 +457,13 @@ describe('geojson module', () => {
                 features: [
                     {
                         type: 'Feature',
+                        id: 0,
                         properties: {},
                         geometry: { type: 'Point', coordinates: [1.2, -2.1] },
                     },
                     {
                         type: 'Feature',
+                        id: 1,
                         properties: {},
                         geometry: {
                             type: 'LineString',
@@ -466,6 +475,7 @@ describe('geojson module', () => {
                     },
                     {
                         type: 'Feature',
+                        id: 2,
                         properties: {},
                         geometry: {
                             type: 'MultiPolygon',

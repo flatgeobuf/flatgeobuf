@@ -3,6 +3,7 @@ import { resolve } from 'path'
 
 export default {
   root: 'vite',
+  publicDir: '../test/',
   build: {
     rollupOptions: {
       input: {

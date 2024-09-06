@@ -9,6 +9,7 @@ import { type Feature as GeoJsonFeature } from 'geojson';
 export interface IGeoJsonFeature extends IFeature, GeoJsonFeature {}
 
 export function fromFeature(
+    id: number,
     feature: Feature,
     header: HeaderMeta,
 ): IGeoJsonFeature {
@@ -19,6 +20,7 @@ export function fromFeature(
     );
     const geoJsonfeature: GeoJsonFeature = {
         type: 'Feature',
+        id,
         geometry,
         properties: parseProperties(feature, columns),
     };

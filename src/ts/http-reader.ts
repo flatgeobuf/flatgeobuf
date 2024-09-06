@@ -14,6 +14,11 @@ import type HeaderMeta from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
 import { Feature } from './flat-geobuf/feature.js';
 
+interface FeatureWithId {
+    id: number;
+    feature: Feature;
+}
+
 export class HttpReader {
     private headerClient: BufferedHttpRangeClient;
     public header: HeaderMeta;
@@ -126,7 +131,9 @@ export class HttpReader {
         );
     }
 
-    async *selectBbox(rect: Rect): AsyncGenerator<Feature, void, unknown> {
+    async *selectBbox(
+        rect: Rect,
+    ): AsyncGenerator<FeatureWithId, void, unknown> {
         // Read R-Tree index and build filter for features within bbox
         const lengthBeforeTree = this.lengthBeforeTree();
 
@@ -144,18 +151,18 @@ export class HttpReader {
             );
         };
 
-        const batches: [number, number][][] = [];
-        let currentBatch: [number, number][] = [];
+        const batches: [number, number, number][][] = [];
+        let currentBatch: [number, number, number][] = [];
         for await (const searchResult of streamSearch(
             this.header.featuresCount,
             this.header.indexNodeSize,
             rect,
             readNode,
         )) {
-            const [featureOffset, ,] = searchResult;
+            const [featureOffset, featureIdx] = searchResult;
             let [, , featureLength] = searchResult;
             if (!featureLength) {
-                console.info('final feature');
+                console.debug('final feature');
                 // Normally we get the feature length by subtracting between
                 // adjacent nodes from the index, which we can't do for the
                 // _very_ last feature in a dataset.
@@ -169,31 +176,31 @@ export class HttpReader {
             }
 
             if (currentBatch.length == 0) {
-                currentBatch.push([featureOffset, featureLength]);
+                currentBatch.push([featureOffset, featureLength, featureIdx]);
                 continue;
             }
 
             const prevFeature = currentBatch[currentBatch.length - 1];
             const gap = featureOffset - (prevFeature[0] + prevFeature[1]);
             if (gap > Config.global.extraRequestThreshold()) {
-                console.info(
+                console.debug(
                     `Pushing new feature batch, since gap ${gap} was too large`,
                 );
                 batches.push(currentBatch);
                 currentBatch = [];
             }
 
-            currentBatch.push([featureOffset, featureLength]);
+            currentBatch.push([featureOffset, featureLength, featureIdx]);
         }
         this.headerClient.logUsage('header+index');
         if (currentBatch.length > 0) {
             batches.push(currentBatch);
         }
 
-        const promises: AsyncGenerator<Feature, any, any>[] = batches.flatMap(
-            (batch: [number, number][]) =>
+        const promises: AsyncGenerator<FeatureWithId, any, any>[] =
+            batches.flatMap((batch: [number, number, number][]) =>
                 this.readFeatureBatch(batch, this.nocache),
-        );
+            );
 
         // Fetch all batches concurrently, yielding features as they become
         // available, meaning the results may be intermixed.
@@ -222,9 +229,9 @@ export class HttpReader {
      * `batch`: [offset, length] of features in the batch
      */
     async *readFeatureBatch(
-        batch: [number, number][],
+        batch: [number, number, number][],
         nocache: boolean,
-    ): AsyncGenerator<Feature, void, unknown> {
+    ): AsyncGenerator<FeatureWithId, void, unknown> {
         const [firstFeatureOffset] = batch[0];
         const [lastFeatureOffset, lastFeatureLength] = batch[batch.length - 1];
 
@@ -236,12 +243,13 @@ export class HttpReader {
         const featureClient = this.buildFeatureClient(nocache);
 
         let minFeatureReqLength = batchSize;
-        for (const [featureOffset] of batch) {
-            yield await this.readFeature(
+        for (const [featureOffset, , featureIdx] of batch) {
+            const feature = await this.readFeature(
                 featureClient,
                 featureOffset,
                 minFeatureReqLength,
             );
+            yield { id: featureIdx, feature };
             // Only set minFeatureReqLength for the first request.
             //
             // This should only affect a batch that contains the final feature, otherwise
@@ -343,7 +351,7 @@ class BufferedHttpRangeClient {
         const requested = this.bytesEverFetched;
         const efficiency = ((100.0 * used) / requested).toFixed(2);
 
-        console.info(
+        console.debug(
             `${category} bytes used/requested: ${used} / ${requested} = ${efficiency}%`,
         );
     }
@@ -369,7 +377,7 @@ class HttpRangeClient {
         this.bytesEverRequested += length;
 
         const range = `bytes=${begin}-${begin + length - 1}`;
-        console.info(
+        console.debug(
             `request: #${this.requestsEverMade}, purpose: ${purpose}), bytes: (this_request: ${length}, ever: ${this.bytesEverRequested}), Range: ${range}`,
         );
 
