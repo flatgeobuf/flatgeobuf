@@ -88,14 +88,14 @@ export function createLoader(
     url: string,
     srs: string = 'EPSG:4326',
     strategy: LoadingStrategy = all,
-    clear: boolean = false
+    clear: boolean = false,
 ) {
     const loader: FeatureLoader<Feature> = async (
         extent,
         _resolution,
         projection,
     ) => {
-        if (clear) source.clear()
+        if (clear) source.clear();
         const it = await createIterator(url, srs, extent, projection, strategy);
         for await (const feature of it) {
             if (srs && projection.getCode() !== srs)
