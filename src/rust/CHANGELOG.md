@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.4.0] - UNRELEASED
+
+- [rust] Upgrade to geozero 0.14
+
 ## [4.3.0] - 2024-08-16
 
 - [all] Upgrade to flatbuffers 24.3.25 (#380)
