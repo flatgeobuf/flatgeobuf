@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.0] - UNRELEASED
+## [4.4.0] - 2024-09-26
 
 - [rust] Upgrade to geozero 0.14
 
