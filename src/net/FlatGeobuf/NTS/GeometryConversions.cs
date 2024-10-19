@@ -73,7 +73,7 @@ namespace FlatGeobuf.NTS
                 return go;
             }
 
-            if (seq is FlatGeobufCoordinateSequence fbSeq)
+            if (seq is FlatGeobufCoordinateSequence fbSeq && geometryType != GeometryType.MultiLineString)
             {
                 go.xyOffset = Geometry.CreateXyVectorBlock(builder, fbSeq.XY);
                 if (header.HasZ)

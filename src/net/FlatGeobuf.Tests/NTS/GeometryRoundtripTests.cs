@@ -68,6 +68,7 @@ namespace FlatGeobuf.Tests.NTS
         [DataRow("POLYGON((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))")]
         [DataRow("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))")]
         [DataRow("MULTILINESTRING((30 20, 45 40, 10 40), (40 10, 10 20, 5 10, 15 5))")]
+        [DataRow("MULTILINESTRING((30 20, 45 40, 10 40))")]
         [DataRow("MULTIPOLYGON(((30 20, 45 40, 10 40, 30 20)), ((15 5, 40 10, 10 20, 5 10, 15 5)))")]
         public async Task GeometryCopyable(string wkt)
         {
