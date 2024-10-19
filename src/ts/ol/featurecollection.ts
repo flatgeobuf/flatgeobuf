@@ -21,7 +21,7 @@ export function deserialize(
 export function deserializeStream(
     stream: ReadableStream,
     headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<any, void, unknown> {
+): AsyncGenerator<IFeature> {
     return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
 
@@ -30,7 +30,7 @@ export function deserializeFiltered(
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache: boolean = false,
-): AsyncGenerator<any, void, unknown> {
+): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(
         url,
         rect,

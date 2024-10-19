@@ -1,12 +1,13 @@
 declare module 'jsts/org/locationtech/jts/io/GeoJSONWriter.js' {
     export default class GeoJSONWriter {
-        write(geometry: any): any;
+        write(geometry: unknown): unknown;
     }
 }
 
 declare module 'jsts/org/locationtech/jts/io/WKTReader.js' {
     export default class WKTReader {
-        read(): any;
+        constructor();
+        read(wkt: string): unknown;
     }
 }
 
@@ -18,6 +19,6 @@ declare module 'jsts/org/locationtech/jts/geom/Envelope.js' {
 
 declare module 'jsts/org/locationtech/jts/geom/GeometryFactory.js' {
     export default class GeometryFactory {
-        toGeometry(e: any): any;
+        toGeometry(e: unknown): unknown;
     }
 }

@@ -197,7 +197,7 @@ export class HttpReader {
             batches.push(currentBatch);
         }
 
-        const promises: AsyncGenerator<FeatureWithId, any, any>[] =
+        const promises: AsyncGenerator<FeatureWithId, void, unknown>[] =
             batches.flatMap((batch: [number, number, number][]) =>
                 this.readFeatureBatch(batch, this.nocache),
             );

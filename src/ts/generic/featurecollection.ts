@@ -198,7 +198,7 @@ export function buildHeader(
     return builder.asUint8Array() as Uint8Array;
 }
 
-function valueToType(value: boolean | number | string): ColumnType {
+function valueToType(value: boolean | number | string | undefined): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
     else if (typeof value === 'number')
         if (value % 1 === 0) return ColumnType.Int;
@@ -209,7 +209,10 @@ function valueToType(value: boolean | number | string): ColumnType {
     else throw new Error(`Unknown type (value '${value}')`);
 }
 
-export function mapColumn(properties: any, k: string): ColumnMeta {
+export function mapColumn(
+    properties: Record<string, string | number | boolean | undefined>,
+    k: string,
+): ColumnMeta {
     return {
         name: k,
         type: valueToType(properties[k]),

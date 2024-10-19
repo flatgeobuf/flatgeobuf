@@ -43,7 +43,7 @@ for (const levelBound of levelBounds) console.log('  ' + levelBound);
 
 console.log('Size: ' + treeSize);
 
-const items: any[] = [];
+const items: number[][] = [];
 
 function readNode(level: number) {
     const minx = buffer.readDoubleLE(offset + 0);

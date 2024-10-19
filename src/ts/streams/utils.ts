@@ -11,7 +11,7 @@ export function arrayToStream(array: ArrayBuffer): ReadableStream {
     myReadableStreamBuffer.put(Buffer.from(array));
     myReadableStreamBuffer.stop();
 
-    const webReader = nodeToWeb(myReadableStreamBuffer as any);
+    const webReader = nodeToWeb(myReadableStreamBuffer);
 
     return webReader;
 }
@@ -32,6 +32,7 @@ export async function takeAsync<T>(
 
 export function nodeToWeb(nodeStream: Readable): ReadableStream {
     let destroyed = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listeners: any = {};
 
     function start(controller: ReadableStreamDefaultController) {

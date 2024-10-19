@@ -11,7 +11,11 @@ import {
     mapColumn,
 } from '../generic/featurecollection.js';
 import { type Rect } from '../packedrtree.js';
-import { buildFeature, type IProperties } from '../generic/feature.js';
+import {
+    buildFeature,
+    type IFeature,
+    type IProperties,
+} from '../generic/feature.js';
 import { type HeaderMetaFn } from '../generic.js';
 import { magicbytes } from '../constants.js';
 import { inferGeometryType } from '../generic/header.js';
@@ -80,7 +84,7 @@ export function deserialize(
 export function deserializeStream(
     stream: ReadableStream,
     headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<any, void, unknown> {
+): AsyncGenerator<IFeature> {
     return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
 
@@ -89,7 +93,7 @@ export function deserializeFiltered(
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache: boolean = false,
-): AsyncGenerator<any, void, unknown> {
+): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(
         url,
         rect,

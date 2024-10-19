@@ -34,7 +34,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
-): AsyncGenerator<IGeoJsonFeature, any, unknown>;
+): AsyncGenerator<IGeoJsonFeature>;
 
 /**
  * Deserialize FlatGeobuf from a typed array into GeoJSON features
@@ -73,6 +73,15 @@ export function deserialize(
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, headerMetaFn);
-    else return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache);
+        return fcDeserializeStream(
+            input,
+            headerMetaFn,
+        ) as AsyncGenerator<IGeoJsonFeature>;
+    else
+        return fcDeserializeFiltered(
+            input,
+            rect!,
+            headerMetaFn,
+            nocache,
+        ) as AsyncGenerator<IGeoJsonFeature>;
 }

@@ -44,14 +44,17 @@ export function deserialize(
     if (input instanceof Uint8Array)
         return fcDeserialize(input, headerMetaFn) as OlFeature[];
     else if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, headerMetaFn);
+        return fcDeserializeStream(
+            input,
+            headerMetaFn,
+        ) as AsyncGenerator<OlFeature>;
     else
         return fcDeserializeFiltered(
             input,
             rect as Rect,
             headerMetaFn,
             nocache,
-        );
+        ) as AsyncGenerator<OlFeature>;
 }
 
 async function createIterator(

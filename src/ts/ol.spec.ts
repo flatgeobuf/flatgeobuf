@@ -46,9 +46,7 @@ describe('ol module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync<Feature>(
-                deserialize(
-                    stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator<Feature>,
+                deserialize(stream) as AsyncGenerator<Feature>,
             );
             expect(g(actual)).to.equal(g(expected));
         });
@@ -228,9 +226,7 @@ describe('ol module', () => {
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync<Feature>(
-                deserialize(
-                    stream as unknown as ReadableStream<any>,
-                ) as AsyncGenerator<Feature>,
+                deserialize(stream) as AsyncGenerator<Feature>,
             );
             expect(features.length).to.eq(179);
             for (const f of features)

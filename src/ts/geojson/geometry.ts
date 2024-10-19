@@ -43,7 +43,7 @@ export function parseGeometry(
     let end = 0;
     switch (geometry.type) {
         case 'Point':
-            flat(cs, xy, z);
+            flat(cs as number[], xy, z);
             break;
         case 'MultiPoint':
         case 'LineString':
@@ -51,7 +51,7 @@ export function parseGeometry(
             break;
         case 'MultiLineString':
         case 'Polygon': {
-            const css = cs as number[][][];
+            const css = cs as number[][];
             flat(css, xy, z);
             if (css.length > 1) ends = css.map((c) => (end += c.length));
             break;

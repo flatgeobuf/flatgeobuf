@@ -9,7 +9,7 @@ import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
 
-global.fetch = fetch as any;
+global.fetch = fetch as never;
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
@@ -22,11 +22,17 @@ import {
     Position,
 } from 'geojson';
 
-function makeFeatureCollection(wkt: string, properties?: any) {
+function makeFeatureCollection(
+    wkt: string,
+    properties?: Record<string, string | number | boolean | object | undefined>,
+) {
     return makeFeatureCollectionFromArray([wkt], properties);
 }
 
-function makeFeatureCollectionFromArray(wkts: string[], properties?: any) {
+function makeFeatureCollectionFromArray(
+    wkts: string[],
+    properties?: Record<string, string | number | boolean | object | undefined>,
+) {
     const reader = new WKTReader();
     const writer = new GeoJSONWriter();
     const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
@@ -136,7 +142,7 @@ describe('geojson module', () => {
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync<IGeoJsonFeature>(
-                deserialize(stream as unknown as ReadableStream<any>),
+                deserialize(stream),
             );
             expect(actual).to.deep.equal(expected.features);
         });
@@ -208,7 +214,7 @@ describe('geojson module', () => {
         });
 
         it('Bahamas', () => {
-            const expected = {
+            const expected: GeoJsonFeatureCollection = {
                 type: 'FeatureCollection',
                 features: [
                     {
@@ -256,7 +262,7 @@ describe('geojson module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(expected as any));
+            const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
@@ -271,7 +277,7 @@ describe('geojson module', () => {
         });
 
         it('Long feature properties', () => {
-            const expected = {
+            const expected: GeoJsonFeatureCollection = {
                 type: 'FeatureCollection',
                 features: [
                     {
@@ -295,7 +301,7 @@ describe('geojson module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(expected as any));
+            const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
     });
@@ -379,7 +385,7 @@ describe('geojson module', () => {
                 bytes,
                 undefined,
                 (header: HeaderMeta) => (headerMeta = header),
-            ) as GeoJsonFeatureCollection;
+            );
             expect(headerMeta?.crs?.code).to.eq(4326);
             expect(geojson.features.length).to.eq(179);
             for (const f of geojson.features) {
@@ -419,7 +425,7 @@ describe('geojson module', () => {
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
             const features = await takeAsync<IGeoJsonFeature>(
-                deserialize(stream as unknown as ReadableStream<any>),
+                deserialize(stream),
             );
             expect(features.length).to.eq(179);
             for (const f of features)
@@ -432,7 +438,7 @@ describe('geojson module', () => {
         it('Should parse UScounties fgb produced from GDAL', () => {
             const buffer = readFileSync('./test/data/UScounties.fgb');
             const bytes = new Uint8Array(buffer);
-            const geojson = deserialize(bytes) as GeoJsonFeatureCollection;
+            const geojson = deserialize(bytes);
             expect(geojson.features.length).to.eq(3221);
             for (const f of geojson.features) {
                 const g = f.geometry as
@@ -451,7 +457,7 @@ describe('geojson module', () => {
         it('Should parse heterogeneous fgb produced from Rust impl', () => {
             const buffer = readFileSync('./test/data/heterogeneous.fgb');
             const bytes = new Uint8Array(buffer);
-            const geojson = deserialize(bytes) as GeoJsonFeatureCollection;
+            const geojson = deserialize(bytes);
             const expected = {
                 type: 'FeatureCollection',
                 features: [

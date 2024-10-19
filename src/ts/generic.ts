@@ -25,7 +25,7 @@ export function deserialize(
     url: string,
     fromFeature: FromFeatureFn,
     rect?: Rect,
-): AsyncGenerator<IFeature, any, unknown>;
+): AsyncGenerator<IFeature>;
 
 /**
  * Deserialize FlatGeobuf from a typed array into generic features

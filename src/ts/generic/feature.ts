@@ -17,20 +17,22 @@ const textDecoder = new TextDecoder();
 export interface IFeature {
     getGeometry?(): ISimpleGeometry;
     getId?(): number;
-    getProperties?(): any;
-    setProperties?(properties: Record<string, unknown>): any;
+    getProperties?(): Record<string, string | number | boolean | undefined>;
+    setProperties?(
+        properties: Record<string, string | number | boolean | undefined>,
+    ): void;
 }
 
 export interface ICreateFeature {
     (
         id: number,
         geometry?: ISimpleGeometry,
-        properties?: Record<string, unknown>,
+        properties?: Record<string, string | number | boolean | undefined>,
     ): IFeature;
 }
 
 export interface IProperties {
-    [key: string]: boolean | number | string | any;
+    [key: string]: boolean | number | string | undefined;
 }
 
 export function fromFeature(
@@ -105,7 +107,7 @@ export function buildFeature(
                     break;
                 case ColumnType.Long:
                     prep(8);
-                    view.setBigInt64(offset, BigInt(value), true);
+                    view.setBigInt64(offset, BigInt(value as number), true);
                     offset += 8;
                     break;
                 case ColumnType.Float:
@@ -120,7 +122,7 @@ export function buildFeature(
                     break;
                 case ColumnType.DateTime:
                 case ColumnType.String: {
-                    const str = textEncoder.encode(value);
+                    const str = textEncoder.encode(value as string);
                     prep(4);
                     view.setUint32(offset, str.length, true);
                     offset += 4;
@@ -164,8 +166,9 @@ export function buildFeature(
 export function parseProperties(
     feature: Feature,
     columns?: ColumnMeta[] | null,
-): Record<string, unknown> {
-    const properties: Record<string, unknown> = {};
+): Record<string, string | number | boolean | undefined> {
+    const properties: Record<string, string | number | boolean | undefined> =
+        {};
     if (!columns || columns.length === 0) return properties;
     const array = feature.propertiesArray();
     if (!array) return properties;

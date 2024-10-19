@@ -38,7 +38,7 @@ export interface ICreateGeometry {
 export function buildGeometry(
     builder: flatbuffers.Builder,
     parsedGeometry: IParsedGeometry,
-): any {
+) {
     const { xy, z, ends, parts, type } = parsedGeometry;
 
     if (parts) {
@@ -66,18 +66,18 @@ export function buildGeometry(
 }
 
 export function flat(
-    a: any[],
+    a: number[] | number[][],
     xy: number[],
     z: number[],
 ): number[] | undefined {
     if (a.length === 0) return;
     if (Array.isArray(a[0])) {
-        for (const sa of a) flat(sa, xy, z);
+        for (const sa of a as number[][]) flat(sa, xy, z);
     } else {
-        if (a.length === 2) xy.push(...a);
+        if (a.length === 2) xy.push(...(a as number[]));
         else {
-            xy.push(a[0], a[1]);
-            z.push(a[2]);
+            xy.push(a[0], (a as number[])[1]);
+            z.push((a as number[])[2]);
         }
     }
 }
@@ -134,6 +134,6 @@ export function pairFlatCoordinates(
 
 export function toGeometryType(name?: string): GeometryType {
     if (!name) return GeometryType.Unknown;
-    const type: GeometryType = (GeometryType as any)[name];
+    const type: GeometryType = (GeometryType as never)[name];
     return type;
 }

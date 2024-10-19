@@ -12,7 +12,7 @@ import { type ISimpleGeometry } from '../generic/geometry.js';
 function createFeature(
     id: number,
     geometry?: ISimpleGeometry,
-    properties?: Record<string, unknown>,
+    properties?: Record<string, string | number | boolean | undefined>,
 ): IFeature {
     const olFeature = new OlFeature(geometry);
     olFeature.setId(id);
