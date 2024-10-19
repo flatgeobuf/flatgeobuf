@@ -19,7 +19,7 @@ namespace FlatGeobuf.Tests.NTS
             Console.WriteLine(ae.Extent.ToString());
             int numFeaturesExpected = ae.NumFeatures;
             int numFeaturesRead = 0;
-            while(await ae.MoveNextAsync())
+            while (await ae.MoveNextAsync())
             {
                 Console.WriteLine($" {ae.Current.Attributes["id"]} - {ae.Current.Attributes["name"]}");
                 numFeaturesRead++;
@@ -107,14 +107,9 @@ namespace FlatGeobuf.Tests.NTS
 
         }
 
-        private class UnseekableStream : Stream 
+        private class UnseekableStream(Stream stream) : Stream
         {
-            private readonly Stream _stream;
-            public UnseekableStream(Stream stream)
-                
-            {
-                _stream = stream;
-            }
+            private readonly Stream _stream = stream;
 
             public override bool CanRead => _stream.CanRead;
 

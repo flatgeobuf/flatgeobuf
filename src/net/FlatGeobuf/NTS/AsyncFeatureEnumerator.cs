@@ -18,8 +18,7 @@ namespace FlatGeobuf.NTS
     /// </summary>
     public class AsyncFeatureEnumerator : IAsyncEnumerator<IFeature>
     {
-        private static readonly FlatGeobufCoordinateSequenceFactory CsFactory =
-            new FlatGeobufCoordinateSequenceFactory();
+        private static readonly FlatGeobufCoordinateSequenceFactory CsFactory = new();
 
         private readonly GeometryFactory _factory;
         private readonly Stream _stream;
@@ -131,17 +130,13 @@ namespace FlatGeobuf.NTS
         public IFeature Current { get; private set; }
 
         /// <inheritdoc/>
-        #pragma warning disable CS1998
         public async ValueTask DisposeAsync()
         {
             _itemEnumerator?.Dispose();
-#if NETSTANDARD2_1
             await _stream.DisposeAsync();
-#else
             _stream.Dispose();
-#endif
+            GC.SuppressFinalize(this);
         }
-        #pragma warning restore CS1998
 
         /// <inheritdoc/>
         public async ValueTask<bool> MoveNextAsync()

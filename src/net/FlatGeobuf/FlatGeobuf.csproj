@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <VersionPrefix>3.26.0</VersionPrefix>
     <DefineConstants>ENABLE_SPAN_T;UNSAFE_BYTEBUFFER;BYTEBUFFER_NO_BOUNDS_CHECK</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

@@ -27,14 +27,15 @@ namespace FlatGeobuf.NTS
         public IList<ColumnMeta> Columns { get; set; }
     }
 
-    public static class FeatureCollectionConversions {
+    public static class FeatureCollectionConversions
+    {
         public static async Task<byte[]> SerializeAsync(FeatureCollection fc, GeometryType geometryType, byte dimensions = 2, IList<ColumnMeta> columns = null)
         {
             var featureFirst = fc.First();
             if (columns == null && featureFirst.Attributes != null)
-                    columns = featureFirst.Attributes.GetNames()
-                        .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
-                        .ToList();
+                columns = featureFirst.Attributes.GetNames()
+                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                    .ToList();
             using var memoryStream = new MemoryStream();
             await SerializeAsync(memoryStream, fc, geometryType, dimensions, columns);
             return memoryStream.ToArray();
@@ -44,9 +45,9 @@ namespace FlatGeobuf.NTS
         {
             var featureFirst = fc.First();
             if (columns == null && featureFirst.Attributes != null)
-                    columns = featureFirst.Attributes.GetNames()
-                        .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
-                        .ToList();
+                columns = featureFirst.Attributes.GetNames()
+                    .Select(n => new ColumnMeta() { Name = n, Type = ToColumnType(featureFirst.Attributes.GetType(n)) })
+                    .ToList();
             using var memoryStream = new MemoryStream();
             Serialize(memoryStream, fc, geometryType, dimensions, columns);
             return memoryStream.ToArray();
@@ -130,13 +131,16 @@ namespace FlatGeobuf.NTS
             {
                 long offset = 8 + 4 + headerSize;
                 var size = PackedRTree.CalcSize(count, nodeSize);
-                if (rect != null) {
-                    var result = PackedRTree.StreamSearch(count, nodeSize, rect, (ulong treeOffset, ulong size) => {
-                        stream.Seek(offset + (long) treeOffset, SeekOrigin.Begin);
+                if (rect != null)
+                {
+                    var result = PackedRTree.StreamSearch(count, nodeSize, rect, (ulong treeOffset, ulong size) =>
+                    {
+                        stream.Seek(offset + (long)treeOffset, SeekOrigin.Begin);
                         return stream;
                     }).ToList();
-                    foreach (var item in result) {
-                        stream.Seek(offset + (long) size + (long) item.Offset, SeekOrigin.Begin);
+                    foreach (var item in result)
+                    {
+                        stream.Seek(offset + (long)size + (long)item.Offset, SeekOrigin.Begin);
                         var featureLength = reader.ReadInt32();
                         var byteBuffer = new ByteBuffer(reader.ReadBytes(featureLength));
                         var feature = FeatureConversions.FromByteBuffer(factory, seqFactory, byteBuffer, header);
@@ -144,7 +148,7 @@ namespace FlatGeobuf.NTS
                     }
                     yield break;
                 }
-                stream.Seek(8 + 4 + headerSize + (long) size, SeekOrigin.Begin);
+                stream.Seek(8 + 4 + headerSize + (long)size, SeekOrigin.Begin);
             }
 
             while (stream.Position < stream.Length)

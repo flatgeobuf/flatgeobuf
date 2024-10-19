@@ -19,20 +19,22 @@ namespace FlatGeobuf.Index
                 throw new Exception("Node size must be at least 2");
             if (numItems == 0)
                 throw new Exception("Number of items must be greater than 0");
-            ushort nodeSizeMin = Math.Min(Math.Max(nodeSize, (ushort) 2), (ushort) 65535);
+            ushort nodeSizeMin = Math.Min(Math.Max(nodeSize, (ushort)2), (ushort)65535);
             // limit so that resulting size in bytes can be represented by ulong
             if (numItems > 1 << 56)
                 throw new OverflowException("Number of items must be less than 2^56");
             ulong n = numItems;
             ulong numNodes = n;
-            do {
+            do
+            {
                 n = (n + nodeSizeMin - 1) / nodeSizeMin;
                 numNodes += n;
             } while (n != 1);
             return numNodes * NODE_ITEM_LEN;
         }
 
-        static IList<(ulong Start, ulong End)> GenerateLevelBounds(ulong numItems, ushort nodeSize) {
+        static IList<(ulong Start, ulong End)> GenerateLevelBounds(ulong numItems, ushort nodeSize)
+        {
             if (nodeSize < 2)
                 throw new Exception("Node size must be at least 2");
             if (numItems == 0)
@@ -42,7 +44,8 @@ namespace FlatGeobuf.Index
             var n = numItems;
             var numNodes = n;
             var levelNumNodes = new List<ulong>() { n };
-            do {
+            do
+            {
                 n = (n + nodeSize - 1) / nodeSize;
                 numNodes += n;
                 levelNumNodes.Add(n);
@@ -51,7 +54,8 @@ namespace FlatGeobuf.Index
             // bounds per level in reversed storage order (top-down)
             var levelOffsets = new List<ulong>();
             n = numNodes;
-            foreach (var size in levelNumNodes) {
+            foreach (var size in levelNumNodes)
+            {
                 levelOffsets.Add(n - size);
                 n -= size;
             };

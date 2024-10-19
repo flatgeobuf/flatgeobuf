@@ -37,41 +37,41 @@ namespace FlatGeobuf.NTS
                     switch (type)
                     {
                         case ColumnType.Bool:
-                            writer.Write((bool) value);
+                            writer.Write((bool)value);
                             break;
                         case ColumnType.UByte:
-                            writer.Write((byte) value);
+                            writer.Write((byte)value);
                             break;
                         case ColumnType.Byte:
-                            writer.Write((sbyte) value);
+                            writer.Write((sbyte)value);
                             break;
                         case ColumnType.UShort:
-                            writer.Write((ushort) value);
+                            writer.Write((ushort)value);
                             break;
                         case ColumnType.Short:
-                            writer.Write((short) value);
+                            writer.Write((short)value);
                             break;
                         case ColumnType.UInt:
-                            writer.Write((uint) value);
+                            writer.Write((uint)value);
                             break;
                         case ColumnType.Int:
-                            writer.Write((int) value);
+                            writer.Write((int)value);
                             break;
                         case ColumnType.ULong:
-                            writer.Write((ulong) value);
+                            writer.Write((ulong)value);
                             break;
                         case ColumnType.Long:
-                            writer.Write((long) value);
+                            writer.Write((long)value);
                             break;
                         case ColumnType.Float:
-                            writer.Write((float) value);
+                            writer.Write((float)value);
                             break;
                         case ColumnType.Double:
-                            writer.Write((double) value);
+                            writer.Write((double)value);
                             break;
                         case ColumnType.DateTime:
                         case ColumnType.String:
-                            var bytes = Encoding.UTF8.GetBytes((string) value);
+                            var bytes = Encoding.UTF8.GetBytes((string)value);
                             writer.Write(bytes.Length);
                             writer.Write(bytes);
                             break;
@@ -86,16 +86,20 @@ namespace FlatGeobuf.NTS
                 propertiesOffset = Feature.CreatePropertiesVectorBlock(builder, memoryStream.ToArray());
 
             Offset<Geometry> geometryOffset;
-            if (go.gos != null && go.gos.Length > 0) {
+            if (go.gos != null && go.gos.Length > 0)
+            {
                 var partOffsets = new Offset<Geometry>[go.gos.Length];
-                for (int i = 0; i < go.gos.Length; i++) {
+                for (int i = 0; i < go.gos.Length; i++)
+                {
                     var goPart = go.gos[i];
                     var partOffset = Geometry.CreateGeometry(builder, goPart.endsOffset, goPart.xyOffset, goPart.zOffset, goPart.mOffset, default, default, go.Type, default);
                     partOffsets[i] = partOffset;
                 }
                 var partsOffset = Geometry.CreatePartsVector(builder, partOffsets);
                 geometryOffset = Geometry.CreateGeometry(builder, default, default, default, default, default, default, go.Type, partsOffset);
-            } else {
+            }
+            else
+            {
                 geometryOffset = Geometry.CreateGeometry(builder, go.endsOffset, go.xyOffset, go.zOffset, go.mOffset, default, default, go.Type, default);
             }
             Feature.StartFeature(builder);
@@ -116,7 +120,7 @@ namespace FlatGeobuf.NTS
         }
 
         internal static IFeature FromFeature(GeometryFactory factory, FlatGeobufCoordinateSequenceFactory seqFactory, Feature feature, HeaderT header)
-        { 
+        {
             IAttributesTable attributesTable = null;
             if (feature.PropertiesLength != 0)
             {
@@ -168,7 +172,7 @@ namespace FlatGeobuf.NTS
                         case ColumnType.DateTime:
                         case ColumnType.String:
                             int len = reader.ReadInt32();
-                            var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int) memoryStream.Position, len);
+                            var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int)memoryStream.Position, len);
                             memoryStream.Position += len;
                             attributesTable.Add(name, str);
                             break;
