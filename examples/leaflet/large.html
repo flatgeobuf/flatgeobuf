@@ -138,7 +138,7 @@
         This is a map of every census block in the USA, including its
         population. The entire file is over 12GB, but FlatGeobuf fetches only
         the tiny subset of data that intersects with the bounding box (drawn
-        in yellow). Pan the map to move the query's bounding box.
+        in blue). Pan the map to move the query's bounding box.
     </p>
     <p>
         When you have feature data that cover a large area in fine-grained
@@ -157,6 +157,11 @@
         you're interested in, you can keep your page size down while avoiding
         the tedium of slicing up files manually, or building and maintaining an
         application server.
+    </p>
+    <p>
+        Though getting a small subset of features from a large dataset transfers
+        relatively little data, it does so using multiple requests. There are some
+        <a href="https://github.com/flatgeobuf/flatgeobuf?tab=readme-ov-file#optimizing-remotely-hosted-flatgeobufs">tips for optimizing remote hosted flatgeobufs</a>, mostly oriented around minimizing round trip latency.
     </p>
     <div id="header">
         <h3>Parsed header content</h3>
