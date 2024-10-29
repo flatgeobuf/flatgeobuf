@@ -18,15 +18,24 @@ pub struct Coord<'a> {
 impl<'a> CoordTrait for Coord<'a> {
     type T = f64;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
     fn nth_unchecked(&self, n: usize) -> Self::T {
         match n {
-            0 => self.geom.xy().unwrap().get(self.coord_offset * 2),
-            1 => self.geom.xy().unwrap().get((self.coord_offset * 2) + 1),
-            2 => self.geom.z().unwrap().get(self.coord_offset),
+            0 => self.x(),
+            1 => self.y(),
+            2 => match self.dim {
+                Dimensions::Xyz | Dimensions::Xyzm => self.geom.z().unwrap().get(self.coord_offset),
+                Dimensions::Xym => self.geom.m().unwrap().get(self.coord_offset),
+                // Data from FlatGeobuf always has known dimension
+                Dimensions::Xy | Dimensions::Unknown(_) => unreachable!("Unreachable for 3D data"),
+            },
+            3 => match self.dim {
+                Dimensions::Xyzm => self.geom.m().unwrap().get(self.coord_offset),
+                _ => unreachable!("Unreachable for 3D data"),
+            },
             _ => panic!("Unexpected dim {n}"),
         }
     }
@@ -65,7 +74,7 @@ impl<'a> PointTrait for Point<'a> {
     type T = f64;
     type CoordType<'b> = Coord<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -109,7 +118,7 @@ impl<'a> LineStringTrait for LineString<'a> {
     type T = f64;
     type CoordType<'b> = Coord<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -142,7 +151,7 @@ impl<'a> PolygonTrait for Polygon<'a> {
     type T = f64;
     type RingType<'b> = LineString<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -211,7 +220,7 @@ impl<'a> MultiPointTrait for MultiPoint<'a> {
     type T = f64;
     type PointType<'b> = Point<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -244,7 +253,7 @@ impl<'a> MultiLineStringTrait for MultiLineString<'a> {
     type T = f64;
     type LineStringType<'b> = LineString<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -289,7 +298,7 @@ impl<'a> MultiPolygonTrait for MultiPolygon<'a> {
     type T = f64;
     type PolygonType<'b> = Polygon<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
@@ -349,7 +358,7 @@ impl<'a> GeometryTrait for Geometry<'a> {
     type TriangleType<'b> = UnimplementedTriangle<f64> where Self: 'b;
     type LineType<'b> = UnimplementedLine<f64> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         match self {
             Self::Point(g) => PointTrait::dim(g),
             Self::LineString(g) => g.dim(),
@@ -404,7 +413,7 @@ impl<'a> GeometryCollectionTrait for GeometryCollection<'a> {
     type T = f64;
     type GeometryType<'b> = Geometry<'a> where Self: 'b;
 
-    fn dim(&self) -> geo_traits::Dimensions {
+    fn dim(&self) -> Dimensions {
         self.dim
     }
 
