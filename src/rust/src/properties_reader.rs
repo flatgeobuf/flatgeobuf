@@ -27,6 +27,53 @@ impl FgbFeature {
     pub fn geometry(&self) -> Option<Geometry> {
         self.fbs_feature().geometry()
     }
+
+    fn dimension(&self) -> geo_traits::Dimensions {
+        match (self.header().has_z(), self.header().has_m()) {
+            (true, true) => geo_traits::Dimensions::Xyzm,
+            (true, false) => geo_traits::Dimensions::Xyz,
+            (false, true) => geo_traits::Dimensions::Xym,
+            (false, false) => geo_traits::Dimensions::Xy,
+        }
+    }
+
+    /// Access the underlying geometry, returning an object that implements
+    /// [geo_traits::GeometryTrait].
+    ///
+    /// Note that this method only supports the core geometry types supported by [geo_traits], and
+    /// will panic on curve geometries.
+    pub fn geometry_trait_impl(&self) -> Option<impl geo_traits::GeometryTrait + use<'_>> {
+        let geom = self.geometry()?;
+        let dim = self.dimension();
+        let result = match self.header().geometry_type() {
+            GeometryType::Point => {
+                crate::geo_trait_impl::Geometry::Point(crate::geo_trait_impl::Point::new(geom, dim))
+            }
+            GeometryType::LineString => crate::geo_trait_impl::Geometry::LineString(
+                crate::geo_trait_impl::LineString::new(geom, dim),
+            ),
+            GeometryType::Polygon => crate::geo_trait_impl::Geometry::Polygon(
+                crate::geo_trait_impl::Polygon::new(geom, dim),
+            ),
+            GeometryType::MultiPoint => crate::geo_trait_impl::Geometry::MultiPoint(
+                crate::geo_trait_impl::MultiPoint::new(geom, dim),
+            ),
+            GeometryType::MultiLineString => crate::geo_trait_impl::Geometry::MultiLineString(
+                crate::geo_trait_impl::MultiLineString::new(geom, dim),
+            ),
+            GeometryType::MultiPolygon => crate::geo_trait_impl::Geometry::MultiPolygon(
+                crate::geo_trait_impl::MultiPolygon::new(geom, dim),
+            ),
+            GeometryType::Unknown => crate::geo_trait_impl::Geometry::new(geom, dim),
+            GeometryType::GeometryCollection => {
+                crate::geo_trait_impl::Geometry::GeometryCollection(
+                    crate::geo_trait_impl::GeometryCollection::new(geom, dim),
+                )
+            }
+            _ => todo!("How should we handle other geometry types here?"),
+        };
+        Some(result)
+    }
 }
 
 impl geozero::FeatureAccess for FgbFeature {}
