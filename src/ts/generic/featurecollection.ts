@@ -11,7 +11,7 @@ import { Feature } from '../flat-geobuf/feature.js';
 import type HeaderMeta from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 
-import { buildFeature, type IFeature } from './feature.js';
+import { buildFeature, type IProperties, type IFeature } from './feature.js';
 import { HttpReader } from '../http-reader.js';
 import { type Rect, calcTreeSize } from '../packedrtree.js';
 import { parseGeometry } from './geometry.js';
@@ -198,21 +198,21 @@ export function buildHeader(
     return builder.asUint8Array() as Uint8Array;
 }
 
-function valueToType(value: boolean | number | string | undefined): ColumnType {
+function valueToType(
+    value: boolean | number | string | Uint8Array | undefined,
+): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
     else if (typeof value === 'number')
         if (value % 1 === 0) return ColumnType.Int;
         else return ColumnType.Double;
     else if (typeof value === 'string') return ColumnType.String;
     else if (value === null) return ColumnType.String;
+    else if (value instanceof Uint8Array) return ColumnType.Binary;
     else if (typeof value === 'object') return ColumnType.Json;
     else throw new Error(`Unknown type (value '${value}')`);
 }
 
-export function mapColumn(
-    properties: Record<string, string | number | boolean | undefined>,
-    k: string,
-): ColumnMeta {
+export function mapColumn(properties: IProperties, k: string): ColumnMeta {
     return {
         name: k,
         type: valueToType(properties[k]),

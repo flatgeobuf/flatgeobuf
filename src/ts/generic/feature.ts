@@ -14,25 +14,26 @@ import {
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
+export interface IProperties {
+    [key: string]: boolean | number | string | Uint8Array | undefined;
+}
+
 export interface IFeature {
     getGeometry?(): ISimpleGeometry;
     getId?(): number;
-    getProperties?(): Record<string, string | number | boolean | undefined>;
-    setProperties?(
-        properties: Record<string, string | number | boolean | undefined>,
-    ): void;
+    getProperties?(): IProperties;
+    setProperties?(properties: IProperties): void;
 }
 
 export interface ICreateFeature {
     (
         id: number,
         geometry?: ISimpleGeometry,
-        properties?: Record<string, string | number | boolean | undefined>,
+        properties?: Record<
+            string,
+            string | number | boolean | Uint8Array | undefined
+        >,
     ): IFeature;
-}
-
-export interface IProperties {
-    [key: string]: boolean | number | string | undefined;
 }
 
 export function fromFeature(
@@ -141,6 +142,16 @@ export function buildFeature(
                     offset += str.length;
                     break;
                 }
+                case ColumnType.Binary: {
+                    prep(4);
+                    const blob = value as Uint8Array;
+                    view.setUint32(offset, blob.length, true);
+                    offset += 4;
+                    prep(blob.length);
+                    bytes.set(blob, offset);
+                    offset += blob.length;
+                    break;
+                }
                 default:
                     throw new Error('Unknown type ' + column.type);
             }
@@ -166,9 +177,8 @@ export function buildFeature(
 export function parseProperties(
     feature: Feature,
     columns?: ColumnMeta[] | null,
-): Record<string, string | number | boolean | undefined> {
-    const properties: Record<string, string | number | boolean | undefined> =
-        {};
+): IProperties {
+    const properties: IProperties = {};
     if (!columns || columns.length === 0) return properties;
     const array = feature.propertiesArray();
     if (!array) return properties;
@@ -253,6 +263,13 @@ export function parseProperties(
                     array.subarray(offset, offset + length),
                 );
                 properties[name] = JSON.parse(str);
+                offset += length;
+                break;
+            }
+            case ColumnType.Binary: {
+                const length = view.getUint32(offset, true);
+                offset += 4;
+                properties[name] = array.subarray(offset, offset + length);
                 offset += length;
                 break;
             }
