@@ -87,7 +87,6 @@
     "lws": "4.2.0",
     "lws-range": "^4.0.1",
     "lws-static": "^3.1.1",
-    "node-fetch": "3.3.2",
     "ol": ">=3",
     "prettier": "3.3.3",
     "rollup": "4.24.0",

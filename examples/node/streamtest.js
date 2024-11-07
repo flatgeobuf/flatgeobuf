@@ -1,6 +1,5 @@
 /* eslint-disable no-undef */
 import { geojson } from 'flatgeobuf'
-import fetch from 'node-fetch'
 import { ReadableStream } from 'web-streams-polyfill'
 
 function nodeToWeb(nodeStream) {
