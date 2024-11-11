@@ -5,6 +5,7 @@ import type HeaderMeta from '../header-meta.js';
 import { createGeometry } from './geometry.js';
 import {
     fromFeature as genericFromFeature,
+    type IProperties,
     type IFeature,
 } from '../generic/feature.js';
 import { type ISimpleGeometry } from '../generic/geometry.js';
@@ -12,7 +13,7 @@ import { type ISimpleGeometry } from '../generic/geometry.js';
 function createFeature(
     id: number,
     geometry?: ISimpleGeometry,
-    properties?: Record<string, string | number | boolean | undefined>,
+    properties?: IProperties,
 ): IFeature {
     const olFeature = new OlFeature(geometry);
     olFeature.setId(id);

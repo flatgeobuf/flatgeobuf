@@ -24,14 +24,20 @@ import {
 
 function makeFeatureCollection(
     wkt: string,
-    properties?: Record<string, string | number | boolean | object | undefined>,
+    properties?: Record<
+        string,
+        string | number | boolean | object | Uint8Array | undefined
+    >,
 ) {
     return makeFeatureCollectionFromArray([wkt], properties);
 }
 
 function makeFeatureCollectionFromArray(
     wkts: string[],
-    properties?: Record<string, string | number | boolean | object | undefined>,
+    properties?: Record<
+        string,
+        string | number | boolean | object | Uint8Array | undefined
+    >,
 ) {
     const reader = new WKTReader();
     const writer = new GeoJSONWriter();
@@ -370,6 +376,14 @@ describe('geojson module', () => {
         it('Json Value', () => {
             const expected = makeFeatureCollection('POINT(1 1)', {
                 test: { hello: 'world' },
+            });
+            const actual = deserialize(serialize(expected));
+            expect(actual).to.deep.equal(expected);
+        });
+
+        it('Binary', () => {
+            const expected = makeFeatureCollection('POINT(1 1)', {
+                test: new Uint8Array([116, 101, 115, 116]),
             });
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
