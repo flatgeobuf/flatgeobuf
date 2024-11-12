@@ -42,7 +42,9 @@ impl FgbFeature {
     ///
     /// Note that this method only supports the core geometry types supported by [geo_traits], and
     /// will panic on curve geometries.
-    pub fn geometry_trait_impl(&self) -> Result<Option<impl geo_traits::GeometryTrait + use<'_>>> {
+    pub fn geometry_trait_impl(
+        &self,
+    ) -> Result<Option<impl geo_traits::GeometryTrait<T = f64> + use<'_>>> {
         if let Some(geom) = self.geometry() {
             let dim = self.dimension();
             let result = match self.header().geometry_type() {
