@@ -10,6 +10,7 @@ readme = "README.md"
 documentation = "https://docs.rs/flatgeobuf/"
 license = "BSD-2-Clause"
 keywords = ["geo", "r-tree", "spatial"]
+rust-version = "1.82"
 
 [features]
 default = ["http"]
