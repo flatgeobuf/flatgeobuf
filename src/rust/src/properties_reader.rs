@@ -44,7 +44,8 @@ impl FgbFeature {
     /// will panic on curve geometries.
     pub fn geometry_trait_impl(
         &self,
-    ) -> Result<Option<impl geo_traits::GeometryTrait<T = f64> + use<'_>>> {
+    ) -> std::result::Result<Option<impl geo_traits::GeometryTrait<T = f64> + use<'_>>, crate::Error>
+    {
         if let Some(geom) = self.geometry() {
             let dim = self.dimension();
             let result = match self.header().geometry_type() {
@@ -73,7 +74,7 @@ impl FgbFeature {
                     )
                 }
                 geom_type => {
-                    return Err(GeozeroError::Geometry(format!(
+                    return Err(crate::Error::UnsupportedGeometryType(format!(
                         "Unsupported geometry type in geo-traits: {:?}",
                         geom_type
                     )))
