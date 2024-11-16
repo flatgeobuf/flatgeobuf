@@ -83,7 +83,7 @@
     "@vitest/coverage-v8": "2.1.5",
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
-    "jsts": "2.11.3",
+    "jsts": "2.12.1",
     "lws": "4.2.0",
     "lws-range": "^4.0.1",
     "lws-static": "^3.1.1",

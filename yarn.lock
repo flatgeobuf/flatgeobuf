@@ -3035,10 +3035,10 @@ json5@^2.2.3:
   resolved "https://registry.yarnpkg.com/json5/-/json5-2.2.3.tgz#78cd6f1a19bdc12b73db5ad0c61efd66c1e29283"
   integrity sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==
 
-jsts@2.11.3:
-  version "2.11.3"
-  resolved "https://registry.yarnpkg.com/jsts/-/jsts-2.11.3.tgz#4dbe8fda52ba098afe72ee9e92097b1061894f88"
-  integrity sha512-LYLpvZw75PO5YtflZ9kvYzqILA97QfrTMGkj71mqfIc/GnH9+lc+ODWdepIu+PgoQuepZbt3u+58ZUAjr4TM4w==
+jsts@2.12.1:
+  version "2.12.1"
+  resolved "https://registry.yarnpkg.com/jsts/-/jsts-2.12.1.tgz#29406c9abf5fb3d92c0c74c4c27d511acec611c7"
+  integrity sha512-aaiCZeGfeU5o9TbrYF1KF0VvhGGLtG3w7vNynmaTjC8XRmS2v15lq+2Bxa8lMtprsFFJiIpAayJZguLruiHd0w==
   dependencies:
     fastpriorityqueue "^0.7.5"
 
