@@ -414,7 +414,7 @@ class HttpRangeClient {
         if (this.nocache) headers['Cache-Control'] = 'no-cache, no-store';
 
         const response = await fetch(this.url, { headers });
-
-        return response.arrayBuffer();
+        const arrayBuffer = await response.arrayBuffer();
+        return arrayBuffer;
     }
 }
