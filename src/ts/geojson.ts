@@ -15,10 +15,7 @@ import { type HeaderMetaFn } from './generic.js';
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
  */
-export function serialize(
-    geojson: GeoJsonFeatureCollection,
-    crsCode: number = 0,
-): Uint8Array {
+export function serialize(geojson: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
     const bytes = fcSerialize(geojson, crsCode);
     return bytes;
 }
@@ -73,15 +70,6 @@ export function deserialize(
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
     else if (input instanceof ReadableStream)
-        return fcDeserializeStream(
-            input,
-            headerMetaFn,
-        ) as AsyncGenerator<IGeoJsonFeature>;
-    else
-        return fcDeserializeFiltered(
-            input,
-            rect!,
-            headerMetaFn,
-            nocache,
-        ) as AsyncGenerator<IGeoJsonFeature>;
+        return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
+    else return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache) as AsyncGenerator<IGeoJsonFeature>;
 }

@@ -20,11 +20,7 @@ import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { inferGeometryType } from './header.js';
 import { Crs } from '../flat-geobuf/crs.js';
 
-export type FromFeatureFn = (
-    id: number,
-    feature: Feature,
-    header: HeaderMeta,
-) => IFeature;
+export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
 
 /**
@@ -35,22 +31,12 @@ export function serialize(features: IFeature[]): Uint8Array {
     const headerMeta = introspectHeaderMeta(features);
     const header = buildHeader(headerMeta);
     const featureBuffers: Uint8Array[] = features.map((f) => {
-        if (!f.getGeometry)
-            throw new Error('Missing getGeometry implementation');
-        if (!f.getProperties)
-            throw new Error('Missing getProperties implementation');
-        return buildFeature(
-            parseGeometry(f.getGeometry(), headerMeta.geometryType),
-            f.getProperties(),
-            headerMeta,
-        );
+        if (!f.getGeometry) throw new Error('Missing getGeometry implementation');
+        if (!f.getProperties) throw new Error('Missing getProperties implementation');
+        return buildFeature(parseGeometry(f.getGeometry(), headerMeta.geometryType), f.getProperties(), headerMeta);
     });
-    const featuresLength = featureBuffers
-        .map((f) => f.length)
-        .reduce((a, b) => a + b);
-    const uint8 = new Uint8Array(
-        magicbytes.length + header.length + featuresLength,
-    );
+    const featuresLength = featureBuffers.map((f) => f.length).reduce((a, b) => a + b);
+    const uint8 = new Uint8Array(magicbytes.length + header.length + featuresLength);
     uint8.set(header, magicbytes.length);
     let offset = magicbytes.length + header.length;
     for (const feature of featureBuffers) {
@@ -61,13 +47,8 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export function deserialize(
-    bytes: Uint8Array,
-    fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn,
-): IFeature[] {
-    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file');
+export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn): IFeature[] {
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
     const bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(magicbytes.length);
@@ -102,8 +83,7 @@ export async function* deserializeStream(
     const read: ReadFn = async (size) => await reader.slice(size);
 
     let bytes = new Uint8Array(await read(8, 'magic bytes'));
-    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
-        throw new Error('Not a FlatGeobuf file');
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
     bytes = new Uint8Array(await read(4, 'header length'));
     let bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(0);
@@ -120,8 +100,7 @@ export async function* deserializeStream(
     }
     let feature: IFeature | undefined;
     let id = 0;
-    while ((feature = await readFeature(read, headerMeta, fromFeature, id++)))
-        yield feature;
+    while ((feature = await readFeature(read, headerMeta, fromFeature, id++))) yield feature;
 }
 
 export async function* deserializeFiltered(
@@ -134,8 +113,7 @@ export async function* deserializeFiltered(
     const reader = await HttpReader.open(url, nocache);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
-    for await (const feature of reader.selectBbox(rect))
-        yield fromFeature(feature.id, feature.feature, reader.header);
+    for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);
 }
 
 async function readFeature(
@@ -165,10 +143,7 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     return Column.endColumn(builder);
 }
 
-export function buildHeader(
-    header: HeaderMeta,
-    crsCode: number = 0,
-): Uint8Array {
+export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array {
     const builder = new flatbuffers.Builder();
 
     let columnOffsets = 0;
@@ -198,9 +173,7 @@ export function buildHeader(
     return builder.asUint8Array() as Uint8Array;
 }
 
-function valueToType(
-    value: boolean | number | string | Uint8Array | undefined,
-): ColumnType {
+function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
     else if (typeof value === 'number')
         if (value % 1 === 0) return ColumnType.Int;
@@ -229,9 +202,7 @@ export function mapColumn(properties: IProperties, k: string): ColumnMeta {
 
 function introspectHeaderMeta(features: IFeature[]): HeaderMeta {
     const sampleFeature = features[0];
-    const properties = sampleFeature.getProperties
-        ? sampleFeature.getProperties()
-        : {};
+    const properties = sampleFeature.getProperties ? sampleFeature.getProperties() : {};
 
     let columns: ColumnMeta[] | null = null;
     if (properties)

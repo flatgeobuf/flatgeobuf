@@ -11,17 +11,11 @@ import { type Rect } from '../packedrtree.js';
 
 export { serialize as serialize };
 
-export function deserialize(
-    bytes: Uint8Array,
-    headerMetaFn?: HeaderMetaFn,
-): IFeature[] {
+export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IFeature[] {
     return genericDeserialize(bytes, fromFeature, headerMetaFn);
 }
 
-export function deserializeStream(
-    stream: ReadableStream,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
+export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<IFeature> {
     return genericDeserializeStream(stream, fromFeature, headerMetaFn);
 }
 
@@ -31,11 +25,5 @@ export function deserializeFiltered(
     headerMetaFn?: HeaderMetaFn,
     nocache: boolean = false,
 ): AsyncGenerator<IFeature> {
-    return genericDeserializeFiltered(
-        url,
-        rect,
-        fromFeature,
-        headerMetaFn,
-        nocache,
-    );
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
 }

@@ -24,20 +24,11 @@ describe('http reader', () => {
 
         const features: IGeoJsonFeature[] = [];
         for await (const feature of reader.selectBbox(rect)) {
-            features.push(
-                fromFeature(feature.id, feature.feature, reader.header),
-            );
+            features.push(fromFeature(feature.id, feature.feature, reader.header));
         }
         expect(features.length).toBe(86);
-        const actual = features
-            .slice(0, 4)
-            .map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
-        const expected = [
-            'Cheyenne, KS',
-            'Rawlins, KS',
-            'Yuma, CO',
-            'Washington, CO',
-        ];
+        const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
+        const expected = ['Cheyenne, KS', 'Rawlins, KS', 'Yuma, CO', 'Washington, CO'];
         expect(actual).toEqual(expected);
     });
 

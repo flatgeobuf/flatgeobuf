@@ -11,9 +11,7 @@ function featureGeomType(feature: IFeature | IGeoJsonFeature): GeometryType {
     }
 }
 
-export function inferGeometryType(
-    features: (IFeature | IGeoJsonFeature)[],
-): GeometryType {
+export function inferGeometryType(features: (IFeature | IGeoJsonFeature)[]): GeometryType {
     let geometryType: GeometryType | undefined = undefined;
 
     for (const f of features) {
@@ -29,9 +27,7 @@ export function inferGeometryType(
         }
     }
     if (geometryType === undefined) {
-        throw new Error(
-            'Could not infer geometry type for collection of features.',
-        );
+        throw new Error('Could not infer geometry type for collection of features.');
     }
     return geometryType;
 }

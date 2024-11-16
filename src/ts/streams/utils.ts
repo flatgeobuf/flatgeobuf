@@ -15,10 +15,7 @@ export function arrayToStream(array: ArrayBuffer): ReadableStream {
     return webReader;
 }
 
-export async function takeAsync<T>(
-    asyncIterable: AsyncIterable<T>,
-    count = Infinity,
-): Promise<T[]> {
+export async function takeAsync<T>(asyncIterable: AsyncIterable<T>, count = Infinity): Promise<T[]> {
     const result: T[] = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();
     while (result.length < count) {
@@ -54,8 +51,7 @@ export function nodeToWeb(nodeStream: Readable): ReadableStream {
             if (destroyed) return;
             destroyed = true;
 
-            for (const name in listeners)
-                nodeStream.removeListener(name, listeners[name]);
+            for (const name in listeners) nodeStream.removeListener(name, listeners[name]);
 
             if (err) controller.error(err);
             else controller.close();
@@ -70,8 +66,7 @@ export function nodeToWeb(nodeStream: Readable): ReadableStream {
     function cancel() {
         destroyed = true;
 
-        for (const name in listeners)
-            nodeStream.removeListener(name, listeners[name]);
+        for (const name in listeners) nodeStream.removeListener(name, listeners[name]);
 
         nodeStream.push(null);
         nodeStream.pause();

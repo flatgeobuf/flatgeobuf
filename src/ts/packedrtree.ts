@@ -34,13 +34,9 @@ export function calcTreeSize(numItems: number, nodeSize: number): number {
 /**
  * returns [levelOffset, numNodes] for each level
  */
-export function generateLevelBounds(
-    numItems: number,
-    nodeSize: number,
-): Array<[number, number]> {
+export function generateLevelBounds(numItems: number, nodeSize: number): Array<[number, number]> {
     if (nodeSize < 2) throw new Error('Node size must be at least 2');
-    if (numItems === 0)
-        throw new Error('Number of items must be greater than 0');
+    if (numItems === 0) throw new Error('Number of items must be greater than 0');
 
     // number of nodes per level in bottom-up order
     let n = numItems;
@@ -147,9 +143,7 @@ export async function* streamSearch(
     while (queue.length != 0) {
         const nodeRange = queue.shift()!;
 
-        console.debug(
-            `popped node: ${nodeRange}, queueLength: ${queue.length}`,
-        );
+        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
         const nodeRangeStartIdx = nodeRange.startNodeIdx();
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
@@ -157,10 +151,7 @@ export async function* streamSearch(
         // find the end index of the node
         const nodeRangeEndIdx = (() => {
             const [, levelBound] = levelBounds[nodeRange.level()];
-            const nodeIdx = Math.min(
-                nodeRange.endNodeIdx() + nodeSize,
-                levelBound,
-            );
+            const nodeIdx = Math.min(nodeRange.endNodeIdx() + nodeSize, levelBound);
 
             if (isLeafNode && nodeIdx < levelBound) {
                 // We can infer the length of *this* feature by getting the start of the *next*
@@ -176,27 +167,16 @@ export async function* streamSearch(
 
         const numNodesInRange = nodeRangeEndIdx - nodeRangeStartIdx;
 
-        const buffer = await readNode(
-            nodeRangeStartIdx * NODE_ITEM_BYTE_LEN,
-            numNodesInRange * NODE_ITEM_BYTE_LEN,
-        );
+        const buffer = await readNode(nodeRangeStartIdx * NODE_ITEM_BYTE_LEN, numNodesInRange * NODE_ITEM_BYTE_LEN);
 
         const dataView = new DataView(buffer);
-        for (
-            let nodeIdx = nodeRangeStartIdx;
-            nodeIdx < nodeRangeEndIdx;
-            nodeIdx++
-        ) {
+        for (let nodeIdx = nodeRangeStartIdx; nodeIdx < nodeRangeEndIdx; nodeIdx++) {
             const nodeIdxInDataView = nodeIdx - nodeRangeStartIdx;
             const dataViewByteStart = nodeIdxInDataView * NODE_ITEM_BYTE_LEN;
-            if (maxX < dataView.getFloat64(dataViewByteStart + 0, true))
-                continue; // maxX < nodeMinX
-            if (maxY < dataView.getFloat64(dataViewByteStart + 8, true))
-                continue; // maxY < nodeMinY
-            if (minX > dataView.getFloat64(dataViewByteStart + 16, true))
-                continue; // minX > nodeMaxX
-            if (minY > dataView.getFloat64(dataViewByteStart + 24, true))
-                continue; // minY > nodeMaxY
+            if (maxX < dataView.getFloat64(dataViewByteStart + 0, true)) continue; // maxX < nodeMinX
+            if (maxY < dataView.getFloat64(dataViewByteStart + 8, true)) continue; // maxY < nodeMinY
+            if (minX > dataView.getFloat64(dataViewByteStart + 16, true)) continue; // minX > nodeMaxX
+            if (minY > dataView.getFloat64(dataViewByteStart + 24, true)) continue; // minY > nodeMaxY
 
             // `offset` is:
             // For leaf nodes: the byte-offset into the feature buffer.
@@ -210,13 +190,9 @@ export async function* streamSearch(
                         // Since features are tightly packed, we infer the
                         // length of _this_ feature by measuring to the _next_
                         // feature's start.
-                        const nextPos =
-                            (nodeIdxInDataView + 1) * NODE_ITEM_BYTE_LEN;
+                        const nextPos = (nodeIdxInDataView + 1) * NODE_ITEM_BYTE_LEN;
                         // console.debug(`nodeIdx: ${nodeIdx} of ${numItems}, nodeRangeStartIdx: ${nodeRangeStartIdx}, nextPos: ${nextPos}, dataView.byteLength: ${dataView.byteLength}`,);
-                        const nextOffset = dataView.getBigUint64(
-                            nextPos + 32,
-                            true,
-                        );
+                        const nextOffset = dataView.getBigUint64(nextPos + 32, true);
                         return nextOffset - featureByteOffset;
                     } else {
                         // This is the last feature - there's no "next" feature
@@ -226,11 +202,7 @@ export async function* streamSearch(
                 })();
 
                 const featureIdx = nodeIdx - firstLeafNodeIdx;
-                yield [
-                    Number(featureByteOffset),
-                    featureIdx,
-                    Number(featureLength),
-                ];
+                yield [Number(featureByteOffset), featureIdx, Number(featureLength)];
                 continue;
             }
 
@@ -238,8 +210,7 @@ export async function* streamSearch(
 
             // request up to this many nodes if it means we can eliminate an
             // extra request
-            const extraRequestThresholdNodes =
-                Config.global.extraRequestThreshold() / NODE_ITEM_BYTE_LEN;
+            const extraRequestThresholdNodes = Config.global.extraRequestThreshold() / NODE_ITEM_BYTE_LEN;
 
             // Since we're traversing the tree by monotonically increasing byte
             // offset, the most recently enqueued node range will be the
@@ -248,8 +219,7 @@ export async function* streamSearch(
             if (
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() == nodeRange.level() - 1 &&
-                firstChildNodeIdx <
-                    nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
+                firstChildNodeIdx < nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
             ) {
                 console.debug(
                     `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newEndNodeIdx: ${nearestNodeRange.endNodeIdx()} -> ${firstChildNodeIdx}`,
@@ -260,18 +230,12 @@ export async function* streamSearch(
 
             const newNodeRange: NodeRange = (() => {
                 const level = nodeRange.level() - 1;
-                const range: [number, number] = [
-                    Number(firstChildNodeIdx),
-                    Number(firstChildNodeIdx) + 1,
-                ];
+                const range: [number, number] = [Number(firstChildNodeIdx), Number(firstChildNodeIdx) + 1];
                 return new NodeRange(range, level);
             })();
 
             // We're going to add a new node range - log the reason
-            if (
-                nearestNodeRange !== undefined &&
-                nearestNodeRange.level() == newNodeRange.level()
-            ) {
+            if (nearestNodeRange !== undefined && nearestNodeRange.level() == newNodeRange.level()) {
                 console.debug(
                     `Same level, but too far away. Pushing new request for nodeIdx: ${firstChildNodeIdx} rather than merging with distant ${nearestNodeRange}`,
                 );

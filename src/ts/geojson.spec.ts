@@ -21,20 +21,14 @@ import {
 
 function makeFeatureCollection(
     wkt: string,
-    properties?: Record<
-        string,
-        string | number | boolean | object | Uint8Array | undefined
-    >,
+    properties?: Record<string, string | number | boolean | object | Uint8Array | undefined>,
 ) {
     return makeFeatureCollectionFromArray([wkt], properties);
 }
 
 function makeFeatureCollectionFromArray(
     wkts: string[],
-    properties?: Record<
-        string,
-        string | number | boolean | object | Uint8Array | undefined
-    >,
+    properties?: Record<string, string | number | boolean | object | Uint8Array | undefined>,
 ) {
     const reader = new WKTReader();
     const writer = new GeoJSONWriter();
@@ -75,108 +69,84 @@ describe('geojson module', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync<IGeoJsonFeature>(
-                deserialize(stream),
-            );
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(stream));
             expect(actual).to.deep.equal(expected.features);
         });
 
         it('Points', () => {
-            const expected = makeFeatureCollectionFromArray([
-                'POINT(1.2 -2.1)',
-                'POINT(2.4 -4.8)',
-            ]);
+            const expected = makeFeatureCollectionFromArray(['POINT(1.2 -2.1)', 'POINT(2.4 -4.8)']);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiPoint', () => {
-            const expected = makeFeatureCollection(
-                'MULTIPOINT(10 40, 40 30, 20 20, 30 10)',
-            );
+            const expected = makeFeatureCollection('MULTIPOINT(10 40, 40 30, 20 20, 30 10)');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('LineString', () => {
-            const expected = makeFeatureCollection(
-                'LINESTRING(1.2 -2.1, 2.4 -4.8)',
-            );
+            const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('LineString 3D', () => {
-            const expected = makeFeatureCollection(
-                'LINESTRING Z(1.2 -2.1 1.1, 2.4 -4.8 1.2)',
-            );
+            const expected = makeFeatureCollection('LINESTRING Z(1.2 -2.1 1.1, 2.4 -4.8 1.2)');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiLineString', () => {
-            const expected =
-                makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
+            const expected = makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
  (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiLineStringSinglePart', () => {
-            const expected = makeFeatureCollection(
-                `MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`,
-            );
+            const expected = makeFeatureCollection(`MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('Polygon', () => {
-            const expected = makeFeatureCollection(
-                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
-            );
+            const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('Polygon via stream', async () => {
-            const expected = makeFeatureCollection(
-                `POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`,
-            );
+            const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`);
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync<IGeoJsonFeature>(
-                deserialize(stream),
-            );
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(stream));
             expect(actual).to.deep.equal(expected.features);
         });
 
         it('PolygonWithHole', () => {
-            const expected =
-                makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
+            const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('PolygonWithHole 3D', () => {
-            const expected =
-                makeFeatureCollection(`POLYGON Z((35 10 3, 45 45 4, 15 40 5, 10 20 6, 35 10 7),
+            const expected = makeFeatureCollection(`POLYGON Z((35 10 3, 45 45 4, 15 40 5, 10 20 6, 35 10 7),
  (20 30 3, 35 35 4, 30 20 5, 20 30 6))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiPolygon', () => {
-            const expected =
-                makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
+            const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiPolygonWithHole', () => {
-            const expected =
-                makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
+            const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`);
             const actual = deserialize(serialize(expected));
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
@@ -184,16 +154,13 @@ describe('geojson module', () => {
         });
 
         it('MultiPolygonSinglePart', () => {
-            const expected = makeFeatureCollection(
-                `MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`,
-            );
+            const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('MultiPolygonSinglePartWithHole', () => {
-            const expected =
-                makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
+            const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`);
             const actual = deserialize(serialize(expected));
             // NOTE: 18 flat coords, ends = [5, 9], endss = null
@@ -201,17 +168,13 @@ describe('geojson module', () => {
         });
 
         it('GeometryCollection', () => {
-            const expected = makeFeatureCollection(
-                `GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`,
-            );
+            const expected = makeFeatureCollection(`GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('GeometryCollection 3D', () => {
-            const expected = makeFeatureCollection(
-                `GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`,
-            );
+            const expected = makeFeatureCollection(`GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`);
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
@@ -392,58 +355,33 @@ describe('geojson module', () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
             let headerMeta: HeaderMeta | undefined;
-            const geojson = deserialize(
-                bytes,
-                undefined,
-                (header: HeaderMeta) => (headerMeta = header),
-            );
+            const geojson = deserialize(bytes, undefined, (header: HeaderMeta) => (headerMeta = header));
             expect(headerMeta?.crs?.code).to.eq(4326);
             expect(geojson.features.length).to.eq(179);
             for (const f of geojson.features) {
-                const g = f.geometry as
-                    | Point
-                    | MultiPoint
-                    | LineString
-                    | MultiLineString
-                    | Polygon
-                    | MultiPolygon;
-                expect(
-                    (g.coordinates[0] as Position[]).length,
-                ).to.be.greaterThan(0);
+                const g = f.geometry as Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon;
+                expect((g.coordinates[0] as Position[]).length).to.be.greaterThan(0);
             }
         });
 
         it('Should parse countries fgb produced from GDAL stream filter', async () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
             const features = await takeAsync<IGeoJsonFeature>(
-                deserialize(
-                    'https://flatgeobuf.septima.dk/countries.fgb',
-                    r,
-                    undefined,
-                    false,
-                ),
+                deserialize('https://flatgeobuf.septima.dk/countries.fgb', r, undefined, false),
             );
             expect(features.length).to.eq(3);
             for (const f of features)
-                expect(
-                    ((f.geometry as Polygon).coordinates[0] as Position[])
-                        .length,
-                ).to.be.greaterThan(0);
+                expect(((f.geometry as Polygon).coordinates[0] as Position[]).length).to.be.greaterThan(0);
         });
 
         it('Should parse countries fgb produced from GDAL stream no filter', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync<IGeoJsonFeature>(
-                deserialize(stream),
-            );
+            const features = await takeAsync<IGeoJsonFeature>(deserialize(stream));
             expect(features.length).to.eq(179);
             for (const f of features)
-                expect(
-                    ((f.geometry as Polygon).coordinates[0] as Position[])
-                        .length,
-                ).to.be.greaterThan(0);
+                expect(((f.geometry as Polygon).coordinates[0] as Position[]).length).to.be.greaterThan(0);
         });
 
         it('Should parse UScounties fgb produced from GDAL', () => {
@@ -452,16 +390,8 @@ describe('geojson module', () => {
             const geojson = deserialize(bytes);
             expect(geojson.features.length).to.eq(3221);
             for (const f of geojson.features) {
-                const g = f.geometry as
-                    | Point
-                    | MultiPoint
-                    | LineString
-                    | MultiLineString
-                    | Polygon
-                    | MultiPolygon;
-                expect((g.coordinates[0] as number[]).length).to.be.greaterThan(
-                    0,
-                );
+                const g = f.geometry as Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon;
+                expect((g.coordinates[0] as number[]).length).to.be.greaterThan(0);
             }
         });
 

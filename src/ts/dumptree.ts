@@ -14,8 +14,7 @@ import { calcTreeSize, generateLevelBounds } from './packedrtree.js';
 const buffer = readFileSync('./test/data/tiger_roads.fgb');
 const bytes = new Uint8Array(buffer);
 
-if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v))
-    throw new Error('Not a FlatGeobuf file');
+if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
 const bb = new flatbuffers.ByteBuffer(bytes);
 const headerLength = bb.readUint32(magicbytes.length);

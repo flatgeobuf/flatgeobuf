@@ -4,12 +4,7 @@ import type ColumnMeta from '../column-meta.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
 import type HeaderMeta from '../header-meta.js';
-import {
-    buildGeometry,
-    type ISimpleGeometry,
-    type ICreateGeometry,
-    type IParsedGeometry,
-} from './geometry.js';
+import { buildGeometry, type ISimpleGeometry, type ICreateGeometry, type IParsedGeometry } from './geometry.js';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -29,10 +24,7 @@ export interface ICreateFeature {
     (
         id: number,
         geometry?: ISimpleGeometry,
-        properties?: Record<
-            string,
-            string | number | boolean | Uint8Array | undefined
-        >,
+        properties?: Record<string, string | number | boolean | Uint8Array | undefined>,
     ): IFeature;
 }
 
@@ -50,11 +42,7 @@ export function fromFeature(
     return createFeature(id, simpleGeometry, properties);
 }
 
-export function buildFeature(
-    geometry: IParsedGeometry,
-    properties: IProperties,
-    header: HeaderMeta,
-): Uint8Array {
+export function buildFeature(geometry: IParsedGeometry, properties: IProperties, header: HeaderMeta): Uint8Array {
     const columns = header.columns;
     const builder = new flatbuffers.Builder();
 
@@ -159,11 +147,7 @@ export function buildFeature(
     }
 
     let propertiesOffset = 0;
-    if (offset > 0)
-        propertiesOffset = Feature.createPropertiesVector(
-            builder,
-            bytes.slice(0, offset),
-        );
+    if (offset > 0) propertiesOffset = Feature.createPropertiesVector(builder, bytes.slice(0, offset));
 
     const geometryOffset = buildGeometry(builder, geometry);
     Feature.startFeature(builder);
@@ -174,10 +158,7 @@ export function buildFeature(
     return builder.asUint8Array() as Uint8Array;
 }
 
-export function parseProperties(
-    feature: Feature,
-    columns?: ColumnMeta[] | null,
-): IProperties {
+export function parseProperties(feature: Feature, columns?: ColumnMeta[] | null): IProperties {
     const properties: IProperties = {};
     if (!columns || columns.length === 0) return properties;
     const array = feature.propertiesArray();
@@ -250,18 +231,14 @@ export function parseProperties(
             case ColumnType.String: {
                 const length = view.getUint32(offset, true);
                 offset += 4;
-                properties[name] = textDecoder.decode(
-                    array.subarray(offset, offset + length),
-                );
+                properties[name] = textDecoder.decode(array.subarray(offset, offset + length));
                 offset += length;
                 break;
             }
             case ColumnType.Json: {
                 const length = view.getUint32(offset, true);
                 offset += 4;
-                const str = textDecoder.decode(
-                    array.subarray(offset, offset + length),
-                );
+                const str = textDecoder.decode(array.subarray(offset, offset + length));
                 properties[name] = JSON.parse(str);
                 offset += length;
                 break;

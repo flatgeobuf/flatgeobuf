@@ -12,12 +12,7 @@ import type {
     GeometryCollection,
 } from 'geojson';
 
-import {
-    type IParsedGeometry,
-    flat,
-    pairFlatCoordinates,
-    toGeometryType,
-} from '../generic/geometry.js';
+import { type IParsedGeometry, flat, pairFlatCoordinates, toGeometryType } from '../generic/geometry.js';
 
 export interface IGeoJsonGeometry {
     type: string;
@@ -26,13 +21,7 @@ export interface IGeoJsonGeometry {
 }
 
 export function parseGeometry(
-    geometry:
-        | Point
-        | MultiPoint
-        | LineString
-        | MultiLineString
-        | Polygon
-        | MultiPolygon,
+    geometry: Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon,
 ): IParsedGeometry {
     const cs = geometry.coordinates;
     const xy: number[] = [];
@@ -98,9 +87,7 @@ function extractParts(xy: Float64Array, z: Float64Array, ends: Uint32Array) {
         s = 0;
         zSlices = Array.from(ends).map((e) => z.slice(s, (s = e)));
     }
-    return xySlices.map((xy, i) =>
-        pairFlatCoordinates(xy, zSlices ? zSlices[i] : undefined),
-    );
+    return xySlices.map((xy, i) => pairFlatCoordinates(xy, zSlices ? zSlices[i] : undefined));
 }
 
 function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
@@ -122,10 +109,7 @@ function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
     }
 }
 
-export function fromGeometry(
-    geometry: Geometry,
-    headerType: GeometryType,
-): GeoJsonGeometry {
+export function fromGeometry(geometry: Geometry, headerType: GeometryType): GeoJsonGeometry {
     let type = headerType;
     if (type === GeometryType.Unknown) {
         type = geometry.type();
@@ -144,12 +128,7 @@ export function fromGeometry(
     } else if (type === GeometryType.MultiPolygon) {
         const geometries: GeoJsonGeometry[] = [];
         for (let i = 0; i < geometry.partsLength(); i++)
-            geometries.push(
-                fromGeometry(
-                    geometry.parts(i) as Geometry,
-                    GeometryType.Polygon,
-                ),
-            );
+            geometries.push(fromGeometry(geometry.parts(i) as Geometry, GeometryType.Polygon));
         return {
             type: GeometryType[type],
             coordinates: geometries.map((g) => (g as Polygon).coordinates),

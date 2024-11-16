@@ -10,10 +10,7 @@ import MultiLineString from 'ol/geom/MultiLineString.js';
 import Polygon from 'ol/geom/Polygon.js';
 import MultiPolygon from 'ol/geom/MultiPolygon.js';
 
-export function createGeometry(
-    geometry: Geometry | null,
-    headerGeomType: GeometryType,
-): ISimpleGeometry | undefined {
+export function createGeometry(geometry: Geometry | null, headerGeomType: GeometryType): ISimpleGeometry | undefined {
     let geomType;
     if (headerGeomType === GeometryType.Unknown) {
         geomType = geometry?.type();
@@ -42,12 +39,7 @@ export function createGeometry(
     } else if (geomType === GeometryType.MultiPolygon) {
         const mp = new MultiPolygon([]);
         for (let i = 0; i < geometry.partsLength(); i++)
-            mp.appendPolygon(
-                createGeometry(
-                    geometry.parts(i) as Geometry,
-                    GeometryType.Polygon,
-                ) as Polygon,
-            );
+            mp.appendPolygon(createGeometry(geometry.parts(i) as Geometry, GeometryType.Polygon) as Polygon);
         return mp;
     }
     throw new Error('Unknown type');
