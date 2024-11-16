@@ -2,14 +2,11 @@ import { describe, it, expect } from 'vitest';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
 import { readFileSync } from 'fs';
-import fetch from 'node-fetch';
 import { arrayToStream, takeAsync } from './streams/utils.js';
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
 import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
-
-global.fetch = fetch as never;
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
@@ -420,7 +417,7 @@ describe('geojson module', () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
             const features = await takeAsync<IGeoJsonFeature>(
                 deserialize(
-                    'http://flatgeobuf.septima.dk/countries.fgb',
+                    'https://flatgeobuf.septima.dk/countries.fgb',
                     r,
                     undefined,
                     false,
