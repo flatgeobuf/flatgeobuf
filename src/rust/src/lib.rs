@@ -93,7 +93,7 @@
 //! while let Some(feature) = fgb.next()? {
 //!     println!("{}", feature.property::<String>("name").unwrap());
 //!     // Assert that each feature is a multi polygon type
-//!     assert_multi_polygon(&feature.geometry_trait());
+//!     assert_multi_polygon(&feature.geometry_trait().unwrap().unwrap());
 //! }
 //! # Ok(())
 //! # }
