@@ -10,6 +10,7 @@ pub enum Error {
     IllegalHeaderSize(usize),
     InvalidFlatbuffer(InvalidFlatbuffer),
     IO(std::io::Error),
+    UnsupportedGeometryType(String),
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -23,6 +24,7 @@ impl Display for Error {
             Error::IllegalHeaderSize(size) => write!(f, "Illegal header size: {size}"),
             Error::InvalidFlatbuffer(invalid_flatbuffer) => invalid_flatbuffer.fmt(f),
             Error::IO(io) => io.fmt(f),
+            Error::UnsupportedGeometryType(s) => f.write_str(s),
         }
     }
 }

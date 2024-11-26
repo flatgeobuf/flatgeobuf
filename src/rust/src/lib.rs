@@ -64,6 +64,41 @@
 //! # }
 //! ```
 //!
+//! ## [`geo_traits`] integration
+//!
+//! This crate integrates with [`geo_traits`] for easy zero-copy vector data interoperability.
+//! It can be easier to use than geozero in some cases because you get _random access_ to the
+//! underlying coordinates, rather than needing to receive a stream of coordinates. This means that
+//! you can write algorithms based on `geo_traits` and pass in FlatGeobuf objects _directly_.
+//! Because the underlying Flatbuffers support zero-copy access, you could even memory-map a
+//! FlatGeobuf file directly.
+//!
+//! Use [`FgbFeature::geometry_trait`] to access an opaque object that implements
+//! [`geo_traits::GeometryTrait`]. Then with [`geo_traits::GeometryTrait::as_type`] you can match
+//! on the geometry type, downcasting to a trait implementation of concrete type.
+//!
+//! ```rust
+//! use flatgeobuf::*;
+//! use geo_traits::{GeometryTrait, GeometryType};
+//! # use std::fs::File;
+//! # use std::io::BufReader;
+//!
+//! fn assert_multi_polygon(geom: &impl GeometryTrait<T = f64>) {
+//!     assert!(matches!(geom.as_type(), GeometryType::MultiPolygon(_)))
+//! }
+//!
+//! # fn read_fgb() -> std::result::Result<(), Box<dyn std::error::Error>> {
+//! let mut filein = BufReader::new(File::open("countries.fgb")?);
+//! let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+//! while let Some(feature) = fgb.next()? {
+//!     println!("{}", feature.property::<String>("name").unwrap());
+//!     // Assert that each feature is a multi polygon type
+//!     assert_multi_polygon(&feature.geometry_trait().unwrap().unwrap());
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
 
 #![allow(clippy::manual_range_contains)]
 
@@ -77,6 +112,7 @@ mod feature_generated;
 mod feature_writer;
 mod file_reader;
 mod file_writer;
+mod geo_trait_impl;
 mod geometry_reader;
 #[allow(unused_imports, non_snake_case, clippy::all)]
 #[rustfmt::skip]

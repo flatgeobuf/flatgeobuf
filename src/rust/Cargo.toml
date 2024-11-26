@@ -10,6 +10,7 @@ readme = "README.md"
 documentation = "https://docs.rs/flatgeobuf/"
 license = "BSD-2-Clause"
 keywords = ["geo", "r-tree", "spatial"]
+rust-version = "1.82"
 
 [features]
 default = ["http"]
@@ -22,6 +23,7 @@ http = ["http-range-client", "bytes", "reqwest"]
 flatbuffers = "=24.3.25"
 byteorder = "1.5.0"
 geozero = { version = "0.14.0", default-features = false }
+geo-traits = "0.2"
 http-range-client = { version = "0.8.0", optional = true, default-features = false, features = ["reqwest-async"] }
 bytes = { version = "1.5.0", optional = true }
 log = "0.4.20"

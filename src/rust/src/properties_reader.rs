@@ -27,6 +27,70 @@ impl FgbFeature {
     pub fn geometry(&self) -> Option<Geometry> {
         self.fbs_feature().geometry()
     }
+
+    fn dimension(&self) -> geo_traits::Dimensions {
+        match (self.header().has_z(), self.header().has_m()) {
+            (true, true) => geo_traits::Dimensions::Xyzm,
+            (true, false) => geo_traits::Dimensions::Xyz,
+            (false, true) => geo_traits::Dimensions::Xym,
+            (false, false) => geo_traits::Dimensions::Xy,
+        }
+    }
+
+    /// Access the underlying geometry, returning an object that implements
+    /// [`geo_traits::GeometryTrait`].
+    ///
+    /// This allows for random-access zero-copy vector data interoperability, even with Z, M, and
+    /// ZM geometries that `geo_types` does not currently support.
+    ///
+    /// ### Notes:
+    ///
+    /// - Any `T` values are currently ignored.
+    /// - This will error on curve geometries since they are not among the core geometry types
+    ///   supported by [`geo_traits`].
+    pub fn geometry_trait(
+        &self,
+    ) -> std::result::Result<Option<impl geo_traits::GeometryTrait<T = f64> + use<'_>>, crate::Error>
+    {
+        if let Some(geom) = self.geometry() {
+            let dim = self.dimension();
+            let result = match self.header().geometry_type() {
+                GeometryType::Point => crate::geo_trait_impl::Geometry::Point(
+                    crate::geo_trait_impl::Point::new(geom, dim),
+                ),
+                GeometryType::LineString => crate::geo_trait_impl::Geometry::LineString(
+                    crate::geo_trait_impl::LineString::new(geom, dim),
+                ),
+                GeometryType::Polygon => crate::geo_trait_impl::Geometry::Polygon(
+                    crate::geo_trait_impl::Polygon::new(geom, dim),
+                ),
+                GeometryType::MultiPoint => crate::geo_trait_impl::Geometry::MultiPoint(
+                    crate::geo_trait_impl::MultiPoint::new(geom, dim),
+                ),
+                GeometryType::MultiLineString => crate::geo_trait_impl::Geometry::MultiLineString(
+                    crate::geo_trait_impl::MultiLineString::new(geom, dim),
+                ),
+                GeometryType::MultiPolygon => crate::geo_trait_impl::Geometry::MultiPolygon(
+                    crate::geo_trait_impl::MultiPolygon::new(geom, dim),
+                ),
+                GeometryType::Unknown => crate::geo_trait_impl::Geometry::new(geom, dim),
+                GeometryType::GeometryCollection => {
+                    crate::geo_trait_impl::Geometry::GeometryCollection(
+                        crate::geo_trait_impl::GeometryCollection::new(geom, dim),
+                    )
+                }
+                geom_type => {
+                    return Err(crate::Error::UnsupportedGeometryType(format!(
+                        "Unsupported geometry type in geo-traits: {:?}",
+                        geom_type
+                    )))
+                }
+            };
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl geozero::FeatureAccess for FgbFeature {}
