@@ -34,7 +34,7 @@ impl<'a> CoordTrait for Coord<'a> {
             },
             3 => match self.dim {
                 Dimensions::Xyzm => self.geom.m().unwrap().get(self.coord_offset),
-                _ => unreachable!("Unreachable for 3D data"),
+                _ => unreachable!("Unreachable for 4D data"),
             },
             _ => panic!("Unexpected dim {n}"),
         }

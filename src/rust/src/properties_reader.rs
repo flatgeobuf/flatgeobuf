@@ -38,11 +38,17 @@ impl FgbFeature {
     }
 
     /// Access the underlying geometry, returning an object that implements
-    /// [geo_traits::GeometryTrait].
+    /// [`geo_traits::GeometryTrait`].
     ///
-    /// Note that this method only supports the core geometry types supported by [geo_traits], and
-    /// will panic on curve geometries.
-    pub fn geometry_trait_impl(
+    /// This allows for random-access zero-copy vector data interoperability, even with Z, M, and
+    /// ZM geometries that `geo_types` does not currently support.
+    ///
+    /// ### Notes:
+    ///
+    /// - Any `T` values are currently ignored.
+    /// - This will error on curve geometries since they are not among the core geometry types
+    ///   supported by [`geo_traits`].
+    pub fn geometry_trait(
         &self,
     ) -> std::result::Result<Option<impl geo_traits::GeometryTrait<T = f64> + use<'_>>, crate::Error>
     {
