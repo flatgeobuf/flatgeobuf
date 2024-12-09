@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.5.0] - 2024-12-09
+
+- [rust] Add `geo-traits` reader implementation (#392)
+
 ## [4.4.0] - 2024-09-26
 
 - [rust] Upgrade to geozero 0.14
