@@ -124,6 +124,7 @@ mod properties_reader;
 
 pub use error::{Error, Result};
 pub use feature_generated::*;
+pub use file_reader::reader_trait::*;
 pub use file_reader::*;
 pub use file_writer::*;
 pub use geometry_reader::*;
