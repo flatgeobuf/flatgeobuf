@@ -15,7 +15,7 @@ pub struct Coord<'a> {
     coord_offset: usize,
 }
 
-impl<'a> CoordTrait for Coord<'a> {
+impl CoordTrait for Coord<'_> {
     type T = f64;
 
     fn dim(&self) -> Dimensions {
@@ -72,7 +72,10 @@ impl<'a> Point<'a> {
 
 impl<'a> PointTrait for Point<'a> {
     type T = f64;
-    type CoordType<'b> = Coord<'a> where Self: 'b;
+    type CoordType<'b>
+        = Coord<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -116,7 +119,10 @@ impl<'a> LineString<'a> {
 
 impl<'a> LineStringTrait for LineString<'a> {
     type T = f64;
-    type CoordType<'b> = Coord<'a> where Self: 'b;
+    type CoordType<'b>
+        = Coord<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -149,7 +155,10 @@ impl<'a> Polygon<'a> {
 
 impl<'a> PolygonTrait for Polygon<'a> {
     type T = f64;
-    type RingType<'b> = LineString<'a> where Self: 'b;
+    type RingType<'b>
+        = LineString<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -218,7 +227,10 @@ impl<'a> MultiPoint<'a> {
 
 impl<'a> MultiPointTrait for MultiPoint<'a> {
     type T = f64;
-    type PointType<'b> = Point<'a> where Self: 'b;
+    type PointType<'b>
+        = Point<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -251,7 +263,10 @@ impl<'a> MultiLineString<'a> {
 
 impl<'a> MultiLineStringTrait for MultiLineString<'a> {
     type T = f64;
-    type LineStringType<'b> = LineString<'a> where Self: 'b;
+    type LineStringType<'b>
+        = LineString<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -296,7 +311,10 @@ impl<'a> MultiPolygon<'a> {
 
 impl<'a> MultiPolygonTrait for MultiPolygon<'a> {
     type T = f64;
-    type PolygonType<'b> = Polygon<'a> where Self: 'b;
+    type PolygonType<'b>
+        = Polygon<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
@@ -347,16 +365,46 @@ impl<'a> Geometry<'a> {
 
 impl<'a> GeometryTrait for Geometry<'a> {
     type T = f64;
-    type PointType<'b> = Point<'a> where Self: 'b;
-    type LineStringType<'b> = LineString<'a> where Self: 'b;
-    type PolygonType<'b> = Polygon<'a> where Self: 'b;
-    type MultiPointType<'b> = MultiPoint<'a> where Self: 'b;
-    type MultiLineStringType<'b> = MultiLineString<'a> where Self: 'b;
-    type MultiPolygonType<'b> = MultiPolygon<'a> where Self: 'b;
-    type GeometryCollectionType<'b> = GeometryCollection<'a> where Self: 'b;
-    type RectType<'b> = UnimplementedRect<f64> where Self: 'b;
-    type TriangleType<'b> = UnimplementedTriangle<f64> where Self: 'b;
-    type LineType<'b> = UnimplementedLine<f64> where Self: 'b;
+    type PointType<'b>
+        = Point<'a>
+    where
+        Self: 'b;
+    type LineStringType<'b>
+        = LineString<'a>
+    where
+        Self: 'b;
+    type PolygonType<'b>
+        = Polygon<'a>
+    where
+        Self: 'b;
+    type MultiPointType<'b>
+        = MultiPoint<'a>
+    where
+        Self: 'b;
+    type MultiLineStringType<'b>
+        = MultiLineString<'a>
+    where
+        Self: 'b;
+    type MultiPolygonType<'b>
+        = MultiPolygon<'a>
+    where
+        Self: 'b;
+    type GeometryCollectionType<'b>
+        = GeometryCollection<'a>
+    where
+        Self: 'b;
+    type RectType<'b>
+        = UnimplementedRect<f64>
+    where
+        Self: 'b;
+    type TriangleType<'b>
+        = UnimplementedTriangle<f64>
+    where
+        Self: 'b;
+    type LineType<'b>
+        = UnimplementedLine<f64>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         match self {
@@ -411,7 +459,10 @@ impl<'a> GeometryCollection<'a> {
 
 impl<'a> GeometryCollectionTrait for GeometryCollection<'a> {
     type T = f64;
-    type GeometryType<'b> = Geometry<'a> where Self: 'b;
+    type GeometryType<'b>
+        = Geometry<'a>
+    where
+        Self: 'b;
 
     fn dim(&self) -> Dimensions {
         self.dim
