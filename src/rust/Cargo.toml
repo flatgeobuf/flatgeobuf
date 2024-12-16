@@ -13,7 +13,7 @@ keywords = ["geo", "r-tree", "spatial"]
 rust-version = "1.82"
 
 [features]
-default = ["http"]
+default = ["http", "default-tls"]
 http = ["http-range-client", "bytes", "reqwest"]
 default-tls = ["http-range-client?/default-tls"]
 
