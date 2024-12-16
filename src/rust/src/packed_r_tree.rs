@@ -8,7 +8,7 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use http_range_client::{
     AsyncBufferedHttpRangeClient, AsyncHttpRangeClient, BufferedHttpRangeClient,
 };
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::collections::VecDeque;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::mem::size_of;
@@ -290,7 +290,7 @@ impl PackedRTree {
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(self.num_leaf_nodes > 0, "Cannot create empty tree");
-        self.branching_factor = min(max(node_size, 2u16), 65535u16);
+        self.branching_factor = node_size.clamp(2, 65535);
         self.level_bounds =
             PackedRTree::generate_level_bounds(self.num_leaf_nodes, self.branching_factor);
         let num_nodes = self
@@ -316,7 +316,7 @@ impl PackedRTree {
         let mut num_nodes = n;
         level_num_nodes.push(n);
         loop {
-            n = (n + node_size as usize - 1) / node_size as usize;
+            n = n.div_ceil(node_size as usize);
             num_nodes += n;
             level_num_nodes.push(n);
             if n == 1 {
@@ -392,7 +392,7 @@ impl PackedRTree {
         self.node_items.len()
     }
 
-    pub fn build(nodes: &Vec<NodeItem>, extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
+    pub fn build(nodes: &[NodeItem], extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
         let mut tree = PackedRTree {
             extent: extent.clone(),
             node_items: Vec::new(),
@@ -410,7 +410,7 @@ impl PackedRTree {
     }
 
     pub fn from_buf(data: impl Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
-        let node_size = min(max(node_size, 2u16), 65535u16);
+        let node_size = node_size.clamp(2, 65535);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds
             .first()
@@ -684,7 +684,7 @@ impl PackedRTree {
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
-        let node_size_min = min(max(node_size, 2), 65535) as usize;
+        let node_size_min = node_size.clamp(2, 65535) as usize;
         // limit so that resulting size in bytes can be represented by uint64_t
         // assert!(
         //     num_items <= 1 << 56,
@@ -693,7 +693,7 @@ impl PackedRTree {
         let mut n = num_items;
         let mut num_nodes = n;
         loop {
-            n = (n + node_size_min - 1) / node_size_min;
+            n = n.div_ceil(node_size_min);
             num_nodes += n;
             if n == 1 {
                 break;

@@ -285,7 +285,7 @@ impl<'a> FgbWriter<'a> {
                     offset += feat.size as u64;
                     node
                 })
-                .collect();
+                .collect::<Vec<_>>();
             let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
             tree.stream_write(&mut out)?;
         }
