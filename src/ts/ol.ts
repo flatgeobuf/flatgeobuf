@@ -81,13 +81,19 @@ export function createLoader(
     strategy: LoadingStrategy = all,
     clear: boolean = false,
 ) {
-    const loader: FeatureLoader<Feature> = async (extent, _resolution, projection) => {
-        if (clear) source.clear();
-        const it = await createIterator(url, srs, extent, projection, strategy);
-        for await (const feature of it) {
-            if (srs && projection.getCode() !== srs) feature.getGeometry()?.transform(srs, projection.getCode());
-            source.addFeature(feature);
+    const loader: FeatureLoader<Feature> = async (extent, _resolution, projection, success, failure) => {
+        try {
+            if (clear) source.clear();
+            const it = await createIterator(url, srs, extent, projection, strategy);
+            for await (const feature of it) {
+                if (srs && projection.getCode() !== srs) feature.getGeometry()?.transform(srs, projection.getCode());
+                source.addFeature(feature);
+            }
+        success(true)
+        } catch (err) {
+            failure(err)
         }
+        
     };
     return loader;
 }
