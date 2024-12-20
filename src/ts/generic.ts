@@ -6,7 +6,7 @@ import {
 } from './generic/featurecollection.js';
 
 import { type IFeature } from './generic/feature.js';
-import type HeaderMeta from './header-meta.js';
+import type { HeaderMeta } from './header-meta.js';
 import { type Rect } from './packedrtree.js';
 
 export { GeometryType } from './flat-geobuf/geometry-type.js';

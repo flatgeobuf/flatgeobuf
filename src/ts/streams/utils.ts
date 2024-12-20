@@ -29,14 +29,14 @@ export async function takeAsync<T>(asyncIterable: AsyncIterable<T>, count = Infi
 export function nodeToWeb(nodeStream: Readable): ReadableStream {
     let destroyed = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const listeners: any = {};
+    const listeners: { [key: string]: (chunk: Buffer | Error) => void } = {};
 
     function start(controller: ReadableStreamDefaultController) {
-        listeners['data'] = onData;
-        listeners['end'] = onData;
-        listeners['end'] = onDestroy;
-        listeners['close'] = onDestroy;
-        listeners['error'] = onDestroy;
+        listeners['data'] = onData as (chunk: Buffer | Error) => void;
+        listeners['end'] = onData as (chunk: Buffer | Error) => void;
+        listeners['end'] = onDestroy as (chunk: Buffer | Error) => void;
+        listeners['close'] = onDestroy as (chunk: Buffer | Error) => void;
+        listeners['error'] = onDestroy as (chunk: Buffer | Error) => void;
         for (const name in listeners) nodeStream.on(name, listeners[name]);
 
         nodeStream.pause();

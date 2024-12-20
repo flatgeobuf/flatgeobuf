@@ -1,14 +1,14 @@
 import * as flatbuffers from 'flatbuffers';
 import slice from 'slice-source';
 
-import type ColumnMeta from '../column-meta.js';
+import type { ColumnMeta } from '../column-meta.js';
 
 import { Header } from '../flat-geobuf/header.js';
 
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Column } from '../flat-geobuf/column.js';
 import { Feature } from '../flat-geobuf/feature.js';
-import type HeaderMeta from '../header-meta.js';
+import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 
 import { SIZE_PREFIX_LEN, magicbytes } from '../constants.js';

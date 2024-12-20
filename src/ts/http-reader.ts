@@ -4,7 +4,7 @@ import * as flatbuffers from 'flatbuffers';
 import Config from './config.js';
 import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
-import type HeaderMeta from './header-meta.js';
+import type { HeaderMeta } from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
 import { DEFAULT_NODE_SIZE, NODE_ITEM_BYTE_LEN, type Rect, calcTreeSize, streamSearch } from './packedrtree.js';
 

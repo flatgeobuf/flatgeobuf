@@ -1,5 +1,5 @@
-import type ColumnMeta from '../column-meta.js';
-import type HeaderMeta from '../header-meta.js';
+import type { ColumnMeta } from '../column-meta.js';
+import type { HeaderMeta } from '../header-meta.js';
 
 import { magicbytes } from '../constants.js';
 import { type HeaderMetaFn } from '../generic.js';
