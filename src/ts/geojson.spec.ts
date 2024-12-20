@@ -1,21 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
-import { readFileSync } from 'fs';
-import { arrayToStream, takeAsync } from './streams/utils.js';
+import { describe, expect, it } from 'vitest';
 import { deserialize, serialize } from './geojson.js';
 import { IGeoJsonFeature } from './geojson/feature.js';
-import { Rect } from './packedrtree.js';
 import HeaderMeta from './header-meta.js';
+import { Rect } from './packedrtree.js';
+import { arrayToStream, takeAsync } from './streams/utils.js';
 
 import {
     FeatureCollection as GeoJsonFeatureCollection,
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
     Position,
 } from 'geojson';
 

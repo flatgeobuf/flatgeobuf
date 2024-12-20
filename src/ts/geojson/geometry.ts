@@ -3,13 +3,13 @@ import { Geometry } from '../flat-geobuf/geometry.js';
 
 import type {
     Geometry as GeoJsonGeometry,
-    Point,
-    MultiPoint,
+    GeometryCollection,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
-    GeometryCollection,
+    Point,
+    Polygon,
 } from 'geojson';
 
 import { type IParsedGeometry, flat, pairFlatCoordinates, toGeometryType } from '../generic/geometry.js';

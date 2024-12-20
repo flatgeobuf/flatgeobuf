@@ -4,7 +4,7 @@ import type ColumnMeta from '../column-meta.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Feature } from '../flat-geobuf/feature.js';
 import type HeaderMeta from '../header-meta.js';
-import { buildGeometry, type ISimpleGeometry, type ICreateGeometry, type IParsedGeometry } from './geometry.js';
+import { type ICreateGeometry, type IParsedGeometry, type ISimpleGeometry, buildGeometry } from './geometry.js';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();

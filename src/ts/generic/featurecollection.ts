@@ -5,20 +5,20 @@ import type ColumnMeta from '../column-meta.js';
 
 import { Header } from '../flat-geobuf/header.js';
 
-import { Column } from '../flat-geobuf/column.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
+import { Column } from '../flat-geobuf/column.js';
 import { Feature } from '../flat-geobuf/feature.js';
 import type HeaderMeta from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 
-import { buildFeature, type IProperties, type IFeature } from './feature.js';
+import { SIZE_PREFIX_LEN, magicbytes } from '../constants.js';
+import { Crs } from '../flat-geobuf/crs.js';
+import { type HeaderMetaFn } from '../generic.js';
 import { HttpReader } from '../http-reader.js';
 import { type Rect, calcTreeSize } from '../packedrtree.js';
+import { type IFeature, type IProperties, buildFeature } from './feature.js';
 import { parseGeometry } from './geometry.js';
-import { type HeaderMetaFn } from '../generic.js';
-import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { inferGeometryType } from './header.js';
-import { Crs } from '../flat-geobuf/crs.js';
 
 export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;

@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
+import { describe, expect, it } from 'vitest';
 
-import { arrayToStream, takeAsync } from './streams/utils.js';
 import { deserialize, serialize } from './ol.js';
+import { arrayToStream, takeAsync } from './streams/utils.js';
 
 import Feature from 'ol/Feature.js';
-import WKT from 'ol/format/WKT.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
+import WKT from 'ol/format/WKT.js';
 import Geometry from 'ol/geom/Geometry.js';
+import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 
 const format = new WKT();
 const geojson = new GeoJSON();

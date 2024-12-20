@@ -9,22 +9,15 @@
         "outDir": "../lib",
         "sourceMap": true,
         "target": "ES2023",
-        "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
+        "typeRoots": ["./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
         "skipLibCheck": true
     },
-    "include": [
-        "../src/ts"
-    ],
-    "exclude": [
-        "../node_modules",
-        "../**/*.spec.ts"
-    ],
+    "include": ["../src/ts"],
+    "exclude": ["../node_modules", "../**/*.spec.ts"],
     "typedocOptions": {
         "out": "../dist/doc",
-        "exclude": [
-            "**/*.spec.ts"
-        ],
+        "exclude": ["**/*.spec.ts"],
         "entryPoints": ["../src/ts/flatgeobuf.ts"],
         "readme": "none"
     }

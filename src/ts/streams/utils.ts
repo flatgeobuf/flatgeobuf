@@ -1,5 +1,5 @@
-import { ReadableStreamBuffer } from 'stream-buffers';
 import { Readable } from 'stream';
+import { ReadableStreamBuffer } from 'stream-buffers';
 
 export function arrayToStream(array: ArrayBuffer): ReadableStream {
     const myReadableStreamBuffer = new ReadableStreamBuffer({

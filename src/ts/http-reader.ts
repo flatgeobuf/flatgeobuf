@@ -1,12 +1,12 @@
-import * as flatbuffers from 'flatbuffers';
 import { Repeater } from '@repeaterjs/repeater';
+import * as flatbuffers from 'flatbuffers';
 
-import { type Rect, calcTreeSize, DEFAULT_NODE_SIZE, NODE_ITEM_BYTE_LEN, streamSearch } from './packedrtree.js';
-import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './config.js';
+import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
+import { Feature } from './flat-geobuf/feature.js';
 import type HeaderMeta from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
-import { Feature } from './flat-geobuf/feature.js';
+import { DEFAULT_NODE_SIZE, NODE_ITEM_BYTE_LEN, type Rect, calcTreeSize, streamSearch } from './packedrtree.js';
 
 interface FeatureWithId {
     id: number;

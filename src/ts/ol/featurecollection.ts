@@ -1,13 +1,13 @@
-import {
-    serialize,
-    deserialize as genericDeserialize,
-    deserializeStream as genericDeserializeStream,
-    deserializeFiltered as genericDeserializeFiltered,
-} from '../generic/featurecollection.js';
-import { type IFeature } from '../generic/feature.js';
-import { fromFeature } from './feature.js';
 import { type HeaderMetaFn } from '../generic.js';
+import { type IFeature } from '../generic/feature.js';
+import {
+    deserialize as genericDeserialize,
+    deserializeFiltered as genericDeserializeFiltered,
+    deserializeStream as genericDeserializeStream,
+    serialize,
+} from '../generic/featurecollection.js';
 import { type Rect } from '../packedrtree.js';
+import { fromFeature } from './feature.js';
 
 export { serialize as serialize };
 

@@ -1,23 +1,23 @@
 import OlFeature from 'ol/Feature.js';
 import Feature from 'ol/Feature.js';
-import { type FeatureLoader } from 'ol/featureloader.js';
-import { Projection, transformExtent } from 'ol/proj.js';
-import { type Extent } from 'ol/extent.js';
-import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
 import { type LoadFunction } from 'ol/Tile.js';
-import VectorTileSource from 'ol/source/VectorTile.js';
 import VectorTile from 'ol/VectorTile.js';
+import { type Extent } from 'ol/extent.js';
+import { type FeatureLoader } from 'ol/featureloader.js';
 import { all } from 'ol/loadingstrategy.js';
+import { Projection, transformExtent } from 'ol/proj.js';
+import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
+import VectorTileSource from 'ol/source/VectorTile.js';
 import { type TileCoord } from 'ol/tilecoord.js';
 import {
     deserialize as fcDeserialize,
-    deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
+    deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './ol/featurecollection.js';
 
-import { type IFeature } from './generic/feature.js';
 import { type HeaderMetaFn } from './generic.js';
+import { type IFeature } from './generic/feature.js';
 import { type Rect } from './packedrtree.js';
 
 /**

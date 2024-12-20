@@ -1,13 +1,13 @@
 // tool to dump spatial index tree
 // run with fx. TS_NODE_PROJECT=config/tsconfig.test.json node --loader ts-node/esm.mjs src/ts/dumptree.ts
 
+import { readFileSync, writeFileSync } from 'fs';
 import flatbuffers from 'flatbuffers';
 import Envelope from 'jsts/org/locationtech/jts/geom/Envelope.js';
 import GeometryFactory from 'jsts/org/locationtech/jts/geom/GeometryFactory.js';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
-import { readFileSync, writeFileSync } from 'fs';
 
-import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
+import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
 import { fromByteBuffer } from './header-meta.js';
 import { calcTreeSize, generateLevelBounds } from './packedrtree.js';
 

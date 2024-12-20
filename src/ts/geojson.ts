@@ -1,15 +1,15 @@
 import {
     deserialize as fcDeserialize,
-    deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
+    deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './geojson/featurecollection.js';
 
 import { type FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 
-import { type Rect } from './packedrtree.js';
-import { type IGeoJsonFeature } from './geojson/feature.js';
 import { type HeaderMetaFn } from './generic.js';
+import { type IGeoJsonFeature } from './geojson/feature.js';
+import { type Rect } from './packedrtree.js';
 
 /**
  * Serialize GeoJSON to FlatGeobuf
