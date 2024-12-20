@@ -1,5 +1,5 @@
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
-import { Geometry } from '../flat-geobuf/geometry.js';
+import type { Geometry } from '../flat-geobuf/geometry.js';
 
 import type {
     Geometry as GeoJsonGeometry,
@@ -125,7 +125,8 @@ export function fromGeometry(geometry: Geometry, headerType: GeometryType): GeoJ
             type: GeometryType[type],
             geometries,
         } as GeoJsonGeometry;
-    } else if (type === GeometryType.MultiPolygon) {
+    }
+    if (type === GeometryType.MultiPolygon) {
         const geometries: GeoJsonGeometry[] = [];
         for (let i = 0; i < geometry.partsLength(); i++)
             geometries.push(fromGeometry(geometry.parts(i) as Geometry, GeometryType.Polygon));

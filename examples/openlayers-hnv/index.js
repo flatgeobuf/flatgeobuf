@@ -6,7 +6,7 @@ const source = new ol.source.Vector({
     loader: async function (extent) {
         this.clear();
         const rect = { minX: extent[0], minY: extent[1], maxX: extent[2], maxY: extent[3] };
-        for await (let feature of flatgeobuf.deserialize('http://flatgeobuf.septima.dk/HNV2021_20210226.fgb', rect)) {
+        for await (const feature of flatgeobuf.deserialize('http://flatgeobuf.septima.dk/HNV2021_20210226.fgb', rect)) {
             this.addFeature(feature);
         }
     },

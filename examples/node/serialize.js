@@ -1,6 +1,6 @@
-import { readFileSync } from 'fs';
-import path from 'path';
-import * as url from 'url';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import * as url from 'node:url';
 import { deserialize, serialize } from 'flatgeobuf/lib/mjs/geojson.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));

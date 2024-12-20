@@ -1,7 +1,7 @@
 // tool to dump spatial index tree
 // run with fx. TS_NODE_PROJECT=config/tsconfig.test.json node --loader ts-node/esm.mjs src/ts/dumptree.ts
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import flatbuffers from 'flatbuffers';
 import Envelope from 'jsts/org/locationtech/jts/geom/Envelope.js';
 import GeometryFactory from 'jsts/org/locationtech/jts/geom/GeometryFactory.js';
@@ -29,18 +29,18 @@ const numItems = headerMeta.featuresCount;
 const nodeSize = headerMeta.indexNodeSize;
 const envelope = headerMeta.envelope;
 
-console.log('Number of items in tree: ' + numItems);
-console.log('Envelope: ' + envelope);
-console.log('Tree node index size: ' + nodeSize);
-console.log('Offset: ' + offset);
+console.log(`Number of items in tree: ${numItems}`);
+console.log(`Envelope: ${envelope}`);
+console.log(`Tree node index size: ${nodeSize}`);
+console.log(`Offset: ${offset}`);
 
 const treeSize = calcTreeSize(numItems, nodeSize);
 const levelBounds = generateLevelBounds(numItems, nodeSize).reverse();
 
 console.log('Level bounds:');
-for (const levelBound of levelBounds) console.log('  ' + levelBound);
+for (const levelBound of levelBounds) console.log(`  ${levelBound}`);
 
-console.log('Size: ' + treeSize);
+console.log(`Size: ${treeSize}`);
 
 const items: number[][] = [];
 

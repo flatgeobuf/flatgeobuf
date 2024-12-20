@@ -5,17 +5,17 @@ import {
     serialize as fcSerialize,
 } from './geojson/featurecollection.js';
 
-import { type FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
+import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 
-import { type HeaderMetaFn } from './generic.js';
-import { type IGeoJsonFeature } from './geojson/feature.js';
-import { type Rect } from './packedrtree.js';
+import type { HeaderMetaFn } from './generic.js';
+import type { IGeoJsonFeature } from './geojson/feature.js';
+import type { Rect } from './packedrtree.js';
 
 /**
  * Serialize GeoJSON to FlatGeobuf
  * @param geojson GeoJSON object to serialize
  */
-export function serialize(geojson: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
+export function serialize(geojson: GeoJsonFeatureCollection, crsCode = 0): Uint8Array {
     const bytes = fcSerialize(geojson, crsCode);
     return bytes;
 }
@@ -66,10 +66,10 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
-    else if (input instanceof ReadableStream)
+    if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
-    else return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache) as AsyncGenerator<IGeoJsonFeature>;
+    return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache) as AsyncGenerator<IGeoJsonFeature>;
 }

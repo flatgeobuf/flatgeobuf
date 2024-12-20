@@ -8,7 +8,7 @@ ul.primary-navigation {
 ul.primary-navigation li {
     display: inline-block;
     color: white;
-    font-family: Arial;
+    font-family: sans-serif;
 }
 
 ul.primary-navigation li a {
@@ -35,7 +35,7 @@ ul.secondary-navigation {
 ul.secondary-navigation li {
     display: inline-block;
     color: white;
-    font-family: Arial;
+    font-family: sans-serif;
 }
 
 ul.secondary-navigation li.active {

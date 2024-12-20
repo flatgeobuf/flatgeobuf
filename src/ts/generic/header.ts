@@ -1,14 +1,13 @@
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { toGeometryType } from '../generic/geometry.js';
-import { type IGeoJsonFeature } from '../geojson/feature.js';
-import { type IFeature } from './feature.js';
+import type { IGeoJsonFeature } from '../geojson/feature.js';
+import type { IFeature } from './feature.js';
 
 function featureGeomType(feature: IFeature | IGeoJsonFeature): GeometryType {
     if (feature.getGeometry) {
         return toGeometryType(feature.getGeometry().getType());
-    } else {
-        return toGeometryType((feature as IGeoJsonFeature).geometry.type);
     }
+    return toGeometryType((feature as IGeoJsonFeature).geometry.type);
 }
 
 export function inferGeometryType(features: (IFeature | IGeoJsonFeature)[]): GeometryType {

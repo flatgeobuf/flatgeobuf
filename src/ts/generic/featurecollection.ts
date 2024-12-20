@@ -13,7 +13,7 @@ import { fromByteBuffer } from '../header-meta.js';
 
 import { SIZE_PREFIX_LEN, magicbytes } from '../constants.js';
 import { Crs } from '../flat-geobuf/crs.js';
-import { type HeaderMetaFn } from '../generic.js';
+import type { HeaderMetaFn } from '../generic.js';
 import { HttpReader } from '../http-reader.js';
 import { type Rect, calcTreeSize } from '../packedrtree.js';
 import { type IFeature, type IProperties, buildFeature } from './feature.js';
@@ -108,7 +108,7 @@ export async function* deserializeFiltered(
     rect: Rect,
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): AsyncGenerator<IFeature> {
     const reader = await HttpReader.open(url, nocache);
     console.debug('opened reader');
@@ -143,7 +143,7 @@ function buildColumn(builder: flatbuffers.Builder, column: ColumnMeta): number {
     return Column.endColumn(builder);
 }
 
-export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array {
+export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
     const builder = new flatbuffers.Builder();
 
     let columnOffsets = 0;
@@ -155,7 +155,7 @@ export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array
 
     const nameOffset = builder.createString('L1');
 
-    let crsOffset;
+    let crsOffset: flatbuffers.Offset | undefined;
     if (crsCode) {
         Crs.startCrs(builder);
         Crs.addCode(builder, crsCode);
@@ -175,14 +175,15 @@ export function buildHeader(header: HeaderMeta, crsCode: number = 0): Uint8Array
 
 function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
-    else if (typeof value === 'number')
+    if (typeof value === 'number') {
         if (value % 1 === 0) return ColumnType.Int;
-        else return ColumnType.Double;
-    else if (typeof value === 'string') return ColumnType.String;
-    else if (value === null) return ColumnType.String;
-    else if (value instanceof Uint8Array) return ColumnType.Binary;
-    else if (typeof value === 'object') return ColumnType.Json;
-    else throw new Error(`Unknown type (value '${value}')`);
+        return ColumnType.Double;
+    }
+    if (typeof value === 'string') return ColumnType.String;
+    if (value === null) return ColumnType.String;
+    if (value instanceof Uint8Array) return ColumnType.Binary;
+    if (typeof value === 'object') return ColumnType.Json;
+    throw new Error(`Unknown type (value '${value}')`);
 }
 
 export function mapColumn(properties: IProperties, k: string): ColumnMeta {

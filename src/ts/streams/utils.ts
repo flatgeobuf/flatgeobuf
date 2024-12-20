@@ -1,4 +1,4 @@
-import { Readable } from 'stream';
+import type { Readable } from 'node:stream';
 import { ReadableStreamBuffer } from 'stream-buffers';
 
 export function arrayToStream(array: ArrayBuffer): ReadableStream {
@@ -15,7 +15,7 @@ export function arrayToStream(array: ArrayBuffer): ReadableStream {
     return webReader;
 }
 
-export async function takeAsync<T>(asyncIterable: AsyncIterable<T>, count = Infinity): Promise<T[]> {
+export async function takeAsync<T>(asyncIterable: AsyncIterable<T>, count = Number.POSITIVE_INFINITY): Promise<T[]> {
     const result: T[] = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();
     while (result.length < count) {
@@ -32,11 +32,11 @@ export function nodeToWeb(nodeStream: Readable): ReadableStream {
     const listeners: { [key: string]: (chunk: Buffer | Error) => void } = {};
 
     function start(controller: ReadableStreamDefaultController) {
-        listeners['data'] = onData as (chunk: Buffer | Error) => void;
-        listeners['end'] = onData as (chunk: Buffer | Error) => void;
-        listeners['end'] = onDestroy as (chunk: Buffer | Error) => void;
-        listeners['close'] = onDestroy as (chunk: Buffer | Error) => void;
-        listeners['error'] = onDestroy as (chunk: Buffer | Error) => void;
+        listeners.data = onData as (chunk: Buffer | Error) => void;
+        listeners.end = onData as (chunk: Buffer | Error) => void;
+        listeners.end = onDestroy as (chunk: Buffer | Error) => void;
+        listeners.close = onDestroy as (chunk: Buffer | Error) => void;
+        listeners.error = onDestroy as (chunk: Buffer | Error) => void;
         for (const name in listeners) nodeStream.on(name, listeners[name]);
 
         nodeStream.pause();

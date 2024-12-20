@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 /* eslint-disable no-undef */
 import { geojson } from 'flatgeobuf';
 

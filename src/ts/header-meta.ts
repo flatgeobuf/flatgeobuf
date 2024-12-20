@@ -1,8 +1,8 @@
-import * as flatbuffers from 'flatbuffers';
+import type * as flatbuffers from 'flatbuffers';
 
 import type { ColumnMeta } from './column-meta.js';
 import type { CrsMeta } from './crs-meta.js';
-import { GeometryType } from './flat-geobuf/geometry-type.js';
+import type { GeometryType } from './flat-geobuf/geometry-type.js';
 import { Header } from './flat-geobuf/header.js';
 
 export interface HeaderMeta {

@@ -20,13 +20,11 @@ export interface IFeature {
     setProperties?(properties: IProperties): void;
 }
 
-export interface ICreateFeature {
-    (
-        id: number,
-        geometry?: ISimpleGeometry,
-        properties?: Record<string, string | number | boolean | Uint8Array | undefined>,
-    ): IFeature;
-}
+export type ICreateFeature = (
+    id: number,
+    geometry?: ISimpleGeometry,
+    properties?: Record<string, string | number | boolean | Uint8Array | undefined>,
+) => IFeature;
 
 export function fromFeature(
     id: number,
@@ -51,7 +49,7 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     let bytes = new Uint8Array(capacity);
     let view = new DataView(bytes.buffer);
 
-    const prep = function (size: number) {
+    const prep = (size: number) => {
         if (offset + size < capacity) return;
         capacity = Math.max(capacity + size, capacity * 2);
         const newBytes = new Uint8Array(capacity);
@@ -141,7 +139,7 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
                     break;
                 }
                 default:
-                    throw new Error('Unknown type ' + column.type);
+                    throw new Error(`Unknown type ${column.type}`);
             }
         }
     }
@@ -251,7 +249,7 @@ export function parseProperties(feature: Feature, columns?: ColumnMeta[] | null)
                 break;
             }
             default:
-                throw new Error('Unknown type ' + column.type);
+                throw new Error(`Unknown type ${column.type}`);
         }
     }
     return properties;

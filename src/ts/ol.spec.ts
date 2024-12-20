@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { deserialize, serialize } from './ol.js';
@@ -7,8 +7,8 @@ import { arrayToStream, takeAsync } from './streams/utils.js';
 import Feature from 'ol/Feature.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import WKT from 'ol/format/WKT.js';
-import Geometry from 'ol/geom/Geometry.js';
-import SimpleGeometry from 'ol/geom/SimpleGeometry.js';
+import type Geometry from 'ol/geom/Geometry.js';
+import type SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 
 const format = new WKT();
 const geojson = new GeoJSON();
@@ -72,13 +72,13 @@ describe('ol module', () => {
         });
 
         it('MultiLineStringSinglePart', () => {
-            const expected = makeFeatureCollection(`MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`);
+            const expected = makeFeatureCollection('MULTILINESTRING((1.2 -2.1, 2.4 -4.8))');
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
 
         it('Polygon', () => {
-            const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`);
+            const expected = makeFeatureCollection('POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))');
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
@@ -114,7 +114,7 @@ describe('ol module', () => {
         });
 
         it('MultiPolygonSinglePart', () => {
-            const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`);
+            const expected = makeFeatureCollection('MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))');
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });

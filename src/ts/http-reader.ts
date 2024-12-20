@@ -108,7 +108,7 @@ export class HttpReader {
         const lengthBeforeTree = this.lengthBeforeTree();
 
         const bufferedClient = this.headerClient;
-        const readNode = async function (offsetIntoTree: number, size: number): Promise<ArrayBuffer> {
+        const readNode = async (offsetIntoTree: number, size: number): Promise<ArrayBuffer> => {
             const minReqLength = 0;
             return bufferedClient.getRange(lengthBeforeTree + offsetIntoTree, size, minReqLength, 'index');
         };
@@ -137,7 +137,7 @@ export class HttpReader {
                 featureLength = 4;
             }
 
-            if (currentBatch.length == 0) {
+            if (currentBatch.length === 0) {
                 currentBatch.push([featureOffset, featureLength, featureIdx]);
                 continue;
             }

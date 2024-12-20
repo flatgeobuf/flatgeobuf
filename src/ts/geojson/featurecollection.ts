@@ -2,7 +2,7 @@ import type { ColumnMeta } from '../column-meta.js';
 import type { HeaderMeta } from '../header-meta.js';
 
 import { magicbytes } from '../constants.js';
-import { type HeaderMetaFn } from '../generic.js';
+import type { HeaderMetaFn } from '../generic.js';
 import { type IFeature, type IProperties, buildFeature } from '../generic/feature.js';
 import {
     buildHeader,
@@ -12,7 +12,7 @@ import {
     mapColumn,
 } from '../generic/featurecollection.js';
 import { inferGeometryType } from '../generic/header.js';
-import { type Rect } from '../packedrtree.js';
+import type { Rect } from '../packedrtree.js';
 import { fromFeature } from './feature.js';
 import { parseGC, parseGeometry } from './geometry.js';
 
@@ -27,7 +27,7 @@ import type {
     Polygon,
 } from 'geojson';
 
-export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
+export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode = 0): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta, crsCode);
     const features: Uint8Array[] = featurecollection.features.map((f) =>
@@ -69,7 +69,7 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
 }
