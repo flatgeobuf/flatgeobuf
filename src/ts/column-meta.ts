@@ -1,6 +1,6 @@
-import { ColumnType } from './flat-geobuf/column-type.js';
+import type { ColumnType } from './flat-geobuf/column-type.js';
 
-export default interface ColumnMeta {
+export interface ColumnMeta {
     name: string;
     type: ColumnType;
     title: string | null;

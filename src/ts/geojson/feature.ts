@@ -1,10 +1,10 @@
-import { Feature } from '../flat-geobuf/feature.js';
-import { Geometry } from '../flat-geobuf/geometry.js';
-import type HeaderMeta from '../header-meta.js';
-import { fromGeometry } from './geometry.js';
+import type { Feature } from '../flat-geobuf/feature.js';
+import type { Geometry } from '../flat-geobuf/geometry.js';
 import { type IFeature, parseProperties } from '../generic/feature.js';
+import type { HeaderMeta } from '../header-meta.js';
+import { fromGeometry } from './geometry.js';
 
-import { type Feature as GeoJsonFeature } from 'geojson';
+import type { Feature as GeoJsonFeature } from 'geojson';
 
 export interface IGeoJsonFeature extends IFeature, GeoJsonFeature {}
 

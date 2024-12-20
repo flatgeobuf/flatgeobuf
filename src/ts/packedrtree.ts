@@ -140,7 +140,7 @@ export async function* streamSearch(
         `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`,
     );
 
-    while (queue.length != 0) {
+    while (queue.length !== 0) {
         const nodeRange = queue.shift()!;
 
         console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
@@ -160,9 +160,8 @@ export async function* streamSearch(
                 // but in that case we know that the feature runs to the end of the FGB file and
                 // could make an open ended range request to get "the rest of the data".
                 return nodeIdx + 1;
-            } else {
-                return nodeIdx;
             }
+            return nodeIdx;
         })();
 
         const numNodesInRange = nodeRangeEndIdx - nodeRangeStartIdx;
@@ -194,11 +193,10 @@ export async function* streamSearch(
                         // console.debug(`nodeIdx: ${nodeIdx} of ${numItems}, nodeRangeStartIdx: ${nodeRangeStartIdx}, nextPos: ${nextPos}, dataView.byteLength: ${dataView.byteLength}`,);
                         const nextOffset = dataView.getBigUint64(nextPos + 32, true);
                         return nextOffset - featureByteOffset;
-                    } else {
-                        // This is the last feature - there's no "next" feature
-                        // to measure to, so we can't know it's length.
-                        return null;
                     }
+                    // This is the last feature - there's no "next" feature
+                    // to measure to, so we can't know it's length.
+                    return null;
                 })();
 
                 const featureIdx = nodeIdx - firstLeafNodeIdx;
@@ -218,7 +216,7 @@ export async function* streamSearch(
             const nearestNodeRange = queue[queue.length - 1];
             if (
                 nearestNodeRange !== undefined &&
-                nearestNodeRange.level() == nodeRange.level() - 1 &&
+                nearestNodeRange.level() === nodeRange.level() - 1 &&
                 firstChildNodeIdx < nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
             ) {
                 console.debug(
@@ -235,7 +233,7 @@ export async function* streamSearch(
             })();
 
             // We're going to add a new node range - log the reason
-            if (nearestNodeRange !== undefined && nearestNodeRange.level() == newNodeRange.level()) {
+            if (nearestNodeRange !== undefined && nearestNodeRange.level() === newNodeRange.level()) {
                 console.debug(
                     `Same level, but too far away. Pushing new request for nodeIdx: ${firstChildNodeIdx} rather than merging with distant ${nearestNodeRange}`,
                 );

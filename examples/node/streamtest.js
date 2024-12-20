@@ -1,16 +1,16 @@
 /* eslint-disable no-undef */
-import { geojson } from 'flatgeobuf'
+import { geojson } from 'flatgeobuf';
 
 function nodeToWeb(nodeStream) {
     let destroyed = false;
     const listeners = {};
 
     function start(controller) {
-        listeners['data'] = onData;
-        listeners['end'] = onData;
-        listeners['end'] = onDestroy;
-        listeners['close'] = onDestroy;
-        listeners['error'] = onDestroy;
+        listeners.data = onData;
+        listeners.end = onData;
+        listeners.end = onDestroy;
+        listeners.close = onDestroy;
+        listeners.error = onDestroy;
         for (const name in listeners) nodeStream.on(name, listeners[name]);
 
         nodeStream.pause();
@@ -25,8 +25,7 @@ function nodeToWeb(nodeStream) {
             if (destroyed) return;
             destroyed = true;
 
-            for (const name in listeners)
-                nodeStream.removeListener(name, listeners[name]);
+            for (const name in listeners) nodeStream.removeListener(name, listeners[name]);
 
             if (err) controller.error(err);
             else controller.close();
@@ -41,8 +40,7 @@ function nodeToWeb(nodeStream) {
     function cancel() {
         destroyed = true;
 
-        for (const name in listeners)
-            nodeStream.removeListener(name, listeners[name]);
+        for (const name in listeners) nodeStream.removeListener(name, listeners[name]);
 
         nodeStream.push(null);
         nodeStream.pause();
@@ -53,9 +51,9 @@ function nodeToWeb(nodeStream) {
 }
 
 async function streamtest() {
-    const response = await fetch('https://flatgeobuf.org/test/data/UScounties.fgb')
-    for await (let feature of geojson.deserialize(nodeToWeb(response.body)))
-        console.log(JSON.stringify(feature, undefined, 1))
+    const response = await fetch('https://flatgeobuf.org/test/data/UScounties.fgb');
+    for await (const feature of geojson.deserialize(nodeToWeb(response.body)))
+        console.log(JSON.stringify(feature, undefined, 1));
 }
 
-streamtest()
+streamtest();

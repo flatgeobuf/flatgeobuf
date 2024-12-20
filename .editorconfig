@@ -1,2 +1,5 @@
 [src/net/FlatGeobuf/FlatBuffers/**.cs]
 generated_code = true
+indent_style = space
+indent_size = 4
+tab_size = 4
