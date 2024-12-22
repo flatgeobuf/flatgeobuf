@@ -1,24 +1,25 @@
-import OlFeature from 'ol/Feature.js';
-import Feature from 'ol/Feature.js';
-import { type FeatureLoader } from 'ol/featureloader.js';
-import { Projection, transformExtent } from 'ol/proj.js';
-import { type Extent } from 'ol/extent.js';
-import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
-import { type LoadFunction } from 'ol/Tile.js';
-import VectorTileSource from 'ol/source/VectorTile.js';
-import VectorTile from 'ol/VectorTile.js';
+import type OlFeature from 'ol/Feature.js';
+import type Feature from 'ol/Feature.js';
+import type { LoadFunction } from 'ol/Tile.js';
+import type VectorTile from 'ol/VectorTile.js';
+import type { Extent } from 'ol/extent.js';
+import type { FeatureLoader } from 'ol/featureloader.js';
 import { all } from 'ol/loadingstrategy.js';
-import { type TileCoord } from 'ol/tilecoord.js';
+import { type Projection, transformExtent } from 'ol/proj.js';
+import type VectorSource from 'ol/source/Vector.js';
+import type { LoadingStrategy } from 'ol/source/Vector.js';
+import type VectorTileSource from 'ol/source/VectorTile.js';
+import type { TileCoord } from 'ol/tilecoord.js';
 import {
     deserialize as fcDeserialize,
-    deserializeStream as fcDeserializeStream,
     deserializeFiltered as fcDeserializeFiltered,
+    deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './ol/featurecollection.js';
 
-import { type IFeature } from './generic/feature.js';
-import { type HeaderMetaFn } from './generic.js';
-import { type Rect } from './packedrtree.js';
+import type { HeaderMetaFn } from './generic.js';
+import type { IFeature } from './generic/feature.js';
+import type { Rect } from './packedrtree.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
@@ -39,12 +40,11 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): AsyncGenerator<OlFeature> | OlFeature[] {
     if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn) as OlFeature[];
-    else if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<OlFeature>;
-    else return fcDeserializeFiltered(input, rect as Rect, headerMetaFn, nocache) as AsyncGenerator<OlFeature>;
+    if (input instanceof ReadableStream) return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<OlFeature>;
+    return fcDeserializeFiltered(input, rect as Rect, headerMetaFn, nocache) as AsyncGenerator<OlFeature>;
 }
 
 async function createIterator(
@@ -57,12 +57,11 @@ async function createIterator(
     if (strategy === all) {
         const response = await fetch(url);
         return deserialize(response.body as ReadableStream);
-    } else {
-        const [minX, minY, maxX, maxY] =
-            srs && projection.getCode() !== srs ? transformExtent(extent, projection.getCode(), srs) : extent;
-        const rect = { minX, minY, maxX, maxY };
-        return deserialize(url, rect);
     }
+    const [minX, minY, maxX, maxY] =
+        srs && projection.getCode() !== srs ? transformExtent(extent, projection.getCode(), srs) : extent;
+    const rect = { minX, minY, maxX, maxY };
+    return deserialize(url, rect);
 }
 
 /**
@@ -77,9 +76,9 @@ async function createIterator(
 export function createLoader(
     source: VectorSource,
     url: string,
-    srs: string = 'EPSG:4326',
+    srs = 'EPSG:4326',
     strategy: LoadingStrategy = all,
-    clear: boolean = false,
+    clear = false,
 ) {
     const loader: FeatureLoader<Feature> = async (extent, _resolution, projection) => {
         if (clear) source.clear();
@@ -107,7 +106,7 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
  * @param srs
  * @returns
  */
-export function createTileLoadFunction(source: VectorTileSource, url: string, srs: string = 'EPSG:4326') {
+export function createTileLoadFunction(source: VectorTileSource, url: string, srs = 'EPSG:4326') {
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
@@ -118,7 +117,7 @@ export function createTileLoadFunction(source: VectorTileSource, url: string, sr
             const it = deserialize(url, rect);
             const features: Feature[] = [];
             for await (const feature of it) features.push(feature);
-            features.forEach((f) => f.getGeometry()?.transform(srs, code));
+            for (const f of features) f.getGeometry()?.transform(srs, code);
             vectorTile.setFeatures(features);
         };
         vectorTile.setLoader(loader);

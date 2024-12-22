@@ -1,4 +1,4 @@
-export default interface CrsMeta {
+export interface CrsMeta {
     org: string | null;
     code: number;
     name: string | null;

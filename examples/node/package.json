@@ -1,10 +1,10 @@
 {
-  "name": "flatgeobuf-node-example",
-  "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
-  "license": "BSD-3-Clause",
-  "dependencies": {
-    "flatgeobuf": "3.32.3"
-  }
+    "name": "flatgeobuf-node-example",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "license": "BSD-3-Clause",
+    "dependencies": {
+        "flatgeobuf": "3.32.3"
+    }
 }

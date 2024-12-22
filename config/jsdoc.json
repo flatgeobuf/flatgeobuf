@@ -9,16 +9,11 @@
     "source": {
         "includePattern": ".+\\.js(doc)?$",
         "excludePattern": "(^|\\/|\\\\)_",
-        "exclude": [
-        ],
-        "include": [
-          "lib"
-        ]
+        "exclude": [],
+        "include": ["lib"]
     },
     "sourceType": "module",
-    "plugins": [
-        "node_modules/jsdoc/plugins/markdown"
-    ],
+    "plugins": ["node_modules/jsdoc/plugins/markdown"],
     "templates": {
         "cleverLinks": true,
         "systemName": "FlatGeobuf",

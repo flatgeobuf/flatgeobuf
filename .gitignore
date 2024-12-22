@@ -1,4 +1,5 @@
 node_modules
+target
 yarn-error.log
 package-lock.json
 /src/c/include/flatcc
@@ -9,5 +10,23 @@ package-lock.json
 /dist
 /lib
 /.vs
+
+# Rust
+Cargo.lock
+
+# .NET
 /src/net/.vs/FlatGeobuf
+/src/net/FlatGeobuf/FlatBuffers
+*.dll
+*.pdb
+*.cache
+obj/
+bin/
+
+# Java
+.settings
+.classpath
+.project
+
+# c++ tester
 testcpp

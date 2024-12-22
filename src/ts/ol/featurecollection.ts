@@ -1,15 +1,15 @@
+import type { HeaderMetaFn } from '../generic.js';
+import type { IFeature } from '../generic/feature.js';
 import {
-    serialize,
     deserialize as genericDeserialize,
-    deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
+    deserializeStream as genericDeserializeStream,
+    serialize,
 } from '../generic/featurecollection.js';
-import { type IFeature } from '../generic/feature.js';
+import type { Rect } from '../packedrtree.js';
 import { fromFeature } from './feature.js';
-import { type HeaderMetaFn } from '../generic.js';
-import { type Rect } from '../packedrtree.js';
 
-export { serialize as serialize };
+export { serialize };
 
 export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): IFeature[] {
     return genericDeserialize(bytes, fromFeature, headerMetaFn);
@@ -23,7 +23,7 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
 }
