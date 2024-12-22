@@ -25,8 +25,9 @@ flatbuffers = "=24.3.25"
 byteorder = "1.5.0"
 geozero = { version = "0.14.0", default-features = false }
 geo-traits = "0.2"
-http-range-client = { git = "https://github.com/pka/http-range-client", rev = "5699e32fafc416ce683bfbf1d179f80b0b6549a3", version = "0.8.0", optional = true, default-features = false, features = ["reqwest-async"] }
-# http-range-client = { version = "0.8.0", optional = true, default-features = false, features = ["reqwest-async"] }
+http-range-client = { version = "0.9.0", optional = true, default-features = false, features = [
+    "reqwest-async",
+] }
 bytes = { version = "1.5.0", optional = true }
 log = "0.4.20"
 fallible-streaming-iterator = "0.1.9"
