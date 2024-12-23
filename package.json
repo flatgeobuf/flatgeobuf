@@ -56,7 +56,6 @@
         "@babel/core": "7.26.0",
         "@babel/preset-env": "7.26.0",
         "@biomejs/biome": "1.9.4",
-        "@eslint/js": "^9.15.0",
         "@rollup/plugin-babel": "6.0.4",
         "@rollup/plugin-node-resolve": "15.3.0",
         "@rollup/plugin-terser": "0.4.4",
@@ -65,10 +64,7 @@
         "@types/geojson": "7946.0.14",
         "@types/node": "22.9.0",
         "@types/stream-buffers": "3.0.7",
-        "@typescript-eslint/eslint-plugin": "8.14.0",
-        "@typescript-eslint/parser": "8.14.0",
         "@vitest/coverage-v8": "2.1.5",
-        "eslint": "^9.15.0",
         "globals": "^15.12.0",
         "jsts": "2.12.1",
         "lws": "4.2.0",
@@ -80,7 +76,6 @@
         "stream-buffers": "3.0.3",
         "typedoc": "0.26.11",
         "typescript": "5.6.3",
-        "typescript-eslint": "^8.14.0",
         "vite": "5.4.11",
         "vitest": "2.1.5"
     }

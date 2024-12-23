@@ -1,6 +1,3 @@
-/* eslint-env browser */
-/* global ol, proj4, flatgeobuf */
-
 const source = new ol.source.Vector({
     strategy: ol.loadingstrategy.bbox,
     loader: async function (extent) {

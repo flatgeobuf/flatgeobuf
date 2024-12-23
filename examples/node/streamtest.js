@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import { geojson } from 'flatgeobuf';
 
 function nodeToWeb(nodeStream) {
