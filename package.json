@@ -12,10 +12,7 @@
         "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
         "server": "ws"
     },
-    "files": [
-        "lib/**/*",
-        "dist/**/*"
-    ],
+    "files": ["lib/**/*", "dist/**/*"],
     "types": "lib/mjs/flatgeobuf.d.ts",
     "module": "lib/mjs/flatgeobuf.js",
     "main": "lib/mjs/flatgeobuf.js",
@@ -24,15 +21,7 @@
         "type": "git",
         "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
     },
-    "keywords": [
-        "spatial",
-        "geometry",
-        "feature",
-        "flatbuffers",
-        "serialization",
-        "binary",
-        "performance"
-    ],
+    "keywords": ["spatial", "geometry", "feature", "flatbuffers", "serialization", "binary", "performance"],
     "author": "Björn Harrtell",
     "contributors": [
         "Pirmin Kalberer",
