@@ -10,7 +10,6 @@
         "outDir": "../lib/mjs",
         "sourceMap": true,
         "target": "ES2023",
-        "typeRoots": ["./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
