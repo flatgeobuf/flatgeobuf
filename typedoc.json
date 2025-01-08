@@ -1,0 +1,6 @@
+{
+    "out": "dist/doc",
+    "exclude": ["**/*.spec.ts"],
+    "entryPoints": ["src/ts/flatgeobuf.ts"],
+    "readme": "none"
+}

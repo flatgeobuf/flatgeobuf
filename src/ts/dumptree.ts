@@ -1,5 +1,5 @@
 // tool to dump spatial index tree
-// run with fx. TS_NODE_PROJECT=config/tsconfig.test.json node --loader ts-node/esm.mjs src/ts/dumptree.ts
+// run with fx. node --loader ts-node/esm.mjs src/ts/dumptree.ts
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import flatbuffers from 'flatbuffers';
