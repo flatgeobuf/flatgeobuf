@@ -1,6 +1,7 @@
 import OlFeature from 'ol/Feature.js';
 import Feature from 'ol/Feature.js';
 import { type FeatureLoader } from 'ol/featureloader.js';
+import { type Geometry } from 'ol/geom.js';
 import { Projection, transformExtent } from 'ol/proj.js';
 import { type Extent } from 'ol/extent.js';
 import VectorSource, { type LoadingStrategy } from 'ol/source/Vector.js';
@@ -85,15 +86,16 @@ export function createLoader(
         try {
             if (clear) source.clear();
             const it = await createIterator(url, srs, extent, projection, strategy);
+            const features: Feature<Geometry>[] = [];
             for await (const feature of it) {
                 if (srs && projection.getCode() !== srs) feature.getGeometry()?.transform(srs, projection.getCode());
+                features.push(feature);
                 source.addFeature(feature);
             }
-        success(true)
+            success && success(features);
         } catch (err) {
-            failure(err)
+            failure && failure();
         }
-        
     };
     return loader;
 }
