@@ -4,6 +4,7 @@ import type { LoadFunction } from 'ol/Tile.js';
 import type VectorTile from 'ol/VectorTile.js';
 import type { Extent } from 'ol/extent.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
+import type { Geometry } from 'ol/geom.js';
 import { all } from 'ol/loadingstrategy.js';
 import { type Projection, transformExtent } from 'ol/proj.js';
 import type VectorSource from 'ol/source/Vector.js';
@@ -80,12 +81,19 @@ export function createLoader(
     strategy: LoadingStrategy = all,
     clear = false,
 ) {
-    const loader: FeatureLoader<Feature> = async (extent, _resolution, projection) => {
-        if (clear) source.clear();
-        const it = await createIterator(url, srs, extent, projection, strategy);
-        for await (const feature of it) {
-            if (srs && projection.getCode() !== srs) feature.getGeometry()?.transform(srs, projection.getCode());
-            source.addFeature(feature);
+    const loader: FeatureLoader<Feature> = async (extent, _resolution, projection, success, failure) => {
+        try {
+            if (clear) source.clear();
+            const it = await createIterator(url, srs, extent, projection, strategy);
+            const features: Feature<Geometry>[] = [];
+            for await (const feature of it) {
+                if (srs && projection.getCode() !== srs) feature.getGeometry()?.transform(srs, projection.getCode());
+                features.push(feature);
+                source.addFeature(feature);
+            }
+            success?.(features);
+        } catch (err) {
+            failure?.();
         }
     };
     return loader;
