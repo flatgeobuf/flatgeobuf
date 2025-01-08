@@ -4,12 +4,12 @@
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
-        "build": "rm lib -rf && swc ./src/ts -d lib/mjs && mv ./lib/mjs/src/ts/* ./lib/mjs -f && rm ./lib/mjs/src -rf && tsc -p config/tsconfig.mjs.json --emitDeclarationOnly && rollup -c config/rollup.config.js",
-        "type-check": "tsc -p config/tsconfig.mjs.json --noEmit",
+        "build": "rm lib -rf && swc ./src/ts -d lib/mjs && mv ./lib/mjs/src/ts/* ./lib/mjs -f && rm ./lib/mjs/src -rf && tsc --emitDeclarationOnly && rollup -c rollup.config.js",
+        "type-check": "tsc --noEmit",
         "test": "vitest ./lib",
         "test-src": "vitest ./src/ts",
         "coverage": "vitest run --coverage",
-        "typedoc": "typedoc --tsconfig config/tsconfig.typedoc.json",
+        "typedoc": "typedoc",
         "server": "ws"
     },
     "files": ["lib/**/*", "dist/**/*"],
@@ -50,7 +50,7 @@
         "slice-source": "0.4.1"
     },
     "optionalDependencies": {
-        "ol": ">=3"
+        "ol": ">=10"
     },
     "devDependencies": {
         "@babel/core": "7.26.0",
@@ -60,20 +60,20 @@
         "@rollup/plugin-node-resolve": "16.0.0",
         "@rollup/plugin-terser": "0.4.4",
         "@swc/cli": "0.5.2",
-        "@swc/core": "1.10.1",
+        "@swc/core": "1.10.6",
         "@types/geojson": "7946.0.15",
-        "@types/node": "22.10.2",
+        "@types/node": "22.10.5",
         "@types/slice-source": "0.4.3",
         "@vitest/coverage-v8": "2.1.8",
         "jsts": "2.12.1",
         "lws": "4.2.0",
         "lws-range": "^4.0.1",
         "lws-static": "^3.1.1",
-        "ol": ">=3",
-        "rollup": "4.29.1",
-        "typedoc": "0.27.5",
-        "typescript": "5.6.3",
-        "vite": "6.0.5",
+        "ol": ">=10",
+        "rollup": "4.30.1",
+        "typedoc": "0.27.6",
+        "typescript": "5.7.2",
+        "vite": "6.0.7",
         "vitest": "2.1.8"
     }
 }

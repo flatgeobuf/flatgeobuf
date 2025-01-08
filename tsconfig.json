@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "ES2022",
-        "moduleResolution": "Node",
+        "moduleResolution": "node",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
@@ -16,13 +16,12 @@
         "isolatedModules": true,
         "verbatimModuleSyntax": true
     },
-    "include": ["../src/ts"],
-    "exclude": ["../node_modules", "../**/*.spec.ts"],
+    "include": ["src/ts"],
+    "exclude": ["node_modules", "**/*.spec.ts"],
     "typedocOptions": {
         "out": "dist/doc",
-        "tsconfig": "config/tsconfig.json",
         "exclude": ["**/*.spec.ts"],
-        "inputFiles": "src/ts/flatgeobuf.ts",
+        "entryPoints": ["src/ts/flatgeobuf.ts"],
         "readme": "none"
     }
 }

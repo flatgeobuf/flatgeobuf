@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#echo -e '\033[1;33m--- Running TypeScript tests ---'
-#TS_NODE_PROJECT=tsconfig.test.json mocha -r ts-node/register -r esm src/**/*.spec.ts
-
 echo -e '\033[1;33m--- Removing previous C++ tests if any ---'
 rm -f ./testcpp
 
