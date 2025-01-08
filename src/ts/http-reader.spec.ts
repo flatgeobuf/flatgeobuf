@@ -1,7 +1,7 @@
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { HttpReader } from './http-reader';
-import { fromFeature, IGeoJsonFeature } from './geojson/feature';
 import Lws from 'lws';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { type IGeoJsonFeature, fromFeature } from './geojson/feature';
+import { HttpReader } from './http-reader';
 
 describe('http reader', () => {
     let lws: Lws;

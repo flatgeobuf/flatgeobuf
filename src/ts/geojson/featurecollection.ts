@@ -1,33 +1,33 @@
-import type ColumnMeta from '../column-meta.js';
-import type HeaderMeta from '../header-meta.js';
+import type { ColumnMeta } from '../column-meta.js';
+import type { HeaderMeta } from '../header-meta.js';
 
-import { fromFeature } from './feature.js';
-import { parseGeometry, parseGC } from './geometry.js';
+import { magicbytes } from '../constants.js';
+import type { HeaderMetaFn } from '../generic.js';
+import { type IFeature, type IProperties, buildFeature } from '../generic/feature.js';
 import {
     buildHeader,
     deserialize as genericDeserialize,
-    deserializeStream as genericDeserializeStream,
     deserializeFiltered as genericDeserializeFiltered,
+    deserializeStream as genericDeserializeStream,
     mapColumn,
 } from '../generic/featurecollection.js';
-import { type Rect } from '../packedrtree.js';
-import { buildFeature, type IFeature, type IProperties } from '../generic/feature.js';
-import { type HeaderMetaFn } from '../generic.js';
-import { magicbytes } from '../constants.js';
 import { inferGeometryType } from '../generic/header.js';
+import type { Rect } from '../packedrtree.js';
+import { fromFeature } from './feature.js';
+import { parseGC, parseGeometry } from './geometry.js';
 
 import type {
     FeatureCollection as GeoJsonFeatureCollection,
-    Point,
-    MultiPoint,
+    GeometryCollection,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
-    GeometryCollection,
+    Point,
+    Polygon,
 } from 'geojson';
 
-export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode: number = 0): Uint8Array {
+export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode = 0): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);
     const header = buildHeader(headerMeta, crsCode);
     const features: Uint8Array[] = featurecollection.features.map((f) =>
@@ -69,7 +69,7 @@ export function deserializeFiltered(
     url: string,
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
-    nocache: boolean = false,
+    nocache = false,
 ): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache);
 }

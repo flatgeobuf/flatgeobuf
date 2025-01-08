@@ -1,7 +1,0 @@
-FlatBuffers
-
-*.dll
-*.pdb
-*.cache
-obj/
-bin/

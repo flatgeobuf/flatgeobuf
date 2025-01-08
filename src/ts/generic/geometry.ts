@@ -1,4 +1,4 @@
-import * as flatbuffers from 'flatbuffers';
+import type * as flatbuffers from 'flatbuffers';
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 
@@ -28,9 +28,7 @@ export interface IMultiPolygon extends ISimpleGeometry {
     getPolygons(): IPolygon[];
 }
 
-export interface ICreateGeometry {
-    (geometry: Geometry | null, type: GeometryType): ISimpleGeometry | undefined;
-}
+export type ICreateGeometry = (geometry: Geometry | null, type: GeometryType) => ISimpleGeometry | undefined;
 
 export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry) {
     const { xy, z, ends, parts, type } = parsedGeometry;

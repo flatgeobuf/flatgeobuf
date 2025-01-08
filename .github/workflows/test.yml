@@ -24,7 +24,7 @@ jobs:
       - name: Run tests
         run: yarn test
       - name: Run linter
-        run: yarn fmt-check
+        run: yarn biome check
       - name: Run type check
         run: yarn type-check
 

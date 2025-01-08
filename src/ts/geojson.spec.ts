@@ -1,23 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
-import { readFileSync } from 'fs';
-import { arrayToStream, takeAsync } from './streams/utils.js';
+import { describe, expect, it } from 'vitest';
 import { deserialize, serialize } from './geojson.js';
-import { IGeoJsonFeature } from './geojson/feature.js';
-import { Rect } from './packedrtree.js';
-import HeaderMeta from './header-meta.js';
+import type { IGeoJsonFeature } from './geojson/feature.js';
+import type { HeaderMeta } from './header-meta.js';
+import type { Rect } from './packedrtree.js';
+import { arrayToStream, takeAsync } from './streams/utils.js';
 
-import {
+import type {
     FeatureCollection as GeoJsonFeatureCollection,
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
     Position,
 } from 'geojson';
+import GeometryFactory from 'jsts/org/locationtech/jts/geom/GeometryFactory.js';
 
 function makeFeatureCollection(
     wkt: string,
@@ -30,7 +31,7 @@ function makeFeatureCollectionFromArray(
     wkts: string[],
     properties?: Record<string, string | number | boolean | object | Uint8Array | undefined>,
 ) {
-    const reader = new WKTReader();
+    const reader = new WKTReader(new GeometryFactory());
     const writer = new GeoJSONWriter();
     const geometries = wkts.map((wkt) => writer.write(reader.read(wkt)));
     const features = geometries.map(
@@ -42,7 +43,7 @@ function makeFeatureCollectionFromArray(
                 properties: {},
             }) as IGeoJsonFeature,
     );
-    if (properties) features.forEach((f) => (f.properties = properties));
+    if (properties) for (const f of features) f.properties = properties;
     return {
         type: 'FeatureCollection',
         features,
@@ -105,19 +106,19 @@ describe('geojson module', () => {
         });
 
         it('MultiLineStringSinglePart', () => {
-            const expected = makeFeatureCollection(`MULTILINESTRING((1.2 -2.1, 2.4 -4.8))`);
+            const expected = makeFeatureCollection('MULTILINESTRING((1.2 -2.1, 2.4 -4.8))');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('Polygon', () => {
-            const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`);
+            const expected = makeFeatureCollection('POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('Polygon via stream', async () => {
-            const expected = makeFeatureCollection(`POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))`);
+            const expected = makeFeatureCollection('POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))');
             const s = serialize(expected);
             const stream = arrayToStream(s);
             const actual = await takeAsync<IGeoJsonFeature>(deserialize(stream));
@@ -154,7 +155,7 @@ describe('geojson module', () => {
         });
 
         it('MultiPolygonSinglePart', () => {
-            const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))`);
+            const expected = makeFeatureCollection('MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
@@ -168,13 +169,13 @@ describe('geojson module', () => {
         });
 
         it('GeometryCollection', () => {
-            const expected = makeFeatureCollection(`GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))`);
+            const expected = makeFeatureCollection('GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });
 
         it('GeometryCollection 3D', () => {
-            const expected = makeFeatureCollection(`GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))`);
+            const expected = makeFeatureCollection('GEOMETRYCOLLECTION Z(POINT Z(4 6 3),LINESTRING Z(4 6 4,7 10 5))');
             const actual = deserialize(serialize(expected));
             expect(actual).to.deep.equal(expected);
         });

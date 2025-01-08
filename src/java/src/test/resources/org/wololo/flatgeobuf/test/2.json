@@ -12,10 +12,7 @@
             },
             "geometry": {
                 "type": "Point",
-                "coordinates": [
-                    1,
-                    2
-                ]
+                "coordinates": [1, 2]
             }
         }
     ]

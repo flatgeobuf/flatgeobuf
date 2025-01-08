@@ -1,13 +1,13 @@
 import {
-    deserialize as deserializeArray,
-    deserializeStream,
-    deserializeFiltered,
     type FromFeatureFn,
+    deserialize as deserializeArray,
+    deserializeFiltered,
+    deserializeStream,
 } from './generic/featurecollection.js';
 
-import { type Rect } from './packedrtree.js';
-import { type IFeature } from './generic/feature.js';
-import type HeaderMeta from './header-meta.js';
+import type { IFeature } from './generic/feature.js';
+import type { HeaderMeta } from './header-meta.js';
+import type { Rect } from './packedrtree.js';
 
 export { GeometryType } from './flat-geobuf/geometry-type.js';
 export { ColumnType } from './flat-geobuf/column-type.js';
@@ -44,11 +44,11 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     fromFeature: FromFeatureFn,
     rect?: Rect,
-    nocache: boolean = false,
+    nocache = false,
 ): IFeature[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array) return deserializeArray(input, fromFeature);
-    else if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
-    else return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache);
+    if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
+    return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache);
 }
 
 export { serialize } from './generic/featurecollection.js';

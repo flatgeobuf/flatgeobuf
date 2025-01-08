@@ -1,12 +1,12 @@
-import * as flatbuffers from 'flatbuffers';
 import { Repeater } from '@repeaterjs/repeater';
+import * as flatbuffers from 'flatbuffers';
 
-import { type Rect, calcTreeSize, DEFAULT_NODE_SIZE, NODE_ITEM_BYTE_LEN, streamSearch } from './packedrtree.js';
-import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import Config from './config.js';
-import type HeaderMeta from './header-meta.js';
-import { fromByteBuffer } from './header-meta.js';
+import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
+import type { HeaderMeta } from './header-meta.js';
+import { fromByteBuffer } from './header-meta.js';
+import { DEFAULT_NODE_SIZE, NODE_ITEM_BYTE_LEN, type Rect, calcTreeSize, streamSearch } from './packedrtree.js';
 
 interface FeatureWithId {
     id: number;
@@ -108,7 +108,7 @@ export class HttpReader {
         const lengthBeforeTree = this.lengthBeforeTree();
 
         const bufferedClient = this.headerClient;
-        const readNode = async function (offsetIntoTree: number, size: number): Promise<ArrayBuffer> {
+        const readNode = async (offsetIntoTree: number, size: number): Promise<ArrayBuffer> => {
             const minReqLength = 0;
             return bufferedClient.getRange(lengthBeforeTree + offsetIntoTree, size, minReqLength, 'index');
         };
@@ -137,7 +137,7 @@ export class HttpReader {
                 featureLength = 4;
             }
 
-            if (currentBatch.length == 0) {
+            if (currentBatch.length === 0) {
                 currentBatch.push([featureOffset, featureLength, featureIdx]);
                 continue;
             }

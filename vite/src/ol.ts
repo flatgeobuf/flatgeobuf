@@ -1,10 +1,10 @@
 import Map from 'ol/Map.js';
-import OSM from 'ol/source/OSM.js';
-import TileLayer from 'ol/layer/Tile.js';
 import View from 'ol/View.js';
+import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
-import VectorSource from 'ol/source/Vector.js';
 import { bbox } from 'ol/loadingstrategy';
+import OSM from 'ol/source/OSM.js';
+import VectorSource from 'ol/source/Vector.js';
 
 import { createLoader } from '../../src/ts/ol';
 

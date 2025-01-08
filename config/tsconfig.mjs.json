@@ -10,27 +10,18 @@
         "outDir": "../lib/mjs",
         "sourceMap": true,
         "target": "ES2023",
-        "typeRoots": [ "./src/ts/types", "./node_modules/@types"],
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "isolatedModules": true,
         "verbatimModuleSyntax": true
-
     },
-    "include": [
-        "../src/ts"
-    ],
-    "exclude": [
-        "../node_modules",
-        "../**/*.spec.ts"
-    ],
+    "include": ["../src/ts"],
+    "exclude": ["../node_modules", "../**/*.spec.ts"],
     "typedocOptions": {
         "out": "dist/doc",
         "tsconfig": "config/tsconfig.json",
-        "exclude": [
-            "**/*.spec.ts"
-        ],
+        "exclude": ["**/*.spec.ts"],
         "inputFiles": "src/ts/flatgeobuf.ts",
         "readme": "none"
     }
