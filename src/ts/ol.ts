@@ -4,7 +4,7 @@ import type { LoadFunction } from 'ol/Tile.js';
 import type VectorTile from 'ol/VectorTile.js';
 import type { Extent } from 'ol/extent.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
-import { type Geometry } from 'ol/geom.js'
+import type { Geometry } from 'ol/geom.js'
 import { all } from 'ol/loadingstrategy.js';
 import { type Projection, transformExtent } from 'ol/proj.js';
 import type VectorSource from 'ol/source/Vector.js';
