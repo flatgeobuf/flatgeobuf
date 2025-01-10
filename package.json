@@ -59,8 +59,8 @@
         "@rollup/plugin-babel": "6.0.4",
         "@rollup/plugin-node-resolve": "16.0.0",
         "@rollup/plugin-terser": "0.4.4",
-        "@swc/cli": "0.5.2",
-        "@swc/core": "1.10.6",
+        "@swc/cli": "0.6.0",
+        "@swc/core": "1.10.7",
         "@types/geojson": "7946.0.15",
         "@types/node": "22.10.5",
         "@types/slice-source": "0.4.3",
@@ -72,7 +72,7 @@
         "ol": ">=10",
         "rollup": "4.30.1",
         "typedoc": "0.27.6",
-        "typescript": "5.7.2",
+        "typescript": "5.7.3",
         "vite": "6.0.7",
         "vitest": "2.1.8"
     }
