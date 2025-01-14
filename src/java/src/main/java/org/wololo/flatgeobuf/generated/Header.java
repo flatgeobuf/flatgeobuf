@@ -20,7 +20,7 @@ import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
 public final class Header extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_24_12_23(); }
   public static Header getRootAsHeader(ByteBuffer _bb) { return getRootAsHeader(_bb, new Header()); }
   public static Header getRootAsHeader(ByteBuffer _bb, Header obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -125,4 +125,3 @@ public final class Header extends Table {
     public Header get(Header obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
-

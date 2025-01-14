@@ -21,7 +21,7 @@ default-tls = ["http-range-client?/default-tls"]
 # chore: FlatBuffers does not follow SemVer, but rather uses a format of the date of the release.
 # So we should match versions exactly and bump only explicitly.
 # Updates are typically synchronized across all FGB clients, and codegen should be rerun after updating.
-flatbuffers = "=24.3.25"
+flatbuffers = "=24.12.23"
 byteorder = "1.5.0"
 geozero = { version = "0.14.0", default-features = false }
 geo-traits = "0.2"

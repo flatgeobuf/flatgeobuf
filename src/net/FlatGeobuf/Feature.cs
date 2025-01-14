@@ -13,7 +13,7 @@ public struct Feature : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_12_23(); }
   public static Feature GetRootAsFeature(ByteBuffer _bb) { return GetRootAsFeature(_bb, new Feature()); }
   public static Feature GetRootAsFeature(ByteBuffer _bb, Feature obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public static bool VerifyFeature(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, FeatureVerify.Verify); }
