@@ -83,24 +83,6 @@ jobs:
             ${{ runner.os }}-nuget
       - run: cd src/net && ./fetch.sh && dotnet test -f net8
 
-  test-net6:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup .Net 6.0
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
-      - name: Cache nuget dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget
-      - run: cd src/net && ./fetch.sh && dotnet test -f net6
-
   test-rust:
     runs-on: ubuntu-latest
     steps:
