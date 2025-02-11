@@ -4,6 +4,7 @@
 
 - [all]  Upgrade to flatbuffers 24.12.23 (#410)
 - [rust] Allow downstream crates to choose TLS provider (#404)
+- [rust] Expose `Seekable` and `NotSeekable` marker traits (#402)
 
 ## [4.5.0] - 2024-12-09
 
