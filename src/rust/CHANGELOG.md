@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.0] - 2025-02-12
+
+- [all]  Upgrade to flatbuffers 24.12.23 (#410)
+- [rust] Allow downstream crates to choose TLS provider (#404)
+- [rust] Expose `Seekable` and `NotSeekable` marker traits (#402)
+
 ## [4.5.0] - 2024-12-09
 
 - [rust] Add `geo-traits` reader implementation (#392)
