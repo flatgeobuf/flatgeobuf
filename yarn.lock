@@ -3085,7 +3085,7 @@ npm-run-path@^4.0.1:
   dependencies:
     path-key "^3.0.0"
 
-ol@>=10:
+ol@>=3:
   version "10.4.0"
   resolved "https://registry.yarnpkg.com/ol/-/ol-10.4.0.tgz#b073dd2b08c3cc31fece1c904a6711e0d289d6e4"
   integrity sha512-gv3voS4wgej1WVvdCz2ZIBq3lPWy8agaf0094E79piz8IGQzHiOWPs2in1pdoPmuTNvcqGqyUFG3IbxNE6n08g==

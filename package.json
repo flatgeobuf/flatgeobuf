@@ -50,7 +50,7 @@
         "slice-source": "0.4.1"
     },
     "optionalDependencies": {
-        "ol": ">=10"
+        "ol": ">=3"
     },
     "devDependencies": {
         "@babel/core": "7.26.8",
@@ -69,7 +69,7 @@
         "lws": "4.2.0",
         "lws-range": "^4.0.1",
         "lws-static": "^3.1.1",
-        "ol": ">=10",
+        "ol": ">=3",
         "rollup": "4.34.6",
         "typedoc": "0.27.7",
         "typescript": "5.7.3",
