@@ -1,5 +1,5 @@
-import type OlFeature from 'ol/Feature.js';
 import type Feature from 'ol/Feature.js';
+import type { FeatureLike } from 'ol/Feature.js';
 import type { LoadFunction } from 'ol/Tile.js';
 import type VectorTile from 'ol/VectorTile.js';
 import type { Extent } from 'ol/extent.js';
@@ -26,7 +26,7 @@ import type { Rect } from './packedrtree.js';
  * Serialize OpenLayers Features to FlatGeobuf
  * @param features Features to serialize
  */
-export function serialize(features: OlFeature[]): Uint8Array {
+export function serialize(features: Feature[]): Uint8Array {
     const bytes = fcSerialize(features as IFeature[]);
     return bytes;
 }
@@ -42,10 +42,10 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-): AsyncGenerator<OlFeature> | OlFeature[] {
-    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn) as OlFeature[];
-    if (input instanceof ReadableStream) return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<OlFeature>;
-    return fcDeserializeFiltered(input, rect as Rect, headerMetaFn, nocache) as AsyncGenerator<OlFeature>;
+): AsyncGenerator<Feature> | Feature[] {
+    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn) as Feature[];
+    if (input instanceof ReadableStream) return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<Feature>;
+    return fcDeserializeFiltered(input, rect as Rect, headerMetaFn, nocache) as AsyncGenerator<Feature>;
 }
 
 async function createIterator(
@@ -118,7 +118,7 @@ export function createTileLoadFunction(source: VectorTileSource, url: string, sr
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
-        const vectorTile = tile as VectorTile<Feature>;
+        const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
             const [minX, minY, maxX, maxY] = srs && code !== srs ? transformExtent(extent, code, srs) : extent;
             const rect = { minX, minY, maxX, maxY };

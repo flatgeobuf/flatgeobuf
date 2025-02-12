@@ -53,27 +53,27 @@
         "ol": ">=10"
     },
     "devDependencies": {
-        "@babel/core": "7.26.0",
-        "@babel/preset-env": "7.26.0",
+        "@babel/core": "7.26.8",
+        "@babel/preset-env": "7.26.8",
         "@biomejs/biome": "1.9.4",
         "@rollup/plugin-babel": "6.0.4",
         "@rollup/plugin-node-resolve": "16.0.0",
         "@rollup/plugin-terser": "0.4.4",
         "@swc/cli": "0.6.0",
-        "@swc/core": "1.10.7",
-        "@types/geojson": "7946.0.15",
-        "@types/node": "22.10.5",
+        "@swc/core": "1.10.15",
+        "@types/geojson": "7946.0.16",
+        "@types/node": "22.13.1",
         "@types/slice-source": "0.4.3",
-        "@vitest/coverage-v8": "2.1.8",
+        "@vitest/coverage-v8": "3.0.5",
         "jsts": "2.12.1",
         "lws": "4.2.0",
         "lws-range": "^4.0.1",
         "lws-static": "^3.1.1",
         "ol": ">=10",
-        "rollup": "4.30.1",
-        "typedoc": "0.27.6",
+        "rollup": "4.34.6",
+        "typedoc": "0.27.7",
         "typescript": "5.7.3",
-        "vite": "6.0.7",
-        "vitest": "2.1.8"
+        "vite": "6.1.0",
+        "vitest": "3.0.5"
     }
 }
