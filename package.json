@@ -1,6 +1,6 @@
 {
     "name": "flatgeobuf",
-    "version": "3.37.0",
+    "version": "3.37.1",
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
