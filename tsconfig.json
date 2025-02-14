@@ -7,7 +7,7 @@
         "preserveConstEnums": true,
         "strict": true,
         "declaration": true,
-        "outDir": "../lib/mjs",
+        "outDir": "./lib/mjs",
         "sourceMap": true,
         "target": "ES2023",
         "allowSyntheticDefaultImports": true,
