@@ -58,6 +58,8 @@ Preliminary performance tests has been done using road data from OSM for Denmark
 | Write w/spatial index | 1         | 1.58       | 0.65       | -       | -   |
 | Size                  | 1         | 0.72       | 0.77       | 1.2     | 2.1 |
 
+*(The metrics are all relative to Shapefile, larger than 1 being worse, less than 1 being better.)*
+
 The test was done using GDAL implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
 
 Note that for the test with spatial filter a small bounding box was chosen resulting in only 1204 features. The reason for this is to primarily test the spatial index search performance.
