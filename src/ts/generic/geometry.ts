@@ -1,5 +1,5 @@
 import type * as flatbuffers from 'flatbuffers';
-import type { GeometryLayout } from 'ol/geom/Geometry';
+import type { GeometryLayout } from 'ol/geom/Geometry.js';
 import { GeometryType } from '../flat-geobuf/geometry-type.js';
 import { Geometry } from '../flat-geobuf/geometry.js';
 

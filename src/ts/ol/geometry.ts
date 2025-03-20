@@ -9,7 +9,7 @@ import MultiPoint from 'ol/geom/MultiPoint.js';
 import MultiPolygon from 'ol/geom/MultiPolygon.js';
 import Point from 'ol/geom/Point.js';
 import Polygon from 'ol/geom/Polygon.js';
-import type { GeometryLayout } from 'ol/geom/Geometry';
+import type { GeometryLayout } from 'ol/geom/Geometry.js';
 
 function interleaveZ(flatCoordinates: number[], z: number[]): number[] {
     const newFlatCoordinates = new Array(flatCoordinates.length + z.length);
