@@ -117,7 +117,6 @@ export function parseGeometry(geometry: ISimpleGeometry, headerGeomType: Geometr
         type = toGeometryType(geometry.getType());
     }
 
-
     let flatEnds: number[] | undefined;
     if (type === GeometryType.MultiLineString) {
         if (geometry.getFlatCoordinates) flatCoordinates = geometry.getFlatCoordinates();

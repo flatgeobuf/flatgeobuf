@@ -155,7 +155,9 @@ describe('ol module', () => {
         });
 
         it('Polygon ZM', () => {
-            const expected = makeFeatureCollection('POLYGON ZM((30 10 12.1 1, 40 40 4 1, 20 40 4 1, 10 20 0.5 1, 30 10 12 1))');
+            const expected = makeFeatureCollection(
+                'POLYGON ZM((30 10 12.1 1, 40 40 4 1, 20 40 4 1, 10 20 0.5 1, 30 10 12 1))',
+            );
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
@@ -180,7 +182,6 @@ describe('ol module', () => {
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
-
 
         it('PolygonWithTwoHoles', () => {
             const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),

@@ -3,13 +3,13 @@ import type { Geometry } from '../flat-geobuf/geometry.js';
 
 import type { ISimpleGeometry } from '../generic/geometry.js';
 
+import type { GeometryLayout } from 'ol/geom/Geometry.js';
 import LineString from 'ol/geom/LineString.js';
 import MultiLineString from 'ol/geom/MultiLineString.js';
 import MultiPoint from 'ol/geom/MultiPoint.js';
 import MultiPolygon from 'ol/geom/MultiPolygon.js';
 import Point from 'ol/geom/Point.js';
 import Polygon from 'ol/geom/Polygon.js';
-import type { GeometryLayout } from 'ol/geom/Geometry.js';
 
 function interleaveZ(flatCoordinates: number[], z: number[]): number[] {
     const newFlatCoordinates = new Array(flatCoordinates.length + z.length);
