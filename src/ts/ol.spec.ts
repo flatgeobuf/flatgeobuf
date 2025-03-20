@@ -46,8 +46,35 @@ describe('ol module', () => {
             expect(g(actual)).to.equal(g(expected));
         });
 
+        it('Point Z', () => {
+            const expected = makeFeatureCollection('POINT Z(1.2 -2.1 5)');
+            const s = serialize(expected);
+            const actual = deserialize(s) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('Point M', () => {
+            const expected = makeFeatureCollection('POINT M(1.2 -2.1 5)');
+            const s = serialize(expected);
+            const actual = deserialize(s) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('Point ZM', () => {
+            const expected = makeFeatureCollection('POINT ZM(1.2 -2.1 5 12.8)');
+            const s = serialize(expected);
+            const actual = deserialize(s) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
         it('Points', () => {
             const expected = makeFeatureCollectionFromArray(['POINT(1.2 -2.1)', 'POINT(2.4 -4.8)']);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('Points Z', () => {
+            const expected = makeFeatureCollectionFromArray(['POINT Z(1.2 -2.1 5)', 'POINT Z(2.4 -4.8 5.6)']);
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
@@ -58,8 +85,32 @@ describe('ol module', () => {
             expect(g(actual)).to.equal(g(expected));
         });
 
+        it('MultiPoint Z', () => {
+            const expected = makeFeatureCollection('MULTIPOINT Z(10 40 0.5, 40 30 0.5, 20 20 0.5, 30 10 0.5)');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiPoint ZM', () => {
+            const expected = makeFeatureCollection('MULTIPOINT ZM(10 40 0.5 1, 40 30 0.5 1, 20 20 0.5 1, 30 10 0.5 1)');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
         it('LineString', () => {
             const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('LineString Z', () => {
+            const expected = makeFeatureCollection('LINESTRING Z(1.2 -2.1 5, 2.4 -4.8 0.5)');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('LineString ZM', () => {
+            const expected = makeFeatureCollection('LINESTRING ZM(1.2 -2.1 5 1, 2.4 -4.8 0.5 1)');
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
@@ -67,6 +118,20 @@ describe('ol module', () => {
         it('MultiLineString', () => {
             const expected = makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
  (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiLineString Z', () => {
+            const expected = makeFeatureCollection(`MULTILINESTRING Z((10 10 5, 20 20 0.5, 10 40 12.1),
+ (40 40 4, 30 30 3, 40 20 2, 30 10 1), (50 50 5, 60 60 6, 50 90 9))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiLineString ZM', () => {
+            const expected = makeFeatureCollection(`MULTILINESTRING ZM((10 10 5 1, 20 20 0.5 1, 10 40 12.1 1),
+ (40 40 4 1, 30 30 3 1, 40 20 2 1, 30 10 1 2), (50 50 5 1, 60 60 6 1, 50 90 9 1))`);
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
@@ -83,12 +148,39 @@ describe('ol module', () => {
             expect(g(actual)).to.equal(g(expected));
         });
 
+        it('Polygon Z', () => {
+            const expected = makeFeatureCollection('POLYGON Z((30 10 12.1, 40 40 4, 20 40 4, 10 20 0.5, 30 10 12))');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('Polygon ZM', () => {
+            const expected = makeFeatureCollection('POLYGON ZM((30 10 12.1 1, 40 40 4 1, 20 40 4 1, 10 20 0.5 1, 30 10 12 1))');
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
         it('PolygonWithHole', () => {
             const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`);
             const actual = deserialize(serialize(expected)) as Feature[];
             expect(g(actual)).to.equal(g(expected));
         });
+
+        it('PolygonWithHole Z', () => {
+            const expected = makeFeatureCollection(`POLYGON Z ((35 10 4, 45 45 4, 15 40 4, 10 20 4, 35 10 4),
+ (20 30 4, 35 35 4, 30 20 4, 20 30 4))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('PolygonWithHole ZM', () => {
+            const expected = makeFeatureCollection(`POLYGON ZM ((35 10 4 1, 45 45 4 1, 15 40 4 1, 10 20 4 1, 35 10 4 1),
+ (20 30 4 1, 35 35 4 1, 30 20 4 1, 20 30 4 1))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            expect(g(actual)).to.equal(g(expected));
+        });
+
 
         it('PolygonWithTwoHoles', () => {
             const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
@@ -105,9 +197,41 @@ describe('ol module', () => {
             expect(g(actual)).to.equal(g(expected));
         });
 
+        it('MultiPolygon Z', () => {
+            const expected = makeFeatureCollection(`MULTIPOLYGON Z (((30 20 1, 45 40 3, 10 40 4, 30 20 6)),
+ ((15 5 1, 40 10 1, 10 20 1, 5 10 1, 15 5 1)))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiPolygon ZM', () => {
+            const expected = makeFeatureCollection(`MULTIPOLYGON ZM (((30 20 1 2, 45 40 3 2, 10 40 4 2, 30 20 6 2)),
+ ((15 5 1 2, 40 10 1 2, 10 20 1 2, 5 10 1 2, 15 5 1 2)))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
+            expect(g(actual)).to.equal(g(expected));
+        });
+
         it('MultiPolygonWithHole', () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiPolygonWithHole Z', () => {
+            const expected = makeFeatureCollection(`MULTIPOLYGON Z(((40 40 1, 20 45 1, 45 30 1, 40 40 1)),
+ ((20 35 1, 10 30 1, 10 10 1, 30 5 1, 45 20 1, 20 35 1), (30 20 1, 20 15 1, 20 25 1, 30 20 1)))`);
+            const actual = deserialize(serialize(expected)) as Feature[];
+            // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
+            expect(g(actual)).to.equal(g(expected));
+        });
+
+        it('MultiPolygonWithHole ZM', () => {
+            const expected = makeFeatureCollection(`MULTIPOLYGON ZM (((40 40 1 2, 20 45 1 2, 45 30 1 2, 40 40 1 2)),
+ ((20 35 1 2, 10 30 1 2, 10 10 1 2, 30 5 1 2, 45 20 1 2, 20 35 1 2), (30 20 1 2, 20 15 1 2, 20 25 1 2, 30 20 1 2)))`);
             const actual = deserialize(serialize(expected)) as Feature[];
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
             expect(g(actual)).to.equal(g(expected));
@@ -274,6 +398,37 @@ describe('ol module', () => {
                             coordinates: [
                                 [-77.53466, 23.75975],
                                 [-77, 26.59],
+                            ],
+                        },
+                    },
+                ],
+            };
+            const actual = deserialize(serialize(geojson.readFeatures(expected))) as Feature[];
+            expect(JSON.parse(g(actual))).to.deep.equal(expected);
+        });
+
+        it('Heterogeneous geometry types Z', () => {
+            const expected = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        id: 0,
+                        properties: { name: 'A' },
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [-77.53466, 23.75975, 12],
+                        },
+                    },
+                    {
+                        type: 'Feature',
+                        id: 1,
+                        properties: { name: 'B' },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [-77.53466, 23.75975, 12],
+                                [-77, 26.59, 12],
                             ],
                         },
                     },
