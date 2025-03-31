@@ -20,10 +20,9 @@ describe("ArrayReader", () => {
 
     const reader = ArrayReader.open(bytes);
 
-    const features: IGeoJsonFeature[] = [];
-    for await (const feature of reader.selectBbox(rect)) {
-      features.push(fromFeature(feature.id, feature.feature, reader.header));
-    }
+    const features = reader
+      .selectBbox(rect)
+      .map((f) => fromFeature(f.id, f.feature, reader.header));
 
     expect(features.length).toBe(86);
     const actual = features
