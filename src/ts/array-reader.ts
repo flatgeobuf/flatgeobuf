@@ -54,7 +54,6 @@ export class ArrayReader {
   selectBbox(rect: Rect): FeatureWithId[] {
     const lengthBeforeTree = this.lengthBeforeTree();
 
-    // Create a readNode function that reads from local bytes instead of HTTP
     const readNode = (
       offsetIntoTree: number,
       size: number
@@ -62,7 +61,6 @@ export class ArrayReader {
       const start = lengthBeforeTree + offsetIntoTree;
       return this.bytes.slice(start, start + size).buffer;
     };
-    console.log("this.header.featuresCount", this.header.featuresCount);
     
     const result: FeatureWithId[] = [];
 
