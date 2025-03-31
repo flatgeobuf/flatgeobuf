@@ -53,8 +53,8 @@ export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode =
     return uint8;
 }
 
-export function deserialize(bytes: Uint8Array, headerMetaFn?: HeaderMetaFn): GeoJsonFeatureCollection {
-    const features = genericDeserialize(bytes, fromFeature, headerMetaFn);
+export function deserialize(bytes: Uint8Array, rect?: Rect, headerMetaFn?: HeaderMetaFn): GeoJsonFeatureCollection {
+    const features = genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
     return {
         type: 'FeatureCollection',
         features,

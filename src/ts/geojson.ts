@@ -68,7 +68,7 @@ export function deserialize(
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
 ): GeoJsonFeatureCollection | AsyncGenerator<IGeoJsonFeature> {
-    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn);
+    if (input instanceof Uint8Array) return fcDeserialize(input, rect, headerMetaFn);
     if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
     return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache) as AsyncGenerator<IGeoJsonFeature>;

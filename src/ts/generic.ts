@@ -25,11 +25,10 @@ export function deserialize(url: string, fromFeature: FromFeatureFn, rect?: Rect
 
 /**
  * Deserialize FlatGeobuf from a typed array into generic features
- * NOTE: Does not support spatial filtering
  * @param typedArray Input byte array
  * @param fromFeature Callback that receives generic features
  */
-export function deserialize(typedArray: Uint8Array, fromFeature: FromFeatureFn): IFeature[];
+export function deserialize(typedArray: Uint8Array, fromFeature: FromFeatureFn, rect?: Rect): IFeature[];
 
 /**
  * Deserialize FlatGeobuf from a stream into generic features
@@ -46,7 +45,7 @@ export function deserialize(
     rect?: Rect,
     nocache = false,
 ): IFeature[] | AsyncGenerator<IFeature> {
-    if (input instanceof Uint8Array) return deserializeArray(input, fromFeature);
+    if (input instanceof Uint8Array) return deserializeArray(input, fromFeature, rect);
     if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
     return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache);
 }
