@@ -11,6 +11,7 @@ import { Feature } from '../flat-geobuf/feature.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 
+import { ArrayReader } from '../array-reader.js';
 import { SIZE_PREFIX_LEN, magicbytes } from '../constants.js';
 import { Crs } from '../flat-geobuf/crs.js';
 import type { HeaderMetaFn } from '../generic.js';
@@ -19,7 +20,6 @@ import { type Rect, calcTreeSize } from '../packedrtree.js';
 import { type IFeature, type IProperties, buildFeature } from './feature.js';
 import { parseGeometry } from './geometry.js';
 import { inferGeometryType } from './header.js';
-import { ArrayReader } from '../array-reader.js';
 
 export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
@@ -48,14 +48,19 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, rect?: Rect, headerMetaFn?: HeaderMetaFn): IFeature[] {
+export function deserialize(
+    bytes: Uint8Array,
+    fromFeature: FromFeatureFn,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): IFeature[] {
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
-    if(rect) {
-      const reader = ArrayReader.open(bytes);
-      return reader.selectBbox(rect).map((f) => {
-        return fromFeature(f.id, f.feature, reader.header);
-      });
+    if (rect) {
+        const reader = ArrayReader.open(bytes);
+        return reader.selectBbox(rect).map((f) => {
+            return fromFeature(f.id, f.feature, reader.header);
+        });
     }
 
     const bb = new flatbuffers.ByteBuffer(bytes);

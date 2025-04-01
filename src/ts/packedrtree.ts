@@ -250,12 +250,7 @@ export async function* streamSearch(
 
 type ReadNodeFnSync = (treeOffset: number, size: number) => ArrayBuffer;
 
-export function search(
-    numItems: number,
-    nodeSize: number,
-    rect: Rect,
-    readNode: ReadNodeFnSync,
-): SearchResult[] {
+export function search(numItems: number, nodeSize: number, rect: Rect, readNode: ReadNodeFnSync): SearchResult[] {
     type NodeIdx = number;
     class NodeRange {
         _level: number;
@@ -414,5 +409,5 @@ export function search(
         }
     }
 
-    return result
+    return result;
 }
