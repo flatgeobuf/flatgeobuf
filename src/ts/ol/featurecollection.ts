@@ -11,8 +11,12 @@ import { fromFeature } from './feature.js';
 
 export { serialize };
 
-export function deserialize(bytes: Uint8Array, rect?: Rect, headerMetaFn?: HeaderMetaFn): IFeature[] {
-    return genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
+export async function* deserialize(
+    bytes: Uint8Array,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): AsyncGenerator<IFeature> {
+    yield* genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
 }
 
 export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<IFeature> {

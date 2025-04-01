@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ArrayReader } from './array-reader.js';
-import { fromFeature } from './geojson/feature.js';
+import { type IGeoJsonFeature, fromFeature } from './geojson/feature.js';
 import type { Rect } from './packedrtree.js';
 
 describe('ArrayReader', () => {
@@ -18,7 +18,10 @@ describe('ArrayReader', () => {
 
         const reader = ArrayReader.open(bytes);
 
-        const features = reader.selectBbox(rect).map((f) => fromFeature(f.id, f.feature, reader.header));
+        const features: IGeoJsonFeature[] = [];
+        for await (const feature of reader.selectBbox(rect)) {
+            features.push(fromFeature(feature.id, feature.feature, reader.header));
+        }
 
         expect(features.length).toBe(86);
         const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);

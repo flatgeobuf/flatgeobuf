@@ -53,12 +53,12 @@ export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode =
     return uint8;
 }
 
-export function deserialize(bytes: Uint8Array, rect?: Rect, headerMetaFn?: HeaderMetaFn): GeoJsonFeatureCollection {
-    const features = genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
-    return {
-        type: 'FeatureCollection',
-        features,
-    } as GeoJsonFeatureCollection;
+export async function* deserialize(
+    bytes: Uint8Array,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): AsyncGenerator<IFeature> {
+    yield* genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
 }
 
 export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<IFeature> {

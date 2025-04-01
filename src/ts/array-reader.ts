@@ -3,7 +3,7 @@ import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
 import type { HeaderMeta } from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
-import { type Rect, calcTreeSize, search } from './packedrtree.js';
+import { type Rect, calcTreeSize, streamSearch } from './packedrtree.js';
 
 interface FeatureWithId {
     id: number;
@@ -43,24 +43,25 @@ export class ArrayReader {
         return new ArrayReader(bytes, header, headerLength, indexLength);
     }
 
-    selectBbox(rect: Rect): FeatureWithId[] {
+    async *selectBbox(rect: Rect): AsyncGenerator<FeatureWithId, void, unknown> {
         const lengthBeforeTree = this.lengthBeforeTree();
 
-        const readNode = (offsetIntoTree: number, size: number): ArrayBuffer => {
+        const readNode = async (offsetIntoTree: number, size: number): Promise<ArrayBuffer> => {
             const start = lengthBeforeTree + offsetIntoTree;
             return this.bytes.slice(start, start + size).buffer;
         };
 
-        const result: FeatureWithId[] = [];
-
-        for (const searchResult of search(this.header.featuresCount, this.header.indexNodeSize, rect, readNode)) {
+        for await (const searchResult of streamSearch(
+            this.header.featuresCount,
+            this.header.indexNodeSize,
+            rect,
+            readNode,
+        )) {
             const [featureOffset, featureIdx] = searchResult;
             const feature = this.readFeature(featureOffset);
 
-            result.push({ id: featureIdx, feature });
+            yield { id: featureIdx, feature };
         }
-
-        return result;
     }
 
     private lengthBeforeTree(): number {
