@@ -11,6 +11,7 @@ import { Feature } from '../flat-geobuf/feature.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 
+import { ArrayReader } from '../array-reader.js';
 import { SIZE_PREFIX_LEN, magicbytes } from '../constants.js';
 import { Crs } from '../flat-geobuf/crs.js';
 import type { HeaderMetaFn } from '../generic.js';
@@ -47,8 +48,20 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, headerMetaFn?: HeaderMetaFn): IFeature[] {
+export async function* deserialize(
+    bytes: Uint8Array,
+    fromFeature: FromFeatureFn,
+    rect?: Rect,
+    headerMetaFn?: HeaderMetaFn,
+): AsyncGenerator<IFeature> {
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
+
+    if (rect) {
+        const reader = ArrayReader.open(bytes);
+        for await (const feature of reader.selectBbox(rect)) {
+            yield fromFeature(feature.id, feature.feature, reader.header);
+        }
+    }
 
     const bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(magicbytes.length);
@@ -62,16 +75,14 @@ export function deserialize(bytes: Uint8Array, fromFeature: FromFeatureFn, heade
     const { indexNodeSize, featuresCount } = headerMeta;
     if (indexNodeSize > 0) offset += calcTreeSize(featuresCount, indexNodeSize);
 
-    const features: IFeature[] = [];
+    let id = 0;
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset);
         bb.setPosition(offset + SIZE_PREFIX_LEN);
         const feature = Feature.getRootAsFeature(bb);
-        features.push(fromFeature(features.length, feature, headerMeta));
+        yield fromFeature(id++, feature, headerMeta);
         offset += SIZE_PREFIX_LEN + featureLength;
     }
-
-    return features;
 }
 
 export async function* deserializeStream(

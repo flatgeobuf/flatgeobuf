@@ -42,8 +42,8 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-): AsyncGenerator<Feature> | Feature[] {
-    if (input instanceof Uint8Array) return fcDeserialize(input, headerMetaFn) as Feature[];
+): AsyncGenerator<Feature> {
+    if (input instanceof Uint8Array) return fcDeserialize(input, rect, headerMetaFn) as AsyncGenerator<Feature>;
     if (input instanceof ReadableStream) return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<Feature>;
     return fcDeserializeFiltered(input, rect as Rect, headerMetaFn, nocache) as AsyncGenerator<Feature>;
 }

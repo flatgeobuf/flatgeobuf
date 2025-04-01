@@ -31,10 +31,10 @@ function makeFeatureCollectionFromArray(wkts: string[] /*, properties?: any*/): 
 
 describe('ol module', () => {
     describe('Geometry roundtrips', () => {
-        it('Point', () => {
+        it('Point', async () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
-            const actual = deserialize(s) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(s));
             expect(g(actual)).to.equal(g(expected));
         });
 
@@ -42,216 +42,216 @@ describe('ol module', () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
             const stream = arrayToStream(s);
-            const actual = await takeAsync<Feature>(deserialize(stream) as AsyncGenerator<Feature>);
+            const actual = await takeAsync<Feature>(deserialize(stream));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Point Z', () => {
+        it('Point Z', async () => {
             const expected = makeFeatureCollection('POINT Z(1.2 -2.1 5)');
             const s = serialize(expected);
-            const actual = deserialize(s) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(s));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Point M', () => {
+        it('Point M', async () => {
             const expected = makeFeatureCollection('POINT M(1.2 -2.1 5)');
             const s = serialize(expected);
-            const actual = deserialize(s) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(s));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Point ZM', () => {
+        it('Point ZM', async () => {
             const expected = makeFeatureCollection('POINT ZM(1.2 -2.1 5 12.8)');
             const s = serialize(expected);
-            const actual = deserialize(s) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(s));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Points', () => {
+        it('Points', async () => {
             const expected = makeFeatureCollectionFromArray(['POINT(1.2 -2.1)', 'POINT(2.4 -4.8)']);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Points Z', () => {
+        it('Points Z', async () => {
             const expected = makeFeatureCollectionFromArray(['POINT Z(1.2 -2.1 5)', 'POINT Z(2.4 -4.8 5.6)']);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPoint', () => {
+        it('MultiPoint', async () => {
             const expected = makeFeatureCollection('MULTIPOINT(10 40, 40 30, 20 20, 30 10)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPoint Z', () => {
+        it('MultiPoint Z', async () => {
             const expected = makeFeatureCollection('MULTIPOINT Z(10 40 0.5, 40 30 0.5, 20 20 0.5, 30 10 0.5)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPoint ZM', () => {
+        it('MultiPoint ZM', async () => {
             const expected = makeFeatureCollection('MULTIPOINT ZM(10 40 0.5 1, 40 30 0.5 1, 20 20 0.5 1, 30 10 0.5 1)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('LineString', () => {
+        it('LineString', async () => {
             const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('LineString Z', () => {
+        it('LineString Z', async () => {
             const expected = makeFeatureCollection('LINESTRING Z(1.2 -2.1 5, 2.4 -4.8 0.5)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('LineString ZM', () => {
+        it('LineString ZM', async () => {
             const expected = makeFeatureCollection('LINESTRING ZM(1.2 -2.1 5 1, 2.4 -4.8 0.5 1)');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiLineString', () => {
+        it('MultiLineString', async () => {
             const expected = makeFeatureCollection(`MULTILINESTRING((10 10, 20 20, 10 40),
  (40 40, 30 30, 40 20, 30 10), (50 50, 60 60, 50 90))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiLineString Z', () => {
+        it('MultiLineString Z', async () => {
             const expected = makeFeatureCollection(`MULTILINESTRING Z((10 10 5, 20 20 0.5, 10 40 12.1),
  (40 40 4, 30 30 3, 40 20 2, 30 10 1), (50 50 5, 60 60 6, 50 90 9))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiLineString ZM', () => {
+        it('MultiLineString ZM', async () => {
             const expected = makeFeatureCollection(`MULTILINESTRING ZM((10 10 5 1, 20 20 0.5 1, 10 40 12.1 1),
  (40 40 4 1, 30 30 3 1, 40 20 2 1, 30 10 1 2), (50 50 5 1, 60 60 6 1, 50 90 9 1))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiLineStringSinglePart', () => {
+        it('MultiLineStringSinglePart', async () => {
             const expected = makeFeatureCollection('MULTILINESTRING((1.2 -2.1, 2.4 -4.8))');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Polygon', () => {
+        it('Polygon', async () => {
             const expected = makeFeatureCollection('POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Polygon Z', () => {
+        it('Polygon Z', async () => {
             const expected = makeFeatureCollection('POLYGON Z((30 10 12.1, 40 40 4, 20 40 4, 10 20 0.5, 30 10 12))');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('Polygon ZM', () => {
+        it('Polygon ZM', async () => {
             const expected = makeFeatureCollection(
                 'POLYGON ZM((30 10 12.1 1, 40 40 4 1, 20 40 4 1, 10 20 0.5 1, 30 10 12 1))',
             );
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('PolygonWithHole', () => {
+        it('PolygonWithHole', async () => {
             const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('PolygonWithHole Z', () => {
+        it('PolygonWithHole Z', async () => {
             const expected = makeFeatureCollection(`POLYGON Z ((35 10 4, 45 45 4, 15 40 4, 10 20 4, 35 10 4),
  (20 30 4, 35 35 4, 30 20 4, 20 30 4))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('PolygonWithHole ZM', () => {
+        it('PolygonWithHole ZM', async () => {
             const expected = makeFeatureCollection(`POLYGON ZM ((35 10 4 1, 45 45 4 1, 15 40 4 1, 10 20 4 1, 35 10 4 1),
  (20 30 4 1, 35 35 4 1, 30 20 4 1, 20 30 4 1))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('PolygonWithTwoHoles', () => {
+        it('PolygonWithTwoHoles', async () => {
             const expected = makeFeatureCollection(`POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30), (20 30, 35 35, 30 20, 20 30))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygon', () => {
+        it('MultiPolygon', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),
  ((15 5, 40 10, 10 20, 5 10, 15 5)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygon Z', () => {
+        it('MultiPolygon Z', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON Z (((30 20 1, 45 40 3, 10 40 4, 30 20 6)),
  ((15 5 1, 40 10 1, 10 20 1, 5 10 1, 15 5 1)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygon ZM', () => {
+        it('MultiPolygon ZM', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON ZM (((30 20 1 2, 45 40 3 2, 10 40 4 2, 30 20 6 2)),
  ((15 5 1 2, 40 10 1 2, 10 20 1 2, 5 10 1 2, 15 5 1 2)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // should encode into 18 flat coords, ends [8, 16] endss [1, 1]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygonWithHole', () => {
+        it('MultiPolygonWithHole', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),
  ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), (30 20, 20 15, 20 25, 30 20)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygonWithHole Z', () => {
+        it('MultiPolygonWithHole Z', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON Z(((40 40 1, 20 45 1, 45 30 1, 40 40 1)),
  ((20 35 1, 10 30 1, 10 10 1, 30 5 1, 45 20 1, 20 35 1), (30 20 1, 20 15 1, 20 25 1, 30 20 1)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygonWithHole ZM', () => {
+        it('MultiPolygonWithHole ZM', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON ZM (((40 40 1 2, 20 45 1 2, 45 30 1 2, 40 40 1 2)),
  ((20 35 1 2, 10 30 1 2, 10 10 1 2, 30 5 1 2, 45 20 1 2, 20 35 1 2), (30 20 1 2, 20 15 1 2, 20 25 1 2, 30 20 1 2)))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             // NOTE: 28 flat coords, ends = [4, 10, 14], endss = [1, 2]
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygonSinglePart', () => {
+        it('MultiPolygonSinglePart', async () => {
             const expected = makeFeatureCollection('MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)))');
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygonSinglePartWithHole', () => {
+        it('MultiPolygonSinglePartWithHole', async () => {
             const expected = makeFeatureCollection(`MULTIPOLYGON (((35 10, 45 45, 15 40, 10 20, 35 10),
  (20 30, 35 35, 30 20, 20 30))))`);
-            const actual = deserialize(serialize(expected)) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(expected)));
             expect(g(actual)).to.equal(g(expected));
         });
 
-        it('MultiPolygon with two holes', () => {
+        it('MultiPolygon with two holes', async () => {
             const expected = {
                 type: 'FeatureCollection',
                 features: [
@@ -292,23 +292,23 @@ describe('ol module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(geojson.readFeatures(expected))) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(geojson.readFeatures(expected))));
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
 
-        it('Should parse UScounties fgb produced from GDAL array buffer', () => {
+        it('Should parse UScounties fgb produced from GDAL array buffer', async () => {
             const buffer = readFileSync('./test/data/UScounties.fgb');
             const bytes = new Uint8Array(buffer);
-            const features = deserialize(bytes) as Feature<Geometry>[];
+            const features = await takeAsync<Feature>(deserialize(bytes));
             expect(features.length).to.eq(3221);
             for (const f of features)
                 expect((f.getGeometry() as SimpleGeometry).getCoordinates()?.length).to.be.greaterThan(0);
         });
 
-        it('Should parse countries fgb produced from GDAL array buffer', () => {
+        it('Should parse countries fgb produced from GDAL array buffer', async () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
-            const features = deserialize(bytes) as Feature<Geometry>[];
+            const features = await takeAsync<Feature>(deserialize(bytes));
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect((f.getGeometry() as SimpleGeometry).getCoordinates()?.length).to.be.greaterThan(0);
@@ -318,13 +318,13 @@ describe('ol module', () => {
             const buffer = readFileSync('./test/data/countries.fgb');
             const bytes = new Uint8Array(buffer);
             const stream = arrayToStream(bytes.buffer);
-            const features = await takeAsync<Feature>(deserialize(stream) as AsyncGenerator<Feature>);
+            const features = await takeAsync<Feature>(deserialize(stream));
             expect(features.length).to.eq(179);
             for (const f of features)
                 expect((f.getGeometry() as SimpleGeometry).getCoordinates()?.length).to.be.greaterThan(0);
         });
 
-        it('Bahamas', () => {
+        it('Bahamas', async () => {
             const expected = {
                 type: 'FeatureCollection',
                 features: [
@@ -373,11 +373,11 @@ describe('ol module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(geojson.readFeatures(expected))) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(geojson.readFeatures(expected))));
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
 
-        it('Heterogeneous geometry types', () => {
+        it('Heterogeneous geometry types', async () => {
             const expected = {
                 type: 'FeatureCollection',
                 features: [
@@ -404,11 +404,11 @@ describe('ol module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(geojson.readFeatures(expected))) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(geojson.readFeatures(expected))));
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
 
-        it('Heterogeneous geometry types Z', () => {
+        it('Heterogeneous geometry types Z', async () => {
             const expected = {
                 type: 'FeatureCollection',
                 features: [
@@ -435,7 +435,7 @@ describe('ol module', () => {
                     },
                 ],
             };
-            const actual = deserialize(serialize(geojson.readFeatures(expected))) as Feature[];
+            const actual = await takeAsync<Feature>(deserialize(serialize(geojson.readFeatures(expected))));
             expect(JSON.parse(g(actual))).to.deep.equal(expected);
         });
     });
