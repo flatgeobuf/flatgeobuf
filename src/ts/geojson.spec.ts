@@ -446,4 +446,22 @@ describe('geojson module', () => {
             expect(features).to.deep.equal(expected.features);
         });
     });
+
+    describe('Spatial filter', () => {
+        it('Should filter by rect when using byte array', async () => {
+            const buffer = readFileSync('./test/data/USCounties.fgb');
+            const bytes = new Uint8Array(buffer);
+            const rect: Rect = {
+                minX: -106.88,
+                minY: 36.75,
+                maxX: -101.11,
+                maxY: 41.24,
+            };
+            const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, rect));
+            expect(features.length).toBe(86);
+            const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
+            const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
+            expect(actual).toEqual(expected);
+        });
+    });
 });
