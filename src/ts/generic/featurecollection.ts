@@ -61,6 +61,7 @@ export async function* deserialize(
         for await (const feature of reader.selectBbox(rect)) {
             yield fromFeature(feature.id, feature.feature, reader.header);
         }
+        return;
     }
 
     const bb = new flatbuffers.ByteBuffer(bytes);
