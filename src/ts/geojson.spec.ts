@@ -449,7 +449,7 @@ describe('geojson module', () => {
 
     describe('Spatial filter', () => {
         it('Should filter by rect when using byte array', async () => {
-            const buffer = readFileSync('./test/data/USCounties.fgb');
+            const buffer = readFileSync('./test/data/UScounties.fgb');
             const bytes = new Uint8Array(buffer);
             const rect: Rect = {
                 minX: -106.88,
