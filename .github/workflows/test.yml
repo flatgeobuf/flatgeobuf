@@ -136,3 +136,14 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('src/rust/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
       - run: cd src/rust && cargo test --no-default-features
+
+  rust-semver-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check semver
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          manifest-path: src/rust/Cargo.toml
+          feature-group: default-features
