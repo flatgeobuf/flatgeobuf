@@ -463,5 +463,18 @@ describe('geojson module', () => {
             const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
             expect(actual).toEqual(expected);
         });
+
+        it('Should filter overlapping multipoly as expected', async () => {
+            const buffer = readFileSync('./test/data/mp_overlapping.fgb');
+            const bytes = new Uint8Array(buffer);
+            const rect: Rect = {
+                minX: 14.9,
+                minY: 55.1,
+                maxX: 14.9,
+                maxY: 55.1,
+            };
+            const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, rect));
+            expect(features.length).toBe(2);
+        });
     });
 });
