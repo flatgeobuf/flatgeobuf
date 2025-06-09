@@ -81,27 +81,27 @@
         "ol": ">=3"
     },
     "devDependencies": {
-        "@babel/core": "7.26.10",
-        "@babel/preset-env": "7.26.9",
+        "@babel/core": "7.27.4",
+        "@babel/preset-env": "7.27.2",
         "@biomejs/biome": "1.9.4",
         "@rollup/plugin-babel": "6.0.4",
         "@rollup/plugin-node-resolve": "16.0.1",
         "@rollup/plugin-terser": "0.4.4",
-        "@swc/cli": "0.6.0",
-        "@swc/core": "1.11.16",
+        "@swc/cli": "0.7.7",
+        "@swc/core": "1.11.31",
         "@types/geojson": "7946.0.16",
-        "@types/node": "22.13.17",
+        "@types/node": "22.15.30",
         "@types/slice-source": "0.4.3",
-        "@vitest/coverage-v8": "3.1.1",
+        "@vitest/coverage-v8": "3.2.3",
         "jsts": "2.12.1",
         "lws": "4.2.0",
         "lws-range": "^4.0.1",
         "lws-static": "^3.1.1",
         "ol": ">=3",
-        "rollup": "4.39.0",
-        "typedoc": "0.28.1",
-        "typescript": "5.8.2",
-        "vite": "6.2.4",
-        "vitest": "3.1.1"
+        "rollup": "4.42.0",
+        "typedoc": "0.28.5",
+        "typescript": "5.8.3",
+        "vite": "6.3.5",
+        "vitest": "3.2.3"
     }
 }
