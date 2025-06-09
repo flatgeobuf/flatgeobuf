@@ -97,6 +97,8 @@ export class HttpReader {
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = fromByteBuffer(bb);
 
+        if (header.indexNodeSize === 0) throw new Error('No index found, cannot read features filtered by bbox');
+
         const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
 
         console.debug('completed: opening http reader');
@@ -253,7 +255,7 @@ class BufferedHttpRangeClient {
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
-            throw new Error('Unknown source ');
+            throw new Error('Unknown source');
         }
     }
 
