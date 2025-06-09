@@ -97,8 +97,7 @@ export class HttpReader {
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = fromByteBuffer(bb);
 
-        if (header.indexNodeSize === 0)
-            throw new Error('No index found, cannot read features filtered by bbox');
+        if (header.indexNodeSize === 0) throw new Error('No index found, cannot read features filtered by bbox');
 
         const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
 
