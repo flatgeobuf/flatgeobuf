@@ -1,21 +1,3 @@
-import type { ColumnMeta } from '../column-meta.js';
-import type { HeaderMeta } from '../header-meta.js';
-
-import { magicbytes } from '../constants.js';
-import type { HeaderMetaFn } from '../generic.js';
-import { type IFeature, type IProperties, buildFeature } from '../generic/feature.js';
-import {
-    buildHeader,
-    deserialize as genericDeserialize,
-    deserializeFiltered as genericDeserializeFiltered,
-    deserializeStream as genericDeserializeStream,
-    mapColumn,
-} from '../generic/featurecollection.js';
-import { inferGeometryType } from '../generic/header.js';
-import type { Rect } from '../packedrtree.js';
-import { fromFeature } from './feature.js';
-import { parseGC, parseGeometry } from './geometry.js';
-
 import type {
     FeatureCollection as GeoJsonFeatureCollection,
     GeometryCollection,
@@ -26,6 +8,23 @@ import type {
     Point,
     Polygon,
 } from 'geojson';
+import type { ColumnMeta } from '../column-meta.js';
+
+import { magicbytes } from '../constants.js';
+import { buildFeature, type IFeature, type IProperties } from '../generic/feature.js';
+import {
+    buildHeader,
+    deserialize as genericDeserialize,
+    deserializeFiltered as genericDeserializeFiltered,
+    deserializeStream as genericDeserializeStream,
+    mapColumn,
+} from '../generic/featurecollection.js';
+import { inferGeometryType } from '../generic/header.js';
+import type { HeaderMetaFn } from '../generic.js';
+import type { HeaderMeta } from '../header-meta.js';
+import type { Rect } from '../packedrtree.js';
+import { fromFeature } from './feature.js';
+import { parseGC, parseGeometry } from './geometry.js';
 
 export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode = 0): Uint8Array {
     const headerMeta = introspectHeaderMeta(featurecollection);

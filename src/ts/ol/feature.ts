@@ -1,7 +1,7 @@
 import OlFeature from 'ol/Feature.js';
 
 import type { Feature } from '../flat-geobuf/feature.js';
-import { type IFeature, type IProperties, fromFeature as genericFromFeature } from '../generic/feature.js';
+import { fromFeature as genericFromFeature, type IFeature, type IProperties } from '../generic/feature.js';
 import type { ISimpleGeometry } from '../generic/geometry.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { createGeometry } from './geometry.js';

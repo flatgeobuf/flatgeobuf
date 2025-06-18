@@ -1,13 +1,4 @@
 import { readFileSync } from 'node:fs';
-import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
-import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
-import { describe, expect, it } from 'vitest';
-import { deserialize, serialize } from './geojson.js';
-import type { IGeoJsonFeature } from './geojson/feature.js';
-import type { HeaderMeta } from './header-meta.js';
-import type { Rect } from './packedrtree.js';
-import { arrayToStream, takeAsync } from './streams/utils.js';
-
 import type {
     FeatureCollection as GeoJsonFeatureCollection,
     LineString,
@@ -19,6 +10,14 @@ import type {
     Position,
 } from 'geojson';
 import GeometryFactory from 'jsts/org/locationtech/jts/geom/GeometryFactory.js';
+import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
+import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
+import { describe, expect, it } from 'vitest';
+import type { IGeoJsonFeature } from './geojson/feature.js';
+import { deserialize, serialize } from './geojson.js';
+import type { HeaderMeta } from './header-meta.js';
+import type { Rect } from './packedrtree.js';
+import { arrayToStream, takeAsync } from './streams/utils.js';
 
 function makeFeatureCollection(
     wkt: string,

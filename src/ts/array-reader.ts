@@ -1,9 +1,9 @@
 import * as flatbuffers from 'flatbuffers';
-import { SIZE_PREFIX_LEN, magicbytes } from './constants.js';
+import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
 import type { HeaderMeta } from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
-import { type Rect, calcTreeSize, streamSearch } from './packedrtree.js';
+import { calcTreeSize, type Rect, streamSearch } from './packedrtree.js';
 
 interface FeatureWithId {
     id: number;

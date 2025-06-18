@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ArrayReader } from './array-reader.js';
-import { type IGeoJsonFeature, fromFeature } from './geojson/feature.js';
+import { fromFeature, type IGeoJsonFeature } from './geojson/feature.js';
 import type { Rect } from './packedrtree.js';
 
 describe('ArrayReader', () => {

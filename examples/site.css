@@ -19,8 +19,8 @@ ul.primary-navigation li.active {
     background-color: #4caf50;
 }
 
-.primary-navigation a,
-.primary-navigation li.active {
+ul.primary-navigation li a,
+ul.primary-navigation li.active {
     padding: 8px;
     display: inline-block;
 }
@@ -46,8 +46,8 @@ ul.secondary-navigation li a {
     color: white;
 }
 
-.secondary-navigation a,
-.secondary-navigation li.active {
+ul.secondary-navigation li a,
+ul.secondary-navigation li.active {
     padding: 8px;
     display: inline-block;
 }

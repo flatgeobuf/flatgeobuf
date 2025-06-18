@@ -1,8 +1,6 @@
+import type { Extent } from 'ol/extent.js';
 import type Feature from 'ol/Feature.js';
 import type { FeatureLike } from 'ol/Feature.js';
-import type { LoadFunction } from 'ol/Tile.js';
-import type VectorTile from 'ol/VectorTile.js';
-import type { Extent } from 'ol/extent.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
 import type { Geometry } from 'ol/geom.js';
 import { all } from 'ol/loadingstrategy.js';
@@ -10,16 +8,18 @@ import { type Projection, transformExtent } from 'ol/proj.js';
 import type VectorSource from 'ol/source/Vector.js';
 import type { LoadingStrategy } from 'ol/source/Vector.js';
 import type VectorTileSource from 'ol/source/VectorTile.js';
+import type { LoadFunction } from 'ol/Tile.js';
 import type { TileCoord } from 'ol/tilecoord.js';
+import type VectorTile from 'ol/VectorTile.js';
+import type { IFeature } from './generic/feature.js';
+
+import type { HeaderMetaFn } from './generic.js';
 import {
     deserialize as fcDeserialize,
     deserializeFiltered as fcDeserializeFiltered,
     deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './ol/featurecollection.js';
-
-import type { HeaderMetaFn } from './generic.js';
-import type { IFeature } from './generic/feature.js';
 import type { Rect } from './packedrtree.js';
 
 /**
@@ -92,7 +92,7 @@ export function createLoader(
                 source.addFeature(feature);
             }
             success?.(features);
-        } catch (err) {
+        } catch {
             failure?.();
         }
     };
