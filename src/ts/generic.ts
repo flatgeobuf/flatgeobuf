@@ -1,16 +1,15 @@
+import type { IFeature } from './generic/feature.js';
 import {
-    type FromFeatureFn,
     deserialize as deserializeArray,
     deserializeFiltered,
     deserializeStream,
+    type FromFeatureFn,
 } from './generic/featurecollection.js';
-
-import type { IFeature } from './generic/feature.js';
 import type { HeaderMeta } from './header-meta.js';
 import type { Rect } from './packedrtree.js';
 
-export { GeometryType } from './flat-geobuf/geometry-type.js';
 export { ColumnType } from './flat-geobuf/column-type.js';
+export { GeometryType } from './flat-geobuf/geometry-type.js';
 
 /** Callback function for receiving header metadata */
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;

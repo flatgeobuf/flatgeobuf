@@ -1,4 +1,3 @@
-import type { HeaderMetaFn } from '../generic.js';
 import type { IFeature } from '../generic/feature.js';
 import {
     deserialize as genericDeserialize,
@@ -6,6 +5,7 @@ import {
     deserializeStream as genericDeserializeStream,
     serialize,
 } from '../generic/featurecollection.js';
+import type { HeaderMetaFn } from '../generic.js';
 import type { Rect } from '../packedrtree.js';
 import { fromFeature } from './feature.js';
 

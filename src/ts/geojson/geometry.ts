@@ -1,6 +1,3 @@
-import { GeometryType } from '../flat-geobuf/geometry-type.js';
-import type { Geometry } from '../flat-geobuf/geometry.js';
-
 import type {
     Geometry as GeoJsonGeometry,
     GeometryCollection,
@@ -11,8 +8,10 @@ import type {
     Point,
     Polygon,
 } from 'geojson';
+import type { Geometry } from '../flat-geobuf/geometry.js';
+import { GeometryType } from '../flat-geobuf/geometry-type.js';
 
-import { type IParsedGeometry, flat, pairFlatCoordinates, toGeometryType } from '../generic/geometry.js';
+import { flat, type IParsedGeometry, pairFlatCoordinates, toGeometryType } from '../generic/geometry.js';
 
 export interface IGeoJsonGeometry {
     type: string;

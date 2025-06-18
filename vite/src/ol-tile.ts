@@ -1,9 +1,9 @@
-import Map from 'ol/Map.js';
-import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
+import Map from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
+import View from 'ol/View.js';
 
 import { createTileLoadFunction, tileUrlFunction } from '../../src/ts/ol';
 

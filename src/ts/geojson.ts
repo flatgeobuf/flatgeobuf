@@ -1,14 +1,12 @@
+import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
+import type { HeaderMetaFn } from './generic.js';
+import type { IGeoJsonFeature } from './geojson/feature.js';
 import {
     deserialize as fcDeserialize,
     deserializeFiltered as fcDeserializeFiltered,
     deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './geojson/featurecollection.js';
-
-import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
-
-import type { HeaderMetaFn } from './generic.js';
-import type { IGeoJsonFeature } from './geojson/feature.js';
 import type { Rect } from './packedrtree.js';
 
 /**

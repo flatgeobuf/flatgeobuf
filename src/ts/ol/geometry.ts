@@ -1,8 +1,3 @@
-import { GeometryType } from '../flat-geobuf/geometry-type.js';
-import type { Geometry } from '../flat-geobuf/geometry.js';
-
-import type { ISimpleGeometry } from '../generic/geometry.js';
-
 import type { GeometryLayout } from 'ol/geom/Geometry.js';
 import LineString from 'ol/geom/LineString.js';
 import MultiLineString from 'ol/geom/MultiLineString.js';
@@ -10,6 +5,9 @@ import MultiPoint from 'ol/geom/MultiPoint.js';
 import MultiPolygon from 'ol/geom/MultiPolygon.js';
 import Point from 'ol/geom/Point.js';
 import Polygon from 'ol/geom/Polygon.js';
+import type { Geometry } from '../flat-geobuf/geometry.js';
+import { GeometryType } from '../flat-geobuf/geometry-type.js';
+import type { ISimpleGeometry } from '../generic/geometry.js';
 
 function interleaveZ(flatCoordinates: number[], z: number[]): number[] {
     const newFlatCoordinates = new Array(flatCoordinates.length + z.length);
@@ -23,7 +21,7 @@ function interleaveZ(flatCoordinates: number[], z: number[]): number[] {
 
 function interleaveZM(flatCoordinates: number[], z: number[], m: number[]): number[] {
     const newFlatCoordinates = new Array(flatCoordinates.length + z.length + m.length);
-    for (let i = 0, j = 0, k = 0, l = 0; i < flatCoordinates.length; i += 2, j++) {
+    for (let i = 0, j = 0, k = 0; i < flatCoordinates.length; i += 2, j++) {
         newFlatCoordinates[k++] = flatCoordinates[i];
         newFlatCoordinates[k++] = flatCoordinates[i + 1];
         newFlatCoordinates[k++] = z[j];

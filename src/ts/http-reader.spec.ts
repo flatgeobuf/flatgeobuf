@@ -1,6 +1,6 @@
 import Lws from 'lws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type IGeoJsonFeature, fromFeature } from './geojson/feature';
+import { fromFeature, type IGeoJsonFeature } from './geojson/feature';
 import { HttpReader } from './http-reader';
 
 describe('http reader', () => {
