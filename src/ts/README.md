@@ -4,24 +4,24 @@
 
 ### Prerequisites
 
-You must have [`yarn`](https://yarnpkg.com) installed.
+You must have [`pnpm`](https://pnpm.io) installed.
 
 ### Install FlatGeobuf dependencies
 
-    yarn install
+    pnpm install
 
 ### Build
 
 To compile the typescript into a javascript bundle
 
-    yarn run build
+    pnpm build
 
 See the `scripts` section in [package.json](../../package.json) for other actions.
 
 ### Testing the examples locally.
 
 The examples are hard coded to pull in the publicly released artifact.
-If you'd like to test against your local changes, after running `yarn build`,
+If you'd like to test against your local changes, after running `pnpm build`,
 update the `<script src=` tags in the examples.
 
 For example:
@@ -40,6 +40,6 @@ index 2e13dfc..da4b07e 100644
      <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 ```
 
-You can start the built in http server with: `yarn serve`.
+You can start the built in http server with: `pnpm serve`.
 
 Then, open the example in your browser. For example: `open http://localhost:8000/examples/leaflet/filtered.html`.
