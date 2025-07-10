@@ -43,10 +43,11 @@ export function deserialize(
     fromFeature: FromFeatureFn,
     rect?: Rect,
     nocache = false,
+    headersInit: HeadersInit = {}
 ): IFeature[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array) return deserializeArray(input, fromFeature, rect);
     if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
-    return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache);
+    return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache, headersInit);
 }
 
 export { serialize } from './generic/featurecollection.js';
