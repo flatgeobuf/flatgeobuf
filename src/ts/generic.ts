@@ -43,7 +43,7 @@ export function deserialize(
     fromFeature: FromFeatureFn,
     rect?: Rect,
     nocache = false,
-    headersInit: HeadersInit = {}
+    headersInit: HeadersInit = {},
 ): IFeature[] | AsyncGenerator<IFeature> {
     if (input instanceof Uint8Array) return deserializeArray(input, fromFeature, rect);
     if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);

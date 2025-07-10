@@ -27,7 +27,7 @@ export class HttpReader {
         headerLength: number,
         indexLength: number,
         nocache: boolean,
-        headersInit: HeadersInit = {}
+        headersInit: HeadersInit = {},
     ) {
         this.headerClient = headerClient;
         this.header = header;

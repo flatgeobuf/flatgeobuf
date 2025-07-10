@@ -28,7 +28,7 @@ export function deserializeFiltered(
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-    headersInit: HeadersInit = {}
+    headersInit: HeadersInit = {},
 ): AsyncGenerator<IFeature> {
     return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headersInit);
 }

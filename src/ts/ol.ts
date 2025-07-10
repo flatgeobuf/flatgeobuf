@@ -117,7 +117,12 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
  * @param srs
  * @returns
  */
-export function createTileLoadFunction(source: VectorTileSource, url: string, srs = 'EPSG:4326', headersInit: HeadersInit = {}) {
+export function createTileLoadFunction(
+    source: VectorTileSource,
+    url: string,
+    srs = 'EPSG:4326',
+    headersInit: HeadersInit = {},
+) {
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
