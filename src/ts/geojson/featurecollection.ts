@@ -69,9 +69,9 @@ export function deserializeFiltered(
     rect: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-    headersInit: HeadersInit = {},
+    headers: HeadersInit = {},
 ): AsyncGenerator<IFeature> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headersInit);
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headers);
 }
 
 function introspectHeaderMeta(featurecollection: GeoJsonFeatureCollection): HeaderMeta {

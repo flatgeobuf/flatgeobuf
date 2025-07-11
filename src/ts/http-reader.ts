@@ -19,7 +19,7 @@ export class HttpReader {
     private headerLength: number;
     private indexLength: number;
     private nocache: boolean;
-    private headersInit: HeadersInit;
+    private headers: HeadersInit;
 
     constructor(
         headerClient: BufferedHttpRangeClient,
@@ -27,7 +27,7 @@ export class HttpReader {
         headerLength: number,
         indexLength: number,
         nocache: boolean,
-        headersInit: HeadersInit = {},
+        headers: HeadersInit = {},
     ) {
         this.headerClient = headerClient;
         this.header = header;
@@ -40,7 +40,7 @@ export class HttpReader {
     // Fetch the header, preparing the reader to read Feature data.
     //
     // and potentially some opportunistic fetching of the index.
-    static async open(url: string, nocache: boolean, headersInit: HeadersInit = {}): Promise<HttpReader> {
+    static async open(url: string, nocache: boolean, headers: HeadersInit = {}): Promise<HttpReader> {
         // In reality, the header is probably less than half this size, but
         // better to overshoot and fetch an extra kb rather than have to issue
         // a second request.
@@ -252,7 +252,7 @@ class BufferedHttpRangeClient {
     // buffered
     private head = 0;
 
-    constructor(source: string | HttpRangeClient, nocache: boolean, headersInit: HeadersInit = {}) {
+    constructor(source: string | HttpRangeClient, nocache: boolean, headers: HeadersInit = {}) {
         if (typeof source === 'string') {
             this.httpClient = new HttpRangeClient(source, nocache, headersInit);
         } else if (source instanceof HttpRangeClient) {
@@ -294,11 +294,11 @@ class BufferedHttpRangeClient {
 class HttpRangeClient {
     url: string;
     nocache: boolean;
-    headersInit: HeadersInit;
+    headers: HeadersInit;
     requestsEverMade = 0;
     bytesEverRequested = 0;
 
-    constructor(url: string, nocache: boolean, headersInit: HeadersInit = {}) {
+    constructor(url: string, nocache: boolean, headers: HeadersInit = {}) {
         this.url = url;
         this.nocache = nocache;
         this.headersInit = headersInit;

@@ -117,9 +117,9 @@ export async function* deserializeFiltered(
     fromFeature: FromFeatureFn,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-    headersInit: HeadersInit = {},
+    headers: HeadersInit = {},
 ): AsyncGenerator<IFeature> {
-    const reader = await HttpReader.open(url, nocache, headersInit);
+    const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
     for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);

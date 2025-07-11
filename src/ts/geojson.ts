@@ -68,7 +68,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
-    headersInit: HeadersInit = {},
+    headers: HeadersInit = {},
 ): AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, rect, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
     if (input instanceof ReadableStream)
