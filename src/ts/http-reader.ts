@@ -34,7 +34,7 @@ export class HttpReader {
         this.headerLength = headerLength;
         this.indexLength = indexLength;
         this.nocache = nocache;
-        this.headersInit = headersInit;
+        this.headers = headers;
     }
 
     // Fetch the header, preparing the reader to read Feature data.
@@ -46,7 +46,7 @@ export class HttpReader {
         // a second request.
         const assumedHeaderLength = 2024;
 
-        const headerClient = new BufferedHttpRangeClient(url, nocache, headersInit);
+        const headerClient = new BufferedHttpRangeClient(url, nocache, headers);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -105,7 +105,7 @@ export class HttpReader {
         const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
 
         console.debug('completed: opening http reader');
-        return new HttpReader(headerClient, header, headerLength, indexLength, nocache, headersInit);
+        return new HttpReader(headerClient, header, headerLength, indexLength, nocache, headers);
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<FeatureWithId, void, unknown> {
@@ -181,7 +181,7 @@ export class HttpReader {
     }
 
     buildFeatureClient(nocache: boolean): BufferedHttpRangeClient {
-        return new BufferedHttpRangeClient(this.headerClient.httpClient, nocache, this.headersInit);
+        return new BufferedHttpRangeClient(this.headerClient.httpClient, nocache, this.headers);
     }
 
     /**
@@ -254,7 +254,7 @@ class BufferedHttpRangeClient {
 
     constructor(source: string | HttpRangeClient, nocache: boolean, headers: HeadersInit = {}) {
         if (typeof source === 'string') {
-            this.httpClient = new HttpRangeClient(source, nocache, headersInit);
+            this.httpClient = new HttpRangeClient(source, nocache, headers);
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
@@ -301,7 +301,7 @@ class HttpRangeClient {
     constructor(url: string, nocache: boolean, headers: HeadersInit = {}) {
         this.url = url;
         this.nocache = nocache;
-        this.headersInit = headersInit;
+        this.headers = headers;
     }
 
     async getRange(begin: number, length: number, purpose: string): Promise<ArrayBuffer> {
@@ -340,7 +340,7 @@ class HttpRangeClient {
         // See:
         // https://bugs.chromium.org/p/chromium/issues/detail?id=969828&q=concurrent%20range%20requests&can=2
         // https://stackoverflow.com/questions/27513994/chrome-stalls-when-making-multiple-requests-to-same-resource
-        const headers = new Headers(this.headersInit);
+        const headers = new Headers(this.headers);
         headers.set('Range', range);
         if (this.nocache) headers.set('Cache-Control', 'no-cache, no-store');
 
