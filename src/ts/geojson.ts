@@ -29,6 +29,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
+    headersInit?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /**
@@ -43,6 +44,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
+    headersInit?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /**
@@ -57,6 +59,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
+    headersInit?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /** Implementation */
@@ -65,9 +68,10 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
+    headers: HeadersInit = {},
 ): AsyncGenerator<IGeoJsonFeature> {
     if (input instanceof Uint8Array) return fcDeserialize(input, rect, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
     if (input instanceof ReadableStream)
         return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
-    return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache) as AsyncGenerator<IGeoJsonFeature>;
+    return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache, headers) as AsyncGenerator<IGeoJsonFeature>;
 }
