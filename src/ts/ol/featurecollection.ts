@@ -30,5 +30,5 @@ export function deserializeFiltered(
     nocache = false,
     headers: HeadersInit = {},
 ): AsyncGenerator<IFeature> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headersInit);
+    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headers);
 }
