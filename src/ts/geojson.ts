@@ -29,7 +29,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
-    headersInit?: HeadersInit,
+    headers?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /**
@@ -44,7 +44,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
-    headersInit?: HeadersInit,
+    headers?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /**
@@ -59,7 +59,7 @@ export function deserialize(
     rect?: Rect,
     headerMetaFn?: HeaderMetaFn,
     nocache?: boolean,
-    headersInit?: HeadersInit,
+    headers?: HeadersInit,
 ): AsyncGenerator<IGeoJsonFeature>;
 
 /** Implementation */
