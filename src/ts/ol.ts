@@ -58,7 +58,7 @@ async function createIterator(
     headersInit: HeadersInit = {},
 ) {
     if (strategy === all) {
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: headersInit });
         return deserialize(response.body as ReadableStream);
     }
     const [minX, minY, maxX, maxY] =
