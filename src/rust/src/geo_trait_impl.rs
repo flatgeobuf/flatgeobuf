@@ -503,15 +503,15 @@ macro_rules! impl_specialization {
                 MultiLineString<'a>,
                 MultiPolygon<'a>,
                 GeometryCollection<'a>,
-                UnimplementedRect<Self::T>,
-                UnimplementedTriangle<Self::T>,
-                UnimplementedLine<Self::T>,
+                Self::RectType<'_>,
+                Self::TriangleType<'_>,
+                Self::LineType<'_>,
             > {
                 GeometryType::$geometry_type(self)
             }
         }
 
-        impl<'a> GeometryTrait for &'a $geometry_type<'a> {
+        impl<'a> GeometryTrait for &$geometry_type<'a> {
             type T = f64;
             type PointType<'b>
                 = Point<'a>
@@ -569,9 +569,9 @@ macro_rules! impl_specialization {
                 MultiLineString<'a>,
                 MultiPolygon<'a>,
                 GeometryCollection<'a>,
-                UnimplementedRect<Self::T>,
-                UnimplementedTriangle<Self::T>,
-                UnimplementedLine<Self::T>,
+                Self::RectType<'_>,
+                Self::TriangleType<'_>,
+                Self::LineType<'_>,
             > {
                 GeometryType::$geometry_type(self)
             }
