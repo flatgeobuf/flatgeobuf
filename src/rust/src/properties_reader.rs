@@ -81,8 +81,7 @@ impl FgbFeature {
                 }
                 geom_type => {
                     return Err(crate::Error::UnsupportedGeometryType(format!(
-                        "Unsupported geometry type in geo-traits: {:?}",
-                        geom_type
+                        "Unsupported geometry type in geo-traits: {geom_type:?}",
                     )))
                 }
             };
