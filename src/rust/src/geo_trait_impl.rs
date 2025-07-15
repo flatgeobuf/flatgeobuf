@@ -443,138 +443,6 @@ impl<'a> GeometryCollectionTrait for GeometryCollection<'a> {
     }
 }
 
-impl<'a> GeometryTrait for Point<'a> {
-    type T = f64;
-    type PointType<'b>
-        = Point<'a>
-    where
-        Self: 'b;
-    type LineStringType<'b>
-        = LineString<'a>
-    where
-        Self: 'b;
-    type PolygonType<'b>
-        = Polygon<'a>
-    where
-        Self: 'b;
-    type MultiPointType<'b>
-        = MultiPoint<'a>
-    where
-        Self: 'b;
-    type MultiLineStringType<'b>
-        = MultiLineString<'a>
-    where
-        Self: 'b;
-    type MultiPolygonType<'b>
-        = MultiPolygon<'a>
-    where
-        Self: 'b;
-    type GeometryCollectionType<'b>
-        = GeometryCollection<'a>
-    where
-        Self: 'b;
-    type RectType<'b>
-        = UnimplementedRect<Self::T>
-    where
-        Self: 'b;
-    type TriangleType<'b>
-        = UnimplementedTriangle<Self::T>
-    where
-        Self: 'b;
-    type LineType<'b>
-        = UnimplementedLine<Self::T>
-    where
-        Self: 'b;
-
-    fn dim(&self) -> Dimensions {
-        self.dim
-    }
-
-    fn as_type(
-        &self,
-    ) -> GeometryType<
-        '_,
-        Point<'a>,
-        LineString<'a>,
-        Polygon<'a>,
-        MultiPoint<'a>,
-        MultiLineString<'a>,
-        MultiPolygon<'a>,
-        GeometryCollection<'a>,
-        UnimplementedRect<Self::T>,
-        UnimplementedTriangle<Self::T>,
-        UnimplementedLine<Self::T>,
-    > {
-        GeometryType::Point(self)
-    }
-}
-
-impl<'a> GeometryTrait for &'a Point<'a> {
-    type T = f64;
-    type PointType<'b>
-        = Point<'a>
-    where
-        Self: 'b;
-    type LineStringType<'b>
-        = LineString<'a>
-    where
-        Self: 'b;
-    type PolygonType<'b>
-        = Polygon<'a>
-    where
-        Self: 'b;
-    type MultiPointType<'b>
-        = MultiPoint<'a>
-    where
-        Self: 'b;
-    type MultiLineStringType<'b>
-        = MultiLineString<'a>
-    where
-        Self: 'b;
-    type MultiPolygonType<'b>
-        = MultiPolygon<'a>
-    where
-        Self: 'b;
-    type GeometryCollectionType<'b>
-        = GeometryCollection<'a>
-    where
-        Self: 'b;
-    type RectType<'b>
-        = UnimplementedRect<Self::T>
-    where
-        Self: 'b;
-    type TriangleType<'b>
-        = UnimplementedTriangle<Self::T>
-    where
-        Self: 'b;
-    type LineType<'b>
-        = UnimplementedLine<Self::T>
-    where
-        Self: 'b;
-
-    fn dim(&self) -> Dimensions {
-        Dimensions::Xy
-    }
-
-    fn as_type(
-        &self,
-    ) -> GeometryType<
-        '_,
-        Self::PointType<'a>,
-        Self::LineStringType<'a>,
-        Self::PolygonType<'a>,
-        Self::MultiPointType<'a>,
-        Self::MultiLineStringType<'a>,
-        Self::MultiPolygonType<'a>,
-        Self::GeometryCollectionType<'a>,
-        Self::RectType<'a>,
-        Self::TriangleType<'a>,
-        Self::LineType<'a>,
-    > {
-        GeometryType::Point(self)
-    }
-}
-
 macro_rules! impl_specialization {
     ($geometry_type:ident) => {
         impl<'a> GeometryTrait for $geometry_type<'a> {
@@ -621,7 +489,7 @@ macro_rules! impl_specialization {
                 Self: 'b;
 
             fn dim(&self) -> Dimensions {
-                Dimensions::Xy
+                self.dim
             }
 
             fn as_type(
@@ -687,7 +555,7 @@ macro_rules! impl_specialization {
                 Self: 'b;
 
             fn dim(&self) -> Dimensions {
-                Dimensions::Xy
+                self.dim
             }
 
             fn as_type(
@@ -711,7 +579,7 @@ macro_rules! impl_specialization {
     };
 }
 
-// impl_specialization!(Point);
+impl_specialization!(Point);
 impl_specialization!(LineString);
 impl_specialization!(Polygon);
 impl_specialization!(MultiPoint);
