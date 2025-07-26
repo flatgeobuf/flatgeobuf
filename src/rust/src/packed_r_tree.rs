@@ -462,7 +462,7 @@ impl PackedRTree {
         let mut results = Vec::new();
         let mut queue = VecDeque::new();
         queue.push_back((0, self.level_bounds.len() - 1));
-        // println! ("search bounds: {min_x}, {min_y}, {max_x}, {max_y}");
+        println! ("search bounds: {min_x}, {min_y}, {max_x}, {max_y}");
         while let Some(next) = queue.pop_front() {
             let node_index = next.0;
             let level = next.1;

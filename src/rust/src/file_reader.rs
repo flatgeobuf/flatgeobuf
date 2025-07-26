@@ -134,11 +134,12 @@ impl<R: Read> FgbReader<R> {
             header.features_count() as usize,
             header.index_node_size(),
         )?;
-        let list = index.search(min_x, min_y, max_x, max_y)?;
+        let mut list = index.search(min_x, min_y, max_x, max_y)?;
         // debug_assert!(
         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
         //     "Since the tree is traversed breadth first, list should be sorted by construction."
         // );
+        list.sort_by_key(|x| x.offset);
         println!("{:?}", list);
         Ok(FeatureIter::new(
             self.reader,
