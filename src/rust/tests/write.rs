@@ -259,13 +259,23 @@ fn test_save_fgb_and_load() -> Result<()> {
             (x: -21.951445, y: 64.145508)
         ],
         geo_types::line_string![(x: 0.0, y: 0.0), (x: 1.0, y: 1.0),],
+        geo_types::line_string![(x: 0.5, y: 0.0), (x: 1.0, y: 1.0),],
+        geo_types::line_string![(x: 0.0, y: 0.5), (x: 1.0, y: 1.0),],
+        geo_types::line_string![(x: 0.0, y: 0.0), (x: 0.5, y: 1.0),],
+        
+        geo_types::line_string![(x: 2.0, y: 0.0), (x: 3.0, y: 1.0),],
+        geo_types::line_string![(x: 0.5, y: 6.0), (x: 5.0, y: 1.0),],
+        geo_types::line_string![(x: 7.0, y: 0.5), (x: 1.0, y: 7.0),],
+        geo_types::line_string![(x: 0.0, y: 10.0), (x: 0.5, y: 9.0),],
+        
+        
     ];
 
     let mut fgb = FgbWriter::create_with_options(
         "test_write",
         GeometryType::LineString,
         FgbWriterOptions {
-            write_index: false,
+            write_index: true,
             crs: FgbCrs {
                 code: 4326,
                 ..Default::default()
@@ -286,14 +296,15 @@ fn test_save_fgb_and_load() -> Result<()> {
     // Load
     let read_file_again = file_to_write.reopen()?;
     let mut filein = BufReader::new(&read_file_again);
-    let mut fgb = FgbReader::open(&mut filein)?.select_all()?;
+    let mut fgb = FgbReader::open(&mut filein)?.select_bbox_seq(-1.0,-1.0,1.0,1.0)?; //-22., 64., -20., 65.
     let mut cnt = 0;
     while let Some(feature) = fgb.next().unwrap() {
         let _props = feature.properties();
-        let _geometry = feature.geometry().unwrap();
+        let geometry = feature.geometry().unwrap();
+        println!("{:?}", geometry);
         cnt += 1
     }
-    assert_eq!(cnt, 2);
+    assert_eq!(cnt, 4);
 
     Ok(())
 }

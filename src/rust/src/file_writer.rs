@@ -100,6 +100,7 @@ pub struct FgbCrs<'a> {
     pub code_string: Option<&'a str>,
 }
 
+#[derive(Debug)]
 // Offsets in temporary file
 struct FeatureOffset {
     offset: usize,
@@ -272,45 +273,115 @@ impl<'a> FgbWriter<'a> {
 
         if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
             // Create sorted index
+            println!("Hilbert sorting {} features", self.feat_nodes.len());
             hilbert_sort(&mut self.feat_nodes, &extent);
             // Update offsets for index
-            let mut offset = 0;
+            // let mut offset = 0;
             let index_nodes = self
                 .feat_nodes
                 .iter()
                 .map(|tmpnode| {
-                    let feat = &self.feat_offsets[tmpnode.offset as usize];
+                    // let feat = &self.feat_offsets[tmpnode.offset as usize];
                     let mut node = tmpnode.clone();
-                    node.offset = offset;
-                    offset += feat.size as u64;
+                    node.offset = self.feat_offsets[tmpnode.offset as usize].offset as u64;
+                    // node.offset = 1;
+                    // offset += feat.size as u64;
                     node
                 })
                 .collect::<Vec<_>>();
             let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
             tree.stream_write(&mut out)?;
         }
-
+        // println!("Writing {} features", self.feat_offsets.len());
         // Copy features from temp file in sort order
         self.tmpout.rewind()?;
         let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
         let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
-
+        std::io::copy(&mut unsorted_feature_reader, &mut out)?;
+        // unsorted_feature_reader.seek(SeekFrom::Start(0));
+        // buf.resize(0, 0);
+        // out.write_all()?;
         // Clippy generates a false-positive here, needs a block to disable, see
         // https://github.com/rust-lang/rust-clippy/issues/9274
-        #[allow(clippy::read_zero_byte_vec)]
-        {
-            let mut buf = Vec::with_capacity(2048);
-            for node in &self.feat_nodes {
-                let feat = &self.feat_offsets[node.offset as usize];
-                unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
-                buf.resize(feat.size, 0);
-                unsorted_feature_reader.read_exact(&mut buf)?;
-                out.write_all(&buf)?;
-            }
-        }
+        // #[allow(clippy::read_zero_byte_vec)]
+        // {
+        //     let mut buf = Vec::with_capacity(2048);
+            
+        //     for node in 0..(&self.feat_nodes).len() {
+
+        //         let feat = &self.feat_offsets[node];
+        //         unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
+        //         buf.resize(feat.size, 0);
+        //         unsorted_feature_reader.read_exact(&mut buf)?;
+        //         out.write_all(&buf)?;
+        //     }
+        // }
 
         Ok(())
     }
+
+    // pub fn reindex_write(&mut self, mut out: impl Write+Read, header : Header) -> Result<()> {
+    //     // out.write_all(&MAGIC_BYTES)?;
+
+    //     let extent = calc_extent(&self.feat_nodes);
+    //     // No need to rewrite the whole header, do later
+    //     // Write header
+    //     self.header_args.columns = Some(self.fbb.create_vector(&self.columns));
+    //     self.header_args.envelope =
+    //         Some(
+    //             self.fbb
+    //                 .create_vector(&[extent.min_x, extent.min_y, extent.max_x, extent.max_y]),
+    //         );
+    //     self.header_args.geometry_type = self.feat_writer.dataset_type;
+    //     let header = Header::create(&mut self.fbb, &self.header_args);
+    //     self.fbb.finish_size_prefixed(header, None);
+    //     let buf = self.fbb.finished_data();
+    //     out.write_all(buf)?;
+        
+
+    //     if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
+    //         // Create sorted index
+    //         hilbert_sort(&mut self.feat_nodes, &extent);
+    //         // Update offsets for index
+    //         // let mut offset = 0;
+    //         let index_nodes = self
+    //             .feat_nodes
+    //             .iter()
+    //             .map(|tmpnode| {
+    //                 // let feat = &self.feat_offsets[tmpnode.offset as usize];
+    //                 let mut node = tmpnode.clone();
+    //                 node.offset = self.feat_offsets[tmpnode.offset as usize].offset as u64;
+    //                 // offset += feat.size as u64;
+    //                 node
+    //             })
+    //             .collect::<Vec<_>>();
+    //         let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
+    //         tree.stream_write(&mut out)?;
+    //     }
+
+    //     // Copy features from temp file in sort order
+    //     self.tmpout.rewind()?;
+    //     let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
+    //     let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
+        
+    //     // Clippy generates a false-positive here, needs a block to disable, see
+    //     // https://github.com/rust-lang/rust-clippy/issues/9274
+    //     #[allow(clippy::read_zero_byte_vec)]
+    //     {
+    //         let mut buf = Vec::with_capacity(2048);
+            
+    //         for node in 0..(&self.feat_nodes).len() {
+
+    //             let feat = &self.feat_offsets[node];
+    //             unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
+    //             buf.resize(feat.size, 0);
+    //             unsorted_feature_reader.read_exact(&mut buf)?;
+    //             out.write_all(&buf)?;
+    //         }
+    //     }
+
+    //     Ok(())
+    // }
 }
 
 mod geozero_api {

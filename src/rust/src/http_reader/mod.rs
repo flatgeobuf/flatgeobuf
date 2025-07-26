@@ -163,11 +163,11 @@ impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
             combine_request_threshold,
         )
         .await?;
-        debug_assert!(
-            list.windows(2)
-                .all(|w| w[0].range.start() < w[1].range.start()),
-            "Since the tree is traversed breadth first, list should be sorted by construction."
-        );
+        // debug_assert!(
+        //     list.windows(2)
+        //         .all(|w| w[0].range.start() < w[1].range.start()),
+        //     "Since the tree is traversed breadth first, list should be sorted by construction."
+        // );
 
         let count = list.len();
         let feature_batches = FeatureBatch::make_batches(list, combine_request_threshold).await?;

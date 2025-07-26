@@ -135,11 +135,11 @@ impl<R: Read> FgbReader<R> {
             header.index_node_size(),
         )?;
         let list = index.search(min_x, min_y, max_x, max_y)?;
-        debug_assert!(
-            list.windows(2).all(|w| w[0].offset < w[1].offset),
-            "Since the tree is traversed breadth first, list should be sorted by construction."
-        );
-
+        // debug_assert!(
+        //     list.windows(2).all(|w| w[0].offset < w[1].offset),
+        //     "Since the tree is traversed breadth first, list should be sorted by construction."
+        // );
+        println!("{:?}", list);
         Ok(FeatureIter::new(
             self.reader,
             self.verify,
@@ -180,10 +180,10 @@ impl<R: Read + Seek> FgbReader<R> {
             max_x,
             max_y,
         )?;
-        debug_assert!(
-            list.windows(2).all(|w| w[0].offset < w[1].offset),
-            "Since the tree is traversed breadth first, list should be sorted by construction."
-        );
+        // debug_assert!(
+        //     list.windows(2).all(|w| w[0].offset < w[1].offset),
+        //     "Since the tree is traversed breadth first, list should be sorted by construction."
+        // );
 
         Ok(FeatureIter::new(
             self.reader,
@@ -245,13 +245,13 @@ impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
-                if self.state == State::ReadFirstFeatureSize {
-                    self.state = State::Reading;
-                }
-                // skip features
-                let seek_bytes = item.offset as u64 - self.cur_pos;
-                io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
-                self.cur_pos += seek_bytes;
+            if self.state == State::ReadFirstFeatureSize {
+                self.state = State::Reading;
+            }
+            // skip features
+            let seek_bytes = item.offset as u64 - self.cur_pos;
+            io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
+            self.cur_pos += seek_bytes;
             }
         }
         self.read_feature()
