@@ -1,5 +1,9 @@
 # Changelog
 
+## [5.0.0] - 2025-07-29
+
+- [rust] Update to geo-traits 0.3.0 (#439)
+
 ## [4.6.0] - 2025-02-12
 
 - [all]  Upgrade to flatbuffers 24.12.23 (#410)
