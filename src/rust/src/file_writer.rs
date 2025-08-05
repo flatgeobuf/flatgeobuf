@@ -325,16 +325,12 @@ impl<'a> FgbWriter<'a> {
                 // Create sorted index
                 hilbert_sort(&mut self.feat_nodes, &extent);
                 // Update offsets for index
-                // let mut offset = 0;
                 let index_nodes = self
                     .feat_nodes
                     .iter()
                     .map(|tmpnode| {
-                        // let feat = &self.feat_offsets[tmpnode.offset as usize];
                         let mut node = tmpnode.clone();
                         node.offset = self.feat_offsets[tmpnode.offset as usize].offset as u64;
-                        // node.offset = 1;
-                        // offset += feat.size as u64;
                         node
                     })
                     .collect::<Vec<_>>();
@@ -342,28 +338,7 @@ impl<'a> FgbWriter<'a> {
                     PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
                 tree.stream_write(&mut out)?;
             }
-            // println!("Writing {} features", self.feat_offsets.len());
-            // Copy features from temp file in sort order
         }
-
-        // unsorted_feature_reader.seek(SeekFrom::Start(0));
-        // buf.resize(0, 0);
-        // out.write_all()?;
-        // Clippy generates a false-positive here, needs a block to disable, see
-        // https://github.com/rust-lang/rust-clippy/issues/9274
-        // #[allow(clippy::read_zero_byte_vec)]
-        // {
-        //     let mut buf = Vec::with_capacity(2048);
-
-        //     for node in 0..(&self.feat_nodes).len() {
-
-        //         let feat = &self.feat_offsets[node];
-        //         unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
-        //         buf.resize(feat.size, 0);
-        //         unsorted_feature_reader.read_exact(&mut buf)?;
-        //         out.write_all(&buf)?;
-        //     }
-        // }
 
         Ok(())
     }
