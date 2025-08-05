@@ -117,6 +117,7 @@ mod geometry_reader;
 #[allow(unused_imports, non_snake_case, clippy::all)]
 #[rustfmt::skip]
 mod header_generated;
+mod file_appender;
 #[cfg(feature = "http")]
 mod http_reader;
 pub mod packed_r_tree;
@@ -124,6 +125,7 @@ mod properties_reader;
 
 pub use error::{Error, Result};
 pub use feature_generated::*;
+pub use file_appender::*;
 pub use file_reader::reader_trait::*;
 pub use file_reader::*;
 pub use file_writer::*;

@@ -108,8 +108,10 @@ impl<R: Read> FgbReader<R> {
     /// This can be used to read from an input stream.
     pub fn select_all_seq(mut self) -> Result<FeatureIter<R, NotSeekable>> {
         // skip index
-        let index_size = self.index_size();
-        io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
+        if self.fbs.header().mutablity_version() == 0 {
+            let index_size = self.index_size();
+            io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
+        }
 
         Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
     }
@@ -129,11 +131,26 @@ impl<R: Read> FgbReader<R> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(Error::NoIndex);
         }
+        if header.mutablity_version() != 0 {
+            return Err(Error::MutableNotSeekable);
+        }
         let index = PackedRTree::from_buf(
             &mut self.reader,
             header.features_count() as usize,
             header.index_node_size(),
         )?;
+        // }
+        // else {
+        //     let curr_pos = self.reader.stream_position()?;
+        //     self.reader.seek(SeekFrom::End(- index_size()))?;
+        //     let index = PackedRTree::from_buf(
+        //     &mut self.reader,
+        //     header.features_count() as usize,
+        //     header.index_node_size(),
+        //     )?;
+        //     self.reader.seek(SeekFrom::Start(curr_pos))?;
+        // }
+
         let mut list = index.search(min_x, min_y, max_x, max_y)?;
         // debug_assert!(
         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
@@ -154,8 +171,10 @@ impl<R: Read + Seek> FgbReader<R> {
     /// Select all features.
     pub fn select_all(mut self) -> Result<FeatureIter<R, Seekable>> {
         // skip index
-        let index_size = self.index_size();
-        self.reader.seek(SeekFrom::Current(index_size as i64))?;
+        if self.fbs.header().mutablity_version() == 0 {
+            let index_size = self.index_size();
+            self.reader.seek(SeekFrom::Current(index_size as i64))?;
+        }
 
         Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
     }
@@ -172,6 +191,12 @@ impl<R: Read + Seek> FgbReader<R> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(Error::NoIndex);
         }
+        let mut feature_base: u64 = 0; // it is feature base only if mutability is enabled
+        if header.mutablity_version() != 0 {
+            let index_size = self.index_size();
+            feature_base = self.reader.stream_position()?;
+            self.reader.seek(SeekFrom::End(-(index_size as i64)))?;
+        }
         let mut list = PackedRTree::stream_search(
             &mut self.reader,
             header.features_count() as usize,
@@ -181,11 +206,15 @@ impl<R: Read + Seek> FgbReader<R> {
             max_x,
             max_y,
         )?;
+        if header.mutablity_version() != 0 {
+            self.reader.seek(SeekFrom::Start(feature_base))?;
+        }
+
         // debug_assert!(
         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
         //     "Since the tree is traversed breadth first, list should be sorted by construction."
         // );
-        list.sort_by_key(|x| x.offset);
+        list.sort_by_key(|x| x.offset); // TODO: no need to sort in old method(immutable version)
         Ok(FeatureIter::new(
             self.reader,
             self.verify,
@@ -246,13 +275,13 @@ impl<R: Read> FallibleStreamingIterator for FeatureIter<R, NotSeekable> {
         if let Some(filter) = &self.item_filter {
             let item = &filter[self.feat_no];
             if item.offset as u64 > self.cur_pos {
-            if self.state == State::ReadFirstFeatureSize {
-                self.state = State::Reading;
-            }
-            // skip features
-            let seek_bytes = item.offset as u64 - self.cur_pos;
-            io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
-            self.cur_pos += seek_bytes;
+                if self.state == State::ReadFirstFeatureSize {
+                    self.state = State::Reading;
+                }
+                // skip features
+                let seek_bytes = item.offset as u64 - self.cur_pos;
+                io::copy(&mut (&mut self.reader).take(seek_bytes), &mut io::sink())?;
+                self.cur_pos += seek_bytes;
             }
         }
         self.read_feature()
@@ -310,6 +339,7 @@ impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
                 self.cur_pos += seek_bytes;
             }
         }
+        println!("cur_pos: {}", self.reader.stream_position()?);
         self.read_feature()
     }
 
@@ -435,7 +465,7 @@ mod geozero_api {
 
 // Shared FallibleStreamingIterator implementation
 impl<R: Read, S> FeatureIter<R, S> {
-    fn new(
+    pub(crate) fn new(
         reader: R,
         verify: bool,
         fbs: FgbFeature,
@@ -532,6 +562,7 @@ impl<R: Read, S> FeatureIter<R, S> {
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
         self.fbs.feature_buf.resize(feature_size + 4, 0);
         self.reader.read_exact(&mut self.fbs.feature_buf[4..])?;
+        // println!("{}", self.reader.stream_position()?);
         if self.verify {
             let _feature = size_prefixed_root_as_feature(&self.fbs.feature_buf)?;
         }

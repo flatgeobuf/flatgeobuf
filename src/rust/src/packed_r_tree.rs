@@ -275,6 +275,12 @@ pub fn calc_extent(nodes: &[NodeItem]) -> NodeItem {
     })
 }
 
+pub fn calc_extent_from_prev(nodes: &[NodeItem], extent: &NodeItem) -> NodeItem {
+    nodes.iter().fold(extent.clone(), |mut a, b| {
+        a.expand(b);
+        a
+    })
+}
 /// Packed Hilbert R-Tree
 pub struct PackedRTree {
     extent: NodeItem,
@@ -285,7 +291,7 @@ pub struct PackedRTree {
 }
 
 impl PackedRTree {
-    pub const DEFAULT_NODE_SIZE: u16 = 4; //16 originial
+    pub const DEFAULT_NODE_SIZE: u16 = 16; //16 originial
 
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
@@ -427,6 +433,27 @@ impl PackedRTree {
         Ok(tree)
     }
 
+    pub fn nodes_from_buf(
+        data: impl Read,
+        num_items: usize,
+        node_size: u16,
+    ) -> Result<Vec<NodeItem>> {
+        let node_size = node_size.clamp(2, 65535);
+        let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
+        let num_nodes = level_bounds
+            .first()
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
+            .end;
+        let mut tree = PackedRTree {
+            extent: NodeItem::create(0),
+            node_items: Vec::with_capacity(num_nodes),
+            num_leaf_nodes: num_items,
+            branching_factor: node_size,
+            level_bounds,
+        };
+        tree.read_data(data)?;
+        Ok(tree.node_items)
+    }
     #[cfg(feature = "http")]
     pub async fn from_http(
         client: &mut BufferedHttpRangeClient,
@@ -462,7 +489,7 @@ impl PackedRTree {
         let mut results = Vec::new();
         let mut queue = VecDeque::new();
         queue.push_back((0, self.level_bounds.len() - 1));
-        println! ("search bounds: {min_x}, {min_y}, {max_x}, {max_y}");
+        println!("search bounds: {min_x}, {min_y}, {max_x}, {max_y}");
         while let Some(next) = queue.pop_front() {
             let node_index = next.0;
             let level = next.1;
@@ -474,7 +501,6 @@ impl PackedRTree {
             );
             // search through child nodes
             for pos in node_index..end {
-                
                 let node_item = &self.node_items[pos];
                 println!("Node Items: {node_item:?}");
                 if !bounds.intersects(node_item) {
@@ -514,7 +540,7 @@ impl PackedRTree {
     //         let level = next.1;
     //         let is_leaf_node = node_index >= self.num_nodes() - self.num_leaf_nodes;
     //         let second_last = node_index >= self.num_nodes() - self.num_leaf_nodes - self.num_leaf_nodes.div_ceil(self.branching_factor as usize);
-            
+
     //         // find the end index of the node
     //         let end = min(
     //             node_index + self.branching_factor as usize,
@@ -531,7 +557,7 @@ impl PackedRTree {
     //                     offset: node_item.offset as usize,
     //                     index: pos - leaf_nodes_offset,
     //                 });
-                    
+
     //             } else {
     //                 queue.push_back((node_item.offset as usize, level - 1));
     //             }

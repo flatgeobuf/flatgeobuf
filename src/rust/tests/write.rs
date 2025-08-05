@@ -262,13 +262,10 @@ fn test_save_fgb_and_load() -> Result<()> {
         geo_types::line_string![(x: 0.5, y: 0.0), (x: 1.0, y: 1.0),],
         geo_types::line_string![(x: 0.0, y: 0.5), (x: 1.0, y: 1.0),],
         geo_types::line_string![(x: 0.0, y: 0.0), (x: 0.5, y: 1.0),],
-        
         geo_types::line_string![(x: 2.0, y: 0.0), (x: 3.0, y: 1.0),],
         geo_types::line_string![(x: 0.5, y: 6.0), (x: 5.0, y: 1.0),],
         geo_types::line_string![(x: 7.0, y: 7.0), (x: 8.0, y: 7.0),],
         geo_types::line_string![(x: 0.0, y: 10.0), (x: 0.5, y: 9.0),],
-        
-        
     ];
 
     let mut fgb = FgbWriter::create_with_options(
@@ -296,7 +293,7 @@ fn test_save_fgb_and_load() -> Result<()> {
     // Load
     let read_file_again = file_to_write.reopen()?;
     let mut filein = BufReader::new(&read_file_again);
-    let mut fgb = FgbReader::open(&mut filein)?.select_bbox(-1.,-1.,1.,1.)?; //-22., 64., -20., 65.
+    let mut fgb = FgbReader::open(&mut filein)?.select_bbox(-1., -1., 1., 1.)?; //-22., 64., -20., 65.
     let mut cnt = 0;
     while let Some(feature) = fgb.next().unwrap() {
         let _props = feature.properties();
@@ -306,5 +303,67 @@ fn test_save_fgb_and_load() -> Result<()> {
     }
     assert_eq!(cnt, 5);
 
+    Ok(())
+}
+
+#[test]
+fn test_save_fgb_and_load_with_mutability() -> Result<()> {
+    let linestrings: Vec<LineString<f64>> = vec![
+        line_string![
+            (x: -21.95156, y: 64.1446),
+            (x: -21.951, y: 64.14479),
+            (x: -21.95044, y: 64.14527),
+            (x: -21.951445, y: 64.145508)
+        ],
+        line_string![(x: 0.0, y: 0.0), (x: 1.0, y: 1.0)],
+        line_string![(x: 0.5, y: 0.0), (x: 1.0, y: 1.0)],
+        line_string![(x: 0.0, y: 0.5), (x: 1.0, y: 1.0)],
+        line_string![(x: 0.0, y: 0.0), (x: 0.5, y: 1.0)],
+        line_string![(x: 2.0, y: 0.0), (x: 3.0, y: 1.0)],
+        line_string![(x: 0.5, y: 6.0), (x: 5.0, y: 1.0)],
+        line_string![(x: 7.0, y: 7.0), (x: 8.0, y: 7.0)],
+        line_string![(x: 0.0, y: 10.0), (x: 0.5, y: 9.0)],
+    ];
+
+    // === Write ===
+    let out_path = "output.fgb";
+    let file = File::create(out_path)?;
+    let mut writer = BufWriter::new(file);
+
+    let mut fgb = FgbWriter::create_with_options(
+        "test_write",
+        GeometryType::LineString,
+        FgbWriterOptions {
+            write_index: true,
+            crs: FgbCrs {
+                code: 4326,
+                ..Default::default()
+            },
+            mutability_version: 1,
+            ..Default::default()
+        },
+    )?;
+
+    for geom in &linestrings {
+        let geom = geo_types::Geometry::LineString(geom.clone());
+        fgb.add_feature_geom(geom, |_feat| {})?;
+    }
+
+    fgb.write(&mut writer)?;
+    writer.flush()?;
+
+    // === Read ===
+    let file = File::open(out_path)?;
+    let mut reader = BufReader::new(file);
+    let mut fgb = FgbReader::open(&mut reader)?.select_bbox(-1., -1., 1., 1.)?;
+    println!("num features: {:?}", fgb.header());
+    let mut cnt = 0;
+    while let Some(feature) = fgb.next()? {
+        let geometry = feature.geometry().unwrap();
+        println!("{:?}", geometry);
+        cnt += 1;
+    }
+
+    assert_eq!(cnt, 5);
     Ok(())
 }

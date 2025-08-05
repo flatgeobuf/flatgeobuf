@@ -5,6 +5,8 @@ use std::fmt::{Display, Formatter};
 pub enum Error {
     MissingMagicBytes,
     NoIndex,
+    MutableNotSeekable,
+    Immutable,
     #[cfg(feature = "http")]
     HttpClient(http_range_client::HttpError),
     IllegalHeaderSize(usize),
@@ -19,6 +21,8 @@ impl Display for Error {
         match self {
             Error::MissingMagicBytes => "Missing magic bytes. Is this an fgb file?".fmt(f),
             Error::NoIndex => "Index missing".fmt(f),
+            Error::MutableNotSeekable => "Mutability requires seekablity, use select_bbox".fmt(f),
+            Error::Immutable => "File is immutable".fmt(f),
             #[cfg(feature = "http")]
             Error::HttpClient(http_client) => http_client.fmt(f),
             Error::IllegalHeaderSize(size) => write!(f, "Illegal header size: {size}"),

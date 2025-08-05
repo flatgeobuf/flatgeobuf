@@ -771,10 +771,12 @@ impl<'a> Header<'a> {
   pub const VT_COLUMNS: flatbuffers::VOffsetT = 18;
   pub const VT_FEATURES_COUNT: flatbuffers::VOffsetT = 20;
   pub const VT_INDEX_NODE_SIZE: flatbuffers::VOffsetT = 22;
+  // pub const VT_NEW_FLATGEOBUF: flatbuffers::VOffsetT = 23;
   pub const VT_CRS: flatbuffers::VOffsetT = 24;
   pub const VT_TITLE: flatbuffers::VOffsetT = 26;
   pub const VT_DESCRIPTION: flatbuffers::VOffsetT = 28;
   pub const VT_METADATA: flatbuffers::VOffsetT = 30;
+  pub const VT_MUTABILITY_VERSION: flatbuffers::VOffsetT = 32;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -795,6 +797,7 @@ impl<'a> Header<'a> {
     if let Some(x) = args.envelope { builder.add_envelope(x); }
     if let Some(x) = args.name { builder.add_name(x); }
     builder.add_index_node_size(args.index_node_size);
+    builder.add_mutability_version(args.mutability_version);
     builder.add_has_tm(args.has_tm);
     builder.add_has_t(args.has_t);
     builder.add_has_m(args.has_m);
@@ -874,6 +877,13 @@ impl<'a> Header<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<u16>(Header::VT_INDEX_NODE_SIZE, Some(16)).unwrap()}
   }
+  
+  pub fn mutablity_version(&self) -> u16 {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<u16>(Header::VT_MUTABILITY_VERSION, Some(0)).unwrap()}
+  }
   #[inline]
   pub fn crs(&self) -> Option<Crs<'a>> {
     // Safety:
@@ -902,6 +912,9 @@ impl<'a> Header<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Header::VT_METADATA, None)}
   }
+  // pub fn header_args(&self) -> HeaderArgs<'_>{
+    
+  // }
 }
 
 impl flatbuffers::Verifiable for Header<'_> {
@@ -921,6 +934,7 @@ impl flatbuffers::Verifiable for Header<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Column>>>>("columns", Self::VT_COLUMNS, false)?
      .visit_field::<u64>("features_count", Self::VT_FEATURES_COUNT, false)?
      .visit_field::<u16>("index_node_size", Self::VT_INDEX_NODE_SIZE, false)?
+     .visit_field::<u16>("mutability_version", Self::VT_MUTABILITY_VERSION, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<Crs>>("crs", Self::VT_CRS, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("title", Self::VT_TITLE, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<&str>>("description", Self::VT_DESCRIPTION, false)?
@@ -928,6 +942,7 @@ impl flatbuffers::Verifiable for Header<'_> {
      .finish();
     Ok(())
   }
+  
 }
 pub struct HeaderArgs<'a> {
     pub name: Option<flatbuffers::WIPOffset<&'a str>>,
@@ -940,6 +955,7 @@ pub struct HeaderArgs<'a> {
     pub columns: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Column<'a>>>>>,
     pub features_count: u64,
     pub index_node_size: u16,
+    pub mutability_version: u16,
     pub crs: Option<flatbuffers::WIPOffset<Crs<'a>>>,
     pub title: Option<flatbuffers::WIPOffset<&'a str>>,
     pub description: Option<flatbuffers::WIPOffset<&'a str>>,
@@ -959,6 +975,7 @@ impl<'a> Default for HeaderArgs<'a> {
       columns: None,
       features_count: 0,
       index_node_size: 16,
+      mutability_version: 0,
       crs: None,
       title: None,
       description: None,
@@ -1012,6 +1029,11 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> HeaderBuilder<'a, 'b, A> {
   pub fn add_index_node_size(&mut self, index_node_size: u16) {
     self.fbb_.push_slot::<u16>(Header::VT_INDEX_NODE_SIZE, index_node_size, 16);
   }
+
+  #[inline]
+  pub fn add_mutability_version(&mut self, mutability_version: u16) {
+    self.fbb_.push_slot::<u16>(Header::VT_MUTABILITY_VERSION, mutability_version, 0);
+  }
   #[inline]
   pub fn add_crs(&mut self, crs: flatbuffers::WIPOffset<Crs<'b >>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<Crs>>(Header::VT_CRS, crs);
@@ -1056,6 +1078,7 @@ impl core::fmt::Debug for Header<'_> {
       ds.field("columns", &self.columns());
       ds.field("features_count", &self.features_count());
       ds.field("index_node_size", &self.index_node_size());
+      ds.field("mutability_version", &self.mutablity_version());
       ds.field("crs", &self.crs());
       ds.field("title", &self.title());
       ds.field("description", &self.description());
