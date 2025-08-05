@@ -277,22 +277,19 @@ impl<'a> FgbWriter<'a> {
         out.write_all(buf)?;
 
         if self.header_args.mutability_version == 0 {
-            //restore older specialized immutable self
             if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
                 // Create sorted index
-                println!("Hilbert sorting {} features", self.feat_nodes.len());
                 hilbert_sort(&mut self.feat_nodes, &extent);
                 // Update offsets for index
-                // let mut offset = 0;
+                let mut offset = 0;
                 let index_nodes = self
                     .feat_nodes
                     .iter()
                     .map(|tmpnode| {
-                        // let feat = &self.feat_offsets[tmpnode.offset as usize];
+                        let feat = &self.feat_offsets[tmpnode.offset as usize];
                         let mut node = tmpnode.clone();
-                        node.offset = self.feat_offsets[tmpnode.offset as usize].offset as u64;
-                        // node.offset = 1;
-                        // offset += feat.size as u64;
+                        node.offset = offset;
+                        offset += feat.size as u64;
                         node
                     })
                     .collect::<Vec<_>>();
@@ -305,7 +302,17 @@ impl<'a> FgbWriter<'a> {
             self.tmpout.rewind()?;
             let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
             let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
-            std::io::copy(&mut unsorted_feature_reader, &mut out)?;
+            #[allow(clippy::read_zero_byte_vec)]
+            {
+                let mut buf = Vec::with_capacity(2048);
+                for node in &self.feat_nodes {
+                    let feat = &self.feat_offsets[node.offset as usize];
+                    unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
+                    buf.resize(feat.size, 0);
+                    unsorted_feature_reader.read_exact(&mut buf)?;
+                    out.write_all(&buf)?;
+                }
+            }
         } else {
             self.tmpout.rewind()?;
             let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
@@ -314,10 +321,8 @@ impl<'a> FgbWriter<'a> {
 
             // New mutbale version :- only one method for now, I just don't want to keep adding variable in the future, hence the version thingy
             // place index at the last, more efficient for appending
-            println!("Just checking is it reaches here");
             if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
                 // Create sorted index
-                println!("Hilbert sorting {} features", self.feat_nodes.len());
                 hilbert_sort(&mut self.feat_nodes, &extent);
                 // Update offsets for index
                 // let mut offset = 0;

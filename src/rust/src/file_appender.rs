@@ -1,296 +1,15 @@
-// use crate::feature_generated::*;
-// use crate::header_generated::*;
-// use crate::packed_r_tree::calc_extent;
-// use crate::packed_r_tree::{self, PackedRTree};
-// use crate::properties_reader::FgbFeature;
-// use crate::NotSeekable;
-// use crate::Seekable;
-// use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
-// use crate::{Error, Result};
-// use fallible_streaming_iterator::FallibleStreamingIterator;
-// use std::io::{self, Read, Seek, SeekFrom, Write};
-// use std::marker::PhantomData;
-// use crate::file_writer::{FgbWriterOptions, FgbWriter};
-
-// /// FlatGeobuf dataset reader
-// pub struct FgbAppender<'a, R> {
-//     reader: R,
-//     /// FlatBuffers verification
-//     verify: bool,
-//     // feature reading requires header access, therefore
-//     // header_buf is included in the FgbFeature struct.
-//     fbs: FgbFeature,
-//     writer: FgbWriter<'a>,
-//     // tmpout: BufWriter<File>,
-//     // fbb: FlatBufferBuilder<'a>,
-//     // header_args: HeaderArgs<'a>,
-//     // columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
-//     // feat_writer: FeatureWriter<'a>,
-//     // feat_offsets: Vec<FeatureOffset>,
-//     // feat_nodes: Vec<NodeItem>,
-// }
-
-// #[derive(Debug, PartialEq, Eq)]
-// enum State {
-//     Init,
-//     ReadFirstFeatureSize,
-//     Reading,
-//     Finished,
-// }
-
-// use crate::file_reader::FeatureIter;
-
-// // #[derive(Debug)]
-// // // Offsets in temporary file
-// // struct FeatureOffset {
-// //     offset: usize,
-// //     size: usize,
-// // }
-
-// impl<R: Read> FgbAppender<R> {
-//     /// Open dataset by reading the header information
-//     pub fn open(reader: R) -> Result<FgbAppender<R>> {
-//         Self::read_header(reader, true)
-//     }
-
-//     /// Open dataset by reading the header information without FlatBuffers verification
-//     ///
-//     /// # Safety
-//     /// This method is unsafe because it does not verify the FlatBuffers header.
-//     /// It is still safe from the Rust safety guarantees perspective, but it may cause
-//     /// undefined behavior if the FlatBuffers header is invalid.
-//     pub unsafe fn open_unchecked(reader: R) -> Result<FgbAppender<R>> {
-//         Self::read_header(reader, false)
-//     }
-
-//     fn read_header(mut reader: R, verify: bool) -> Result<FgbAppender<R>> {
-//         let mut magic_buf: [u8; 8] = [0; 8];
-//         reader.read_exact(&mut magic_buf)?;
-//         if !check_magic_bytes(&magic_buf) {
-//             return Err(Error::MissingMagicBytes);
-//         }
-
-//         let mut size_buf: [u8; 4] = [0; 4];
-//         reader.read_exact(&mut size_buf)?;
-//         let header_size = u32::from_le_bytes(size_buf) as usize;
-//         if header_size > HEADER_MAX_BUFFER_SIZE || header_size < 8 {
-//             // minimum size check avoids panic in FlatBuffers header decoding
-//             return Err(Error::IllegalHeaderSize(header_size));
-//         }
-//         let mut header_buf = Vec::with_capacity(header_size + 4);
-//         header_buf.extend_from_slice(&size_buf);
-//         header_buf.resize(header_buf.capacity(), 0);
-//         reader.read_exact(&mut header_buf[4..])?;
-
-//         if verify {
-//             let _header = size_prefixed_root_as_header(&header_buf)?;
-//         }
-
-//         let fbs = FgbFeature {
-//                 header_buf,
-//                 feature_buf: Vec::new(),
-//             };
-//         let header = fbs.header();
-
-//         Ok(FgbAppender {
-//             reader,
-//             verify,
-//             fbs: FgbFeature {
-//                 header_buf,
-//                 feature_buf: Vec::new(),
-//             },
-//         })
-//     }
-
-//     /// Select all features without using seek.
-//     ///
-//     /// This can be used to read from an input stream.
-//     pub fn select_all_seq(mut self) -> Result<FeatureIter<R, NotSeekable>> {
-//         // skip index
-//         if self.fbs.header().mutablity_version() == 0 {
-//         let index_size = self.index_size();
-//         io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
-//         }
-
-//         Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
-//     }
-
-//     /// Select features within a bounding box without using seek.
-//     ///
-//     /// This can be used to read from an input stream.
-//     pub fn select_bbox_seq(
-//         mut self,
-//         min_x: f64,
-//         min_y: f64,
-//         max_x: f64,
-//         max_y: f64,
-//     ) -> Result<FeatureIter<R, NotSeekable>> {
-//         // Read R-Tree index and build filter for features within bbox
-//         let header = self.fbs.header();
-//         if header.index_node_size() == 0 || header.features_count() == 0 {
-//             return Err(Error::NoIndex);
-//         }
-//         if header.mutablity_version() != 0 {
-//             return Err(Error::MutableNotSeekable);
-//         }
-//         let index = PackedRTree::from_buf(
-//         &mut self.reader,
-//         header.features_count() as usize,
-//         header.index_node_size(),
-//         )?;
-//         // }
-//         // else {
-//         //     let curr_pos = self.reader.stream_position()?;
-//         //     self.reader.seek(SeekFrom::End(- index_size()))?;
-//         //     let index = PackedRTree::from_buf(
-//         //     &mut self.reader,
-//         //     header.features_count() as usize,
-//         //     header.index_node_size(),
-//         //     )?;
-//         //     self.reader.seek(SeekFrom::Start(curr_pos))?;
-//         // }
-
-//         let mut list = index.search(min_x, min_y, max_x, max_y)?;
-//         // debug_assert!(
-//         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
-//         //     "Since the tree is traversed breadth first, list should be sorted by construction."
-//         // );
-//         list.sort_by_key(|x| x.offset);
-//         println!("{:?}", list);
-//         Ok(FeatureIter::new(
-//             self.reader,
-//             self.verify,
-//             self.fbs,
-//             Some(list),
-//         ))
-//     }
-// }
-
-// impl<R: Read + Seek> FgbAppender<R> {
-//     /// Select all features.
-//     pub fn select_all(mut self) -> Result<FeatureIter<R, Seekable>> {
-//         // skip index
-//         if self.fbs.header().mutablity_version() == 0 {
-//             let index_size = self.index_size();
-//             self.reader.seek(SeekFrom::Current(index_size as i64))?;
-//         }
-
-//         Ok(FeatureIter::new(self.reader, self.verify, self.fbs, None))
-//     }
-//     /// Select features within a bounding box.
-//     pub fn select_bbox(
-//         mut self,
-//         min_x: f64,
-//         min_y: f64,
-//         max_x: f64,
-//         max_y: f64,
-//     ) -> Result<FeatureIter<R, Seekable>> {
-//         // Read R-Tree index and build filter for features within bbox
-//         let header = self.fbs.header();
-//         if header.index_node_size() == 0 || header.features_count() == 0 {
-//             return Err(Error::NoIndex);
-//         }
-//         let mut feature_base: u64 = 0; // it is feature base only if mutability is enabled
-//         if header.mutablity_version() != 0 {
-//             let index_size = self.index_size();
-//             feature_base = self.reader.stream_position()?;
-//             self.reader.seek(SeekFrom::End(- (index_size as i64)))?;
-//         }
-//         let mut list = PackedRTree::stream_search(
-//             &mut self.reader,
-//             header.features_count() as usize,
-//             PackedRTree::DEFAULT_NODE_SIZE,
-//             min_x,
-//             min_y,
-//             max_x,
-//             max_y,
-//         )?;
-//         if header.mutablity_version() != 0 {
-//             self.reader.seek(SeekFrom::Start(feature_base))?;
-//         }
-
-//         // debug_assert!(
-//         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
-//         //     "Since the tree is traversed breadth first, list should be sorted by construction."
-//         // );
-//         list.sort_by_key(|x| x.offset); // TODO: no need to sort in old method(immutable version)
-//         Ok(FeatureIter::new(
-//             self.reader,
-//             self.verify,
-//             self.fbs,
-//             Some(list),
-//         ))
-//     }
-// }
-
-// impl<R: Read> FgbAppender<R> {
-//     /// Header information
-//     pub fn header(&self) -> Header {
-//         self.fbs.header()
-//     }
-
-//     fn index_size(&self) -> u64 {
-//         let header = self.fbs.header();
-//         let feat_count = header.features_count() as usize;
-//         if header.index_node_size() > 0 && feat_count > 0 {
-//             PackedRTree::index_size(feat_count, header.index_node_size()) as u64
-//         } else {
-//             0
-//         }
-//     }
-// }
-
-// impl<R:Read + Seek + Write> FgbAppender<R>{
-
-//     pub fn reindex_append(mut self, mut out: impl Write+Seek+Read) -> Result<()> {
-//         // headers, should already be read by this point in an open function ig
-//         // calculate new extent, edit the header write it
-//         // confirm that it's the same length as before
-//         let header = self.fbs.header();
-//         if header.mutablity_version()==0{
-//             return Err(Error::Immutable);
-//         }
-
-//         // check if the file is mutable
-
-//         // read the index
-//         let index_size = self.index_size();
-//         out.seek(SeekFrom::End(-(index_size as i64)))?;
-//         // let mut index_buf = vec![0; index_size as usize];
-//         // out.read_exact(&mut out)?;
-//         let index = PackedRTree::from_buf(
-//         &mut out,
-//         header.features_count() as usize,
-//         header.index_node_size(),
-//         )?;
-
-//         // append data
-
-//         // reindex
-//         // write the index
-//         // write the rest of the file
-//         Ok(())
-//         }
-//     }
-
 use crate::error::Result;
-use crate::feature_generated::*;
 use crate::feature_writer::FeatureWriter;
-use crate::file_reader::FeatureIter;
 use crate::header_generated::*;
-use crate::packed_r_tree::{
-    calc_extent, calc_extent_from_prev, hilbert_sort, NodeItem, PackedRTree,
-};
+use crate::packed_r_tree::{calc_extent_from_prev, NodeItem, PackedRTree};
 use crate::properties_reader::FgbFeature;
+use crate::Error;
 use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
-use crate::{Error, NotSeekable, Seekable};
-use fallible_streaming_iterator::FallibleStreamingIterator;
 use flatbuffers::FlatBufferBuilder;
 use geozero::CoordDimensions;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
-use std::marker::PhantomData;
+use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 
 /// FlatGeobuf dataset appender for mutable files
 pub struct FgbAppender<'a, R> {
@@ -307,8 +26,6 @@ pub struct FgbAppender<'a, R> {
     feat_writer: FeatureWriter<'a>,
     feat_offsets: Vec<FeatureOffset>,
     feat_nodes: Vec<NodeItem>,
-    // Track existing features for reindexing
-    existing_nodes: Vec<NodeItem>,
 }
 
 #[derive(Debug)]
@@ -403,7 +120,7 @@ impl<'a, R: Read> FgbAppender<'a, R> {
         let mut columns = Vec::new();
         if let Some(cols) = header.columns() {
             for col in cols {
-                let name = col.name().clone();
+                let name = col.name();
                 let title_offset = col.title().map(|v| fbb.create_string(v));
                 let name_offset = Some(fbb.create_string(name));
                 let description_offset = col.description().map(|v| fbb.create_string(v));
@@ -440,7 +157,6 @@ impl<'a, R: Read> FgbAppender<'a, R> {
         );
 
         let tmpout = BufWriter::new(tempfile::tempfile()?);
-        println!("{:?}", columns);
         Ok(FgbAppender {
             reader,
             verify,
@@ -452,7 +168,6 @@ impl<'a, R: Read> FgbAppender<'a, R> {
             feat_writer,
             feat_offsets: Vec::new(),
             feat_nodes: Vec::new(),
-            existing_nodes: Vec::new(),
         })
     }
 
@@ -504,7 +219,6 @@ impl<'a, R: Read> FgbAppender<'a, R> {
             offset: tmpoffset,
             size: feat_buf.len(),
         });
-        println!("out {}", self.tmpout.stream_position()?);
         self.tmpout.write_all(&feat_buf)?;
         self.header_args.features_count += 1;
         Ok(())

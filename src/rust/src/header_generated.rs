@@ -771,7 +771,6 @@ impl<'a> Header<'a> {
   pub const VT_COLUMNS: flatbuffers::VOffsetT = 18;
   pub const VT_FEATURES_COUNT: flatbuffers::VOffsetT = 20;
   pub const VT_INDEX_NODE_SIZE: flatbuffers::VOffsetT = 22;
-  // pub const VT_NEW_FLATGEOBUF: flatbuffers::VOffsetT = 23;
   pub const VT_CRS: flatbuffers::VOffsetT = 24;
   pub const VT_TITLE: flatbuffers::VOffsetT = 26;
   pub const VT_DESCRIPTION: flatbuffers::VOffsetT = 28;
@@ -912,9 +911,6 @@ impl<'a> Header<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Header::VT_METADATA, None)}
   }
-  // pub fn header_args(&self) -> HeaderArgs<'_>{
-    
-  // }
 }
 
 impl flatbuffers::Verifiable for Header<'_> {

@@ -139,25 +139,17 @@ impl<R: Read> FgbReader<R> {
             header.features_count() as usize,
             header.index_node_size(),
         )?;
-        // }
-        // else {
-        //     let curr_pos = self.reader.stream_position()?;
-        //     self.reader.seek(SeekFrom::End(- index_size()))?;
-        //     let index = PackedRTree::from_buf(
-        //     &mut self.reader,
-        //     header.features_count() as usize,
-        //     header.index_node_size(),
-        //     )?;
-        //     self.reader.seek(SeekFrom::Start(curr_pos))?;
-        // }
 
         let mut list = index.search(min_x, min_y, max_x, max_y)?;
         // debug_assert!(
         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
         //     "Since the tree is traversed breadth first, list should be sorted by construction."
         // );
-        list.sort_by_key(|x| x.offset);
-        println!("{:?}", list);
+        if header.mutablity_version() != 0 {
+            list.sort_by_key(|x| x.offset);
+            debug!("{:?}", list);
+        }
+
         Ok(FeatureIter::new(
             self.reader,
             self.verify,
@@ -214,7 +206,11 @@ impl<R: Read + Seek> FgbReader<R> {
         //     list.windows(2).all(|w| w[0].offset < w[1].offset),
         //     "Since the tree is traversed breadth first, list should be sorted by construction."
         // );
-        list.sort_by_key(|x| x.offset); // TODO: no need to sort in old method(immutable version)
+        if header.mutablity_version() != 0 {
+            list.sort_by_key(|x| x.offset);
+            debug!("{:?}", list);
+        }
+
         Ok(FeatureIter::new(
             self.reader,
             self.verify,
@@ -339,7 +335,6 @@ impl<R: Read + Seek> FallibleStreamingIterator for FeatureIter<R, Seekable> {
                 self.cur_pos += seek_bytes;
             }
         }
-        println!("cur_pos: {}", self.reader.stream_position()?);
         self.read_feature()
     }
 
