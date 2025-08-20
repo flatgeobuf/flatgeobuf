@@ -52,7 +52,7 @@ namespace FlatGeobuf.NTS
 
             // Create an appropriate geometry factory
             pm ??= NtsGeometryServices.Instance.DefaultPrecisionModel;
-            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(pm, header.Crs.Code, CsFactory);
+            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(pm, header.Crs?.Code ?? 0, CsFactory);
 
             // Get filter iterator
             rect ??= new Envelope();
@@ -114,12 +114,12 @@ namespace FlatGeobuf.NTS
         /// <summary>
         /// Gets a value indicating the extent of the provided data set
         /// </summary>
-        public Envelope Extent { get => new Envelope(_header.Envelope[0], _header.Envelope[2], _header.Envelope[1], _header.Envelope[3]); }
+        public Envelope Extent { get => _header.Envelope.Count > 3 ? new Envelope(_header.Envelope[0], _header.Envelope[2], _header.Envelope[1], _header.Envelope[3]) : new Envelope(); }
 
         /// <summary>
         /// Gets a value indicating the spatial reference id of the provided feature data set
         /// </summary>
-        public int SRID { get => _header.Crs.Code; }
+        public int SRID { get => _header.Crs?.Code ?? 0; }
 
         /// <summary>
         /// Gets a value indicating the <c>Coordinate Reference System</c> of the provided feature data set
