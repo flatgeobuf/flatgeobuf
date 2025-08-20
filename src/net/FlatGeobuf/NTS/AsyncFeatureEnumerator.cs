@@ -138,8 +138,27 @@ namespace FlatGeobuf.NTS
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Skip a number of records.
+        /// </summary>
+        /// <param name="count">The number of records to skip.</param>
+        public async ValueTask SkipAsync(int count) 
+        {
+            while (count-- > 0)
+            {
+                if (!await MoveNextAsync(false))
+                {
+                    return;
+                }
+            }
+        }
+
         /// <inheritdoc/>
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return MoveNextAsync(true);
+        }
+        private async ValueTask<bool> MoveNextAsync(bool createFeature)
         {
             // Initialize current
             Current = null;
@@ -178,8 +197,11 @@ namespace FlatGeobuf.NTS
             if (_itemsIndex != null && !_itemsIndex.Contains(position))
                 return await MoveNextAsync();
 
-            // Create the feature
-            Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new ByteBuffer(featureData, 0), _header);
+            if (createFeature) 
+            {
+                // Create the feature
+                Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new ByteBuffer(featureData, 0), _header);
+            }
 
             // free buffer 
             ArrayPool<byte>.Shared.Return(featureData);

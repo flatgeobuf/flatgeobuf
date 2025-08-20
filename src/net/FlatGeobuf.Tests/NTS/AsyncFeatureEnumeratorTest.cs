@@ -107,6 +107,53 @@ namespace FlatGeobuf.Tests.NTS
 
         }
 
+        [TestMethod]
+        [DataRow([0, true, "ATA"])]
+        [DataRow([1, true, "ATF"])]
+        [DataRow([5, true, "ZAF"])]
+        [DataRow([178, true, "FLK"])]
+        [DataRow([179, false, ""])]
+        [DataRow([-1, true, "ATA"])]
+        [DataRow([1000, false, ""])]
+        public async Task TestCountriesWithSkip(int skip, bool expectedCanReadMore, string expectedId) {
+            var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries.fgb"));
+            Assert.IsNotNull(ae);
+
+            await ae.SkipAsync(skip);
+
+            if (!expectedCanReadMore) {
+                Assert.IsFalse(await ae.MoveNextAsync());
+                return;
+            }
+
+            Assert.IsTrue(await ae.MoveNextAsync());
+            var id = ae.Current.Attributes["id"];
+            Assert.AreEqual(expectedId, id);
+        }
+
+        [TestMethod]
+        [DataRow([0, true, "IRL"])]
+        [DataRow([1, true, "GBR"])]
+        [DataRow([5, true, "PRT"])]
+        [DataRow([40, true, "POL"])]
+        [DataRow([-1, true, "IRL"])]
+        [DataRow([41, false, ""])]
+        [DataRow([1000, false, ""])]
+        public async Task TestCountriesWithSkipFilter(int skip, bool expectedCanReadMore, string expectedId) {
+            var rect = new Envelope(-16.1, 32.88, 40.18, 84.17);
+            var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries.fgb"), rect: rect);
+            await ae.SkipAsync(skip);
+
+            if (!expectedCanReadMore) {
+                Assert.IsFalse(await ae.MoveNextAsync());
+                return;
+            }
+
+            Assert.IsTrue(await ae.MoveNextAsync());
+            var id = ae.Current.Attributes["id"];
+            Assert.AreEqual(expectedId, id);
+        }
+
         private class UnseekableStream(Stream stream) : Stream
         {
             private readonly Stream _stream = stream;
