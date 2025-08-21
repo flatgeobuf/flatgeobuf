@@ -28,6 +28,38 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(numFeaturesExpected, numFeaturesRead);
         }
 
+        [TestMethod]
+        public async Task TestCountriesWithNoCRS() {
+            var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries_nocrs.fgb"));
+            Assert.IsNotNull(ae);
+            Console.WriteLine(ae.Extent.ToString());
+            int numFeaturesExpected = ae.NumFeatures;
+            int numFeaturesRead = 0;
+            while (await ae.MoveNextAsync()) {
+                Console.WriteLine($" {ae.Current.Attributes["id"]} - {ae.Current.Attributes["name"]}");
+                numFeaturesRead++;
+            }
+
+            Assert.AreEqual(numFeaturesExpected, numFeaturesRead);
+        }
+
+        [TestMethod]
+        public async Task TestCountriesWithNoGeometry() {
+            var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries_nogeo.fgb"));
+            Assert.IsNotNull(ae);
+            Console.WriteLine(ae.Extent.ToString());
+            int numFeaturesExpected = ae.NumFeatures;
+            Assert.AreEqual(0, ae.NumFeatures);
+
+            int numRowsRead = 0;
+            while (await ae.MoveNextAsync()) {
+                Console.WriteLine($" {ae.Current.Attributes["id"]} - {ae.Current.Attributes["name"]}");
+                numRowsRead++;
+            }
+
+            Assert.AreEqual(179, numRowsRead);
+        }
+
         //
 
         [TestMethod]
