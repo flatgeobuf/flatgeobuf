@@ -30,6 +30,32 @@ namespace FlatGeobuf.NTS
         private readonly HashSet<long> _itemsIndex;
         private readonly IEnumerator<(long Offset, ulong Index)> _itemEnumerator;
 
+        /// <summary>
+        /// Read the provided stream and count the number of features without allocating any of them.
+        /// </summary>
+        /// <param name="stream">Input stream</param>
+        /// <param name="pm">NTS Precision Model</param>
+        /// <param name="rect">NTS Envelope</param>
+        /// <param name="token">Optional cancellation token</param>
+        /// <returns>Total number of records.</returns>
+        /// <remarks>
+        /// The result of this method will equal <see cref="HeaderT.FeaturesCount"/> when every record contains geometry.
+        /// The input stream will be disposed when completed.
+        /// </remarks>
+        public static async Task<ulong> CountAsync(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null) 
+        {
+            var t = token ?? CancellationToken.None;
+            await using var enumerator = await Create(stream, pm, rect, t);
+
+            ulong count = 0;
+            while (await enumerator.MoveNextAsync(false))
+            {
+                t.ThrowIfCancellationRequested();
+                ++count;
+            }
+            return count;
+        }
+
         public static async Task<AsyncFeatureEnumerator> Create(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null)
         {
             // Ensure stream is not null

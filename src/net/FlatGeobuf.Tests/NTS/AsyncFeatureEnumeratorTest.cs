@@ -29,6 +29,16 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
+        public async Task TestCountriesCount() {
+            using var fs = File.OpenRead("../../../../../../test/data/countries.fgb");
+            var count = await AsyncFeatureEnumerator.CountAsync(fs);
+            Assert.AreEqual(179, (int)count);
+            Assert.ThrowsException<ObjectDisposedException>(()=> {
+                fs.Position = 0;
+            });
+        }
+
+        [TestMethod]
         public async Task TestCountriesWithNoCRS() {
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries_nocrs.fgb"));
             Assert.IsNotNull(ae);
@@ -41,6 +51,12 @@ namespace FlatGeobuf.Tests.NTS
             }
 
             Assert.AreEqual(numFeaturesExpected, numFeaturesRead);
+        }
+
+        [TestMethod]
+        public async Task TestCountriesWithNoCrsCount() {
+            var count = await AsyncFeatureEnumerator.CountAsync(File.OpenRead("../../../../../../test/data/countries_nocrs.fgb"));
+            Assert.AreEqual(179, (int)count);
         }
 
         [TestMethod]
@@ -60,6 +76,11 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(179, numRowsRead);
         }
 
+        [TestMethod]
+        public async Task TestCountriesWithNoGeometryCount() {
+            var count = await AsyncFeatureEnumerator.CountAsync(File.OpenRead("../../../../../../test/data/countries_nogeo.fgb"));
+            Assert.AreEqual(179, (int)count);
+        }
         //
 
         [TestMethod]
