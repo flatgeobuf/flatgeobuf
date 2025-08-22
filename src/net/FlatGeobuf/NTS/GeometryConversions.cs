@@ -256,6 +256,8 @@ namespace FlatGeobuf.NTS
 
             if (type == GeometryType.Unknown)
                 type = geometry.Type;
+            if (type == GeometryType.Unknown && geometry.XyLength + geometry.ZLength + geometry.MLength + geometry.TLength + geometry.TmLength + geometry.PartsLength + geometry.EndsLength == 0)
+                return null;
 
             return type switch
             {

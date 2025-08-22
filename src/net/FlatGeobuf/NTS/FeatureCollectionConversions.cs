@@ -101,7 +101,7 @@ namespace FlatGeobuf.NTS
                 TypeCode.Int64 => ColumnType.Long,
                 TypeCode.Double => ColumnType.Double,
                 TypeCode.String => ColumnType.String,
-                _ => throw new ApplicationException("Unknown type"),
+                _ => type == typeof(byte[]) ? ColumnType.Binary : throw new ApplicationException("Unknown type"),
             };
         }
 
