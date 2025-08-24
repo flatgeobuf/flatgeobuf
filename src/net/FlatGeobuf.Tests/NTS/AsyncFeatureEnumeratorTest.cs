@@ -34,7 +34,7 @@ namespace FlatGeobuf.Tests.NTS
             using var fs = File.OpenRead("../../../../../../test/data/countries.fgb");
             var count = await AsyncFeatureEnumerator.CountAsync(fs);
             Assert.AreEqual(179, (int)count);
-            Assert.ThrowsException<ObjectDisposedException>(() =>
+            Assert.ThrowsExactly<ObjectDisposedException>(() =>
             {
                 fs.Position = 0;
             });
