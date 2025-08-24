@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-
 using Google.FlatBuffers;
 using NetTopologySuite.Features;
 using FlatGeobuf.Index;
 using NetTopologySuite.Geometries;
-using System.Threading.Tasks;
 using Nito.AsyncEx;
 using System.Text;
 

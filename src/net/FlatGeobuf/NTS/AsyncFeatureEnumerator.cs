@@ -3,13 +3,8 @@ using Google.FlatBuffers;
 using NetTopologySuite;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace FlatGeobuf.NTS
 {

@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using NetTopologySuite.Geometries;
 using NTSGeometry = NetTopologySuite.Geometries.Geometry;
 using Google.FlatBuffers;
