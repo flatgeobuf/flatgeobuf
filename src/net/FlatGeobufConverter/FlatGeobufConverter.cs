@@ -15,7 +15,7 @@ namespace FlatGeobuf
 
             var reader = new GeoJsonReader();
             var fc = reader.Read<FeatureCollection>(geojson);
-            var bytes = FlatGeobuf.NTS.FeatureCollectionConversions.Serialize(fc, GeometryType.Unknown);
+            var bytes = NTS.FeatureCollectionConversions.Serialize(fc, GeometryType.Unknown);
 
             File.WriteAllBytes(outFile, bytes);
         }

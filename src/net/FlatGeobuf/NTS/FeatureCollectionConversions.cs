@@ -74,7 +74,7 @@ namespace FlatGeobuf.NTS
 
         private static ColumnType ToColumnType(Type type)
         {
-            return (Type.GetTypeCode(type)) switch
+            return Type.GetTypeCode(type) switch
             {
                 TypeCode.Byte => ColumnType.UByte,
                 TypeCode.SByte => ColumnType.Byte,

@@ -13,10 +13,7 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class AttributeRoundtripTests
     {
-        static string MakeFeatureCollection(IDictionary<string, object> attributes)
-        {
-            return MakeFeatureCollection(new[] { attributes });
-        }
+        static string MakeFeatureCollection(IDictionary<string, object> attributes) => MakeFeatureCollection([attributes]);
 
         static string MakeFeatureCollection(IDictionary<string, object>[] attributess)
         {

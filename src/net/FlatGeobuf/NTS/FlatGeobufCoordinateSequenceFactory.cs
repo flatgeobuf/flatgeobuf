@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using FlatGeobuf;
-using FlatGeobuf.NTS;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.Geometries.Implementation;
 
 namespace FlatGeobuf.NTS
 {

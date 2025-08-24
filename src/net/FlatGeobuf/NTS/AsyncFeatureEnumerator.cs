@@ -59,12 +59,11 @@ namespace FlatGeobuf.NTS
         public static async Task<AsyncFeatureEnumerator> Create(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null)
         {
             // Ensure stream is not null
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream, nameof(stream));
 
             // Test if stream is readable
             if (!stream.CanRead)
-                throw new ArgumentException(nameof(stream));
+                throw new ArgumentException("Stream doesn't support reading", nameof(stream));
 
             // Ensure stream is at start
             if (stream.Position > 0)
@@ -86,13 +85,9 @@ namespace FlatGeobuf.NTS
             if (header.IndexNodeSize > 0)
             {
                 if (rect.IsNull)
-                {
                     await SkipIndexAsync(header, stream, token.Value);
-                }
                 else
-                {
                     filter = await ReadIndexAsync(header, stream, rect, token.Value);
-                }
             }
 
             return new AsyncFeatureEnumerator(factory, header, stream, filter, token.Value);
@@ -117,13 +112,9 @@ namespace FlatGeobuf.NTS
             if (items != null)
             {
                 if (stream.CanSeek)
-                {
-                    _itemEnumerator = items.GetEnumerator(); ;
-                }
+                    _itemEnumerator = items.GetEnumerator();
                 else
-                {
                     _itemsIndex = CreateItemsIndex(items);
-                }
             }
         }
 
@@ -173,17 +164,12 @@ namespace FlatGeobuf.NTS
             while (count-- > 0)
             {
                 if (!await MoveNextAsync(false))
-                {
                     return;
-                }
             }
         }
 
         /// <inheritdoc/>
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return MoveNextAsync(true);
-        }
+        public ValueTask<bool> MoveNextAsync() => MoveNextAsync(true);
         private async ValueTask<bool> MoveNextAsync(bool createFeature)
         {
             // Initialize current
@@ -224,10 +210,7 @@ namespace FlatGeobuf.NTS
                 return await MoveNextAsync();
 
             if (createFeature) 
-            {
-                // Create the feature
                 Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new ByteBuffer(featureData, 0), _header);
-            }
 
             // free buffer 
             ArrayPool<byte>.Shared.Return(featureData);

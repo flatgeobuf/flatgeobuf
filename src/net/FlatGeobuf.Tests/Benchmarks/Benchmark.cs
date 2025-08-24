@@ -1,19 +1,13 @@
-using System.Collections.Generic;
 using System.Linq;
-using BenchmarkDotNet;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using Google.FlatBuffers;
 using FlatGeobuf.NTS;
-using FlatGeobuf.Tests.NTS;
 using NetTopologySuite;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
-using Perfolizer.Horology;
 
 namespace FlatGeobuf.Benchmarks
 {

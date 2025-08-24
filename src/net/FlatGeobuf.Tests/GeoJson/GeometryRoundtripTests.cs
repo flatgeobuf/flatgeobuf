@@ -11,10 +11,7 @@ namespace FlatGeobuf.Tests.GeoJson
     [TestClass]
     public class GeometryRoundtripTests
     {
-        static string MakeFeatureCollection(string wkt)
-        {
-            return MakeFeatureCollection(new string[] { wkt });
-        }
+        static string MakeFeatureCollection(string wkt) => MakeFeatureCollection([wkt]);
 
         static string MakeFeatureCollection(string[] wkts)
         {

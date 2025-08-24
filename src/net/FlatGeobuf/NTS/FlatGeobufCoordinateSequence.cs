@@ -53,25 +53,10 @@ namespace FlatGeobuf.NTS
             return new FlatGeobufCoordinateSequence(xy, z, m, Count, 0);
         }
 
-        public override double GetX(int index)
-        {
-            return _xy[(_offset + index) * 2];
-        }
-
-        public override double GetY(int index)
-        {
-            return _xy[(_offset + index) * 2 + 1];
-        }
-
-        public override double GetZ(int index)
-        {
-            return _z?[_offset + index] ?? Coordinate.NullOrdinate;
-        }
-
-        public override double GetM(int index)
-        {
-            return _m?[_offset + index] ?? Coordinate.NullOrdinate;
-        }
+        public override double GetX(int index) => _xy[(_offset + index) * 2];
+        public override double GetY(int index) => _xy[(_offset + index) * 2 + 1];
+        public override double GetZ(int index) => _z?[_offset + index] ?? Coordinate.NullOrdinate;
+        public override double GetM(int index) => _m?[_offset + index] ?? Coordinate.NullOrdinate;
 
         public override double GetOrdinate(int index, int ordinateIndex)
         {
