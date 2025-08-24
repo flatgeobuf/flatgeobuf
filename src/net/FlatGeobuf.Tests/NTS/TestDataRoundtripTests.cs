@@ -44,5 +44,27 @@ namespace FlatGeobuf.Tests.NTS
             var list = FeatureCollectionConversions.Deserialize(new MemoryStream(bytes), rect).ToList();
             Assert.AreEqual(3, list.Count);
         }
+        
+        [TestMethod]
+        public void BinaryTest()
+        {
+            var srcBytes = File.ReadAllBytes("../../../../../../test/data/binary_wkb.fgb");
+            var src = FeatureCollectionConversions.Deserialize(srcBytes);
+            Assert.AreEqual(1, src.Count);
+
+            var dstBytes = FeatureCollectionConversions.Serialize(src, GeometryType.Unknown);
+            var dst = FeatureCollectionConversions.Deserialize(dstBytes);
+            Assert.AreEqual(1, dst.Count);
+
+            Assert.AreEqual("08b2681a1482afff056faced1a3aae40", src[0].Attributes["id"]);
+            Assert.AreEqual(src[0].Attributes["id"], dst[0].Attributes["id"]);
+            Assert.IsInstanceOfType(src[0].Attributes["wkb"], typeof(byte[]));
+            Assert.IsInstanceOfType(dst[0].Attributes["wkb"], typeof(byte[]));
+            byte[] srcWkb = (byte[])src[0].Attributes["wkb"];
+            byte[] dstWkb = (byte[])src[0].Attributes["wkb"];
+            Assert.AreEqual(21, srcWkb.Length);
+            Assert.AreEqual(srcWkb.Length, dstWkb.Length);
+            Assert.IsTrue(srcWkb.SequenceEqual(dstWkb));
+        }
     }
 }

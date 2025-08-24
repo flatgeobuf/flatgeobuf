@@ -186,6 +186,40 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(expectedId, id);
         }
 
+        [TestMethod]
+        public async Task TestBinary()
+        {
+            var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/binary_wkb.fgb"));
+            Assert.IsNotNull(ae);
+            
+            //One record in file.
+            await ae.MoveNextAsync();
+
+            string id;
+            byte[] wkb;
+            Assert.IsNotNull(id = ae.Current.Attributes["id"] as string);
+            Assert.IsNotNull(wkb = ae.Current.Attributes["wkb"] as byte[]);
+            Assert.AreEqual("08b2681a1482afff056faced1a3aae40", id);
+            Assert.AreEqual(21, wkb.Length);
+
+            //Simple WKB point check
+            using var ms = new MemoryStream(wkb);
+            using var rdr = new BinaryReader(ms);
+            var byteOrder = rdr.Read();
+            Assert.AreEqual(0, byteOrder); //Big endian file
+            var swapEndian = BitConverter.IsLittleEndian;
+            var type = !swapEndian ? rdr.ReadUInt32() : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(rdr.ReadUInt32());
+            Assert.AreEqual(1U, type);
+            var x = !swapEndian ? rdr.ReadDouble() : ReverseDouble(rdr.ReadDouble());
+            var y = !swapEndian ? rdr.ReadDouble() : ReverseDouble(rdr.ReadDouble());
+            Assert.AreEqual(-105.296435079477, x, 1e-12);
+            Assert.AreEqual(40.0056839165114, y, 1e-12);
+
+            Assert.IsFalse(await ae.MoveNextAsync());
+
+            double ReverseDouble(double val) => BitConverter.UInt64BitsToDouble(System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(BitConverter.DoubleToUInt64Bits(val)));
+        }
+
         private class UnseekableStream(Stream stream) : Stream
         {
             private readonly Stream _stream = stream;

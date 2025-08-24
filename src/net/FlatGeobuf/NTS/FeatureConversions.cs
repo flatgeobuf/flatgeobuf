@@ -16,8 +16,10 @@ namespace FlatGeobuf.NTS
             GeometryType geometryType;
             if (header.GeometryType != GeometryType.Unknown)
                 geometryType = header.GeometryType;
-            else
+            else if (feature.Geometry is not null)
                 geometryType = GeometryConversions.ToGeometryType(feature.Geometry);
+            else
+                geometryType = GeometryType.Unknown;
             var go = GeometryConversions.BuildGeometry(builder, feature.Geometry, geometryType, header);
             var memoryStream = new MemoryStream();
             if (feature.Attributes != null && feature.Attributes.Count > 0 && header.Columns.Count > 0)
@@ -72,6 +74,11 @@ namespace FlatGeobuf.NTS
                         case ColumnType.DateTime:
                         case ColumnType.String:
                             var bytes = Encoding.UTF8.GetBytes((string)value);
+                            writer.Write(bytes.Length);
+                            writer.Write(bytes);
+                            break;
+                        case ColumnType.Binary:
+                            bytes = (byte[])value;
                             writer.Write(bytes.Length);
                             writer.Write(bytes);
                             break;
@@ -172,9 +179,15 @@ namespace FlatGeobuf.NTS
                         case ColumnType.DateTime:
                         case ColumnType.String:
                             int len = reader.ReadInt32();
-                            var str = Encoding.UTF8.GetString(memoryStream.ToArray(), (int)memoryStream.Position, len);
+                            var str = Encoding.UTF8.GetString(propertiesArray, (int)memoryStream.Position, len);
                             memoryStream.Position += len;
                             attributesTable.Add(name, str);
+                            break;
+                        case ColumnType.Binary:
+                            len = reader.ReadInt32();
+                            var buffer = new byte[len];
+                            memoryStream.Read(buffer, 0, len);
+                            attributesTable.Add(name, buffer);
                             break;
                         default: throw new Exception($"Unknown type {type}");
                     }
