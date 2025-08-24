@@ -44,7 +44,7 @@ namespace FlatGeobuf.Tests.NTS
             var list = FeatureCollectionConversions.Deserialize(new MemoryStream(bytes), rect).ToList();
             Assert.AreEqual(3, list.Count);
         }
-        
+
         [TestMethod]
         public void BinaryTest()
         {

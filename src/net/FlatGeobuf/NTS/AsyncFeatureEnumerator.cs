@@ -42,7 +42,7 @@ namespace FlatGeobuf.NTS
         /// The result of this method will equal <see cref="HeaderT.FeaturesCount"/> when every record contains geometry.
         /// The input stream will be disposed when completed.
         /// </remarks>
-        public static async Task<ulong> CountAsync(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null) 
+        public static async Task<ulong> CountAsync(Stream stream, PrecisionModel pm = null, Envelope rect = null, CancellationToken? token = null)
         {
             var t = token ?? CancellationToken.None;
             await using var enumerator = await Create(stream, pm, rect, t);
@@ -159,7 +159,7 @@ namespace FlatGeobuf.NTS
         /// Skip a number of records.
         /// </summary>
         /// <param name="count">The number of records to skip.</param>
-        public async ValueTask SkipAsync(int count) 
+        public async ValueTask SkipAsync(int count)
         {
             while (count-- > 0)
             {
@@ -209,7 +209,7 @@ namespace FlatGeobuf.NTS
             if (_itemsIndex != null && !_itemsIndex.Contains(position))
                 return await MoveNextAsync();
 
-            if (createFeature) 
+            if (createFeature)
                 Current = FeatureConversions.FromByteBuffer(_factory, CsFactory, new ByteBuffer(featureData, 0), _header);
 
             // free buffer 

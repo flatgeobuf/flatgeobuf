@@ -29,23 +29,27 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
-        public async Task TestCountriesCount() {
+        public async Task TestCountriesCount()
+        {
             using var fs = File.OpenRead("../../../../../../test/data/countries.fgb");
             var count = await AsyncFeatureEnumerator.CountAsync(fs);
             Assert.AreEqual(179, (int)count);
-            Assert.ThrowsException<ObjectDisposedException>(()=> {
+            Assert.ThrowsException<ObjectDisposedException>(() =>
+            {
                 fs.Position = 0;
             });
         }
 
         [TestMethod]
-        public async Task TestCountriesWithNoCRS() {
+        public async Task TestCountriesWithNoCRS()
+        {
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries_nocrs.fgb"));
             Assert.IsNotNull(ae);
             Console.WriteLine(ae.Extent.ToString());
             int numFeaturesExpected = ae.NumFeatures;
             int numFeaturesRead = 0;
-            while (await ae.MoveNextAsync()) {
+            while (await ae.MoveNextAsync())
+            {
                 Console.WriteLine($" {ae.Current.Attributes["id"]} - {ae.Current.Attributes["name"]}");
                 numFeaturesRead++;
             }
@@ -54,13 +58,15 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
-        public async Task TestCountriesWithNoCrsCount() {
+        public async Task TestCountriesWithNoCrsCount()
+        {
             var count = await AsyncFeatureEnumerator.CountAsync(File.OpenRead("../../../../../../test/data/countries_nocrs.fgb"));
             Assert.AreEqual(179, (int)count);
         }
 
         [TestMethod]
-        public async Task TestCountriesWithNoGeometry() {
+        public async Task TestCountriesWithNoGeometry()
+        {
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries_nogeo.fgb"));
             Assert.IsNotNull(ae);
             Console.WriteLine(ae.Extent.ToString());
@@ -68,7 +74,8 @@ namespace FlatGeobuf.Tests.NTS
             Assert.AreEqual(0, ae.NumFeatures);
 
             int numRowsRead = 0;
-            while (await ae.MoveNextAsync()) {
+            while (await ae.MoveNextAsync())
+            {
                 Console.WriteLine($" {ae.Current.Attributes["id"]} - {ae.Current.Attributes["name"]}");
                 numRowsRead++;
             }
@@ -77,7 +84,8 @@ namespace FlatGeobuf.Tests.NTS
         }
 
         [TestMethod]
-        public async Task TestCountriesWithNoGeometryCount() {
+        public async Task TestCountriesWithNoGeometryCount()
+        {
             var count = await AsyncFeatureEnumerator.CountAsync(File.OpenRead("../../../../../../test/data/countries_nogeo.fgb"));
             Assert.AreEqual(179, (int)count);
         }
@@ -168,13 +176,15 @@ namespace FlatGeobuf.Tests.NTS
         [DataRow([179, false, ""])]
         [DataRow([-1, true, "ATA"])]
         [DataRow([1000, false, ""])]
-        public async Task TestCountriesWithSkip(int skip, bool expectedCanReadMore, string expectedId) {
+        public async Task TestCountriesWithSkip(int skip, bool expectedCanReadMore, string expectedId)
+        {
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries.fgb"));
             Assert.IsNotNull(ae);
 
             await ae.SkipAsync(skip);
 
-            if (!expectedCanReadMore) {
+            if (!expectedCanReadMore)
+            {
                 Assert.IsFalse(await ae.MoveNextAsync());
                 return;
             }
@@ -192,12 +202,14 @@ namespace FlatGeobuf.Tests.NTS
         [DataRow([-1, true, "IRL"])]
         [DataRow([41, false, ""])]
         [DataRow([1000, false, ""])]
-        public async Task TestCountriesWithSkipFilter(int skip, bool expectedCanReadMore, string expectedId) {
+        public async Task TestCountriesWithSkipFilter(int skip, bool expectedCanReadMore, string expectedId)
+        {
             var rect = new Envelope(-16.1, 32.88, 40.18, 84.17);
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/countries.fgb"), rect: rect);
             await ae.SkipAsync(skip);
 
-            if (!expectedCanReadMore) {
+            if (!expectedCanReadMore)
+            {
                 Assert.IsFalse(await ae.MoveNextAsync());
                 return;
             }
@@ -212,7 +224,7 @@ namespace FlatGeobuf.Tests.NTS
         {
             var ae = await AsyncFeatureEnumerator.Create(File.OpenRead("../../../../../../test/data/binary_wkb.fgb"));
             Assert.IsNotNull(ae);
-            
+
             //One record in file.
             await ae.MoveNextAsync();
 
