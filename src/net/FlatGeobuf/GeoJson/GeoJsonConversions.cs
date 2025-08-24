@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
-using FlatGeobuf.NTS;
+﻿using FlatGeobuf.NTS;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 
-namespace FlatGeobuf
+namespace FlatGeobuf.GeoJson
 {
     public static class GeoJsonConversions
     {

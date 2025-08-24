@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 using System.Threading.Tasks;
+using FlatGeobuf.GeoJson;
 
 namespace FlatGeobuf.Tests.GeoJson
 {
