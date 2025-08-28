@@ -188,17 +188,18 @@ public class PackedRTree {
         }
     }
 
-    public static long calcSize(long numItems, int nodeSize) {
+    public static long calcSize(int numItems, int nodeSize) {
         if (nodeSize < 2)
             throw new RuntimeException("Node size must be at least 2");
         if (numItems == 0)
             throw new RuntimeException("Number of items must be greater than 0");
         int nodeSizeMin = Math.min(Math.max(nodeSize, 2), 65535);
+        // NOTE: not relevant as current impl. is already limited to int
         // limit so that resulting size in bytes can be represented by ulong
-        if (numItems > 1L << 56)
-            throw new IndexOutOfBoundsException("Number of items must be less than 2^56");
-        long n = numItems;
-        long numNodes = n;
+        //if (numItems > 1L << 56)
+        //    throw new IndexOutOfBoundsException("Number of items must be less than 2^56");
+        int n = numItems;
+        int numNodes = n;
         do {
             n = (n + nodeSizeMin - 1) / nodeSizeMin;
             numNodes += n;
