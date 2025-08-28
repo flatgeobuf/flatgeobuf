@@ -18,7 +18,7 @@ import { parseGeometry } from './geometry.js';
 import { inferGeometryType } from './header.js';
 
 export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
-type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer>;
+type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer | Uint8Array>;
 
 /**
  * Serialize generic features to FlatGeobuf
