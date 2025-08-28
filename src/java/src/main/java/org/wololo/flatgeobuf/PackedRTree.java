@@ -6,22 +6,22 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.LinkedList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.locationtech.jts.geom.Envelope;
 
 import com.google.common.io.LittleEndianDataInputStream;
 
-public class PackedRTree {
-    private static int NODE_ITEM_LEN = 8 * 4 + 8;
+public final class PackedRTree {
+    private static final int NODE_ITEM_LEN = 8 * 4 + 8;
     final static int HILBERT_MAX = (1 << 16) - 1;
-    private int numItems;
+    private final int numItems;
     private int nodeSize;
     public NodeItem[] nodeItems;
     private long numNodes;
@@ -51,7 +51,7 @@ public class PackedRTree {
 
     void generateNodes() {
         long pos;
-        long end = 0;
+        long end;
         for (short i = 0; i < levelBounds.size() - 1; i++) {
             pos = levelBounds.get(i).first;
             end = levelBounds.get(i).second;
@@ -216,7 +216,7 @@ public class PackedRTree {
         // number of nodes per level in bottom-up order
         int n = numItems;
         int numNodes = n;
-        ArrayList<Integer> levelNumNodes = new ArrayList<Integer>();
+        ArrayList<Integer> levelNumNodes = new ArrayList<>();
         levelNumNodes.add(n);
         do {
             n = (n + nodeSize - 1) / nodeSize;
@@ -225,7 +225,7 @@ public class PackedRTree {
         } while (n != 1);
 
         // offsets per level in reversed storage order (top-down)
-        ArrayList<Integer> levelOffsets = new ArrayList<Integer>();
+        ArrayList<Integer> levelOffsets = new ArrayList<>();
         n = numNodes;
         for (int size : levelNumNodes)
             levelOffsets.add(n -= size);
@@ -257,7 +257,7 @@ public class PackedRTree {
     }
 
     public static ArrayList<SearchHit> search(ByteBuffer bb, int start, int numItems, int nodeSize, Envelope rect) {
-        ArrayList<SearchHit> searchHits = new ArrayList<SearchHit>();
+        ArrayList<SearchHit> searchHits = new ArrayList<>();
         double minX = rect.getMinX();
         double minY = rect.getMinY();
         double maxX = rect.getMaxX();
@@ -265,9 +265,9 @@ public class PackedRTree {
         List<Pair<Integer, Integer>> levelBounds = generateLevelBounds(numItems, nodeSize);
         int leafNodesOffset = levelBounds.get(0).first;
         int numNodes = levelBounds.get(0).second;
-        Deque<QueueItem> queue = new LinkedList<QueueItem>();
+        Deque<QueueItem> queue = new LinkedList<>();
         queue.add(new QueueItem(0, levelBounds.size() - 1));
-        while (queue.size() != 0) {
+        while (!queue.isEmpty()) {
             QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;
@@ -303,7 +303,7 @@ public class PackedRTree {
     }
 
     public static class SearchResult {
-        public ArrayList<SearchHit> hits = new ArrayList<SearchHit>();
+        public ArrayList<SearchHit> hits = new ArrayList<>();
         public int pos;
     }
 
@@ -319,9 +319,9 @@ public class PackedRTree {
         List<Pair<Integer, Integer>> levelBounds = generateLevelBounds(numItems, nodeSize);
         int leafNodesOffset = levelBounds.get(0).first;
         int numNodes = levelBounds.get(0).second;
-        Deque<QueueItem> queue = new LinkedList<QueueItem>();
+        Deque<QueueItem> queue = new LinkedList<>();
         queue.add(new QueueItem(0, levelBounds.size() - 1));
-        while (queue.size() != 0) {
+        while (!queue.isEmpty()) {
             QueueItem stackItem = queue.pop();
             int nodeIndex = (int) stackItem.nodeIndex;
             int level = stackItem.level;

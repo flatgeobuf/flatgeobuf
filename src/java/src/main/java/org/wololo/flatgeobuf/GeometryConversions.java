@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
+
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.CoordinateSequenceFilter;
@@ -19,6 +20,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.wololo.flatgeobuf.generated.Geometry;
 import org.wololo.flatgeobuf.generated.GeometryType;
+
 import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
@@ -29,31 +31,39 @@ public class GeometryConversions {
         if (geometry == null)
             return go;
 
-        if (geometryType == GeometryType.MultiLineString) {
-            int end = 0;
-            MultiLineString mls = (MultiLineString) geometry;
-            if (mls.getNumGeometries() > 1) {
-                go.ends = new long[mls.getNumGeometries()];
-                for (int i = 0; i < mls.getNumGeometries(); i++)
-                    go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
-            }
-        } else if (geometryType == GeometryType.Polygon) {
-            Polygon p = (Polygon) geometry;
-            go.ends = new long[p.getNumInteriorRing() + 1];
-            int end = p.getExteriorRing().getNumPoints();
-            go.ends[0] = end;
-            for (int i = 0; i < p.getNumInteriorRing(); i++)
-                go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
-        } else if (geometryType == GeometryType.MultiPolygon) {
-            MultiPolygon mp = (MultiPolygon) geometry;
-            int numGeometries = mp.getNumGeometries();
-            GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
-            for (int i = 0; i < numGeometries; i++) {
-                Polygon p = (Polygon) mp.getGeometryN(i);
-                gos[i] = serializePart(builder, p, GeometryType.Polygon);
-            }
-            go.gos = gos;
-            return go;
+        switch (geometryType) {
+            case GeometryType.MultiLineString:
+                {
+                    int end = 0;
+                    MultiLineString mls = (MultiLineString) geometry;
+                    if (mls.getNumGeometries() > 1) {
+                        go.ends = new long[mls.getNumGeometries()];
+                        for (int i = 0; i < mls.getNumGeometries(); i++)
+                            go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
+                    }       break;
+                }
+            case GeometryType.Polygon:
+                {
+                    Polygon p = (Polygon) geometry;
+                    go.ends = new long[p.getNumInteriorRing() + 1];
+                    int end = p.getExteriorRing().getNumPoints();
+                    go.ends[0] = end;
+                    for (int i = 0; i < p.getNumInteriorRing(); i++)
+                        go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
+                    break;
+                }
+            case GeometryType.MultiPolygon:
+                MultiPolygon mp = (MultiPolygon) geometry;
+                int numGeometries = mp.getNumGeometries();
+                GeometryOffsets[] gos = new GeometryOffsets[numGeometries];
+                for (int i = 0; i < numGeometries; i++) {
+                    Polygon p = (Polygon) mp.getGeometryN(i);
+                    gos[i] = serializePart(builder, p, GeometryType.Polygon);
+                }
+                go.gos = gos;
+                return go;
+            default:
+                break;
         }
 
         final int numPoints = geometry.getNumPoints();
@@ -143,7 +153,7 @@ public class GeometryConversions {
 
 
     private static class OrdinateCoordinateSequenceFilter implements CoordinateSequenceFilter {
-        private FlatBufferBuilder builder;
+        private final FlatBufferBuilder builder;
         private final int ordinateIndex;
 
         OrdinateCoordinateSequenceFilter(FlatBufferBuilder builder, int ordinateIndex) {
@@ -166,7 +176,7 @@ public class GeometryConversions {
     }
 
     private static class ReverseXYCoordinateSequenceFilter implements CoordinateSequenceFilter {
-        private FlatBufferBuilder builder;
+        private final FlatBufferBuilder builder;
         boolean hasZ = false;
         boolean hasM = false;
 

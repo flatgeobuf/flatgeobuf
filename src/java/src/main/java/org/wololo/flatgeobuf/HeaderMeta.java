@@ -1,10 +1,5 @@
 package org.wololo.flatgeobuf;
 
-import org.locationtech.jts.geom.Envelope;
-import org.wololo.flatgeobuf.generated.Column;
-import org.wololo.flatgeobuf.generated.Crs;
-import org.wololo.flatgeobuf.generated.Header;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,11 +9,15 @@ import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.locationtech.jts.geom.Envelope;
+import org.wololo.flatgeobuf.generated.Column;
+import org.wololo.flatgeobuf.generated.Crs;
+import org.wololo.flatgeobuf.generated.Header;
+
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.flatbuffers.ByteBufferUtil;
-import com.google.flatbuffers.FlatBufferBuilder;
-
 import static com.google.flatbuffers.Constants.SIZE_PREFIX_LENGTH;
+import com.google.flatbuffers.FlatBufferBuilder;
 
 public class HeaderMeta {
     public String name;
@@ -94,7 +93,7 @@ public class HeaderMeta {
         headerMeta.indexNodeSize = header.indexNodeSize();
 
         int columnsLength = header.columnsLength();
-        ArrayList<ColumnMeta> columnMetas = new ArrayList<ColumnMeta>();
+        ArrayList<ColumnMeta> columnMetas = new ArrayList<>();
         for (int i = 0; i < columnsLength; i++) {
             ColumnMeta columnMeta = new ColumnMeta();
             columnMeta.name = header.columns(i).name();

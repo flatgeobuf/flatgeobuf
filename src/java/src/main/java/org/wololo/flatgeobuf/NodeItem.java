@@ -1,8 +1,8 @@
 package org.wololo.flatgeobuf;
 
-import org.locationtech.jts.geom.Envelope;
-
 import java.util.Objects;
+
+import org.locationtech.jts.geom.Envelope;
 
 public class NodeItem {
     public double minX;
@@ -60,13 +60,13 @@ public class NodeItem {
         if (nodeItem.minX > maxX) {
             return false;
         }
-        if (nodeItem.minY > maxY) {
+        else if (nodeItem.minY > maxY) {
             return false;
         }
-        if (nodeItem.maxX < minX) {
+        else if (nodeItem.maxX < minX) {
             return false;
         }
-        if (nodeItem.maxY < minY) {
+        else if (nodeItem.maxY < minY) {
             return false;
         }
         return true;
