@@ -156,6 +156,11 @@ export function buildFeature(geometry: IParsedGeometry, properties: IProperties,
     return builder.asUint8Array() as Uint8Array;
 }
 
+/**
+ * Parse properties from a FlatGeobuf feature.
+ * @param feature Feature to parse the properties from.
+ * @param columns Column metadata used as property definition.
+ */
 export function parseProperties(feature: Feature, columns?: ColumnMeta[] | null): IProperties {
     const properties: IProperties = {};
     if (!columns || columns.length === 0) return properties;

@@ -50,4 +50,5 @@ export function deserialize(
     return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache, headers);
 }
 
+export { parseProperties } from './generic/feature.js';
 export { serialize } from './generic/featurecollection.js';
