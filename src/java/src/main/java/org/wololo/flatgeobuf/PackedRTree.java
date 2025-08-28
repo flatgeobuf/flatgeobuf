@@ -150,43 +150,55 @@ public class PackedRTree {
     }
 
     public void write(OutputStream outputStream) {
-        // nodeItem 40 Byte
-        ByteBuffer buffer = ByteBuffer.allocate((int) (NODE_ITEM_LEN * numNodes));
+        final int BUFFER_ITEMS = 1024;
+        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_ITEMS * NODE_ITEM_LEN);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        for (NodeItem nodeItem : nodeItems) {
-            buffer.putDouble(nodeItem.minX);
-            buffer.putDouble(nodeItem.minY);
-            buffer.putDouble(nodeItem.maxX);
-            buffer.putDouble(nodeItem.maxY);
-            buffer.putLong(nodeItem.offset);
-        }
-        buffer.flip();
+
+        int count = 0;
+
         try {
-            if (buffer.hasRemaining()) {
+            for (NodeItem nodeItem : nodeItems) {
+                buffer.putDouble(nodeItem.minX);
+                buffer.putDouble(nodeItem.minY);
+                buffer.putDouble(nodeItem.maxX);
+                buffer.putDouble(nodeItem.maxY);
+                buffer.putLong(nodeItem.offset);
+                count++;
+
+                if (count % BUFFER_ITEMS == 0) {
+                    buffer.flip();
+                    byte[] arr = new byte[buffer.remaining()];
+                    buffer.get(arr);
+                    outputStream.write(arr);
+                    buffer.clear();
+                }
+            }
+
+            if (buffer.position() > 0) {
+                buffer.flip();
                 byte[] arr = new byte[buffer.remaining()];
                 buffer.get(arr);
                 outputStream.write(arr);
-                outputStream.flush();
             }
+            outputStream.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             buffer.clear();
-            buffer = null;
         }
     }
 
-    public static long calcSize(int numItems, int nodeSize) {
+    public static long calcSize(long numItems, int nodeSize) {
         if (nodeSize < 2)
             throw new RuntimeException("Node size must be at least 2");
         if (numItems == 0)
             throw new RuntimeException("Number of items must be greater than 0");
         int nodeSizeMin = Math.min(Math.max(nodeSize, 2), 65535);
         // limit so that resulting size in bytes can be represented by ulong
-        if (numItems > 1 << 56)
+        if (numItems > 1L << 56)
             throw new IndexOutOfBoundsException("Number of items must be less than 2^56");
-        int n = numItems;
-        int numNodes = n;
+        long n = numItems;
+        long numNodes = n;
         do {
             n = (n + nodeSizeMin - 1) / nodeSizeMin;
             numNodes += n;

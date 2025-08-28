@@ -1,7 +1,5 @@
 package org.wololo.flatgeobuf;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +13,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Envelope;
@@ -132,5 +132,91 @@ public class PackedRTreeTest {
         assertEquals(162, result.hits.get(2).index);
 
         assertEquals(3, result.hits.size());
+    }
+
+    @Test
+    public void RoundTripSmall() throws IOException {
+        RoundTrip(10, "../../test/data/roundtrip_small.fgb");
+    }
+
+    @Test
+    public void RoundTripLarge() throws IOException {
+        RoundTrip(20000000, "../../test/data/roundtrip_large.fgb");
+    }
+
+    void RoundTrip(int numEntries, String fileName) throws IOException {
+        double spacing = 1.0;
+        double boxSize = 0.8;
+
+        short nodeSize = 16;
+
+        PackedRTree.calcSize(numEntries, nodeSize);
+        
+        List<PackedRTree.FeatureItem> entries = new ArrayList<>();
+        for (int i = 0; i < numEntries; i++) {
+            double x = i * spacing;
+            double y = i * spacing;
+            long offset = (i + 1) * 100;
+            
+            PackedRTree.FeatureItem item = new PackedRTree.FeatureItem();
+            item.nodeItem = new NodeItem(x, y, x + boxSize, y + boxSize, offset);
+            entries.add(item);
+        }
+        
+        File tmpFile = new File("../../test/data/" + fileName);
+        tmpFile.deleteOnExit();
+        tmpFile.createNewFile();
+        
+        try (FileOutputStream outputStream = new FileOutputStream(tmpFile)) {
+            PackedRTree packedRTree = new PackedRTree(entries, nodeSize);
+            packedRTree.write(outputStream);
+        }
+        
+        if (numEntries > 0) {
+            try (FileInputStream fileInputStream = new FileInputStream(tmpFile)) {
+                Envelope searchEnv1 = new Envelope(0.1, 0.5, 0.1, 0.5);
+                SearchResult result1 = PackedRTree.search(fileInputStream, 0, entries.size(), nodeSize, searchEnv1);
+                assertEquals(1, result1.hits.size());
+                assertEquals(100, result1.hits.get(0).offset);
+            }
+        }
+        
+        long midIndex = Math.min(2, numEntries - 1);
+        if (numEntries > midIndex) {
+            try (FileInputStream fileInputStream = new FileInputStream(tmpFile)) {
+                double x = midIndex * spacing;
+                double y = midIndex * spacing;
+                long expectedOffset = (midIndex + 1) * 100;
+                
+                Envelope searchEnv2 = new Envelope(x + 0.1, x + 0.5, y + 0.1, y + 0.5);
+                SearchResult result2 = PackedRTree.search(fileInputStream, 0, entries.size(), nodeSize, searchEnv2);
+                assertEquals(1, result2.hits.size());
+                assertEquals(expectedOffset, result2.hits.get(0).offset);
+            }
+        }
+        
+        if (numEntries >= 3) {
+            try (FileInputStream fileInputStream = new FileInputStream(tmpFile)) {
+                Envelope searchEnv3 = new Envelope(0.9, 2.1, 0.9, 2.1);
+                SearchResult result3 = PackedRTree.search(fileInputStream, 0, entries.size(), nodeSize, searchEnv3);
+                assertEquals(2, result3.hits.size());
+                
+                List<Long> foundOffsets = new ArrayList<>();
+                for (SearchHit hit : result3.hits) {
+                    foundOffsets.add(hit.offset);
+                }
+                assertTrue(foundOffsets.contains(200L));
+                assertTrue(foundOffsets.contains(300L));
+            }
+        }
+        
+        try (FileInputStream fileInputStream = new FileInputStream(tmpFile)) {
+            double farAway = numEntries * spacing + 10.0;
+            Envelope searchEnv4 = new Envelope(farAway, farAway + 1.0, farAway, farAway + 1.0);
+            SearchResult result4 = PackedRTree.search(fileInputStream, 0, entries.size(), nodeSize, searchEnv4);
+            assertEquals(0, result4.hits.size());
+        }
+        
+        tmpFile.delete();
     }
 }
