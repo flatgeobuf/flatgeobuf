@@ -198,8 +198,8 @@ public final class PackedRTree {
         // limit so that resulting size in bytes can be represented by ulong
         //if (numItems > 1L << 56)
         //    throw new IndexOutOfBoundsException("Number of items must be less than 2^56");
-        int n = numItems;
-        int numNodes = n;
+        long n = numItems;
+        long numNodes = n;
         do {
             n = (n + nodeSizeMin - 1) / nodeSizeMin;
             numNodes += n;
