@@ -57,6 +57,14 @@ public class PackedRTreeTest {
     }
 
     @Test
+    public void testCalcSize() {
+        long smallSize = PackedRTree.calcSize(1000, 16);
+        assertEquals(42720, smallSize);
+        long bigSize = PackedRTree.calcSize(97894767, 16);
+        assertEquals(4176843520L, bigSize);
+    }
+
+    @Test
     public void testGenerateLevelBounds() {
         List<PackedRTree.Pair<Integer, Integer>> list = new LinkedList<>();
         list.add(new PackedRTree.Pair<>(3, 23));
