@@ -4,12 +4,14 @@ import Map from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import View from 'ol/View.js';
-
-import { createTileLoadFunction, tileUrlFunction } from '../../src/ts/ol';
+import { createTileLoadFunction, FeatureCollection, tileUrlFunction } from '../../src/ts/ol';
 
 const url = '/data/countries.fgb';
 const source = new VectorTileSource({ tileUrlFunction });
-source.setTileLoadFunction(createTileLoadFunction(source, url));
+const fc = new FeatureCollection({
+    featureProjection: 'EPSG:3857',
+});
+source.setTileLoadFunction(createTileLoadFunction(fc, url));
 
 new Map({
     layers: [new TileLayer({ source: new OSM() }), new VectorTileLayer({ source })],
