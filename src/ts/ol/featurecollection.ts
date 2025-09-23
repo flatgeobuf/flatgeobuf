@@ -1,6 +1,6 @@
 import type { Extent } from 'ol/extent.js';
 import Feature from 'ol/Feature.js';
-import { transformExtent } from 'ol/proj';
+import { transformExtent } from 'ol/proj.js';
 import type RenderFeature from 'ol/render/Feature.js';
 import type { IFeature } from '../generic/feature.js';
 import {

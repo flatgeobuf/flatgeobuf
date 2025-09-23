@@ -1,5 +1,5 @@
 import OlFeature from 'ol/Feature.js';
-import { transformGeometryWithOptions } from 'ol/format/Feature';
+import { transformGeometryWithOptions } from 'ol/format/Feature.js';
 import RenderFeature, { type Type } from 'ol/render/Feature.js';
 import type { Feature } from '../flat-geobuf/feature.js';
 import {
