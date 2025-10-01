@@ -21,7 +21,7 @@ impl<'a> flatbuffers::Follow<'a> for Geometry<'a> {
   type Inner = Geometry<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
@@ -237,7 +237,7 @@ impl<'a> flatbuffers::Follow<'a> for Feature<'a> {
   type Inner = Feature<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
+    Self { _tab: unsafe { flatbuffers::Table::new(buf, loc) } }
   }
 }
 
@@ -408,14 +408,14 @@ pub fn size_prefixed_root_as_feature_with_opts<'b, 'o>(
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid `Feature`.
 pub unsafe fn root_as_feature_unchecked(buf: &[u8]) -> Feature {
-  flatbuffers::root_unchecked::<Feature>(buf)
+  unsafe { flatbuffers::root_unchecked::<Feature>(buf) }
 }
 #[inline]
 /// Assumes, without verification, that a buffer of bytes contains a size prefixed Feature and returns it.
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid size prefixed `Feature`.
 pub unsafe fn size_prefixed_root_as_feature_unchecked(buf: &[u8]) -> Feature {
-  flatbuffers::size_prefixed_root_unchecked::<Feature>(buf)
+  unsafe { flatbuffers::size_prefixed_root_unchecked::<Feature>(buf) }
 }
 #[inline]
 pub fn finish_feature_buffer<'a, 'b, A: flatbuffers::Allocator + 'a>(
