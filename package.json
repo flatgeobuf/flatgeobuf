@@ -101,7 +101,7 @@
         "@swc/cli": "0.7.8",
         "@swc/core": "1.13.5",
         "@types/geojson": "7946.0.16",
-        "@types/node": "24.5.2",
+        "@types/node": "24.6.1",
         "@types/slice-source": "0.4.3",
         "@vitest/coverage-v8": "3.2.4",
         "jsts": "2.12.1",
@@ -109,10 +109,10 @@
         "lws-range": "^4.0.1",
         "lws-static": "^3.1.1",
         "ol": ">=3",
-        "rollup": "4.50.2",
+        "rollup": "4.52.3",
         "typedoc": "0.28.13",
-        "typescript": "5.9.2",
-        "vite": "7.1.6",
+        "typescript": "5.9.3",
+        "vite": "7.1.7",
         "vitest": "3.2.4"
     }
 }
