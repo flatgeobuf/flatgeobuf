@@ -24,6 +24,8 @@ import org.wololo.flatgeobuf.generated.GeometryType;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
+    private static final GeometryFactory GF = new GeometryFactory();
+
     public static GeometryOffsets serializePart(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
             int geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
@@ -218,15 +220,13 @@ public class GeometryConversions {
     }
 
     public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, int geometryType) {
-        GeometryFactory factory = new GeometryFactory();
-
         if (geometryType == GeometryType.MultiPolygon) {
             int partsLength = geometry.partsLength();
             Polygon[] polygons = new Polygon[partsLength];
             for (int i = 0; i < geometry.partsLength(); i++) {
                 polygons[i] = (Polygon) deserialize(geometry.parts(i), GeometryType.Polygon);
             }
-            return factory.createMultiPolygon(polygons);
+            return GF.createMultiPolygon(polygons);
         }
 
         int xyLength = geometry.xyLength();
@@ -251,12 +251,12 @@ public class GeometryConversions {
             for (int i = 0; i < endsLength; i++) {
                 int e = (int) geometry.ends(i);
                 Coordinate[] cs = Arrays.copyOfRange(coordinates, s, e);
-                lrs[i] = factory.createLinearRing(cs);
+                lrs[i] = GF.createLinearRing(cs);
                 s = e;
             }
             LinearRing shell = lrs[0];
             LinearRing holes[] = Arrays.copyOfRange(lrs, 1, endsLength);
-            return factory.createPolygon(shell, holes);
+            return GF.createPolygon(shell, holes);
         };
 
         Supplier<Polygon> makePolygon = () -> {
@@ -264,7 +264,7 @@ public class GeometryConversions {
             if (endsLength > 1)
                 return makePolygonWithRings.apply(endsLength);
             else
-                return factory.createPolygon(coordinates);
+                return GF.createPolygon(coordinates);
         };
 
         switch (geometryType) {
@@ -272,27 +272,27 @@ public class GeometryConversions {
                 return null;
             case GeometryType.Point:
                 if (coordinates.length > 0) {
-                    return factory.createPoint(coordinates[0]);
+                    return GF.createPoint(coordinates[0]);
                 } else {
-                    return factory.createPoint();
+                    return GF.createPoint();
                 }
             case GeometryType.MultiPoint:
-                return factory.createMultiPointFromCoords(coordinates);
+                return GF.createMultiPointFromCoords(coordinates);
             case GeometryType.LineString:
-                return factory.createLineString(coordinates);
+                return GF.createLineString(coordinates);
             case GeometryType.MultiLineString: {
                 int lengthLengths = geometry.endsLength();
                 if (lengthLengths < 2)
-                    return factory.createMultiLineString(new LineString[] { factory.createLineString(coordinates) });
+                    return GF.createMultiLineString(new LineString[] { GF.createLineString(coordinates) });
                 LineString[] lss = new LineString[lengthLengths];
                 int s = 0;
                 for (int i = 0; i < lengthLengths; i++) {
                     int e = (int) geometry.ends(i);
                     Coordinate[] cs = Arrays.copyOfRange(coordinates, s, e);
-                    lss[i] = factory.createLineString(cs);
+                    lss[i] = GF.createLineString(cs);
                     s = e;
                 }
-                return factory.createMultiLineString(lss);
+                return GF.createMultiLineString(lss);
             }
             case GeometryType.Polygon:
                 return makePolygon.get();
