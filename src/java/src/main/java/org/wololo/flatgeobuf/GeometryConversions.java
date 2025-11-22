@@ -24,35 +24,34 @@ import org.wololo.flatgeobuf.generated.GeometryType;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 public class GeometryConversions {
-    private static final GeometryFactory GF = new GeometryFactory();
-
     public static GeometryOffsets serializePart(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
-            int geometryType) throws IOException {
+                                                int geometryType) throws IOException {
         GeometryOffsets go = new GeometryOffsets();
 
         if (geometry == null)
             return go;
 
         switch (geometryType) {
-            case GeometryType.MultiLineString: {
-                int end = 0;
-                MultiLineString mls = (MultiLineString) geometry;
-                if (mls.getNumGeometries() > 1) {
-                    go.ends = new long[mls.getNumGeometries()];
-                    for (int i = 0; i < mls.getNumGeometries(); i++)
-                        go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
+            case GeometryType.MultiLineString:
+                {
+                    int end = 0;
+                    MultiLineString mls = (MultiLineString) geometry;
+                    if (mls.getNumGeometries() > 1) {
+                        go.ends = new long[mls.getNumGeometries()];
+                        for (int i = 0; i < mls.getNumGeometries(); i++)
+                            go.ends[i] = end += mls.getGeometryN(i).getNumPoints();
+                    }       break;
                 }
-                break;
-            }
-            case GeometryType.Polygon: {
-                Polygon p = (Polygon) geometry;
-                go.ends = new long[p.getNumInteriorRing() + 1];
-                int end = p.getExteriorRing().getNumPoints();
-                go.ends[0] = end;
-                for (int i = 0; i < p.getNumInteriorRing(); i++)
-                    go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
-                break;
-            }
+            case GeometryType.Polygon:
+                {
+                    Polygon p = (Polygon) geometry;
+                    go.ends = new long[p.getNumInteriorRing() + 1];
+                    int end = p.getExteriorRing().getNumPoints();
+                    go.ends[0] = end;
+                    for (int i = 0; i < p.getNumInteriorRing(); i++)
+                        go.ends[i + 1] = end += p.getInteriorRingN(i).getNumPoints();
+                    break;
+                }
             case GeometryType.MultiPolygon:
                 MultiPolygon mp = (MultiPolygon) geometry;
                 int numGeometries = mp.getNumGeometries();
@@ -68,16 +67,15 @@ public class GeometryConversions {
         }
 
         final int numPoints = geometry.getNumPoints();
-        // build the vector "manually", using a CoordinateSequenceFilter to avoid
-        // creating Coordinate arrays or any Coordinate at all, depending on the
-        // underlying CoordinateSequence implementation. Vector elements ought to be
-        // added in reverse order
+        // build the vector "manually", using a CoordinateSequenceFilter to avoid creating
+        // Coordinate arrays or any Coordinate at all, depending on the underlying
+        // CoordinateSequence implementation. Vector elements ought to be added in reverse order
         Geometry.startXyVector(builder, 2 * numPoints);
         ReverseXYCoordinateSequenceFilter filter = new ReverseXYCoordinateSequenceFilter(builder);
         applyInReverseOrder(geometry, filter);
         go.coordsOffset = builder.endVector();
 
-        if (filter.hasZ) {
+        if(filter.hasZ) {
             Geometry.startZVector(builder, numPoints);
             applyInReverseOrder(geometry, new OrdinateCoordinateSequenceFilter(builder, 2));
             go.zOffset = builder.endVector();
@@ -85,7 +83,7 @@ public class GeometryConversions {
             go.zOffset = 0;
         }
 
-        if (filter.hasM) {
+        if(filter.hasM) {
             Geometry.startMVector(builder, numPoints);
             applyInReverseOrder(geometry, new OrdinateCoordinateSequenceFilter(builder, 3));
             go.mOffset = builder.endVector();
@@ -101,13 +99,13 @@ public class GeometryConversions {
         return go;
     }
 
-    public static int serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry,
-            byte geometryType) throws IOException {
+    public static int serialize(FlatBufferBuilder builder, org.locationtech.jts.geom.Geometry geometry, byte geometryType) throws IOException {
         byte knownGeometryType = geometryType;
         if (geometryType == GeometryType.Unknown)
             knownGeometryType = GeometryConversions.toGeometryType(geometry.getClass());
 
-        GeometryOffsets go = GeometryConversions.serializePart(builder, geometry, knownGeometryType);
+        GeometryOffsets go =
+                GeometryConversions.serializePart(builder, geometry, knownGeometryType);
 
         int geometryOffset;
         if (go.gos != null && go.gos.length > 0) {
@@ -119,8 +117,7 @@ public class GeometryConversions {
                 partOffsets[i] = partOffset;
             }
             int partsOffset = Geometry.createPartsVector(builder, partOffsets);
-            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0,
-                    geometryType == GeometryType.Unknown ? knownGeometryType : 0, partsOffset);
+            geometryOffset = Geometry.createGeometry(builder, 0, 0, 0, 0, 0, 0, geometryType == GeometryType.Unknown ? knownGeometryType : 0, partsOffset);
         } else {
             geometryOffset = Geometry.createGeometry(builder, go.endsOffset, go.coordsOffset, go.zOffset, go.mOffset,
                     0, 0, geometryType == GeometryType.Unknown ? knownGeometryType : 0, 0);
@@ -129,14 +126,12 @@ public class GeometryConversions {
     }
 
     /**
-     * Applies the {@code filter} to all
-     * {@link org.locationtech.jts.geom.Geometry#getGeometryN(int)
-     * subgeometries} in reverse order if it's a {@link GeometryCollection} or a
-     * {@link Polygon}
+     * Applies the {@code filter} to all {@link org.locationtech.jts.geom.Geometry#getGeometryN(int)
+     * subgeometries} in reverse order if it's a {@link GeometryCollection} or a {@link Polygon}
      * (i.e. interior rings in reverse order first)
      */
     private static void applyInReverseOrder(org.locationtech.jts.geom.Geometry geometry,
-            CoordinateSequenceFilter filter) {
+                                            CoordinateSequenceFilter filter) {
 
         final int numGeometries = geometry.getNumGeometries();
         if (numGeometries > 1) {
@@ -155,6 +150,7 @@ public class GeometryConversions {
             geometry.apply(filter);
         }
     }
+
 
     private static class OrdinateCoordinateSequenceFilter implements CoordinateSequenceFilter {
         private final FlatBufferBuilder builder;
@@ -220,13 +216,15 @@ public class GeometryConversions {
     }
 
     public static org.locationtech.jts.geom.Geometry deserialize(Geometry geometry, int geometryType) {
+        GeometryFactory factory = new GeometryFactory();
+
         if (geometryType == GeometryType.MultiPolygon) {
             int partsLength = geometry.partsLength();
             Polygon[] polygons = new Polygon[partsLength];
             for (int i = 0; i < geometry.partsLength(); i++) {
                 polygons[i] = (Polygon) deserialize(geometry.parts(i), GeometryType.Polygon);
             }
-            return GF.createMultiPolygon(polygons);
+            return factory.createMultiPolygon(polygons);
         }
 
         int xyLength = geometry.xyLength();
@@ -235,7 +233,7 @@ public class GeometryConversions {
 
         int c = 0;
         for (int i = 0; i < xyLength; i = i + 2) {
-            if (c < geometry.mLength()) {
+            if(c < geometry.mLength()) {
                 coordinates[c++] = new CoordinateXYZM(geometry.xy(i), geometry.xy(i + 1),
                         (i >> 1) < geometry.zLength() ? geometry.z((i >> 1)) : Coordinate.NULL_ORDINATE,
                         (i >> 1) < geometry.mLength() ? geometry.m((i >> 1)) : Coordinate.NULL_ORDINATE);
@@ -251,12 +249,12 @@ public class GeometryConversions {
             for (int i = 0; i < endsLength; i++) {
                 int e = (int) geometry.ends(i);
                 Coordinate[] cs = Arrays.copyOfRange(coordinates, s, e);
-                lrs[i] = GF.createLinearRing(cs);
+                lrs[i] = factory.createLinearRing(cs);
                 s = e;
             }
             LinearRing shell = lrs[0];
             LinearRing holes[] = Arrays.copyOfRange(lrs, 1, endsLength);
-            return GF.createPolygon(shell, holes);
+            return factory.createPolygon(shell, holes);
         };
 
         Supplier<Polygon> makePolygon = () -> {
@@ -264,7 +262,7 @@ public class GeometryConversions {
             if (endsLength > 1)
                 return makePolygonWithRings.apply(endsLength);
             else
-                return GF.createPolygon(coordinates);
+                return factory.createPolygon(coordinates);
         };
 
         switch (geometryType) {
@@ -272,27 +270,27 @@ public class GeometryConversions {
                 return null;
             case GeometryType.Point:
                 if (coordinates.length > 0) {
-                    return GF.createPoint(coordinates[0]);
+                    return factory.createPoint(coordinates[0]);
                 } else {
-                    return GF.createPoint();
+                    return factory.createPoint();
                 }
             case GeometryType.MultiPoint:
-                return GF.createMultiPointFromCoords(coordinates);
+                return factory.createMultiPointFromCoords(coordinates);
             case GeometryType.LineString:
-                return GF.createLineString(coordinates);
+                return factory.createLineString(coordinates);
             case GeometryType.MultiLineString: {
                 int lengthLengths = geometry.endsLength();
                 if (lengthLengths < 2)
-                    return GF.createMultiLineString(new LineString[] { GF.createLineString(coordinates) });
+                    return factory.createMultiLineString(new LineString[] { factory.createLineString(coordinates) });
                 LineString[] lss = new LineString[lengthLengths];
                 int s = 0;
                 for (int i = 0; i < lengthLengths; i++) {
                     int e = (int) geometry.ends(i);
                     Coordinate[] cs = Arrays.copyOfRange(coordinates, s, e);
-                    lss[i] = GF.createLineString(cs);
+                    lss[i] = factory.createLineString(cs);
                     s = e;
                 }
-                return GF.createMultiLineString(lss);
+                return factory.createMultiLineString(lss);
             }
             case GeometryType.Polygon:
                 return makePolygon.get();
@@ -303,22 +301,22 @@ public class GeometryConversions {
 
     public static Class<?> getGeometryClass(int geometryType) {
         switch (geometryType) {
-            case GeometryType.Unknown:
-                return Geometry.class;
-            case GeometryType.Point:
-                return Point.class;
-            case GeometryType.MultiPoint:
-                return MultiPoint.class;
-            case GeometryType.LineString:
-                return LineString.class;
-            case GeometryType.MultiLineString:
-                return MultiLineString.class;
-            case GeometryType.Polygon:
-                return Polygon.class;
-            case GeometryType.MultiPolygon:
-                return MultiPolygon.class;
-            default:
-                throw new RuntimeException("Unknown geometry type");
+        case GeometryType.Unknown:
+            return Geometry.class;
+        case GeometryType.Point:
+            return Point.class;
+        case GeometryType.MultiPoint:
+            return MultiPoint.class;
+        case GeometryType.LineString:
+            return LineString.class;
+        case GeometryType.MultiLineString:
+            return MultiLineString.class;
+        case GeometryType.Polygon:
+            return Polygon.class;
+        case GeometryType.MultiPolygon:
+            return MultiPolygon.class;
+        default:
+            throw new RuntimeException("Unknown geometry type");
         }
     }
 
