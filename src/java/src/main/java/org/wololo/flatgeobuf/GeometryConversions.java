@@ -190,10 +190,10 @@ public class GeometryConversions {
             double x = seq.getOrdinate(reverseSeqIndex, 0);
             builder.addDouble(y);
             builder.addDouble(x);
-            if(!hasZ && seq.hasZ()) {
+            if (!hasZ && seq.hasZ() && !Double.isNaN(seq.getZ(reverseSeqIndex))) {
                 hasZ = true;
             }
-            if(!hasM && seq.hasM()) {
+            if (!hasM && seq.hasM() && !Double.isNaN(seq.getM(reverseSeqIndex))) {
                 hasM = true;
             }
         }
