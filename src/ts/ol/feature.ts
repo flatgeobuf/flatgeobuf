@@ -53,12 +53,12 @@ function getCreateRenderFeatureFn(dataProjection: string, featureProjection?: st
 }
 
 export function getFromFeatureFn(
-    classType: typeof OlFeature | typeof RenderFeature = OlFeature,
+    renderFeature: boolean,
     dataProjection = 'EPSG:4326',
     featureProjection?: string,
 ): FromFeatureFn {
     let createFeatureFn: ICreateFeature;
-    if (classType === RenderFeature) {
+    if (renderFeature) {
         createFeatureFn = getCreateRenderFeatureFn(dataProjection, featureProjection);
     } else {
         createFeatureFn = getCreateFeatureFn(dataProjection, featureProjection);

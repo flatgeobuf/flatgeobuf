@@ -4,7 +4,6 @@ import Feature from 'ol/Feature.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
 import { all } from 'ol/loadingstrategy.js';
 import { transformExtent } from 'ol/proj.js';
-import type RenderFeature from 'ol/render/Feature.js';
 import type VectorSource from 'ol/source/Vector.js';
 import type { LoadingStrategy } from 'ol/source/Vector.js';
 import type VectorTileSource from 'ol/source/VectorTile.js';
@@ -44,11 +43,11 @@ export function deserialize(
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
     headers: HeadersInit = {},
-    featureClass: typeof Feature | typeof RenderFeature = Feature,
+    renderFeature: boolean = false,
     dataProjection = 'EPSG:4326',
     featureProjection = 'EPSG:4326',
 ): AsyncGenerator<FeatureLike> {
-    const fromFeature = getFromFeatureFn(featureClass, dataProjection, featureProjection);
+    const fromFeature = getFromFeatureFn(renderFeature, dataProjection, featureProjection);
     if (input instanceof Uint8Array)
         return genericDeserialize(input, fromFeature, rect, headerMetaFn) as AsyncGenerator<FeatureLike>;
     if (input instanceof ReadableStream)
@@ -89,7 +88,7 @@ export function createLoader(
     strategy: LoadingStrategy = all,
     clear = false,
     headers: HeadersInit = {},
-    featureClass: typeof Feature | typeof RenderFeature = Feature,
+    renderFeature: boolean = false,
 ): FeatureLoader<FeatureLike> {
     return async (extent, _resolution, projection, success, failure) => {
         try {
@@ -102,7 +101,7 @@ export function createLoader(
             } else {
                 const code = projection.getCode();
                 const rect = extentToRect(extent, projection.getCode(), srs);
-                it = deserialize(url, rect, undefined, false, headers, featureClass, srs, code);
+                it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
             }
             for await (const feature of it) {
                 features.push(feature);
@@ -135,7 +134,7 @@ export function createTileLoadFunction(
     url: string,
     srs = 'EPSG:4326',
     headers: HeadersInit = {},
-    featureClass: typeof Feature | typeof RenderFeature = Feature,
+    renderFeature: boolean = false,
 ) {
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
@@ -143,7 +142,7 @@ export function createTileLoadFunction(
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
             const rect = extentToRect(extent, code, srs);
-            const it = deserialize(url, rect, undefined, false, headers, featureClass, srs, code);
+            const it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);
             vectorTile.setFeatures(features);

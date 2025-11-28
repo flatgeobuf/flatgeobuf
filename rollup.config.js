@@ -67,6 +67,7 @@ export default [
             sourcemap: false,
             globals: {
                 'ol/Feature.js': 'ol.Feature',
+                'ol/format/Feature.js': 'ol.format.Feature',
                 'ol/geom/Point.js': 'ol.geom.Point',
                 'ol/geom/MultiPoint.js': 'ol.geom.MultiPoint',
                 'ol/geom/LineString.js': 'ol.geom.LineString',
@@ -76,6 +77,7 @@ export default [
                 'ol/geom/GeometryLayout.js': 'ol.geom.GeometryLayout',
                 'ol/loadingstrategy.js': 'ol.loadingstrategy',
                 'ol/proj.js': 'ol.proj',
+                'ol/render/Feature.js': 'ol.render.Feature',
             },
         },
         plugins,
