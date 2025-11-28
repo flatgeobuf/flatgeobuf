@@ -1,8 +1,10 @@
 import type { Extent } from 'ol/extent.js';
-import Feature from 'ol/Feature.js';
 import type { FeatureLike } from 'ol/Feature.js';
+import Feature from 'ol/Feature.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
 import { all } from 'ol/loadingstrategy.js';
+import { transformExtent } from 'ol/proj.js';
+import type RenderFeature from 'ol/render/Feature.js';
 import type VectorSource from 'ol/source/Vector.js';
 import type { LoadingStrategy } from 'ol/source/Vector.js';
 import type VectorTileSource from 'ol/source/VectorTile.js';
@@ -10,9 +12,6 @@ import type { LoadFunction } from 'ol/Tile.js';
 import type { TileCoord } from 'ol/tilecoord.js';
 import type VectorTile from 'ol/VectorTile.js';
 import type { IFeature } from './generic/feature.js';
-
-import type { Rect } from './packedrtree.js';
-
 import {
     deserialize as genericDeserialize,
     deserializeFiltered as genericDeserializeFiltered,
@@ -20,9 +19,8 @@ import {
     serialize as genericSerialize,
 } from './generic/featurecollection.js';
 import type { HeaderMetaFn } from './generic.js';
-import type RenderFeature from 'ol/render/Feature.js';
-import { transformExtent, type Projection } from 'ol/proj.js';
 import { getFromFeatureFn } from './ol/feature.js';
+import type { Rect } from './packedrtree.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
@@ -47,20 +45,31 @@ export function deserialize(
     nocache = false,
     headers: HeadersInit = {},
     featureClass: typeof Feature | typeof RenderFeature = Feature,
-    dataProjection: string = 'EPSG:4326',
-    featureProjection: string = 'EPSG:4326'
+    dataProjection = 'EPSG:4326',
+    featureProjection = 'EPSG:4326',
 ): AsyncGenerator<FeatureLike> {
-    const fromFeature = getFromFeatureFn(featureClass, dataProjection, featureProjection)
-    if (input instanceof Uint8Array) return genericDeserialize(input, fromFeature, rect, headerMetaFn) as AsyncGenerator<FeatureLike>;
-    if (input instanceof ReadableStream) return genericDeserializeStream(input, fromFeature, headerMetaFn) as AsyncGenerator<FeatureLike>;
-    if (typeof input === 'string' && rect) return genericDeserializeFiltered(input, rect, fromFeature, headerMetaFn, nocache, headers) as AsyncGenerator<FeatureLike>;
+    const fromFeature = getFromFeatureFn(featureClass, dataProjection, featureProjection);
+    if (input instanceof Uint8Array)
+        return genericDeserialize(input, fromFeature, rect, headerMetaFn) as AsyncGenerator<FeatureLike>;
+    if (input instanceof ReadableStream)
+        return genericDeserializeStream(input, fromFeature, headerMetaFn) as AsyncGenerator<FeatureLike>;
+    if (typeof input === 'string' && rect)
+        return genericDeserializeFiltered(
+            input,
+            rect,
+            fromFeature,
+            headerMetaFn,
+            nocache,
+            headers,
+        ) as AsyncGenerator<FeatureLike>;
     throw new Error('Invalid input type or missing rect for URL input');
 }
 
 function extentToRect(extent: Extent, source?: string, destination?: string): Rect {
-    const [minX, minY, maxX, maxY] = source && destination && source !== destination ? transformExtent(extent, source, destination) : extent;
+    const [minX, minY, maxX, maxY] =
+        source && destination && source !== destination ? transformExtent(extent, source, destination) : extent;
     const rect = { minX, minY, maxX, maxY };
-    return rect
+    return rect;
 }
 
 /**
@@ -80,20 +89,20 @@ export function createLoader(
     strategy: LoadingStrategy = all,
     clear = false,
     headers: HeadersInit = {},
-    featureClass: typeof Feature | typeof RenderFeature = Feature
+    featureClass: typeof Feature | typeof RenderFeature = Feature,
 ): FeatureLoader<FeatureLike> {
     return async (extent, _resolution, projection, success, failure) => {
         try {
             if (clear) source.clear();
             const features: FeatureLike[] = [];
-            let it: AsyncGenerator<FeatureLike> | undefined = undefined
+            let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all) {
                 const response = await fetch(url, { headers });
                 it = deserialize(response.body as ReadableStream);
             } else {
-                const code = projection.getCode()
-                const rect = extentToRect(extent, projection.getCode(), srs)
-                it = deserialize(url, rect, undefined, false, headers, featureClass, srs, code)
+                const code = projection.getCode();
+                const rect = extentToRect(extent, projection.getCode(), srs);
+                it = deserialize(url, rect, undefined, false, headers, featureClass, srs, code);
             }
             for await (const feature of it) {
                 features.push(feature);
@@ -121,18 +130,19 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
  * @param url
  * @returns
  */
-export function createTileLoadFunction(source: VectorTileSource,
+export function createTileLoadFunction(
+    source: VectorTileSource,
     url: string,
     srs = 'EPSG:4326',
     headers: HeadersInit = {},
-    featureClass: typeof Feature | typeof RenderFeature = Feature
+    featureClass: typeof Feature | typeof RenderFeature = Feature,
 ) {
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
-            const rect = extentToRect(extent, code, srs)
+            const rect = extentToRect(extent, code, srs);
             const it = deserialize(url, rect, undefined, false, headers, featureClass, srs, code);
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);
