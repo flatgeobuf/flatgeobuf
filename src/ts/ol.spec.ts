@@ -6,7 +6,7 @@ import type Geometry from 'ol/geom/Geometry.js';
 import type Point from 'ol/geom/Point.js';
 import type SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 import { transform } from 'ol/proj';
-import RenderFeature from 'ol/render/Feature.js';
+import type RenderFeature from 'ol/render/Feature.js';
 import { describe, expect, it } from 'vitest';
 import { deserialize, serialize } from './ol.js';
 import { arrayToStream, takeAsync } from './streams/utils.js';

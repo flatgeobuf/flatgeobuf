@@ -1,6 +1,6 @@
 import type { Extent } from 'ol/extent.js';
+import type Feature from 'ol/Feature.js';
 import type { FeatureLike } from 'ol/Feature.js';
-import Feature from 'ol/Feature.js';
 import type { FeatureLoader } from 'ol/featureloader.js';
 import { all } from 'ol/loadingstrategy.js';
 import { transformExtent } from 'ol/proj.js';
@@ -43,7 +43,7 @@ export function deserialize(
     headerMetaFn?: HeaderMetaFn,
     nocache = false,
     headers: HeadersInit = {},
-    renderFeature: boolean = false,
+    renderFeature = false,
     dataProjection = 'EPSG:4326',
     featureProjection = 'EPSG:4326',
 ): AsyncGenerator<FeatureLike> {
@@ -88,7 +88,7 @@ export function createLoader(
     strategy: LoadingStrategy = all,
     clear = false,
     headers: HeadersInit = {},
-    renderFeature: boolean = false,
+    renderFeature = false,
 ): FeatureLoader<FeatureLike> {
     return async (extent, _resolution, projection, success, failure) => {
         try {
@@ -134,7 +134,7 @@ export function createTileLoadFunction(
     url: string,
     srs = 'EPSG:4326',
     headers: HeadersInit = {},
-    renderFeature: boolean = false,
+    renderFeature = false,
 ) {
     const projection = source.getProjection();
     const code = projection?.getCode() ?? 'EPSG:3857';
