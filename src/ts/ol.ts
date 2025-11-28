@@ -93,13 +93,13 @@ export function createLoader(
     return async (extent, _resolution, projection, success, failure) => {
         try {
             if (clear) source.clear();
+            const code = projection.getCode();
             const features: FeatureLike[] = [];
             let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all) {
                 const response = await fetch(url, { headers });
-                it = deserialize(response.body as ReadableStream);
+                it = deserialize(response.body as ReadableStream, undefined, undefined, false, headers, renderFeature, srs, code);
             } else {
-                const code = projection.getCode();
                 const rect = extentToRect(extent, projection.getCode(), srs);
                 it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
             }
