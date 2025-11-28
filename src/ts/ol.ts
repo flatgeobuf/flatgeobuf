@@ -98,7 +98,16 @@ export function createLoader(
             let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all) {
                 const response = await fetch(url, { headers });
-                it = deserialize(response.body as ReadableStream, undefined, undefined, false, headers, renderFeature, srs, code);
+                it = deserialize(
+                    response.body as ReadableStream,
+                    undefined,
+                    undefined,
+                    false,
+                    headers,
+                    renderFeature,
+                    srs,
+                    code,
+                );
             } else {
                 const rect = extentToRect(extent, projection.getCode(), srs);
                 it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
