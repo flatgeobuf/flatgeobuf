@@ -6,15 +6,11 @@ import Map from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import VectorSource from 'ol/source/Vector.js';
 import View from 'ol/View.js';
-import { createLoader, FeatureCollection } from '../../src/ts/ol';
+import { createLoader } from '../../src/ts/ol';
 
 const url = '/data/countries.fgb';
 const source = new VectorSource({ strategy: bbox });
-const fc = new FeatureCollection({
-    featureProjection: 'EPSG:3857',
-    //featureClass: RenderFeature
-});
-source.setLoader(createLoader(fc, source, url));
+source.setLoader(createLoader(source, url));
 
 new Map({
     layers: [new TileLayer({ source: new OSM() }), new VectorLayer({ source })],
