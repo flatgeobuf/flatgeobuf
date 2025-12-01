@@ -61,7 +61,7 @@
     </style>
 
     <div>
-        URL: <input id="url" value="https://flatgeobuf.septima.dk/nz-building-outlines.fgb" size="80"></input>
+        URL: <input id="url" value="https://flatgeobuf.septima.dk/nz-building-outlines.fgb" size="80">
         <!--button id="show">Show extent</button-->
         <button id="fetch">Fetch within bbox (max 10000)</button>
     </div>
@@ -72,7 +72,6 @@
     <div id="map"></div>
     <script type="module">
         const container = document.getElementById('popup')
-        const content = document.getElementById('popup-content')
         const closer = document.getElementById('popup-closer')
         const overlay = new ol.Overlay({
             element: container,
@@ -82,7 +81,7 @@
                 },
             },
         })
-        closer.onclick = function () {
+        closer.onclick = () => {
             overlay.setPosition(undefined);
             closer.blur();
             return false;
@@ -113,8 +112,8 @@
                 zoom: 17
             })
         });
-        map.on('click', function(e) {
-            map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+        map.on('click', (e) => {
+            map.forEachFeatureAtPixel(e.pixel, (feature) => {
                 const properties = feature.getProperties()
                 let str = ''
                 for (const key of Object.keys(properties).filter(k => k !== 'geometry'))
@@ -154,7 +153,7 @@
             }
             let c = 0
             const iter = flatgeobuf.deserialize(url, rect)
-            for await (let feature of iter) {
+            for await (const feature of iter) {
                 feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
                 source.addFeature(feature)
                 c++

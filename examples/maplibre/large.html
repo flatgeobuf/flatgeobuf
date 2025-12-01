@@ -80,8 +80,8 @@
         async function updateResults() {
             let i = 0;
             const fc = {type: "FeatureCollection", features: []};
-            let iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", fgBoundingBox(), handleHeaderMeta);
-            for await (let feature of iter) {
+            const iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", fgBoundingBox(), handleHeaderMeta);
+            for await (const feature of iter) {
                 fc.features.push({...feature, id: i});
                 i += 1;
             }
@@ -187,18 +187,18 @@
             });
 
             // if the user is panning around alot, only update once per second max
-            updateResults = _.throttle(updateResults, 1000);
+            const updateResultsThrottled = _.throttle(updateResults, 1000);
 
             // show a rectangle corresponding to our bounding box
             map.getSource("rectangle").setData(getRect());
 
             // show results based on the initial map
-            updateResults();
+            updateResultsThrottled();
 
             // ...and update the results whenever the map moves
-            map.on("moveend", function(s){
+            map.on("moveend", () => {
                 map.getSource("rectangle").setData(getRect());
-                updateResults();
+                updateResultsThrottled();
             });
         });
     });

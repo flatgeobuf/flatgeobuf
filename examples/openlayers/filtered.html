@@ -52,7 +52,7 @@
              * Add a click handler to hide the popup.
              * @return {boolean} Don't follow the href.
              */
-            popupCloser.onclick = function () {
+            popupCloser.onclick = () => {
               overlay.setPosition(undefined);
               popupCloser.blur();
               return false;
@@ -87,8 +87,8 @@
             });
 
             // show the popup when clicking a feature
-            map.on("click", function(e) {
-                map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+            map.on("click", (e) => {
+                map.forEachFeatureAtPixel(e.pixel, (feature) => {
                     popupContent.innerText = `${feature.get("NAME")} ${feature.get("LSAD")}, ${feature.get("STATE")}`;
                     overlay.setPosition(e.coordinate);
                 })

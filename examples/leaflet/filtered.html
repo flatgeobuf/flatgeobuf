@@ -33,7 +33,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", async () => { 
             // basic OSM Leaflet map
-            let map = L.map('map').setView([39, -104], 6);
+            const map = L.map('map').setView([39, -104], 6);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -75,8 +75,8 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                let iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', fgBoundingBox(), handleHeaderMeta);
-                for await (let feature of iter) {
+                const iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', fgBoundingBox(), handleHeaderMeta);
+                for await (const feature of iter) {
                     const defaultStyle = { 
                         color: 'blue', 
                         weight: 2, 
@@ -86,7 +86,7 @@
                     L.geoJSON(feature, {
                         style: defaultStyle,
                     }).on({
-                        'mouseover': function(e) {
+                        'mouseover': (e) => {
                             const layer = e.target;
                             layer.setStyle({
                                 color: 'blue',
@@ -95,27 +95,27 @@
                             });
                             layer.bringToFront();
                         },
-                        'mouseout': function(e) {
+                        'mouseout': (e) => {
                             const layer = e.target;
                             layer.setStyle(defaultStyle);
                         }
-                   }).bindPopup(`<h1>${feature.properties["NAME"]} ${feature.properties["LSAD"]}, ${feature.properties["STATE"]}</h1>`)
+                   }).bindPopup(`<h1>${feature.properties.NAME} ${feature.properties.LSAD}, ${feature.properties.STATE}</h1>`)
                    .addTo(nextResults);
                 }
             }
             // if the user is panning around alot, only update once per second max
-            updateResults = _.throttle(updateResults, 1000);
+            const updateResultsThrottled = _.throttle(updateResults, 1000);
 
             // show a leaflet rect corresponding to our bounding box
-            let rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
+            const rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
 
             // show results based on the initial map
-            updateResults();
+            updateResultsThrottled();
 
             // ...and update the results whenever the map moves
-            map.on("moveend", function(s){
+            map.on("moveend", ()=> {
                 rectangle.setBounds(getBoundForRect());
-                updateResults();
+                updateResultsThrottled();
             });
         });
     </script>

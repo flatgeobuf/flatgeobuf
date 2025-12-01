@@ -33,7 +33,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", async () => { 
             // basic OSM Leaflet map
-            let map = L.map('map').setView([40.766, -73.98], 14);
+            const map = L.map('map').setView([40.766, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18,
                 minZoom: 12,
@@ -70,7 +70,7 @@
             }
 
             // show a leaflet rect corresponding to our bounding box
-            let rectangle = L.rectangle(getBoundForRect(), { interactive: false, color: "blue", fillOpacity: 0.0, opacity: 1.0 }).addTo(map);
+            const rectangle = L.rectangle(getBoundForRect(), { interactive: false, color: "blue", fillOpacity: 0.0, opacity: 1.0 }).addTo(map);
 
             // track the previous results so we can remove them when adding new results
             let previousResults = L.layerGroup().addTo(map);
@@ -99,38 +99,38 @@
                 for await (const feature of iter) {
                     // Leaflet styling
                     const defaultStyle = { 
-                        color: colorScale(feature.properties["population"]), 
+                        color: colorScale(feature.properties.population), 
                         weight: 1, 
                         fillOpacity: 0.4,
                     };
                     L.geoJSON(feature, {
                         style: defaultStyle,
                     }).on({
-                        'mouseover': function(e) {
+                        'mouseover': (e) => {
                             const layer = e.target;
                             layer.setStyle({
                                 weight: 4,
                                 fillOpacity: 0.8,
                             });
                         },
-                        'mouseout': function(e) {
+                        'mouseout': (e) => {
                             const layer = e.target;
                             layer.setStyle(defaultStyle);
                         }
-                   }).bindPopup(`${feature.properties["population"]} people live in this census block.</h1>`)
+                   }).bindPopup(`${feature.properties.population} people live in this census block.</h1>`)
                    .addTo(nextResults);
                 }
                 rectangle.bringToFront();
             }
             // if the user is panning around alot, only update once per second max
-            updateResults = _.throttle(updateResults, 1000);
+            const updateResultsThrottled = _.throttle(updateResults, 1000);
 
             // show results based on the initial map
-            updateResults();
+            updateResultsThrottled();
             // ...and update the results whenever the map moves
-            map.on("moveend", function(s){
+            map.on("moveend", ()=> {
                 rectangle.setBounds(getBoundForRect());
-                updateResults();
+                updateResultsThrottled();
             });
         });
     </script>

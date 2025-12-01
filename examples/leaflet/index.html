@@ -34,7 +34,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", async () => { 
             // basic OSM Leaflet map
-            let map = L.map('map').setView([39, -98], 4);
+            const map = L.map('map').setView([39, -98], 4);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -48,7 +48,7 @@
             }
 
             const response = await fetch('/test/data/UScounties.fgb');
-            for await (let feature of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+            for await (const feature of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
                 // Leaflet styling
                 const defaultStyle = { 
                     color: 'blue', 
@@ -61,7 +61,7 @@
                     style: defaultStyle 
                 }).on({
                     // highlight on hover
-                    'mouseover': function(e) {
+                    'mouseover': (e) => {
                         const layer = e.target;
                         layer.setStyle({
                             color: 'blue',
@@ -71,13 +71,13 @@
                         layer.bringToFront();
                     },
                     // remove highlight when hover stops
-                    'mouseout': function(e) {
+                    'mouseout': (e) => {
                         const layer = e.target;
                         layer.setStyle(defaultStyle);
                     }
                 })
                 // show some per-feature properties when clicking on the feature
-                .bindPopup(`<h1>${feature.properties["NAME"]} ${feature.properties["LSAD"]}, ${feature.properties["STATE"]}</h1>`)
+                .bindPopup(`<h1>${feature.properties.NAME} ${feature.properties.LSAD}, ${feature.properties.STATE}</h1>`)
                 .addTo(map);
             }
         });

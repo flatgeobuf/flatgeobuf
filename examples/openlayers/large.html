@@ -52,7 +52,7 @@
              * Add a click handler to hide the popup.
              * @return {boolean} Don't follow the href.
              */
-            popupCloser.onclick = function () {
+            popupCloser.onclick = () => {
                 overlay.setPosition(undefined);
                 popupCloser.blur();
                 return false;
@@ -66,7 +66,6 @@
 
             const strategy = (extent) => [createBufferedExtent(ol.extent.getCenter(extent))];
             const source = new ol.source.Vector({ strategy });
-            const layer = new ol.layer.Vector({ source })
             const loader = flatgeobuf.createLoader(source, 'https://flatgeobuf.septima.dk/population_areas.fgb', "EPSG:4326", strategy, true);
             source.setLoader(loader)
 
@@ -84,8 +83,8 @@
             });
 
             // show the popup when clicking a feature
-            map.on("click", function(e) {
-                map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+            map.on("click", (e) => {
+                map.forEachFeatureAtPixel(e.pixel, (feature) => {
                     popupContent.innerHTML = `<h1>${feature.get("population")} people live in this census block.</h1>`;
                     overlay.setPosition(e.coordinate);
                 })
