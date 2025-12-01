@@ -3,7 +3,7 @@ export type { CrsMeta } from './crs-meta.js';
 export { Column } from './flat-geobuf/column.js';
 export { Feature } from './flat-geobuf/feature.js';
 export { Geometry } from './flat-geobuf/geometry.js';
-export type { IFeature } from './generic/feature.js';
+export type { IFeature, IProperties } from './generic/feature.js';
 export type { FromFeatureFn } from './generic/featurecollection.js';
 export type { ISimpleGeometry } from './generic/geometry.js';
 export * as generic from './generic.js';

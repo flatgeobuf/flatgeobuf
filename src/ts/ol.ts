@@ -23,7 +23,6 @@ import type { Rect } from './packedrtree.js';
 
 /**
  * Serialize OpenLayers Features to FlatGeobuf
- * @param fc Features to serialize
  * @param features Features to serialize
  */
 export function serialize(features: Feature[]): Uint8Array {
@@ -33,7 +32,6 @@ export function serialize(features: Feature[]): Uint8Array {
 
 /**
  * Deserialize FlatGeobuf into OpenLayers Features
- * @param fc
  * @param input Input byte array, stream or string
  * @param rect Filter rectangle
  */
@@ -74,7 +72,6 @@ function extentToRect(extent: Extent, source?: string, destination?: string): Re
 /**
  * Intended to be used with VectorSource and setLoader to set up
  * a single file FlatGeobuf as a source.
- * @param fc
  * @param source
  * @param url
  * @param strategy
@@ -134,7 +131,6 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
 /**
  * Intended to be used with VectorTileSource and setTileLoadFunction to set up
  * a single file FlatGeobuf as a source.
- * @param fc
  * @param url
  * @returns
  */
