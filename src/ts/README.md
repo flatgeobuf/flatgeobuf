@@ -35,7 +35,7 @@ index 2e13dfc..da4b07e 100644
      <link rel="stylesheet" href="/examples/site.css" />
      <script src="https://unpkg.com/underscore@1.13.6/underscore-min.js"></script>
      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
--    <script src="https://unpkg.com/flatgeobuf@3.32.0/dist/flatgeobuf-geojson.min.js"></script>
+-    <script src="https://unpkg.com/flatgeobuf@4.3.3/dist/flatgeobuf-geojson.min.js"></script>
 +    <script src="/dist/flatgeobuf-geojson.min.js"></script>
      <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 ```
