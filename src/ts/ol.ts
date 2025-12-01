@@ -109,7 +109,7 @@ export function createLoader(
                     code,
                 );
             } else {
-                const rect = extentToRect(extent, projection.getCode(), srs);
+                const rect = extentToRect(extent, code, srs);
                 it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
             }
             for await (const feature of it) {
