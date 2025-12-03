@@ -184,10 +184,7 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
 
 function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
-    if (typeof value === 'number') {
-        if (value % 1 === 0) return ColumnType.Int;
-        return ColumnType.Double;
-    }
+    if (typeof value === 'number') return ColumnType.Double;
     if (typeof value === 'string') return ColumnType.String;
     if (value === null) return ColumnType.String;
     if (value instanceof Uint8Array) return ColumnType.Binary;
