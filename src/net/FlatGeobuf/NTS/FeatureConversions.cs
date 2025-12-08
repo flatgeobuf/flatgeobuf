@@ -69,12 +69,18 @@ namespace FlatGeobuf.NTS
                         case ColumnType.Double:
                             writer.Write((double)value);
                             break;
-                        case ColumnType.DateTime:
                         case ColumnType.String:
                             var bytes = Encoding.UTF8.GetBytes((string)value);
                             writer.Write(bytes.Length);
                             writer.Write(bytes);
                             break;
+                        case ColumnType.DateTime:
+                            var datetime = (DateTime)value;
+                            bytes = Encoding.UTF8.GetBytes(datetime.ToString("O"));
+                            writer.Write(bytes.Length);
+                            writer.Write(bytes);
+                            break;
+                        
                         case ColumnType.Binary:
                             bytes = (byte[])value;
                             writer.Write(bytes.Length);
@@ -174,12 +180,17 @@ namespace FlatGeobuf.NTS
                         case ColumnType.Double:
                             attributesTable.Add(name, reader.ReadDouble());
                             break;
-                        case ColumnType.DateTime:
                         case ColumnType.String:
                             int len = reader.ReadInt32();
                             var str = Encoding.UTF8.GetString(propertiesArray, (int)memoryStream.Position, len);
                             memoryStream.Position += len;
                             attributesTable.Add(name, str);
+                            break;
+                        case ColumnType.DateTime:
+                            len = reader.ReadInt32();
+                            str = Encoding.UTF8.GetString(propertiesArray, (int)memoryStream.Position, len);
+                            memoryStream.Position += len;
+                            attributesTable.Add(name, DateTime.Parse(str));
                             break;
                         case ColumnType.Binary:
                             len = reader.ReadInt32();
