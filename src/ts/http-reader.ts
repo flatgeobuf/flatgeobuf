@@ -295,7 +295,7 @@ class BufferedHttpRangeClient {
     }
 }
 
-class HttpRangeClient {
+export class HttpRangeClient {
     url: string;
     nocache: boolean;
     headers: HeadersInit;
