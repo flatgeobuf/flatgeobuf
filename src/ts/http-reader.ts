@@ -236,8 +236,7 @@ export class HttpReader {
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
         bytesAligned.set(bytes, SIZE_PREFIX_LEN);
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
-        bb.setPosition(SIZE_PREFIX_LEN);
-        return Feature.getRootAsFeature(bb);
+        return Feature.getSizePrefixedRootAsFeature(bb);
     }
 }
 

@@ -82,7 +82,6 @@ export class ArrayReader {
         bytesAligned.set(featureBytes, SIZE_PREFIX_LEN);
 
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
-        bb.setPosition(SIZE_PREFIX_LEN);
-        return Feature.getRootAsFeature(bb);
+        return Feature.getSizePrefixedRootAsFeature(bb);
     }
 }
