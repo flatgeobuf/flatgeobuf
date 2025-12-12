@@ -62,12 +62,12 @@ export async function* deserialize(
 
     const bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(magicbytes.length);
-    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
+    bb.setPosition(magicbytes.length);
 
     const headerMeta = fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
 
-    let offset = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
+    let offset = magicbytes.length + headerLength;
 
     const { indexNodeSize, featuresCount } = headerMeta;
     if (indexNodeSize > 0) offset += calcTreeSize(featuresCount, indexNodeSize);
@@ -75,8 +75,8 @@ export async function* deserialize(
     let id = 0;
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset);
-        bb.setPosition(offset + SIZE_PREFIX_LEN);
-        const feature = Feature.getRootAsFeature(bb);
+        bb.setPosition(offset);
+        const feature = Feature.getSizePrefixedRootAsFeature(bb);
         yield fromFeature(id++, feature, headerMeta);
         offset += SIZE_PREFIX_LEN + featureLength;
     }

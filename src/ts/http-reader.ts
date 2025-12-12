@@ -96,7 +96,7 @@ export class HttpReader {
             console.debug(`headerLength: ${headerLength}`);
         }
 
-        const bytes = await headerClient.getRange(12, headerLength, minReqLength, 'header');
+        const bytes = await headerClient.getRange(magicbytes.length, SIZE_PREFIX_LEN + headerLength, minReqLength, 'header');
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = fromByteBuffer(bb);
 

@@ -28,13 +28,13 @@ export class ArrayReader {
             throw new Error('Not a FlatGeobuf file');
         }
 
-        const headerLength = new DataView(bytes.buffer).getUint32(8, true);
+        const headerLength = new DataView(bytes.buffer).getUint32(magicbytes.length, true);
         const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
         if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
             throw new Error('Invalid header size');
         }
 
-        const headerBytes = bytes.subarray(12, 12 + headerLength);
+        const headerBytes = bytes.subarray(magicbytes.length, magicbytes.length + SIZE_PREFIX_LEN + headerLength);
         const bb = new flatbuffers.ByteBuffer(headerBytes);
         const header = fromByteBuffer(bb);
 
