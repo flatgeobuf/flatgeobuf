@@ -1,4 +1,5 @@
-import { createServer, type Server } from 'http';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import sirv from 'sirv';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature';
@@ -13,7 +14,7 @@ describe('http reader', () => {
         server = createServer((req, res) => serve(req, res));
         return new Promise<void>((resolve) => {
             server.listen(0, () => {
-                port = (server.address() as any).port;
+                port = (server.address() as AddressInfo).port;
                 resolve();
             });
         });
