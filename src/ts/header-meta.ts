@@ -18,7 +18,7 @@ export interface HeaderMeta {
 }
 
 export function fromByteBuffer(bb: flatbuffers.ByteBuffer): HeaderMeta {
-    const header = Header.getRootAsHeader(bb);
+    const header = Header.getSizePrefixedRootAsHeader(bb);
     const featuresCount = header.featuresCount();
     const indexNodeSize = header.indexNodeSize();
 
@@ -54,7 +54,7 @@ export function fromByteBuffer(bb: flatbuffers.ByteBuffer): HeaderMeta {
     const headerMeta: HeaderMeta = {
         geometryType: header.geometryType(),
         columns: columns,
-        envelope: null,
+        envelope: header.envelopeLength() > 0 ? header.envelopeArray() : null,
         featuresCount: Number(featuresCount),
         indexNodeSize: indexNodeSize,
         crs: crsMeta,

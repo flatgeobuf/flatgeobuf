@@ -96,7 +96,12 @@ export class HttpReader {
             console.debug(`headerLength: ${headerLength}`);
         }
 
-        const bytes = await headerClient.getRange(12, headerLength, minReqLength, 'header');
+        const bytes = await headerClient.getRange(
+            magicbytes.length,
+            SIZE_PREFIX_LEN + headerLength,
+            minReqLength,
+            'header',
+        );
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
         const header = fromByteBuffer(bb);
 
@@ -236,8 +241,7 @@ export class HttpReader {
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
         bytesAligned.set(bytes, SIZE_PREFIX_LEN);
         const bb = new flatbuffers.ByteBuffer(bytesAligned);
-        bb.setPosition(SIZE_PREFIX_LEN);
-        return Feature.getRootAsFeature(bb);
+        return Feature.getSizePrefixedRootAsFeature(bb);
     }
 }
 

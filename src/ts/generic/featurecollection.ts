@@ -62,7 +62,7 @@ export async function* deserialize(
 
     const bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(magicbytes.length);
-    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
+    bb.setPosition(magicbytes.length);
 
     const headerMeta = fromByteBuffer(bb);
     if (headerMetaFn) headerMetaFn(headerMeta);
@@ -75,8 +75,8 @@ export async function* deserialize(
     let id = 0;
     while (offset < bb.capacity()) {
         const featureLength = bb.readUint32(offset);
-        bb.setPosition(offset + SIZE_PREFIX_LEN);
-        const feature = Feature.getRootAsFeature(bb);
+        bb.setPosition(offset);
+        const feature = Feature.getSizePrefixedRootAsFeature(bb);
         yield fromFeature(id++, feature, headerMeta);
         offset += SIZE_PREFIX_LEN + featureLength;
     }
@@ -92,10 +92,13 @@ export async function* deserializeStream(
 
     let bytes = new Uint8Array(await read(8, 'magic bytes'));
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
-    bytes = new Uint8Array(await read(4, 'header length'));
-    let bb = new flatbuffers.ByteBuffer(bytes);
+    const headerLengthBytes = new Uint8Array(await read(4, 'header length'));
+    let bb = new flatbuffers.ByteBuffer(headerLengthBytes);
     const headerLength = bb.readUint32(0);
-    bytes = new Uint8Array(await read(headerLength, 'header data'));
+    const headerDataBytes = new Uint8Array(await read(headerLength, 'header data'));
+    bytes = new Uint8Array(headerLengthBytes.length + headerDataBytes.length);
+    bytes.set(headerLengthBytes);
+    bytes.set(headerDataBytes, headerLengthBytes.length);
     bb = new flatbuffers.ByteBuffer(bytes);
 
     const headerMeta = fromByteBuffer(bb);
@@ -139,8 +142,7 @@ async function readFeature(
     const bytesAligned = new Uint8Array(featureLength + 4);
     bytesAligned.set(bytes, 4);
     bb = new flatbuffers.ByteBuffer(bytesAligned);
-    bb.setPosition(SIZE_PREFIX_LEN);
-    const feature = Feature.getRootAsFeature(bb);
+    const feature = Feature.getSizePrefixedRootAsFeature(bb);
     return fromFeature(id, feature, headerMeta);
 }
 

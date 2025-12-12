@@ -18,7 +18,7 @@ if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error(
 
 const bb = new flatbuffers.ByteBuffer(bytes);
 const headerLength = bb.readUint32(magicbytes.length);
-bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
+bb.setPosition(magicbytes.length);
 
 const headerMeta = fromByteBuffer(bb);
 
