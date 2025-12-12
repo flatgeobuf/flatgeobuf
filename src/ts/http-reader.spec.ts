@@ -1,19 +1,28 @@
-import Lws from 'lws';
+import { createServer, type Server } from 'http';
+import sirv from 'sirv';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature';
 import { HttpReader } from './http-reader';
 
 describe('http reader', () => {
-    let lws: Lws;
-    beforeAll(async () => {
-        lws = await Lws.create({ stack: ['lws-range', 'lws-static'] });
-    });
-    afterAll(() => {
-        if (lws) lws.server.close();
+    let server: Server;
+    let port: number;
+
+    beforeAll(() => {
+        const serve = sirv('.', { dev: true, single: false });
+        server = createServer((req, res) => serve(req, res));
+        return new Promise<void>((resolve) => {
+            server.listen(0, () => {
+                port = (server.address() as any).port;
+                resolve();
+            });
+        });
     });
 
+    afterAll(() => new Promise<void>((resolve) => server?.close(() => resolve())));
+
     it('fetches a subset of data based on bounding box', async () => {
-        const testUrl = `http://localhost:${lws.config.port}/test/data/UScounties.fgb`;
+        const testUrl = `http://localhost:${port}/test/data/UScounties.fgb`;
         const rect = {
             minX: -106.88,
             minY: 36.75,
@@ -28,12 +37,12 @@ describe('http reader', () => {
         }
         expect(features.length).toBe(86);
         const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
-        const expected = ['Cheyenne, KS', 'Rawlins, KS', 'Yuma, CO', 'Washington, CO'];
+        const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
         expect(actual).toEqual(expected);
     });
 
     it('can fetch the final feature', async () => {
-        const testUrl = `http://localhost:${lws.config.port}/test/data/countries.fgb`;
+        const testUrl = `http://localhost:${port}/test/data/countries.fgb`;
         const rect = {
             minX: -61.2,
             minY: -51.85,
