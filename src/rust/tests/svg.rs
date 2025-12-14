@@ -29,7 +29,7 @@ fn svg_writer<W: Write>(header: &Header, width: u32, height: u32, out: W) -> Svg
     svg
 }
 
-trait GeomToSvg {
+trait ToSvg {
     fn to_svg<W: Write>(
         &self,
         out: &mut W,
@@ -38,7 +38,7 @@ trait GeomToSvg {
     ) -> Result<()>;
 }
 
-impl GeomToSvg for Geometry<'_> {
+impl ToSvg for Geometry<'_> {
     fn to_svg<W: Write>(
         &self,
         out: &mut W,
@@ -50,16 +50,7 @@ impl GeomToSvg for Geometry<'_> {
     }
 }
 
-trait FeatureToSvg {
-    fn to_svg<W: Write>(
-        &self,
-        out: &mut W,
-        geometry_type: GeometryType,
-        invert_y: bool,
-    ) -> Result<()>;
-}
-
-impl FeatureToSvg for Feature<'_> {
+impl ToSvg for Feature<'_> {
     /// Convert feature to SVG
     fn to_svg<W: Write>(
         &self,

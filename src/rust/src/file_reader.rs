@@ -196,7 +196,7 @@ impl<R: Read + Seek> FgbReader<R> {
 
 impl<R: Read> FgbReader<R> {
     /// Header information
-    pub fn header(&self) -> Header {
+    pub fn header(&self) -> Header<'_> {
         self.fbs.header()
     }
 
@@ -476,7 +476,7 @@ impl<R: Read, S> FeatureIter<R, S> {
     }
 
     /// Header information
-    pub fn header(&self) -> Header {
+    pub fn header(&self) -> Header<'_> {
         self.fbs.header()
     }
 

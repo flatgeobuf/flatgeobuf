@@ -1070,7 +1070,7 @@ impl core::fmt::Debug for Header<'_> {
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
 /// `root_as_header_unchecked`.
-pub fn root_as_header(buf: &[u8]) -> Result<Header, flatbuffers::InvalidFlatbuffer> {
+pub fn root_as_header(buf: &[u8]) -> Result<Header<'_>, flatbuffers::InvalidFlatbuffer> {
   flatbuffers::root::<Header>(buf)
 }
 #[inline]
@@ -1080,7 +1080,7 @@ pub fn root_as_header(buf: &[u8]) -> Result<Header, flatbuffers::InvalidFlatbuff
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
 /// `size_prefixed_root_as_header_unchecked`.
-pub fn size_prefixed_root_as_header(buf: &[u8]) -> Result<Header, flatbuffers::InvalidFlatbuffer> {
+pub fn size_prefixed_root_as_header(buf: &[u8]) -> Result<Header<'_>, flatbuffers::InvalidFlatbuffer> {
   flatbuffers::size_prefixed_root::<Header>(buf)
 }
 #[inline]
@@ -1113,14 +1113,14 @@ pub fn size_prefixed_root_as_header_with_opts<'b, 'o>(
 /// Assumes, without verification, that a buffer of bytes contains a Header and returns it.
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid `Header`.
-pub unsafe fn root_as_header_unchecked(buf: &[u8]) -> Header {
+pub unsafe fn root_as_header_unchecked(buf: &[u8]) -> Header<'_> {
   flatbuffers::root_unchecked::<Header>(buf)
 }
 #[inline]
 /// Assumes, without verification, that a buffer of bytes contains a size prefixed Header and returns it.
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid size prefixed `Header`.
-pub unsafe fn size_prefixed_root_as_header_unchecked(buf: &[u8]) -> Header {
+pub unsafe fn size_prefixed_root_as_header_unchecked(buf: &[u8]) -> Header<'_> {
   flatbuffers::size_prefixed_root_unchecked::<Header>(buf)
 }
 #[inline]

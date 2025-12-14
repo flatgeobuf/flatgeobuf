@@ -103,7 +103,7 @@ impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
         })
     }
 
-    pub fn header(&self) -> Header {
+    pub fn header(&self) -> Header<'_> {
         self.fbs.header()
     }
     fn header_len(&self) -> usize {
@@ -183,7 +183,7 @@ impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
 }
 
 impl<T: AsyncHttpRangeClient> AsyncFeatureIter<T> {
-    pub fn header(&self) -> Header {
+    pub fn header(&self) -> Header<'_> {
         self.fbs.header()
     }
     /// Number of selected features (might be unknown)

@@ -14,17 +14,17 @@ pub struct FgbFeature {
 }
 
 impl FgbFeature {
-    pub(crate) fn header(&self) -> Header {
+    pub(crate) fn header(&self) -> Header<'_> {
         // SAFETY: verification is done before creating instance
         unsafe { size_prefixed_root_as_header_unchecked(&self.header_buf) }
     }
     /// Flatbuffers feature access
-    pub fn fbs_feature(&self) -> Feature {
+    pub fn fbs_feature(&self) -> Feature<'_> {
         // SAFETY: verification is done before creating instance
         unsafe { size_prefixed_root_as_feature_unchecked(&self.feature_buf) }
     }
     /// Flatbuffers geometry access
-    pub fn geometry(&self) -> Option<Geometry> {
+    pub fn geometry(&self) -> Option<Geometry<'_>> {
         self.fbs_feature().geometry()
     }
 
