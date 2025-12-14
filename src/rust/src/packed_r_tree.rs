@@ -260,6 +260,10 @@ fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
     hilbert(x, y)
 }
 
+/// Sort leaf node items in descending Hilbert curve order.
+///
+/// Writers typically sort feature leaf nodes before building the packed tree to improve spatial
+/// locality (and therefore query performance).
 pub fn hilbert_sort(items: &mut [NodeItem], extent: &NodeItem) {
     items.sort_by(|a, b| {
         let ha = hilbert_bbox(a, HILBERT_MAX, extent);
@@ -268,6 +272,7 @@ pub fn hilbert_sort(items: &mut [NodeItem], extent: &NodeItem) {
     });
 }
 
+/// Compute the overall bounding box (extent) from a slice of node items.
 pub fn calc_extent(nodes: &[NodeItem]) -> NodeItem {
     nodes.iter().fold(NodeItem::create(0), |mut a, b| {
         a.expand(b);
@@ -285,6 +290,7 @@ pub struct PackedRTree {
 }
 
 impl PackedRTree {
+    /// Default branching factor (node size) used by this crate when a caller does not specify one.
     pub const DEFAULT_NODE_SIZE: u16 = 16;
 
     fn init(&mut self, node_size: u16) -> Result<()> {
@@ -392,6 +398,13 @@ impl PackedRTree {
         self.node_items.len()
     }
 
+    /// Build a packed R-Tree from leaf nodes.
+    ///
+    /// - `nodes` must contain **leaf nodes** (one per feature), whose `offset` values point into the
+    ///   feature data section.
+    /// - `extent` should describe the overall dataset bounds. (Writers commonly compute it via
+    ///   [`calc_extent`].)
+    /// - `node_size` is the branching factor; values are clamped to `[2, 65535]`.
     pub fn build(nodes: &[NodeItem], extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
         let mut tree = PackedRTree {
             extent: extent.clone(),
@@ -409,6 +422,14 @@ impl PackedRTree {
         Ok(tree)
     }
 
+    /// Read a packed R-Tree index from a byte stream into memory.
+    ///
+    /// The reader must be positioned at the start of the index bytes (i.e. right after the
+    /// FlatGeobuf header). This function reads the entire index into memory.
+    ///
+    /// - `num_items` is the number of leaf items (features).
+    /// - `node_size` is the branching factor from the FlatGeobuf header (`index_node_size`);
+    ///   values are clamped to `[2, 65535]`.
     pub fn from_buf(data: impl Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
         let node_size = node_size.clamp(2, 65535);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
@@ -446,6 +467,10 @@ impl PackedRTree {
         Ok(tree)
     }
 
+    /// Search an in-memory index for features intersecting the given bounding box.
+    ///
+    /// This traverses the packed tree and returns a list of leaf matches as [`SearchResultItem`]
+    /// values, containing feature offsets and indices.
     pub fn search(
         &self,
         min_x: f64,
@@ -490,6 +515,16 @@ impl PackedRTree {
         Ok(results)
     }
 
+    /// Search an index on a seekable stream without loading the entire index into memory.
+    ///
+    /// The stream must be positioned at the start of the index bytes. This function will:
+    /// 1. traverse the index by seeking to the nodes needed for the search
+    /// 2. return matching leaf offsets as [`SearchResultItem`] values
+    /// 3. advance the stream position to the end of the index (so subsequent reads can start at
+    ///    the feature data section)
+    ///
+    /// `num_items` must be the feature count, and `node_size` must match the header’s
+    /// `index_node_size` (clamped to `[2, 65535]`).
     pub fn stream_search<R: Read + Seek>(
         data: &mut R,
         num_items: usize,
@@ -681,6 +716,13 @@ impl PackedRTree {
         self.num_nodes() * size_of::<NodeItem>()
     }
 
+    /// Compute the size of the packed index in bytes.
+    ///
+    /// This is useful when you need to:
+    /// - skip past the index to reach the feature data section, or
+    /// - compute `feature_begin = index_begin + index_size(...)` for range-based access.
+    ///
+    /// `node_size` is clamped to `[2, 65535]`. Panics if `num_items < 2`.
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(num_items > 0, "Cannot create empty tree");
@@ -702,7 +744,10 @@ impl PackedRTree {
         num_nodes * size_of::<NodeItem>()
     }
 
-    /// Write all index nodes
+    /// Write all index nodes to `out`.
+    ///
+    /// This writes the packed index as a sequence of little-endian [`NodeItem`] records in the
+    /// internal storage order used by the packed tree.
     pub fn stream_write<W: Write>(&self, out: &mut W) -> std::io::Result<()> {
         for item in &self.node_items {
             item.write(out)?;

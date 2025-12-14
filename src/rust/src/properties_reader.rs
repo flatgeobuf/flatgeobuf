@@ -7,7 +7,7 @@ use geozero::{ColumnValue, GeomProcessor, PropertyProcessor};
 use std::mem::size_of;
 use std::str;
 
-/// Access to current feature
+/// Access to the *current* feature during iteration.
 pub struct FgbFeature {
     pub(crate) header_buf: Vec<u8>, // Using type Header<'a> instead of Vec would require adding a lifetime to FgbFeature
     pub(crate) feature_buf: Vec<u8>,
