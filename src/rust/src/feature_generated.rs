@@ -364,7 +364,7 @@ impl core::fmt::Debug for Feature<'_> {
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
 /// `root_as_feature_unchecked`.
-pub fn root_as_feature(buf: &[u8]) -> Result<Feature, flatbuffers::InvalidFlatbuffer> {
+pub fn root_as_feature(buf: &[u8]) -> Result<Feature<'_>, flatbuffers::InvalidFlatbuffer> {
   flatbuffers::root::<Feature>(buf)
 }
 #[inline]
@@ -374,7 +374,7 @@ pub fn root_as_feature(buf: &[u8]) -> Result<Feature, flatbuffers::InvalidFlatbu
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
 /// `size_prefixed_root_as_feature_unchecked`.
-pub fn size_prefixed_root_as_feature(buf: &[u8]) -> Result<Feature, flatbuffers::InvalidFlatbuffer> {
+pub fn size_prefixed_root_as_feature(buf: &[u8]) -> Result<Feature<'_>, flatbuffers::InvalidFlatbuffer> {
   flatbuffers::size_prefixed_root::<Feature>(buf)
 }
 #[inline]
@@ -407,14 +407,14 @@ pub fn size_prefixed_root_as_feature_with_opts<'b, 'o>(
 /// Assumes, without verification, that a buffer of bytes contains a Feature and returns it.
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid `Feature`.
-pub unsafe fn root_as_feature_unchecked(buf: &[u8]) -> Feature {
+pub unsafe fn root_as_feature_unchecked(buf: &[u8]) -> Feature<'_> {
   flatbuffers::root_unchecked::<Feature>(buf)
 }
 #[inline]
 /// Assumes, without verification, that a buffer of bytes contains a size prefixed Feature and returns it.
 /// # Safety
 /// Callers must trust the given bytes do indeed contain a valid size prefixed `Feature`.
-pub unsafe fn size_prefixed_root_as_feature_unchecked(buf: &[u8]) -> Feature {
+pub unsafe fn size_prefixed_root_as_feature_unchecked(buf: &[u8]) -> Feature<'_> {
   flatbuffers::size_prefixed_root_unchecked::<Feature>(buf)
 }
 #[inline]
