@@ -21,7 +21,9 @@ pub fn read_geometry<P: GeomProcessor>(
 }
 
 impl Geometry<'_> {
-    /// Read FlatGeobuf geometry
+    /// Stream this FlatGeobuf geometry into a GeoZero [`GeomProcessor`].
+    ///
+    /// This is a convenience wrapper around [`read_geometry`].
     pub fn process<P: GeomProcessor>(
         &self,
         processor: &mut P,
