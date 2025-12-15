@@ -202,7 +202,7 @@ export async function readMetadata(
 
     const bb = new flatbuffers.ByteBuffer(bytes);
     const headerLength = bb.readUint32(magicbytes.length);
-    bb.setPosition(magicbytes.length + SIZE_PREFIX_LEN);
+    bb.setPosition(magicbytes.length);
 
     const headerMeta = fromByteBuffer(bb);
     
