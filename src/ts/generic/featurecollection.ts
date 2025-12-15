@@ -11,12 +11,11 @@ import { Header } from '../flat-geobuf/header.js';
 import type { HeaderMetaFn } from '../generic.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
-import { HttpReader } from '../http-reader.js';
+import { HttpRangeClient, HttpReader } from '../http-reader.js';
 import { calcTreeSize, type Rect } from '../packedrtree.js';
 import { buildFeature, type IFeature, type IProperties } from './feature.js';
 import { parseGeometry } from './geometry.js';
 import { inferGeometryType } from './header.js';
-import { HttpRangeClient } from '../http-reader.js';
 
 export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer | Uint8Array>;
@@ -182,17 +181,11 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
     Header.addName(builder, nameOffset);
     const offset = Header.endHeader(builder);
     builder.finishSizePrefixed(offset);
+
     return builder.asUint8Array() as Uint8Array;
 }
 
-
-export async function readMetadata(
-    url: string,
-    nocache = false,
-    headers: HeadersInit = {}    
-): Promise<HeaderMeta> {
-    
-    //defined in ../http-reader.ts
+export async function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
     const assumedHeaderLength = 2024;
     const httpClient = new HttpRangeClient(url, nocache, headers);
 
@@ -201,11 +194,9 @@ export async function readMetadata(
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
     const bb = new flatbuffers.ByteBuffer(bytes);
-    const headerLength = bb.readUint32(magicbytes.length);
     bb.setPosition(magicbytes.length);
-
     const headerMeta = fromByteBuffer(bb);
-    
+
     return headerMeta;
 }
 
