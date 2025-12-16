@@ -4,6 +4,7 @@ import {
     deserializeFiltered,
     deserializeStream,
     type FromFeatureFn,
+    readMetadata as readMetadataUrl,
 } from './generic/featurecollection.js';
 import type { HeaderMeta } from './header-meta.js';
 import type { Rect } from './packedrtree.js';
@@ -48,6 +49,16 @@ export function deserialize(
     if (input instanceof Uint8Array) return deserializeArray(input, fromFeature, rect);
     if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
     return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache, headers);
+}
+/**
+ * read only Metadata from a remote FlatGeobuf file
+ * @param url Input string
+ * @param nocache Disable caching
+ * @param headers Additional HTTP headers
+ */
+export function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
+    //TODO: support reading from typed array or stream
+    return readMetadataUrl(url, nocache, headers);
 }
 
 export { parseProperties } from './generic/feature.js';
