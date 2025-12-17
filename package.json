@@ -1,10 +1,10 @@
 {
-    "name": "flatgeobuf",
-    "version": "4.3.4",
+    "name": "@vind-ai/flatgeobuf-with-cache",
+    "version": "4.3.4-cache",
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
-        "build": "rm lib -rf && swc ./src/ts -d lib/mjs && mv ./lib/mjs/src/ts/* ./lib/mjs -f && rm ./lib/mjs/src -rf && tsc --emitDeclarationOnly && rollup -c rollup.config.js",
+        "build": "rm -rf lib && swc ./src/ts -d lib/mjs && mv -f ./lib/mjs/src/ts/* ./lib/mjs && rm -rf ./lib/mjs/src && tsc --emitDeclarationOnly && rollup -c rollup.config.js",
         "type-check": "tsc --noEmit",
         "test": "vitest ./lib",
         "test-src": "vitest ./src/ts",
@@ -113,5 +113,8 @@
         "typescript": "5.9.3",
         "vite": "7.2.6",
         "vitest": "4.0.14"
+    },
+    "publishConfig": {
+        "@vind-ai:registry": "https://npm.pkg.github.com"
     }
 }
