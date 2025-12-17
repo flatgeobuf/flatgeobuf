@@ -1,3 +1,15 @@
+# This is a fork of the FlatGeobuf repo
+
+We had to do it since the browser caching of partial downloads from S3 signed urls was poor, and it hurt the performance A LOT
+
+## Publish
+
+`pnpm install`
+
+`pnpm build` <--- This can fail the first time since the `lib` folder does not exist, just create an empty folder
+
+`pnpm publish --registry=https://npm.pkg.github.com --no-git-checks`
+
 # ![layout](logo.svg) FlatGeobuf
 
 [![CI](https://github.com/flatgeobuf/flatgeobuf/actions/workflows/test.yml/badge.svg)](https://github.com/flatgeobuf/flatgeobuf/actions/workflows/test.yml)
@@ -15,23 +27,23 @@ Goals are to be suitable for large volumes of static data, significantly faster 
 
 The site [switchfromshapefile.org](http://switchfromshapefile.org) has more in depth information about the problems of legacy formats and provides some alternatives but acknowledges that the current alternatives has some drawbacks on their own, for example they are not suitable for streaming.
 
-FlatGeobuf is open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)).
+FlatGeobuf is open source under the [BSD 2-Clause License](<https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)>).
 
 ## Examples
 
-* [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
-* [OpenLayers example](https://flatgeobuf.org/examples/openlayers)
-* [Leaflet example](https://flatgeobuf.org/examples/leaflet)
-* [MapLibre/Mapbox example](https://flatgeobuf.org/examples/maplibre)
+-   [Observable notebook](https://observablehq.com/@bjornharrtell/streaming-flatgeobuf)
+-   [OpenLayers example](https://flatgeobuf.org/examples/openlayers)
+-   [Leaflet example](https://flatgeobuf.org/examples/leaflet)
+-   [MapLibre/Mapbox example](https://flatgeobuf.org/examples/maplibre)
 
 ## Specification
 
 ![layout](doc/layout.svg "FlatGeobuf file layout")
 
-* MB: Magic bytes (0x6667620366676201)
-* H: Header (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/header.fbs))
-* I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/cpp/packedrtree.h))
-* DATA: Features (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
+-   MB: Magic bytes (0x6667620366676201)
+-   H: Header (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/header.fbs))
+-   I (optional): Static packed Hilbert R-tree index (static size [custom buffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/cpp/packedrtree.h))
+-   DATA: Features (variable size [flatbuffer](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/fbs/feature.fbs)s)
 
 The fourth byte in the magic bytes indicates major specification version. The last byte of the magic bytes indicate patch level. Patch level is backwards compatible so an implementation for a major version should accept any patch level version.
 
@@ -41,22 +53,22 @@ A changelog of the specification is available [here](doc/format-changelog.md).
 
 I recommend these blog posts by Horace Williams provides more details and explanations:
 
-* https://worace.works/2022/02/23/kicking-the-tires-flatgeobuf/
-* https://worace.works/2022/03/12/flatgeobuf-implementers-guide/
+-   https://worace.works/2022/02/23/kicking-the-tires-flatgeobuf/
+-   https://worace.works/2022/03/12/flatgeobuf-implementers-guide/
 
 ## Performance
 
 Preliminary performance tests has been done using road data from OSM for Denmark in SHP format from [download.geofabrik.de](https://download.geofabrik.de), containing 906602 LineString features with a set of attributes.
 
 |                       | Shapefile | GeoPackage | FlatGeobuf | GeoJSON | GML |
-|-----------------------|-----------|------------|------------|---------|-----|
+| --------------------- | --------- | ---------- | ---------- | ------- | --- |
 | Read full dataset     | 1         | 1.02       | 0.46       | 15      | 8.9 |
 | Read w/spatial filter | 1         | 0.94       | 0.71       | 705     | 399 |
 | Write full dataset    | 1         | 0.77       | 0.39       | 3.9     | 3.2 |
 | Write w/spatial index | 1         | 1.58       | 0.65       | -       | -   |
 | Size                  | 1         | 0.72       | 0.77       | 1.2     | 2.1 |
 
-*(The metrics are all relative to Shapefile, larger than 1 being worse, less than 1 being better.)*
+_(The metrics are all relative to Shapefile, larger than 1 being worse, less than 1 being better.)_
 
 The test was done using GDAL implementing FlatGeobuf as a driver and measurements for repeated reads using loops of `ogrinfo -qq -oo VERIFY_BUFFERS=NO` runs and measurements for repeated writes was done with `ogr2ogr` conversion from the original to a new file with `-lco SPATIAL_INDEX=NO` and `-lco SPATIAL_INDEX=YES` respectively.
 
@@ -64,8 +76,8 @@ Note that for the test with spatial filter a small bounding box was chosen resul
 
 As performance is highly data dependent I've also made similar tests on a larger dataset with Danish cadastral data consisting of 2511772 Polygons with extensive attribute data.
 
-|                       | Shapefile | GeoPackage | FlatGeobuf | 
-|-----------------------|-----------|------------|------------|
+|                       | Shapefile | GeoPackage | FlatGeobuf |
+| --------------------- | --------- | ---------- | ---------- |
 | Read full dataset     | 1         | 0.23       | 0.12       |
 | Read w/spatial filter | 1         | 0.31       | 0.26       |
 | Write full dataset    | 1         | 0.95       | 0.63       |
@@ -98,37 +110,37 @@ necessary.
 
 ## Features
 
-* Reference implementation for JavaScript, TypeScript, C++, C#, Go, Java and Rust
-* Efficient I/O (streaming and random access)
-* [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
-* [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
+-   Reference implementation for JavaScript, TypeScript, C++, C#, Go, Java and Rust
+-   Efficient I/O (streaming and random access)
+-   [GDAL/OGR driver](https://gdal.org/drivers/vector/flatgeobuf.html)
+-   [GeoServer WFS output format](https://docs.geoserver.org/latest/en/user/community/flatgeobuf/index.html)
 
 ## Supported applications / libraries
 
-* [Fiona](https://fiona.readthedocs.io/) (1.8.18 and forward)
-* [GDAL](https://gdal.org) (3.1 and forward)
-* [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
-* [GeoServer](https://geoserver.org) (2.17 and forward)
-* [GeoTools](https://geotools.org) (23.0 and forward)
-* [MapServer](https://mapserver.org/input/vector/flatgeobuf.html) (with GDAL >=3.1.0)
-* [PostGIS](https://postgis.net) (3.2.0 and forward)
-* [pyogrio](https://pyogrio.readthedocs.io/en/latest/)
-* [QField](https://qfield.org)
-* [QGIS](https://qgis.org) (3.16 and forward)
-* [ldproxy](https://github.com/interactive-instruments/ldproxy) (3.3 and forward)
-* [gogama/flatgeobuf](https://github.com/gogama/flatgeobuf)
+-   [Fiona](https://fiona.readthedocs.io/) (1.8.18 and forward)
+-   [GDAL](https://gdal.org) (3.1 and forward)
+-   [Geo Data Viewer (Visual Studio Code extension)](https://marketplace.visualstudio.com/items?itemName=RandomFractalsInc.geo-data-viewer) (2.3 and forward)
+-   [GeoServer](https://geoserver.org) (2.17 and forward)
+-   [GeoTools](https://geotools.org) (23.0 and forward)
+-   [MapServer](https://mapserver.org/input/vector/flatgeobuf.html) (with GDAL >=3.1.0)
+-   [PostGIS](https://postgis.net) (3.2.0 and forward)
+-   [pyogrio](https://pyogrio.readthedocs.io/en/latest/)
+-   [QField](https://qfield.org)
+-   [QGIS](https://qgis.org) (3.16 and forward)
+-   [ldproxy](https://github.com/interactive-instruments/ldproxy) (3.3 and forward)
+-   [gogama/flatgeobuf](https://github.com/gogama/flatgeobuf)
 
 ## Documentation
 
 ### TypeScript / JavaScript
 
-* [API Docs](http://unpkg.com/flatgeobuf/dist/doc/index.html)
+-   [API Docs](http://unpkg.com/flatgeobuf/dist/doc/index.html)
 
 #### Prebuilt bundles (intended for browser usage)
 
-* [flatgeobuf.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf.min.js) (contains the generic module)
-* [flatgeobuf-geojson.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-geojson.min.js) (contains the geojson module)
-* [flatgeobuf-ol.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-ol.min.js) (contains the ol module)
+-   [flatgeobuf.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf.min.js) (contains the generic module)
+-   [flatgeobuf-geojson.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-geojson.min.js) (contains the geojson module)
+-   [flatgeobuf-ol.min.js](https://unpkg.com/flatgeobuf/dist/flatgeobuf-ol.min.js) (contains the ol module)
 
 ### Node usage
 
@@ -163,4 +175,3 @@ See [this](https://github.com/flatgeobuf/flatgeobuf/issues/244) issue for root c
 ### Does FlatGeobuf support mixing features with and without geometry with spatial index?
 
 Currently it likely does not but could in the future, see [this](https://github.com/flatgeobuf/flatgeobuf/discussions/260) issue.
-
