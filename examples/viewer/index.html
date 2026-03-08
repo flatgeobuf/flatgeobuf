@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.7.0/ol.css" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/ol@v10.7.0/dist/ol.js"></script>
@@ -63,10 +64,10 @@
     <div>
         URL: <input id="url" value="https://flatgeobuf.septima.dk/nz-building-outlines.fgb" size="80">
         <!--button id="show">Show extent</button-->
-        <button id="fetch">Fetch within bbox (max 10000)</button>
+        <button id="fetch" type="button">Fetch within bbox (max 10000)</button>
     </div>
     <div id="popup" class="ol-popup">
-        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <a href="#" id="popup-closer" class="ol-popup-closer" aria-label="Close popup"></a>
         <div id="popup-content"></div>
       </div>
     <div id="map"></div>

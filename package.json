@@ -93,25 +93,25 @@
         "ol": ">=10"
     },
     "devDependencies": {
-        "@babel/core": "7.28.5",
-        "@babel/preset-env": "7.28.5",
-        "@biomejs/biome": "2.3.10",
-        "@rollup/plugin-babel": "6.1.0",
+        "@babel/core": "7.29.0",
+        "@babel/preset-env": "7.29.0",
+        "@biomejs/biome": "2.4.6",
+        "@rollup/plugin-babel": "7.0.0",
         "@rollup/plugin-node-resolve": "16.0.3",
-        "@rollup/plugin-terser": "0.4.4",
-        "@swc/cli": "0.7.9",
-        "@swc/core": "1.15.7",
+        "@rollup/plugin-terser": "1.0.0",
+        "@swc/cli": "0.8.0",
+        "@swc/core": "1.15.18",
         "@types/geojson": "7946.0.16",
-        "@types/node": "25.0.3",
+        "@types/node": "25.3.5",
         "@types/slice-source": "0.4.3",
-        "@vitest/coverage-v8": "4.0.16",
+        "@vitest/coverage-v8": "4.0.18",
         "jsts": "2.12.1",
         "ol": ">=10",
-        "rollup": "4.53.5",
+        "rollup": "4.59.0",
         "sirv": "^3.0.2",
-        "typedoc": "0.28.15",
+        "typedoc": "0.28.17",
         "typescript": "5.9.3",
-        "vite": "7.3.0",
-        "vitest": "4.0.16"
+        "vite": "7.3.1",
+        "vitest": "4.0.18"
     }
 }
