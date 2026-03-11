@@ -16,19 +16,19 @@ public class HeaderMetaTest {
 
     @Before
     public void setUp() throws Exception {
-        headerMeta.geometryType = GeometryType.Unknown;
+        headerMeta.geometryType = GeometryType.Point;
         headerMeta.envelope = new Envelope(0, 1, 0, 1);
         headerMeta.indexNodeSize = 16;
         headerMeta.featuresCount = 16;
+        headerMeta.hasZ = true;
         headerMeta.name = "default";
         headerMeta.columns = new ArrayList<>();
     }
 
     @Test
     public void testWrite() throws IOException {
-        File tmpFile = new File("../../test/data/tmpFile20221102.fgb");
+        File tmpFile = File.createTempFile("tmpFile20221102",".fgb");
         tmpFile.deleteOnExit();
-        tmpFile.createNewFile();
         try (FileOutputStream fileOutputStream = new FileOutputStream(tmpFile)) {
             fileOutputStream.write(Constants.MAGIC_BYTES);
             FlatBufferBuilder bufferBuilder = new FlatBufferBuilder();
@@ -42,6 +42,8 @@ public class HeaderMetaTest {
         assertEquals(headerMeta.featuresCount, result.featuresCount);
         assertEquals(headerMeta.indexNodeSize, result.indexNodeSize);
         assertEquals(headerMeta.envelope, result.envelope);
+        assertEquals(headerMeta.geometryType, result.geometryType);
+        assertEquals(headerMeta.hasZ, result.hasZ);
         tmpFile.deleteOnExit();
     }
 }
