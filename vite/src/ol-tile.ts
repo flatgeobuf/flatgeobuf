@@ -5,10 +5,12 @@ import OSM from 'ol/source/OSM.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import View from 'ol/View.js';
 import { createTileLoadFunction, tileUrlFunction } from '../../src/ts/ol';
+import { Deserializer } from "../../src/ts/deserializer";
 
 const url = '/data/countries.fgb';
 const source = new VectorTileSource({ tileUrlFunction });
-source.setTileLoadFunction(createTileLoadFunction(source, url));
+const deserializer = new Deserializer()
+source.setTileLoadFunction(createTileLoadFunction(deserializer, source, url));
 
 new Map({
     layers: [new TileLayer({ source: new OSM() }), new VectorTileLayer({ source })],
