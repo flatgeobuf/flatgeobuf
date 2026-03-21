@@ -186,18 +186,43 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
 }
 
 export async function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
-    const assumedHeaderLength = 2024;
+
+    const headerLengthLimit = 64769; //max 6 tries
+
+    let assumedHeaderLength = 2024;
+
     const httpClient = new HttpRangeClient(url, nocache, headers);
 
-    const bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
 
-    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
+    while ( assumedHeaderLength < headerLengthLimit ) {
 
-    const bb = new flatbuffers.ByteBuffer(bytes);
-    bb.setPosition(magicbytes.length);
-    const headerMeta = fromByteBuffer(bb);
+        try {
 
-    return headerMeta;
+            const bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
+
+            if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
+
+            const bb = new flatbuffers.ByteBuffer(bytes);
+
+            bb.setPosition(magicbytes.length);
+
+            const headerMeta = fromByteBuffer(bb);
+
+            return headerMeta;
+
+        }
+        catch ( error ) {
+
+            if ( error?.toString() === 'Error: Not a FlatGeobuf file' || error?.toString() === "Error: Invalid header size" ) {
+                throw error;
+            }
+
+            assumedHeaderLength *= 2;
+        }
+
+    }
+
+    throw new Error( "Exhausted header fetch retries" );
 }
 
 function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
