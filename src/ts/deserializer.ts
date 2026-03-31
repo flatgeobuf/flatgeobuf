@@ -1,15 +1,15 @@
-import type { HeaderMetaFn } from "./generic";
-import type { IFeature } from "./generic/feature";
+import type { Extent } from 'ol/extent.js';
+import { transformExtent } from 'ol/proj.js';
+import type { HeaderMetaFn } from './generic';
+import type { IFeature } from './generic/feature';
 import {
     type FromFeatureFn,
     deserialize as genericDeserialize,
     deserializeFiltered as genericDeserializeFiltered,
     deserializeStream as genericDeserializeStream,
 } from './generic/featurecollection.js';
-import type { Rect } from './packedrtree.js';
 import { getFromFeatureFn } from './ol/feature.js';
-import { transformExtent } from "ol/proj.js";
-import type { Extent } from "ol/extent.js";
+import type { Rect } from './packedrtree.js';
 
 export interface DeserializerOptions {
     /** Data projection. Defaults to EPSG:4326 */

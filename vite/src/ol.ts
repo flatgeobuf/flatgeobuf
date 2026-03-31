@@ -6,13 +6,19 @@ import OSM from 'ol/source/OSM.js';
 import VectorSource from 'ol/source/Vector.js';
 import View from 'ol/View.js';
 import { createLoader } from '../../src/ts/ol';
-import { Deserializer } from "../../src/ts/deserializer";
+
 const url = '/data/countries.fgb';
 const source = new VectorSource({ strategy: bbox });
-const deserializer = new Deserializer({
-    // renderFeature: true,
-})
-source.setLoader(createLoader(deserializer, source, url));
+
+//// To test renderFeatures:
+// import { Deserializer } from "../../src/ts/deserializer";
+//
+// const deserializer = new Deserializer({
+//     renderFeature: true,
+// })
+// source.setLoader(createLoader(source, url, deserializer));
+
+source.setLoader(createLoader(source, url));
 
 new Map({
     layers: [new TileLayer({ source: new OSM() }), new VectorLayer({ source })],
