@@ -13,6 +13,7 @@ import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 import { HttpRangeClient, HttpReader } from '../http-reader.js';
 import { calcTreeSize, type Rect } from '../packedrtree.js';
+import type { DeserializeContext } from './deserialize.js';
 import { buildFeature, type IFeature, type IProperties } from './feature.js';
 import { parseGeometry } from './geometry.js';
 import { inferGeometryType } from './header.js';
@@ -44,12 +45,9 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export async function* deserialize(
-    bytes: Uint8Array,
-    fromFeature: FromFeatureFn,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
+export async function* deserialize(ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { input, fromFeature, rect, headerMetaFn } = ctx;
+    const bytes = input as Uint8Array;
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
     if (rect) {
@@ -82,11 +80,9 @@ export async function* deserialize(
     }
 }
 
-export async function* deserializeStream(
-    stream: ReadableStream,
-    fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
+export async function* deserializeStream(ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { input, fromFeature, headerMetaFn } = ctx;
+    const stream = input as ReadableStream;
     const reader = slice(stream);
     const read: ReadFn = async (size) => await reader.slice(size);
 
@@ -114,18 +110,13 @@ export async function* deserializeStream(
     while ((feature = await readFeature(read, headerMeta, fromFeature, id++))) yield feature;
 }
 
-export async function* deserializeFiltered(
-    url: string,
-    rect: Rect,
-    fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn,
-    nocache = false,
-    headers: HeadersInit = {},
-): AsyncGenerator<IFeature> {
+export async function* deserializeFiltered(ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { input, rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
+    const url = input as string;
     const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
-    for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);
+    for await (const feature of reader.selectBbox(rect!)) yield fromFeature(feature.id, feature.feature, reader.header);
 }
 
 async function readFeature(

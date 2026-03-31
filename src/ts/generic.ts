@@ -3,11 +3,10 @@ import {
     deserialize as deserializeArray,
     deserializeFiltered,
     deserializeStream,
-    type FromFeatureFn,
     readMetadata as readMetadataUrl,
 } from './generic/featurecollection.js';
+import type { DeserializeContext } from './generic/deserialize.js';
 import type { HeaderMeta } from './header-meta.js';
-import type { Rect } from './packedrtree.js';
 
 export { ColumnType } from './flat-geobuf/column-type.js';
 export { GeometryType } from './flat-geobuf/geometry-type.js';
@@ -16,39 +15,14 @@ export { GeometryType } from './flat-geobuf/geometry-type.js';
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
- * Deserialize FlatGeobuf from a URL into generic features
- * @param url Input string
- * @param fromFeature Callback that receives generic features
- * @param rect Filter rectangle
+ * Deserialize FlatGeobuf into generic features
+ * @param ctx Deserialize context including input and fromFeature callback
  */
-export function deserialize(url: string, fromFeature: FromFeatureFn, rect?: Rect): AsyncGenerator<IFeature>;
-
-/**
- * Deserialize FlatGeobuf from a typed array into generic features
- * @param typedArray Input byte array
- * @param fromFeature Callback that receives generic features
- */
-export function deserialize(typedArray: Uint8Array, fromFeature: FromFeatureFn, rect?: Rect): IFeature[];
-
-/**
- * Deserialize FlatGeobuf from a stream into generic features
- * NOTE: Does not support spatial filtering
- * @param input stream
- * @param fromFeature Callback that receives generic features
- */
-export function deserialize(input: ReadableStream, fromFeature: FromFeatureFn): AsyncGenerator<IFeature>;
-
-/** Implementation */
-export function deserialize(
-    input: Uint8Array | ReadableStream | string,
-    fromFeature: FromFeatureFn,
-    rect?: Rect,
-    nocache = false,
-    headers: HeadersInit = {},
-): IFeature[] | AsyncGenerator<IFeature> {
-    if (input instanceof Uint8Array) return deserializeArray(input, fromFeature, rect);
-    if (input instanceof ReadableStream) return deserializeStream(input, fromFeature);
-    return deserializeFiltered(input, rect as Rect, fromFeature, undefined, nocache, headers);
+export function deserialize(ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { input } = ctx;
+    if (input instanceof Uint8Array) return deserializeArray(ctx);
+    if (input instanceof ReadableStream) return deserializeStream(ctx);
+    return deserializeFiltered(ctx);
 }
 /**
  * read only Metadata from a remote FlatGeobuf file
@@ -62,4 +36,7 @@ export function readMetadata(url: string, nocache = false, headers: HeadersInit 
 }
 
 export { parseProperties } from './generic/feature.js';
-export { serialize } from './generic/featurecollection.js';
+export type { IFeature, IProperties } from './generic/feature.js';
+export type { ISimpleGeometry } from './generic/geometry.js';
+export { serialize, type FromFeatureFn } from './generic/featurecollection.js';
+export type { DeserializeContext, DeserializeOptions } from './generic/deserialize.js';

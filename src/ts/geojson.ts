@@ -1,13 +1,14 @@
 import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
-import type { HeaderMetaFn } from './generic.js';
 import type { IGeoJsonFeature } from './geojson/feature.js';
+import type { DeserializeOptions } from './generic/deserialize.js';
+export type { IGeoJsonFeature } from './geojson/feature.js';
+export type { DeserializeOptions } from './generic/deserialize.js';
 import {
     deserialize as fcDeserialize,
     deserializeFiltered as fcDeserializeFiltered,
     deserializeStream as fcDeserializeStream,
     serialize as fcSerialize,
 } from './geojson/featurecollection.js';
-import type { Rect } from './packedrtree.js';
 
 /**
  * Serialize GeoJSON to FlatGeobuf
@@ -20,58 +21,17 @@ export function serialize(geojson: GeoJsonFeatureCollection, crsCode = 0): Uint8
 
 /**
  * Deserialize FlatGeobuf into GeoJSON features
- * @param url Input string
- * @param rect Filter rectangle - NOT USED
- * @param headerMetaFn Callback that will receive header metadata when available
+ * @param inputOrOptions Input byte array, stream or URL string, or deserializer options including input
  */
 export function deserialize(
-    url: string,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache?: boolean,
-    headers?: HeadersInit,
-): AsyncGenerator<IGeoJsonFeature>;
-
-/**
- * Deserialize FlatGeobuf from a typed array into GeoJSON features
- * NOTE: Does not support spatial filtering
- * @param typedArray Input byte array
- * @param rect Filter rectangle - NOT USED
- * @param headerMetaFn Callback that will receive header metadata when available
- */
-export function deserialize(
-    typedArray: Uint8Array,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache?: boolean,
-    headers?: HeadersInit,
-): AsyncGenerator<IGeoJsonFeature>;
-
-/**
- * Deserialize FlatGeobuf from a stream into GeoJSON features
- * NOTE: Does not support spatial filtering
- * @param stream stream
- * @param rect Filter rectangle
- * @param headerMetaFn Callback that will receive header metadata when available
- */
-export function deserialize(
-    stream: ReadableStream,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache?: boolean,
-    headers?: HeadersInit,
-): AsyncGenerator<IGeoJsonFeature>;
-
-/** Implementation */
-export function deserialize(
-    input: Uint8Array | ReadableStream | string,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache = false,
-    headers: HeadersInit = {},
+    inputOrOptions: Uint8Array | ReadableStream | string | DeserializeOptions,
 ): AsyncGenerator<IGeoJsonFeature> {
-    if (input instanceof Uint8Array) return fcDeserialize(input, rect, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
-    if (input instanceof ReadableStream)
-        return fcDeserializeStream(input, headerMetaFn) as AsyncGenerator<IGeoJsonFeature>;
-    return fcDeserializeFiltered(input, rect!, headerMetaFn, nocache, headers) as AsyncGenerator<IGeoJsonFeature>;
+    const options: DeserializeOptions = inputOrOptions instanceof Uint8Array || inputOrOptions instanceof ReadableStream || typeof inputOrOptions === 'string'
+        ? { input: inputOrOptions }
+        : inputOrOptions;
+    const { input } = options;
+    if (input instanceof Uint8Array) return fcDeserialize(options) as AsyncGenerator<IGeoJsonFeature>;
+    if (input instanceof ReadableStream) return fcDeserializeStream(options) as AsyncGenerator<IGeoJsonFeature>;
+    if (typeof input === 'string') return fcDeserializeFiltered(options) as AsyncGenerator<IGeoJsonFeature>;
+    throw new Error('Invalid input type');
 }

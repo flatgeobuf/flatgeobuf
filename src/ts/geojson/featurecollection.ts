@@ -20,9 +20,8 @@ import {
     mapColumn,
 } from '../generic/featurecollection.js';
 import { inferGeometryType } from '../generic/header.js';
-import type { HeaderMetaFn } from '../generic.js';
+import type { DeserializeOptions } from '../generic/deserialize.js';
 import type { HeaderMeta } from '../header-meta.js';
-import type { Rect } from '../packedrtree.js';
 import { fromFeature } from './feature.js';
 import { parseGC, parseGeometry } from './geometry.js';
 
@@ -52,26 +51,16 @@ export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode =
     return uint8;
 }
 
-export async function* deserialize(
-    bytes: Uint8Array,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
-    yield* genericDeserialize(bytes, fromFeature, rect, headerMetaFn);
+export async function* deserialize(options: DeserializeOptions): AsyncGenerator<IFeature> {
+    yield* genericDeserialize({ ...options, fromFeature });
 }
 
-export function deserializeStream(stream: ReadableStream, headerMetaFn?: HeaderMetaFn): AsyncGenerator<IFeature> {
-    return genericDeserializeStream(stream, fromFeature, headerMetaFn);
+export function deserializeStream(options: DeserializeOptions): AsyncGenerator<IFeature> {
+    return genericDeserializeStream({ ...options, fromFeature });
 }
 
-export function deserializeFiltered(
-    url: string,
-    rect: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache = false,
-    headers: HeadersInit = {},
-): AsyncGenerator<IFeature> {
-    return genericDeserializeFiltered(url, rect, fromFeature, headerMetaFn, nocache, headers);
+export function deserializeFiltered(options: DeserializeOptions): AsyncGenerator<IFeature> {
+    return genericDeserializeFiltered({ ...options, fromFeature });
 }
 
 function introspectHeaderMeta(featurecollection: GeoJsonFeatureCollection): HeaderMeta {

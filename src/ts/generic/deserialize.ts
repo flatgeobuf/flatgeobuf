@@ -1,4 +1,4 @@
-import type { FromFeatureFn } from '../flatgeobuf';
+import type { FromFeatureFn } from './featurecollection.js';
 import type { HeaderMetaFn } from '../generic';
 import type { Rect } from '../packedrtree';
 

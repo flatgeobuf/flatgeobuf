@@ -10,7 +10,7 @@ import type VectorTileSource from 'ol/source/VectorTile.js';
 import type { LoadFunction } from 'ol/Tile.js';
 import type { TileCoord } from 'ol/tilecoord.js';
 import type VectorTile from 'ol/VectorTile.js';
-import type { DeserializeOptions } from './generic/deserialize';
+import type { DeserializeContext, DeserializeOptions } from './generic/deserialize';
 import type { IFeature } from './generic/feature.js';
 import {
     deserialize as genericDeserialize,
@@ -54,35 +54,19 @@ export interface OlDeserializeOptions extends DeserializeOptions {
  * @param inputOrOptions Input byte array, stream or URL string, or deserializer options including input
  */
 export function deserialize(
-    inputOrOptions: Uint8Array | ReadableStream | string | (OlDeserializeOptions & { input: Uint8Array | ReadableStream | string }),
+    inputOrOptions: Uint8Array | ReadableStream | string | OlDeserializeOptions,
 ): AsyncGenerator<FeatureLike> {
-    const actualOptions: OlDeserializeOptions = typeof inputOrOptions === 'object' && 'input' in inputOrOptions
-        ? inputOrOptions
-        : { input: inputOrOptions };
-    const { input, rect: actualRect } = actualOptions as { input: Uint8Array | ReadableStream | string; rect?: Rect };
-    const fromFeature = getFromFeatureFn(actualOptions);
+    const actualOptions: OlDeserializeOptions = inputOrOptions instanceof Uint8Array || inputOrOptions instanceof ReadableStream || typeof inputOrOptions === 'string'
+        ? { input: inputOrOptions }
+        : inputOrOptions;
+    const { input, rect: actualRect } = actualOptions;
+    const ctx: DeserializeContext = { ...actualOptions, fromFeature: getFromFeatureFn(actualOptions) };
     if (input instanceof Uint8Array)
-        return genericDeserialize(
-            input,
-            fromFeature,
-            actualRect,
-            actualOptions.headerMetaFn,
-        ) as AsyncGenerator<FeatureLike>;
+        return genericDeserialize(ctx) as AsyncGenerator<FeatureLike>;
     if (input instanceof ReadableStream)
-        return genericDeserializeStream(
-            input,
-            fromFeature,
-            actualOptions.headerMetaFn,
-        ) as AsyncGenerator<FeatureLike>;
+        return genericDeserializeStream(ctx) as AsyncGenerator<FeatureLike>;
     if (typeof input === 'string' && actualRect)
-        return genericDeserializeFiltered(
-            input,
-            actualRect,
-            fromFeature,
-            actualOptions.headerMetaFn,
-            actualOptions.nocache,
-            actualOptions.headers,
-        ) as AsyncGenerator<FeatureLike>;
+        return genericDeserializeFiltered(ctx) as AsyncGenerator<FeatureLike>;
     throw new Error('Invalid input type or missing rect for URL input');
 }
 
