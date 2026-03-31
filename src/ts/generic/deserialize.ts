@@ -1,6 +1,6 @@
-import type { FromFeatureFn } from './featurecollection.js';
 import type { HeaderMetaFn } from '../generic';
 import type { Rect } from '../packedrtree';
+import type { FromFeatureFn } from './featurecollection.js';
 
 export interface DeserializeContext extends DeserializeOptions {
     fromFeature: FromFeatureFn;

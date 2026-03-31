@@ -56,17 +56,17 @@ export interface OlDeserializeOptions extends DeserializeOptions {
 export function deserialize(
     inputOrOptions: Uint8Array | ReadableStream | string | OlDeserializeOptions,
 ): AsyncGenerator<FeatureLike> {
-    const actualOptions: OlDeserializeOptions = inputOrOptions instanceof Uint8Array || inputOrOptions instanceof ReadableStream || typeof inputOrOptions === 'string'
-        ? { input: inputOrOptions }
-        : inputOrOptions;
+    const actualOptions: OlDeserializeOptions =
+        inputOrOptions instanceof Uint8Array ||
+        inputOrOptions instanceof ReadableStream ||
+        typeof inputOrOptions === 'string'
+            ? { input: inputOrOptions }
+            : inputOrOptions;
     const { input, rect: actualRect } = actualOptions;
     const ctx: DeserializeContext = { ...actualOptions, fromFeature: getFromFeatureFn(actualOptions) };
-    if (input instanceof Uint8Array)
-        return genericDeserialize(ctx) as AsyncGenerator<FeatureLike>;
-    if (input instanceof ReadableStream)
-        return genericDeserializeStream(ctx) as AsyncGenerator<FeatureLike>;
-    if (typeof input === 'string' && actualRect)
-        return genericDeserializeFiltered(ctx) as AsyncGenerator<FeatureLike>;
+    if (input instanceof Uint8Array) return genericDeserialize(ctx) as AsyncGenerator<FeatureLike>;
+    if (input instanceof ReadableStream) return genericDeserializeStream(ctx) as AsyncGenerator<FeatureLike>;
+    if (typeof input === 'string' && actualRect) return genericDeserializeFiltered(ctx) as AsyncGenerator<FeatureLike>;
     throw new Error('Invalid input type or missing rect for URL input');
 }
 
@@ -105,11 +105,7 @@ export function createLoader(
                 const response = await fetch(url, { headers: options.headers });
                 it = deserialize({ ...options, input: response.body as ReadableStream });
             } else {
-                const rect = extentToRect(
-                    extent,
-                    options.featureProjection,
-                    options.dataProjection,
-                );
+                const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
                 it = deserialize({ ...options, input: url, rect });
             }
             for await (const feature of it) {
@@ -139,22 +135,14 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
  * @param options
  * @returns
  */
-export function createTileLoadFunction(
-    source: VectorTileSource,
-    url: string,
-    options: OlDeserializeOptions = {},
-) {
+export function createTileLoadFunction(source: VectorTileSource, url: string, options: OlDeserializeOptions = {}) {
     const projection = source.getProjection();
     options.dataProjection = 'EPSG:4326';
     options.featureProjection = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
-            const rect = extentToRect(
-                extent,
-                options.featureProjection,
-                options.dataProjection,
-            );
+            const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
             const it = deserialize({ ...options, input: url, rect });
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);

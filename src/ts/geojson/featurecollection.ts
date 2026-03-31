@@ -11,6 +11,7 @@ import type {
 import type { ColumnMeta } from '../column-meta.js';
 
 import { magicbytes } from '../constants.js';
+import type { DeserializeOptions } from '../generic/deserialize.js';
 import { buildFeature, type IFeature, type IProperties } from '../generic/feature.js';
 import {
     buildHeader,
@@ -20,7 +21,6 @@ import {
     mapColumn,
 } from '../generic/featurecollection.js';
 import { inferGeometryType } from '../generic/header.js';
-import type { DeserializeOptions } from '../generic/deserialize.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { fromFeature } from './feature.js';
 import { parseGC, parseGeometry } from './geometry.js';

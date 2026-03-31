@@ -8,7 +8,7 @@ import type SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 import { transform } from 'ol/proj';
 import type RenderFeature from 'ol/render/Feature.js';
 import { describe, expect, it } from 'vitest';
-import { type OlDeserializeOptions, deserialize, serialize } from './ol.js';
+import { deserialize, type OlDeserializeOptions, serialize } from './ol.js';
 import { arrayToStream, takeAsync } from './streams/utils.js';
 
 const format = new WKT();

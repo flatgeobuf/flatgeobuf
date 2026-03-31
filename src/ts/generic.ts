@@ -1,3 +1,4 @@
+import type { DeserializeContext } from './generic/deserialize.js';
 import type { IFeature } from './generic/feature.js';
 import {
     deserialize as deserializeArray,
@@ -5,7 +6,6 @@ import {
     deserializeStream,
     readMetadata as readMetadataUrl,
 } from './generic/featurecollection.js';
-import type { DeserializeContext } from './generic/deserialize.js';
 import type { HeaderMeta } from './header-meta.js';
 
 export { ColumnType } from './flat-geobuf/column-type.js';
@@ -35,8 +35,8 @@ export function readMetadata(url: string, nocache = false, headers: HeadersInit 
     return readMetadataUrl(url, nocache, headers);
 }
 
-export { parseProperties } from './generic/feature.js';
-export type { IFeature, IProperties } from './generic/feature.js';
-export type { ISimpleGeometry } from './generic/geometry.js';
-export { serialize, type FromFeatureFn } from './generic/featurecollection.js';
 export type { DeserializeContext, DeserializeOptions } from './generic/deserialize.js';
+export type { IFeature, IProperties } from './generic/feature.js';
+export { parseProperties } from './generic/feature.js';
+export { type FromFeatureFn, serialize } from './generic/featurecollection.js';
+export type { ISimpleGeometry } from './generic/geometry.js';

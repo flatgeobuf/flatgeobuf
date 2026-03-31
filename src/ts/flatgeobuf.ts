@@ -6,7 +6,6 @@ export { Geometry } from './flat-geobuf/geometry.js';
 export * as generic from './generic.js';
 
 export * as geojson from './geojson.js';
-export * as ol from './ol.js';
-
 export type { HeaderMeta } from './header-meta.js';
+export * as ol from './ol.js';
 export type { Rect } from './packedrtree.js';
