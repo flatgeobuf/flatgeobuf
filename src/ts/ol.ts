@@ -31,10 +31,6 @@ export function serialize(features: Feature[]): Uint8Array {
 }
 
 export interface OlDeserializeOptions extends DeserializeOptions {
-    /** Input byte array, stream or URL string */
-    input?: Uint8Array | ReadableStream | string;
-    /** Filter rectangle */
-    rect?: Rect;
     /** Data projection (source). */
     dataProjection?: string;
     /** Features projection (destination). */
@@ -51,22 +47,19 @@ export interface OlDeserializeOptions extends DeserializeOptions {
 
 /**
  * Deserialize FlatGeobuf into OpenLayers Features
- * @param inputOrOptions Input byte array, stream or URL string, or deserializer options including input
+ * @param input Input byte array, stream or URL string
+ * @param options Optional deserializer options (rect, dataProjection, featureProjection, etc.)
  */
 export function deserialize(
-    inputOrOptions: Uint8Array | ReadableStream | string | OlDeserializeOptions,
+    input: Uint8Array | ReadableStream | string,
+    options?: OlDeserializeOptions,
 ): AsyncGenerator<FeatureLike> {
-    const actualOptions: OlDeserializeOptions =
-        inputOrOptions instanceof Uint8Array ||
-        inputOrOptions instanceof ReadableStream ||
-        typeof inputOrOptions === 'string'
-            ? { input: inputOrOptions }
-            : inputOrOptions;
-    const { input, rect: actualRect } = actualOptions;
-    const ctx: DeserializeContext = { ...actualOptions, fromFeature: getFromFeatureFn(actualOptions) };
-    if (input instanceof Uint8Array) return genericDeserialize(ctx) as AsyncGenerator<FeatureLike>;
-    if (input instanceof ReadableStream) return genericDeserializeStream(ctx) as AsyncGenerator<FeatureLike>;
-    if (typeof input === 'string' && actualRect) return genericDeserializeFiltered(ctx) as AsyncGenerator<FeatureLike>;
+    const opts = options ?? {};
+    const ctx: DeserializeContext = { ...opts, fromFeature: getFromFeatureFn(opts) };
+    if (input instanceof Uint8Array) return genericDeserialize(input, ctx) as AsyncGenerator<FeatureLike>;
+    if (input instanceof ReadableStream) return genericDeserializeStream(input, ctx) as AsyncGenerator<FeatureLike>;
+    if (typeof input === 'string' && options?.rect)
+        return genericDeserializeFiltered(input, ctx) as AsyncGenerator<FeatureLike>;
     throw new Error('Invalid input type or missing rect for URL input');
 }
 
@@ -103,10 +96,10 @@ export function createLoader(
             let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all) {
                 const response = await fetch(url, { headers: options.headers });
-                it = deserialize({ ...options, input: response.body as ReadableStream });
+                it = deserialize(response.body as ReadableStream, options);
             } else {
                 const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
-                it = deserialize({ ...options, input: url, rect });
+                it = deserialize(url, { ...options, rect });
             }
             for await (const feature of it) {
                 features.push(feature);
@@ -143,7 +136,7 @@ export function createTileLoadFunction(source: VectorTileSource, url: string, op
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
             const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
-            const it = deserialize({ ...options, input: url, rect });
+            const it = deserialize(url, { ...options, rect });
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);
             vectorTile.setFeatures(features);

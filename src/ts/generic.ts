@@ -16,13 +16,16 @@ export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
  * Deserialize FlatGeobuf into generic features
- * @param ctx Deserialize context including input and fromFeature callback
+ * @param input Input byte array, stream or URL string
+ * @param ctx Deserialize context with fromFeature callback
  */
-export function deserialize(ctx: DeserializeContext): AsyncGenerator<IFeature> {
-    const { input } = ctx;
-    if (input instanceof Uint8Array) return deserializeArray(ctx);
-    if (input instanceof ReadableStream) return deserializeStream(ctx);
-    return deserializeFiltered(ctx);
+export function deserialize(
+    input: Uint8Array | ReadableStream | string,
+    ctx: DeserializeContext,
+): AsyncGenerator<IFeature> {
+    if (input instanceof Uint8Array) return deserializeArray(input, ctx);
+    if (input instanceof ReadableStream) return deserializeStream(input, ctx);
+    return deserializeFiltered(input, ctx);
 }
 /**
  * read only Metadata from a remote FlatGeobuf file

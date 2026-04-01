@@ -51,16 +51,16 @@ export function serialize(featurecollection: GeoJsonFeatureCollection, crsCode =
     return uint8;
 }
 
-export async function* deserialize(options: DeserializeOptions): AsyncGenerator<IFeature> {
-    yield* genericDeserialize({ ...options, fromFeature });
+export async function* deserialize(input: Uint8Array, options?: DeserializeOptions): AsyncGenerator<IFeature> {
+    yield* genericDeserialize(input, { ...options, fromFeature });
 }
 
-export function deserializeStream(options: DeserializeOptions): AsyncGenerator<IFeature> {
-    return genericDeserializeStream({ ...options, fromFeature });
+export function deserializeStream(input: ReadableStream, options?: DeserializeOptions): AsyncGenerator<IFeature> {
+    return genericDeserializeStream(input, { ...options, fromFeature });
 }
 
-export function deserializeFiltered(options: DeserializeOptions): AsyncGenerator<IFeature> {
-    return genericDeserializeFiltered({ ...options, fromFeature });
+export function deserializeFiltered(input: string, options?: DeserializeOptions): AsyncGenerator<IFeature> {
+    return genericDeserializeFiltered(input, { ...options, fromFeature });
 }
 
 function introspectHeaderMeta(featurecollection: GeoJsonFeatureCollection): HeaderMeta {

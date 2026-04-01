@@ -23,20 +23,15 @@ export function serialize(geojson: GeoJsonFeatureCollection, crsCode = 0): Uint8
 
 /**
  * Deserialize FlatGeobuf into GeoJSON features
- * @param inputOrOptions Input byte array, stream or URL string, or deserializer options including input
+ * @param input Input byte array, stream or URL string
+ * @param options Optional deserializer options (rect, headerMetaFn, headers, nocache)
  */
 export function deserialize(
-    inputOrOptions: Uint8Array | ReadableStream | string | DeserializeOptions,
+    input: Uint8Array | ReadableStream | string,
+    options?: DeserializeOptions,
 ): AsyncGenerator<IGeoJsonFeature> {
-    const options: DeserializeOptions =
-        inputOrOptions instanceof Uint8Array ||
-        inputOrOptions instanceof ReadableStream ||
-        typeof inputOrOptions === 'string'
-            ? { input: inputOrOptions }
-            : inputOrOptions;
-    const { input } = options;
-    if (input instanceof Uint8Array) return fcDeserialize(options) as AsyncGenerator<IGeoJsonFeature>;
-    if (input instanceof ReadableStream) return fcDeserializeStream(options) as AsyncGenerator<IGeoJsonFeature>;
-    if (typeof input === 'string') return fcDeserializeFiltered(options) as AsyncGenerator<IGeoJsonFeature>;
+    if (input instanceof Uint8Array) return fcDeserialize(input, options) as AsyncGenerator<IGeoJsonFeature>;
+    if (input instanceof ReadableStream) return fcDeserializeStream(input, options) as AsyncGenerator<IGeoJsonFeature>;
+    if (typeof input === 'string') return fcDeserializeFiltered(input, options) as AsyncGenerator<IGeoJsonFeature>;
     throw new Error('Invalid input type');
 }

@@ -356,7 +356,7 @@ describe('geojson module', () => {
             const bytes = new Uint8Array(buffer);
             let headerMeta: HeaderMeta | undefined;
             const features = await takeAsync<IGeoJsonFeature>(
-                deserialize({ input: bytes, headerMetaFn: (header: HeaderMeta) => (headerMeta = header) }),
+                deserialize(bytes, { headerMetaFn: (header: HeaderMeta) => (headerMeta = header) }),
             );
             expect(headerMeta?.crs?.code).to.eq(4326);
             expect(features.length).to.eq(179);
@@ -369,7 +369,7 @@ describe('geojson module', () => {
         it('Should parse countries fgb produced from GDAL stream filter', async () => {
             const r: Rect = { minX: 12, minY: 56, maxX: 12, maxY: 56 };
             const features = await takeAsync<IGeoJsonFeature>(
-                deserialize({ input: 'https://flatgeobuf.septima.dk/countries.fgb', rect: r }),
+                deserialize('https://flatgeobuf.septima.dk/countries.fgb', { rect: r }),
             );
             expect(features.length).to.eq(3);
             for (const f of features)
@@ -456,7 +456,7 @@ describe('geojson module', () => {
                 maxX: -101.11,
                 maxY: 41.24,
             };
-            const features = await takeAsync<IGeoJsonFeature>(deserialize({ input: bytes, rect }));
+            const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, { rect }));
             expect(features.length).toBe(86);
             const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
             const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
@@ -472,7 +472,7 @@ describe('geojson module', () => {
                 maxX: 14.9,
                 maxY: 55.1,
             };
-            const features = await takeAsync<IGeoJsonFeature>(deserialize({ input: bytes, rect }));
+            const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, { rect }));
             expect(features.length).toBe(2);
         });
     });

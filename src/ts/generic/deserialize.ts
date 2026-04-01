@@ -7,8 +7,6 @@ export interface DeserializeContext extends DeserializeOptions {
 }
 
 export interface DeserializeOptions {
-    /** Input byte array, stream or string URL. */
-    input?: Uint8Array | ReadableStream | string;
     /** Filter rectangle for spatial queries. */
     rect?: Rect;
     /** Callback that will receive header metadata when available. */

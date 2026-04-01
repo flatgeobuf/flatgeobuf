@@ -44,9 +44,9 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export async function* deserialize(ctx: DeserializeContext): AsyncGenerator<IFeature> {
-    const { input, fromFeature, rect, headerMetaFn } = ctx;
-    const bytes = input as Uint8Array;
+export async function* deserialize(input: Uint8Array, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { fromFeature, rect, headerMetaFn } = ctx;
+    const bytes = input;
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
     if (rect) {
@@ -79,9 +79,9 @@ export async function* deserialize(ctx: DeserializeContext): AsyncGenerator<IFea
     }
 }
 
-export async function* deserializeStream(ctx: DeserializeContext): AsyncGenerator<IFeature> {
-    const { input, fromFeature, headerMetaFn } = ctx;
-    const stream = input as ReadableStream;
+export async function* deserializeStream(input: ReadableStream, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { fromFeature, headerMetaFn } = ctx;
+    const stream = input;
     const reader = slice(stream);
     const read: ReadFn = async (size) => await reader.slice(size);
 
@@ -109,9 +109,9 @@ export async function* deserializeStream(ctx: DeserializeContext): AsyncGenerato
     while ((feature = await readFeature(read, headerMeta, fromFeature, id++))) yield feature;
 }
 
-export async function* deserializeFiltered(ctx: DeserializeContext): AsyncGenerator<IFeature> {
-    const { input, rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
-    const url = input as string;
+export async function* deserializeFiltered(input: string, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
+    const url = input;
     const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
