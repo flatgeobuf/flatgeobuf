@@ -15,7 +15,8 @@ export { GeometryType } from './flat-geobuf/geometry-type.js';
 export type HeaderMetaFn = (headerMeta: HeaderMeta) => void;
 
 /**
- * Deserialize FlatGeobuf into generic features
+ * Deserialize FlatGeobuf into generic features.
+ * Streams are not supporting spatial filtering.
  * @param input Input byte array, stream or URL string
  * @param ctx Deserialize context with fromFeature callback
  */
