@@ -111,8 +111,7 @@ export async function* deserializeStream(input: ReadableStream, ctx: Deserialize
 export async function* deserializeFiltered(input: string, ctx: DeserializeContext): AsyncGenerator<IFeature> {
     const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
     const url = input;
-    if (!rect)
-        throw new Error ('The "rect" option is required');
+    if (!rect) throw new Error('The "rect" option is required');
     const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
