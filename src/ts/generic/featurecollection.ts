@@ -51,9 +51,8 @@ export async function* deserialize(input: Uint8Array, ctx: DeserializeContext): 
 
     if (rect) {
         const reader = ArrayReader.open(bytes);
-        for await (const feature of reader.selectBbox(rect)) {
+        for await (const feature of reader.selectBbox(rect))
             yield fromFeature(feature.id, feature.feature, reader.header);
-        }
         return;
     }
 
@@ -112,10 +111,12 @@ export async function* deserializeStream(input: ReadableStream, ctx: Deserialize
 export async function* deserializeFiltered(input: string, ctx: DeserializeContext): AsyncGenerator<IFeature> {
     const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
     const url = input;
+    if (!rect)
+        throw new Error ('The "rect" option is required');
     const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
-    for await (const feature of reader.selectBbox(rect!)) yield fromFeature(feature.id, feature.feature, reader.header);
+    for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);
 }
 
 async function readFeature(
