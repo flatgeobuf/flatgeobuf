@@ -2,9 +2,6 @@ import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 import type { DeserializeOptions } from './generic/deserialize.js';
 import type { IGeoJsonFeature } from './geojson/feature.js';
 
-export type { DeserializeOptions } from './generic/deserialize.js';
-export type { IGeoJsonFeature } from './geojson/feature.js';
-
 import {
     deserialize as fcDeserialize,
     deserializeFiltered as fcDeserializeFiltered,
