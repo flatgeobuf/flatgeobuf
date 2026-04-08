@@ -3,5 +3,4 @@ packages:
   - '!examples/node'
 
 onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
+  - rolldown

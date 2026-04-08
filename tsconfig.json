@@ -1,23 +1,28 @@
 {
     "compilerOptions": {
         "module": "ES2022",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
         "strict": true,
         "declaration": true,
+        "rootDir": "./src/ts",
         "outDir": "./lib/mjs",
         "sourceMap": true,
-        "target": "ES2023",
+        "target": "ES2025",
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "isolatedModules": true,
-        "verbatimModuleSyntax": true
+        // Disabled until FlatBuffers TypeScript codegen supports isolatedDeclarations
+        // See: https://github.com/google/flatbuffers/issues
+        // "isolatedDeclarations": true,
+        "verbatimModuleSyntax": true,
+        "types": ["node"]
     },
     "include": ["src/ts"],
-    "exclude": ["node_modules", "**/*.spec.ts"],
+    "exclude": ["node_modules"],
     "typedocOptions": {
         "out": "dist/doc",
         "exclude": ["**/*.spec.ts"],
