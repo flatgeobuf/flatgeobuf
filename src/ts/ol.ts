@@ -10,6 +10,7 @@ import type VectorTileSource from 'ol/source/VectorTile.js';
 import type { LoadFunction } from 'ol/Tile.js';
 import type { TileCoord } from 'ol/tilecoord.js';
 import type VectorTile from 'ol/VectorTile.js';
+import type { DeserializeContext, DeserializeOptions } from './generic/deserialize';
 import type { IFeature } from './generic/feature.js';
 import {
     deserialize as genericDeserialize,
@@ -17,7 +18,6 @@ import {
     deserializeStream as genericDeserializeStream,
     serialize as genericSerialize,
 } from './generic/featurecollection.js';
-import type { HeaderMetaFn } from './generic.js';
 import { getFromFeatureFn } from './ol/feature.js';
 import type { Rect } from './packedrtree.js';
 
@@ -30,35 +30,36 @@ export function serialize(features: Feature[]): Uint8Array {
     return bytes;
 }
 
+export interface OlDeserializeOptions extends DeserializeOptions {
+    /** Data projection (source). */
+    dataProjection?: string;
+    /** Features projection (destination). */
+    featureProjection?: string;
+    /**
+     * Feature class to be used when creating features.
+     * If performance is the primary concern and features are not going to be
+     * modified, consider using RenderFeature (Circle and GeometryCollection are
+     * not supported. As coordinates are flattened, multi geometries and polygons
+     * with holes are not well rendered).
+     */
+    renderFeature?: boolean;
+}
+
 /**
  * Deserialize FlatGeobuf into OpenLayers Features
- * @param input Input byte array, stream or string
- * @param rect Filter rectangle
+ * @param input Input byte array, stream or URL string
+ * @param options Optional deserializer options (rect, dataProjection, featureProjection, etc.)
  */
 export function deserialize(
     input: Uint8Array | ReadableStream | string,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-    nocache = false,
-    headers: HeadersInit = {},
-    renderFeature = false,
-    dataProjection = 'EPSG:4326',
-    featureProjection = 'EPSG:4326',
+    options?: OlDeserializeOptions,
 ): AsyncGenerator<FeatureLike> {
-    const fromFeature = getFromFeatureFn(renderFeature, dataProjection, featureProjection);
-    if (input instanceof Uint8Array)
-        return genericDeserialize(input, fromFeature, rect, headerMetaFn) as AsyncGenerator<FeatureLike>;
-    if (input instanceof ReadableStream)
-        return genericDeserializeStream(input, fromFeature, headerMetaFn) as AsyncGenerator<FeatureLike>;
-    if (typeof input === 'string' && rect)
-        return genericDeserializeFiltered(
-            input,
-            rect,
-            fromFeature,
-            headerMetaFn,
-            nocache,
-            headers,
-        ) as AsyncGenerator<FeatureLike>;
+    const opts = options ?? {};
+    const ctx: DeserializeContext = { ...opts, fromFeature: getFromFeatureFn(opts) };
+    if (input instanceof Uint8Array) return genericDeserialize(input, ctx) as AsyncGenerator<FeatureLike>;
+    if (input instanceof ReadableStream) return genericDeserializeStream(input, ctx) as AsyncGenerator<FeatureLike>;
+    if (typeof input === 'string' && options?.rect)
+        return genericDeserializeFiltered(input, ctx) as AsyncGenerator<FeatureLike>;
     throw new Error('Invalid input type or missing rect for URL input');
 }
 
@@ -76,38 +77,29 @@ function extentToRect(extent: Extent, source?: string, destination?: string): Re
  * @param url
  * @param strategy
  * @param clear
+ * @param options
  * @returns
  */
 export function createLoader(
     source: VectorSource<FeatureLike>,
     url: string,
-    srs = 'EPSG:4326',
     strategy: LoadingStrategy = all,
     clear = false,
-    headers: HeadersInit = {},
-    renderFeature = false,
+    options: OlDeserializeOptions = {},
 ): FeatureLoader<FeatureLike> {
     return async (extent, _resolution, projection, success, failure) => {
         try {
             if (clear) source.clear();
-            const code = projection.getCode();
+            options.dataProjection = 'EPSG:4326';
+            options.featureProjection = projection.getCode();
             const features: FeatureLike[] = [];
             let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all) {
-                const response = await fetch(url, { headers });
-                it = deserialize(
-                    response.body as ReadableStream,
-                    undefined,
-                    undefined,
-                    false,
-                    headers,
-                    renderFeature,
-                    srs,
-                    code,
-                );
+                const response = await fetch(url, { headers: options.headers });
+                it = deserialize(response.body as ReadableStream, options);
             } else {
-                const rect = extentToRect(extent, code, srs);
-                it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
+                const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
+                it = deserialize(url, { ...options, rect });
             }
             for await (const feature of it) {
                 features.push(feature);
@@ -131,23 +123,20 @@ export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoor
 /**
  * Intended to be used with VectorTileSource and setTileLoadFunction to set up
  * a single file FlatGeobuf as a source.
+ * @param source
  * @param url
+ * @param options
  * @returns
  */
-export function createTileLoadFunction(
-    source: VectorTileSource,
-    url: string,
-    srs = 'EPSG:4326',
-    headers: HeadersInit = {},
-    renderFeature = false,
-) {
+export function createTileLoadFunction(source: VectorTileSource, url: string, options: OlDeserializeOptions = {}) {
     const projection = source.getProjection();
-    const code = projection?.getCode() ?? 'EPSG:3857';
+    options.dataProjection = 'EPSG:4326';
+    options.featureProjection = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent) => {
-            const rect = extentToRect(extent, code, srs);
-            const it = deserialize(url, rect, undefined, false, headers, renderFeature, srs, code);
+            const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
+            const it = deserialize(url, { ...options, rect });
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);
             vectorTile.setFeatures(features);
