@@ -8,8 +8,9 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: true,
         },
-        minify: true,
+
     },
     {
         input: './lib/mjs/geojson.js',
@@ -18,8 +19,8 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: true,
         },
-        minify: true,
     },
     {
         input: './lib/mjs/ol.js',
@@ -40,6 +41,7 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: true,
             globals: {
                 'ol/Feature.js': 'ol.Feature',
                 'ol/format/Feature.js': 'ol.format.Feature',
@@ -55,6 +57,5 @@ export default defineConfig([
                 'ol/render/Feature.js': 'ol.render.Feature',
             },
         },
-        minify: true,
     },
 ]);
