@@ -8,7 +8,7 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
-            minify: true,
+            minify: { compress: { dropConsole: true } },
         },
     },
     {
@@ -18,7 +18,7 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
-            minify: true,
+            minify: { compress: { dropConsole: true } },
         },
     },
     {
@@ -42,7 +42,7 @@ export default defineConfig([
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
-            minify: true,
+            minify: { compress: { dropConsole: true } },
             globals: {
                 'ol/Feature.js': 'ol.Feature',
                 'ol/format/Feature.js': 'ol.format.Feature',
