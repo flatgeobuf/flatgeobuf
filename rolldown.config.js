@@ -10,7 +10,6 @@ export default defineConfig([
             sourcemap: false,
             minify: true,
         },
-
     },
     {
         input: './lib/mjs/geojson.js',
