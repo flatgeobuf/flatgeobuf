@@ -1,31 +1,6 @@
-import babel from '@rollup/plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
-import terser from '@rollup/plugin-terser';
+import { defineConfig } from 'rolldown';
 
-const plugins = [
-    resolve({
-        resolveOnly: ['flatbuffers', 'slice-source', '@repeaterjs/repeater'],
-    }),
-    babel({
-        exclude: 'node_modules/**',
-        presets: [
-            [
-                '@babel/env',
-                {
-                    modules: false,
-                    targets: {
-                        browsers: ['>2%', 'not dead', 'not ie 11'],
-                    },
-                },
-            ],
-        ],
-        babelrc: false,
-        babelHelpers: 'bundled',
-    }),
-    terser(),
-];
-
-export default [
+export default defineConfig([
     {
         input: './lib/mjs/generic.js',
         output: {
@@ -33,8 +8,8 @@ export default [
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: { compress: { dropConsole: true } },
         },
-        plugins,
     },
     {
         input: './lib/mjs/geojson.js',
@@ -43,13 +18,14 @@ export default [
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: { compress: { dropConsole: true } },
         },
-        plugins,
     },
     {
         input: './lib/mjs/ol.js',
         external: [
             'ol/Feature.js',
+            'ol/format/Feature.js',
             'ol/geom/Point.js',
             'ol/geom/MultiPoint.js',
             'ol/geom/LineString.js',
@@ -59,12 +35,14 @@ export default [
             'ol/geom/GeometryLayout.js',
             'ol/loadingstrategy.js',
             'ol/proj.js',
+            'ol/render/Feature.js',
         ],
         output: {
             file: 'dist/flatgeobuf-ol.min.js',
             format: 'umd',
             name: 'flatgeobuf',
             sourcemap: false,
+            minify: { compress: { dropConsole: true } },
             globals: {
                 'ol/Feature.js': 'ol.Feature',
                 'ol/format/Feature.js': 'ol.format.Feature',
@@ -80,6 +58,5 @@ export default [
                 'ol/render/Feature.js': 'ol.render.Feature',
             },
         },
-        plugins,
     },
-];
+]);

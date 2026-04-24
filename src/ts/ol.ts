@@ -118,7 +118,7 @@ export function createLoader(
  * @param tileCoord
  * @returns
  */
-export const tileUrlFunction = (tileCoord: TileCoord) => JSON.stringify(tileCoord);
+export const tileUrlFunction = (tileCoord: TileCoord): string => JSON.stringify(tileCoord);
 
 /**
  * Intended to be used with VectorTileSource and setTileLoadFunction to set up
@@ -134,7 +134,7 @@ export function createTileLoadFunction(source: VectorTileSource, url: string, op
     options.featureProjection = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
-        const loader: FeatureLoader = async (extent) => {
+        const loader: FeatureLoader = async (extent): Promise<void> => {
             const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
             const it = deserialize(url, { ...options, rect });
             const features: FeatureLike[] = [];
