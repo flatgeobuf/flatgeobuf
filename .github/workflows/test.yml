@@ -12,12 +12,12 @@ jobs:
       matrix:
         node: [ 18, 20, 22 ]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
         with:
           version: 10
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           cache: 'pnpm'
           node-version: ${{ matrix.node }}
@@ -39,7 +39,7 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install clang
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: ./script/getcppdeps.sh
       - name: Build tests and examples
         run: cd src/cpp && make
@@ -49,7 +49,7 @@ jobs:
   test-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: cd src/go && go test
 
   test-java:
@@ -58,9 +58,9 @@ jobs:
       matrix:
         java-version: [21, 17, 11, 8]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Java ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: ${{ matrix.java-version }}
           distribution: temurin
@@ -71,13 +71,13 @@ jobs:
   test-net8:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup .Net 8.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
         with:
           dotnet-version: 8.0.x
       - name: Cache nuget dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -98,9 +98,9 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Cache dependencies and build
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cargo/bin/
@@ -121,14 +121,14 @@ jobs:
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Install Debian dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev
       - name: Cache dependencies and build
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cargo/bin/
@@ -144,9 +144,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check semver
-        uses: obi1kenobi/cargo-semver-checks-action@v2
+        uses: obi1kenobi/cargo-semver-checks-action@5b298c9520f7096a4683c0bd981a7ac5a7e249ae # v2.8
         with:
           manifest-path: src/rust/Cargo.toml
           feature-group: default-features
