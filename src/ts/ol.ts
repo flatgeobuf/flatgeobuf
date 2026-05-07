@@ -106,6 +106,7 @@ export function createLoader(
                 source.addFeature(feature);
             }
             success?.(features);
+            return features;
         } catch (e) {
             console.error(e);
             failure?.();
@@ -134,12 +135,13 @@ export function createTileLoadFunction(source: VectorTileSource, url: string, op
     options.featureProjection = projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
-        const loader: FeatureLoader = async (extent): Promise<void> => {
+        const loader: FeatureLoader = async (extent): Promise<FeatureLike[]> => {
             const rect = extentToRect(extent, options.featureProjection, options.dataProjection);
             const it = deserialize(url, { ...options, rect });
             const features: FeatureLike[] = [];
             for await (const feature of it) features.push(feature);
             vectorTile.setFeatures(features);
+            return features;
         };
         vectorTile.setLoader(loader);
     };
