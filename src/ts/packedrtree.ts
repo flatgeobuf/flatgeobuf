@@ -11,7 +11,7 @@ export const NODE_ITEM_LEN = NODE_ITEM_BYTE_LEN;
 // actual value will be specified in the header but
 // this can be useful for having reasonably sized guesses for fetch-sizes when
 // streaming results
-export const DEFAULT_NODE_SIZE = 16;
+export const DEFAULT_NODE_SIZE: number = 16;
 
 export interface Rect {
     minX: number;

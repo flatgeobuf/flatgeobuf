@@ -9,7 +9,10 @@ export function arrayToStream(array: ArrayBuffer | Uint8Array): ReadableStream {
     return Readable.toWeb(nodeStream) as ReadableStream;
 }
 
-export async function takeAsync<T>(asyncIterable: AsyncIterable<T>, count = Number.POSITIVE_INFINITY): Promise<T[]> {
+export async function takeAsync<T>(
+    asyncIterable: AsyncIterable<T>,
+    count: number = Number.POSITIVE_INFINITY,
+): Promise<T[]> {
     const result: T[] = [];
     const iterator = asyncIterable[Symbol.asyncIterator]();
     while (result.length < count) {

@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 20, 22, 24 ]
+        node: [ 22, 24 ]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           cache: 'pnpm'
           node-version: ${{ matrix.node }}
@@ -39,7 +39,7 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install clang
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: ./script/getcppdeps.sh
       - name: Build tests and examples
         run: cd src/cpp && make
@@ -49,18 +49,18 @@ jobs:
   test-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: cd src/go && go test
 
   test-java:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java-version: [21, 17, 11, 8]
+        java-version: [25, 21, 17, 11, 8]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Java ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java-version }}
           distribution: temurin
@@ -68,23 +68,31 @@ jobs:
       - run: cd src/java && mvn dependency:go-offline
       - run: cd src/java && mvn test
 
-  test-net8:
+  test-net:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x', '10.0.x']
+        include:
+          - dotnet-version: '8.0.x'
+            framework: net8
+          - dotnet-version: '10.0.x'
+            framework: net10
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup .Net 8.0
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - name: Setup .Net ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ matrix.dotnet-version }}
       - name: Cache nuget dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
-      - run: cd src/net && ./fetch.sh && dotnet test -f net8
+      - run: cd src/net && ./fetch.sh && dotnet test -f ${{ matrix.framework }}
 
   test-rust:
     runs-on: ubuntu-latest
@@ -98,9 +106,9 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Cache dependencies and build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -121,7 +129,7 @@ jobs:
     steps:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Debian dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -144,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check semver
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:

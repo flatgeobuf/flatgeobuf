@@ -1,5 +1,5 @@
 export default class Config {
-    static global = new Config();
+    static global: Config = new Config();
 
     private _extraRequestThreshold = 256 * 1024;
 
