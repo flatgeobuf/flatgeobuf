@@ -110,6 +110,7 @@ export function createLoader(
         } catch (e) {
             console.error(e);
             failure?.();
+            return [];
         }
     };
 }
