@@ -90,6 +90,11 @@ ul.secondary-navigation li.active {
     position: absolute;
     top: 2px;
     right: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
 }
 .ol-popup-closer:after {
     content: "✖";
