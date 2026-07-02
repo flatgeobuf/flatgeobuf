@@ -55,6 +55,11 @@
         position: absolute;
         top: 2px;
         right: 8px;
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
       }
       .ol-popup-closer:after {
         content: "✖";
@@ -67,7 +72,7 @@
         <button id="fetch" type="button">Fetch within bbox (max 10000)</button>
     </div>
     <div id="popup" class="ol-popup">
-        <a href="#" id="popup-closer" class="ol-popup-closer" aria-label="Close popup"></a>
+        <button type="button" id="popup-closer" class="ol-popup-closer" aria-label="Close popup"></button>
         <div id="popup-content"></div>
       </div>
     <div id="map"></div>
