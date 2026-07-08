@@ -323,27 +323,41 @@ mapbox::feature::property_map readGeoJsonProperties(
 
     uoffset_t offset = 0;
     while (offset < size) {
+        if (offset + sizeof(uint16_t) > size)
+            throw std::invalid_argument("readGeoJsonProperties: column index read out of bounds");
         uint16_t i = *(reinterpret_cast<const uint16_t *>(data + offset));
         offset += sizeof(uint16_t);
+        if (i >= columnMetas.size())
+            throw std::invalid_argument("readGeoJsonProperties: column index out of range");
         auto column = columnMetas[i];
         auto type = static_cast<ColumnType>(column.type);
         mapbox::feature::value value;
         switch (type) {
             case ColumnType::Long:
+                if (offset + sizeof(int64_t) > size)
+                    throw std::invalid_argument("readGeoJsonProperties: Long value read out of bounds");
                 value.set<int64_t>(*(reinterpret_cast<const int64_t *>(data + offset)));
                 offset += sizeof(int64_t);
                 break;
             case ColumnType::ULong:
+                if (offset + sizeof(uint64_t) > size)
+                    throw std::invalid_argument("readGeoJsonProperties: ULong value read out of bounds");
                 value.set<uint64_t>(*(reinterpret_cast<const uint64_t *>(data + offset)));
                 offset += sizeof(uint64_t);
                 break;
             case ColumnType::Double:
+                if (offset + sizeof(double) > size)
+                    throw std::invalid_argument("readGeoJsonProperties: Double value read out of bounds");
                 value.set<double>(*(reinterpret_cast<const double *>(data + offset)));
                 offset += sizeof(double);
                 break;
             case ColumnType::String: {
+                if (offset + sizeof(uint32_t) > size)
+                    throw std::invalid_argument("readGeoJsonProperties: String length read out of bounds");
                 uint32_t len = *(reinterpret_cast<const uint32_t *>(data + offset));
                 offset += sizeof(uint32_t);
+                if (len > size - offset)
+                    throw std::invalid_argument("readGeoJsonProperties: String value read out of bounds");
                 value.set<std::string>(std::string(reinterpret_cast<const char *>(data + offset), len));
                 offset += len;
                 break;
