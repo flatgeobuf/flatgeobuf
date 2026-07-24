@@ -83,6 +83,9 @@
                 })
             });
 
+            // re-run the query on every pan, no matter how small
+            map.on("moveend", () => source.refresh());
+
             // show the popup when clicking a feature
             map.on("click", (e) => {
                 map.forEachFeatureAtPixel(e.pixel, (feature) => {
