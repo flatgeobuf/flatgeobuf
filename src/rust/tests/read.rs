@@ -715,3 +715,56 @@ fn test_geozero_size_arg() -> Result<()> {
 
     Ok(())
 }
+
+// Regression for the untrusted-features_count prealloc DoS: a tiny malformed file
+// (valid magic + valid header flatbuffer claiming a huge feature count with
+// index_node_size > 0) must make every select_* entry point return Err instead of
+// panicking in the R-tree level-bound assert or reserving gigabytes at
+// Vec::with_capacity. See packed_r_tree::tests for the lower-level from_buf/
+// stream_search cases; this exercises the public FgbReader surface.
+fn header_with_features_count(count: u64) -> Vec<u8> {
+    use flatgeobuf::{HeaderArgs, VERSION};
+    let magic: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', b'b', 0];
+    let mut fbb = flatbuffers::FlatBufferBuilder::new();
+    let header = flatgeobuf::Header::create(
+        &mut fbb,
+        &HeaderArgs {
+            features_count: count,
+            index_node_size: 16,
+            ..Default::default()
+        },
+    );
+    fbb.finish_size_prefixed(header, None);
+    let finished = fbb.finished_data();
+    let mut buf = Vec::with_capacity(magic.len() + finished.len());
+    buf.extend_from_slice(&magic);
+    buf.extend_from_slice(finished);
+    buf
+}
+
+#[test]
+fn select_all_rejects_implausible_features_count() {
+    let bytes = header_with_features_count(u64::MAX);
+    let mut reader = std::io::Cursor::new(&bytes);
+    let fgb = FgbReader::open(&mut reader).expect("header parses");
+    let r = fgb.select_all_seq();
+    assert!(r.is_err(), "select_all_seq must Err, got {:?}", r.err());
+}
+
+#[test]
+fn select_bbox_rejects_implausible_features_count() {
+    let bytes = header_with_features_count(u64::MAX);
+    let mut reader = std::io::Cursor::new(&bytes);
+    let fgb = FgbReader::open(&mut reader).expect("header parses");
+    let r = fgb.select_bbox_seq(0.0, 0.0, 1.0, 1.0);
+    assert!(r.is_err(), "select_bbox_seq must Err, got {:?}", r.err());
+}
+
+#[test]
+fn select_bbox_seekable_rejects_implausible_features_count() {
+    let bytes = header_with_features_count(u64::MAX);
+    let mut reader = std::io::Cursor::new(&bytes);
+    let fgb = FgbReader::open(&mut reader).expect("header parses");
+    let r = fgb.select_bbox(0.0, 0.0, 1.0, 1.0);
+    assert!(r.is_err(), "select_bbox must Err, got {:?}", r.err());
+}

@@ -2,7 +2,7 @@ use crate::feature_generated::*;
 use crate::header_generated::*;
 use crate::packed_r_tree::{self, PackedRTree};
 use crate::properties_reader::FgbFeature;
-use crate::{check_magic_bytes, HEADER_MAX_BUFFER_SIZE};
+use crate::{check_magic_bytes, FEATURE_MAX_BUFFER_SIZE, HEADER_MAX_BUFFER_SIZE};
 use crate::{Error, Result};
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use std::io::{self, Read, Seek, SeekFrom};
@@ -107,6 +107,7 @@ impl<R: Read> FgbReader<R> {
     ///
     /// This can be used to read from an input stream.
     pub fn select_all_seq(mut self) -> Result<FeatureIter<R, NotSeekable>> {
+        self.check_index_features_count()?;
         // skip index
         let index_size = self.index_size();
         io::copy(&mut (&mut self.reader).take(index_size), &mut io::sink())?;
@@ -129,6 +130,7 @@ impl<R: Read> FgbReader<R> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(Error::NoIndex);
         }
+        PackedRTree::validate_num_items(header.features_count() as usize)?;
         let index = PackedRTree::from_buf(
             &mut self.reader,
             header.features_count() as usize,
@@ -152,6 +154,7 @@ impl<R: Read> FgbReader<R> {
 impl<R: Read + Seek> FgbReader<R> {
     /// Select all features.
     pub fn select_all(mut self) -> Result<FeatureIter<R, Seekable>> {
+        self.check_index_features_count()?;
         // skip index
         let index_size = self.index_size();
         self.reader.seek(SeekFrom::Current(index_size as i64))?;
@@ -171,6 +174,7 @@ impl<R: Read + Seek> FgbReader<R> {
         if header.index_node_size() == 0 || header.features_count() == 0 {
             return Err(Error::NoIndex);
         }
+        PackedRTree::validate_num_items(header.features_count() as usize)?;
         let list = PackedRTree::stream_search(
             &mut self.reader,
             header.features_count() as usize,
@@ -208,6 +212,20 @@ impl<R: Read> FgbReader<R> {
         } else {
             0
         }
+    }
+
+    /// Reject a header feature count that the index read path cannot honour.
+    ///
+    /// `select_all` / `select_all_seq` skip the index rather than parsing it, but they still use
+    /// the count to size that skip (`index_size` → `io::copy`/`seek`), so an implausible count
+    /// would either saturate the skip to `usize::MAX` or overflow the `as i64` seek offset. Validating
+    /// up front keeps those entry points in step with the bbox paths that parse the index.
+    fn check_index_features_count(&self) -> Result<()> {
+        let header = self.fbs.header();
+        if header.index_node_size() > 0 {
+            PackedRTree::validate_num_items(header.features_count() as usize)?;
+        }
+        Ok(())
     }
 }
 
@@ -529,6 +547,14 @@ impl<R: Read, S> FeatureIter<R, S> {
         }
         let sbuf = &self.fbs.feature_buf;
         let feature_size = u32::from_le_bytes([sbuf[0], sbuf[1], sbuf[2], sbuf[3]]) as usize;
+        if feature_size > FEATURE_MAX_BUFFER_SIZE {
+            return Err(Error::IO(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "declared feature size {feature_size} exceeds the per-feature buffer budget"
+                ),
+            )));
+        }
         self.fbs.feature_buf.resize(feature_size + 4, 0);
         self.reader.read_exact(&mut self.fbs.feature_buf[4..])?;
         if self.verify {
