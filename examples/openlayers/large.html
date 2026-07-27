@@ -67,7 +67,37 @@
 
             const strategy = (extent) => [createBufferedExtent(ol.extent.getCenter(extent))];
             const source = new ol.source.Vector({ strategy });
-            const layer = new ol.layer.Vector({ source });
+
+            // color each census block by its population, matching the scale
+            // used in the MapLibre version of this example
+            function colorForPopulation(population) {
+                const pop = Number(population) || 0;
+                if (pop > 750) return "#800026";
+                if (pop > 500) return "#BD0026";
+                if (pop > 250) return "#E31A1C";
+                if (pop > 100) return "#FC4E2A";
+                if (pop > 50) return "#FD8D3C";
+                if (pop > 25) return "#FEB24C";
+                if (pop > 10) return "#FED976";
+                return "#FF0000";
+            }
+
+            function hexToRgba(hex, alpha) {
+                const r = Number.parseInt(hex.slice(1, 3), 16);
+                const g = Number.parseInt(hex.slice(3, 5), 16);
+                const b = Number.parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            function blockStyle(feature) {
+                const color = colorForPopulation(feature.get("population"));
+                return new ol.style.Style({
+                    fill: new ol.style.Fill({ color: hexToRgba(color, 0.4) }),
+                    stroke: new ol.style.Stroke({ color, width: 2 }),
+                });
+            }
+
+            const layer = new ol.layer.Vector({ source, style: blockStyle });
             const loader = flatgeobuf.createLoader(source, 'https://flatgeobuf.septima.dk/population_areas.fgb', "EPSG:4326", strategy, true);
             source.setLoader(loader)
 
