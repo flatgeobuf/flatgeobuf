@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/examples/site.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.4.0/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 
 </head>
@@ -47,7 +47,7 @@
             }
 
             const response = await fetch('/test/data/UScounties.fgb');
-            for await (const feature of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+            for await (const feature of flatgeobuf.deserialize(response.body, { headerMetaFn: handleHeaderMeta })) {
                 // Leaflet styling
                 const defaultStyle = { 
                     color: 'blue', 
