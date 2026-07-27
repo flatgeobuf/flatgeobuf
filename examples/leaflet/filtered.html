@@ -3,10 +3,13 @@
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="/examples/fgb-request-chart.css" />
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/flatgeobuf@4.4.0/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
+
+    <script src="/examples/fgb-request-chart.js"></script>
 
     <style>
         #map { height: 480px; }
@@ -40,11 +43,20 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
+            const url = '/test/data/UScounties.fgb';
+
+            // log the requests made for the file, and chart them at the bottom
+            // of the page
+            fgbRequestChart.watch(url, document.getElementById("requests"));
+
             // optionally show some meta-data about the FGB file
             function handleHeaderMeta(headerMeta) {
                 const header = document.getElementById('header')
+                header.replaceChildren()
                 const formatter = new JSONFormatter(headerMeta, 10)
                 header.appendChild(formatter.render())
+
+                fgbRequestChart.headerMeta(headerMeta)
             }
 
             // For the example, we fix a visible Rect representing the query
@@ -68,6 +80,8 @@
             // track the previous results so we can remove them when adding new results
             let previousResults = L.layerGroup().addTo(map);
             async function updateResults() {
+                fgbRequestChart.startQuery();
+
                 // remove the old results
                 previousResults.remove();
                 const nextResults = L.layerGroup().addTo(map);
@@ -76,7 +90,7 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                const iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', fgBoundingBox(), handleHeaderMeta);
+                const iter = flatgeobuf.deserialize(url, fgBoundingBox(), handleHeaderMeta);
                 for await (const feature of iter) {
                     const defaultStyle = { 
                         color: 'blue', 
@@ -138,8 +152,9 @@
         they are much smaller because we fetch only the relevant sections of
         the file.
     </p>
-    <div id="header">
-        <h3>Parsed header content</h3>
-    </div>
+    <div id="requests"></div>
+
+    <h3>Parsed header content</h3>
+    <div id="header"></div>
 </body>
 </html>
