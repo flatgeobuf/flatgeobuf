@@ -4,7 +4,7 @@
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
-        "build": "rm lib -rf && tsc && rolldown -c rolldown.config.js",
+        "build": "rm -rf lib && tsc && rolldown -c rolldown.config.js",
         "type-check": "tsc --noEmit",
         "test": "vitest ./lib",
         "test-src": "vitest ./src/ts",
