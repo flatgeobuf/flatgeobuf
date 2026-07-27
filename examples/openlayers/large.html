@@ -67,13 +67,24 @@
 
             const strategy = (extent) => [createBufferedExtent(ol.extent.getCenter(extent))];
             const source = new ol.source.Vector({ strategy });
+            const layer = new ol.layer.Vector({ source });
             const loader = flatgeobuf.createLoader(source, 'https://flatgeobuf.septima.dk/population_areas.fgb', "EPSG:4326", strategy, true);
             source.setLoader(loader)
+
+            // show the query's bounding box, drawn in blue
+            const rectangleSource = new ol.source.Vector();
+            const rectangleLayer = new ol.layer.Vector({
+                source: rectangleSource,
+                style: new ol.style.Style({
+                    stroke: new ol.style.Stroke({ color: "#0000FF", width: 3 }),
+                }),
+            });
 
             const map = new ol.Map({
                 layers: [
                     new ol.layer.Tile({ source: new ol.source.OSM() }),
-                    new ol.layer.Vector({ source })
+                    layer,
+                    rectangleLayer
                 ],
                 overlays: [overlay],
                 target: 'map',
@@ -83,23 +94,34 @@
                 })
             });
 
+            // update the rectangle to match the current query's bounding box
+            function updateRect() {
+                const extent = createBufferedExtent(ol.extent.getCenter(map.getView().calculateExtent()));
+                rectangleSource.clear();
+                rectangleSource.addFeature(new ol.Feature(ol.geom.Polygon.fromExtent(extent)));
+            }
+            updateRect();
+
             // re-run the query on every pan, no matter how small
-            map.on("moveend", () => source.refresh());
+            map.on("moveend", () => {
+                updateRect();
+                source.refresh();
+            });
 
             // show the popup when clicking a feature
             map.on("click", (e) => {
                 map.forEachFeatureAtPixel(e.pixel, (feature) => {
                     popupContent.innerHTML = `<h1>${feature.get("population")} people live in this census block.</h1>`;
                     overlay.setPosition(e.coordinate);
-                })
+                }, { layerFilter: (l) => l === layer })
             });
         });
     </script>
     <p>
         This is a map of every census block in the USA, including it's
         population. The entire file is over 12GB, but FlatGeobuf fetches only
-        the tiny subset of data that intersects with the bounding box. Pan the
-        map to move the query's bounding box.
+        the tiny subset of data that intersects with the bounding box (drawn
+        in blue). Pan the map to move the query's bounding box.
     </p>
     <p>
         When you have feature data that cover a large area in fine-grained
