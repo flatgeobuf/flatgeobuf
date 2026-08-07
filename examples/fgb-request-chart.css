@@ -1,0 +1,78 @@
+/* Styles for the request chart drawn by fgb-request-chart.js */
+
+.fgb-request-chart {
+    margin: 1em 0;
+}
+.fgb-request-summary {
+    color: #333333;
+}
+
+/* marks a size we could only bound; its tooltip explains why */
+.fgb-approx-marker {
+    cursor: help;
+    fill: #0645ad;
+    color: #0645ad;
+    text-decoration: none;
+}
+
+/* one row per section of the file, each drawn at its own scale */
+.fgb-row {
+    margin-bottom: 16px;
+}
+.fgb-row svg {
+    display: block;
+}
+
+/* the [header][index][data] layout of the .fgb file */
+.fgb-region {
+    stroke: white;
+    stroke-width: 1;
+}
+/* each section is drawn pale... */
+.fgb-region.header {
+    fill: #f9dcc5;
+}
+.fgb-region.index {
+    fill: #e0dfee;
+}
+.fgb-region.data {
+    fill: #cfeade;
+}
+/* ...and the stretches of it we actually read are painted over at full strength */
+.fgb-region-read.header {
+    fill: #d95f02;
+}
+.fgb-region-read.index {
+    fill: #7570b3;
+}
+.fgb-region-read.data {
+    fill: #1b9e77;
+}
+/* sections are named below and left of themselves, never on top of the bar */
+.fgb-callout {
+    fill: #333333;
+    font-size: 11px;
+}
+.fgb-callout-arrow {
+    fill: #9a9a9a;
+}
+.fgb-callout-leader {
+    fill: none;
+    stroke: #9a9a9a;
+    stroke-width: 1;
+}
+
+/* each request outlines the stretch of the bar it fetched */
+.fgb-request-outline {
+    fill: none;
+    stroke: #000000;
+    stroke-width: 1;
+}
+/* the request continues past the end of this row */
+.fgb-request-outline.clipped {
+    stroke-dasharray: 3 2;
+}
+.fgb-request-label {
+    fill: #333333;
+    font-size: 11px;
+}

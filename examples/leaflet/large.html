@@ -3,10 +3,13 @@
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="/examples/fgb-request-chart.css" />
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.3.3/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
+
+    <script src="/examples/fgb-request-chart.js"></script>
 
     <style>
         #map { height: 480px; }
@@ -21,7 +24,7 @@
             <a href="/examples/openlayers/large.html">OpenLayers Example</a>
         </li>
         <li>
-            <a href="/examples/maplibre/">MapLibre Example</a>
+            <a href="/examples/maplibre/large.html">MapLibre Example</a>
         </li>
     </ul>
     <ul class="secondary-navigation">
@@ -41,6 +44,12 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
+            const url = 'https://flatgeobuf.septima.dk/population_areas.fgb';
+
+            // log the requests made for the file, and chart them at the bottom
+            // of the page
+            fgbRequestChart.watch(url, document.getElementById("requests"));
+
             // optionally show some meta-data about the FGB file
             function handleHeaderMeta(headerMeta) {
                 const header = document.getElementById('header')
@@ -48,6 +57,8 @@
                 while (header.firstChild)
                     header.removeChild(header.firstChild)
                 header.appendChild(formatter.render())
+
+                fgbRequestChart.headerMeta(headerMeta)
             }
 
             // For the example, we fix a visible Rect in the middle of the map
@@ -76,6 +87,8 @@
             // track the previous results so we can remove them when adding new results
             let previousResults = L.layerGroup().addTo(map);
             async function updateResults() {
+                fgbRequestChart.startQuery();
+
                 // remove the old results
                 previousResults.remove();
                 const nextResults = L.layerGroup().addTo(map);
@@ -84,7 +97,7 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                const iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', fgBoundingBox(), handleHeaderMeta);
+                const iter = flatgeobuf.deserialize(url, { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
 
                 const colorScale = ((d) => {
                     return d > 750 ? '#800026' :
@@ -94,7 +107,7 @@
                         d > 50   ? '#FD8D3C' :
                         d > 25  ? '#FEB24C' :
                         d > 10   ? '#FED976' :
-                        '#FFEDA0'
+                        '#FF0000'
                 });
 
                 for await (const feature of iter) {
@@ -164,8 +177,9 @@
         relatively little data, it does so using multiple requests. There are some
         <a href="https://github.com/flatgeobuf/flatgeobuf?tab=readme-ov-file#optimizing-remotely-hosted-flatgeobufs">tips for optimizing remote hosted flatgeobufs</a>, mostly oriented around minimizing round trip latency.
     </p>
-    <div id="header">
-        <h3>Parsed header content</h3>
-    </div>
+    <div id="requests"></div>
+
+    <h3>Parsed header content</h3>
+    <div id="header"></div>
 </body>
 </html>

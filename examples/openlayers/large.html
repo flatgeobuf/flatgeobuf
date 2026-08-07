@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="/examples/fgb-request-chart.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.7.0/ol.css" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/ol@v10.7.0/dist/ol.js"></script>
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.3.3/dist/flatgeobuf-ol.min.js"></script>
+    <script src="/dist/flatgeobuf-ol.min.js"></script>
+
+    <script src="/examples/fgb-request-chart.js"></script>
 </head>
 <body>
     <ul class="primary-navigation">
         <li>
-            <a href="/examples/leaflet/large.html">Leaflet Examples</a>
+            <a href="/examples/leaflet/large.html">Leaflet Example</a>
         </li>
         <li class="active">
-            OpenLayers Examples
+            OpenLayers Example
         </li>
         <li>
-            <a href="/examples/maplibre/">MapLibre Example</a>
+            <a href="/examples/maplibre/large.html">MapLibre Example</a>
         </li>
     </ul>
     <ul class="secondary-navigation">
@@ -67,13 +70,63 @@
 
             const strategy = (extent) => [createBufferedExtent(ol.extent.getCenter(extent))];
             const source = new ol.source.Vector({ strategy });
-            const loader = flatgeobuf.createLoader(source, 'https://flatgeobuf.septima.dk/population_areas.fgb', "EPSG:4326", strategy, true);
+
+            // color each census block by its population, matching the scale
+            // used in the MapLibre version of this example
+            function colorForPopulation(population) {
+                const pop = Number(population) || 0;
+                if (pop > 750) return "#800026";
+                if (pop > 500) return "#BD0026";
+                if (pop > 250) return "#E31A1C";
+                if (pop > 100) return "#FC4E2A";
+                if (pop > 50) return "#FD8D3C";
+                if (pop > 25) return "#FEB24C";
+                if (pop > 10) return "#FED976";
+                return "#FF0000";
+            }
+
+            function hexToRgba(hex, alpha) {
+                const r = Number.parseInt(hex.slice(1, 3), 16);
+                const g = Number.parseInt(hex.slice(3, 5), 16);
+                const b = Number.parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            function blockStyle(feature) {
+                const color = colorForPopulation(feature.get("population"));
+                return new ol.style.Style({
+                    fill: new ol.style.Fill({ color: hexToRgba(color, 0.4) }),
+                    stroke: new ol.style.Stroke({ color, width: 2 }),
+                });
+            }
+
+            const layer = new ol.layer.Vector({ source, style: blockStyle });
+
+            const url = 'https://flatgeobuf.septima.dk/population_areas.fgb';
+
+            // log the requests made for the file, and chart them at the bottom
+            // of the page
+            fgbRequestChart.watch(url, document.getElementById("requests"));
+
+            const loader = flatgeobuf.createLoader(source, url, strategy, true, {
+                headerMetaFn: (headerMeta) => fgbRequestChart.headerMeta(headerMeta),
+            });
             source.setLoader(loader)
+
+            // show the query's bounding box, drawn in blue
+            const rectangleSource = new ol.source.Vector();
+            const rectangleLayer = new ol.layer.Vector({
+                source: rectangleSource,
+                style: new ol.style.Style({
+                    stroke: new ol.style.Stroke({ color: "#0000FF", width: 3 }),
+                }),
+            });
 
             const map = new ol.Map({
                 layers: [
                     new ol.layer.Tile({ source: new ol.source.OSM() }),
-                    new ol.layer.Vector({ source })
+                    layer,
+                    rectangleLayer
                 ],
                 overlays: [overlay],
                 target: 'map',
@@ -83,20 +136,35 @@
                 })
             });
 
+            // update the rectangle to match the current query's bounding box
+            function updateRect() {
+                const extent = createBufferedExtent(ol.extent.getCenter(map.getView().calculateExtent()));
+                rectangleSource.clear();
+                rectangleSource.addFeature(new ol.Feature(ol.geom.Polygon.fromExtent(extent)));
+            }
+            updateRect();
+
+            // re-run the query on every pan, no matter how small
+            map.on("moveend", () => {
+                updateRect();
+                fgbRequestChart.startQuery();
+                source.refresh();
+            });
+
             // show the popup when clicking a feature
             map.on("click", (e) => {
                 map.forEachFeatureAtPixel(e.pixel, (feature) => {
                     popupContent.innerHTML = `<h1>${feature.get("population")} people live in this census block.</h1>`;
                     overlay.setPosition(e.coordinate);
-                })
+                }, { layerFilter: (l) => l === layer })
             });
         });
     </script>
     <p>
-        This is a map of every census block in the USA, including it's
+        This is a map of every census block in the USA, including its
         population. The entire file is over 12GB, but FlatGeobuf fetches only
-        the tiny subset of data that intersects with the bounding box. Pan the
-        map to move the query's bounding box.
+        the tiny subset of data that intersects with the bounding box (drawn
+        in blue). Pan the map to move the query's bounding box.
     </p>
     <p>
         When you have feature data that cover a large area in fine-grained
@@ -121,5 +189,6 @@
         relatively little data, it does so using multiple requests. There are some
         <a href="https://github.com/flatgeobuf/flatgeobuf?tab=readme-ov-file#optimizing-remotely-hosted-flatgeobufs">tips for optimizing remote hosted flatgeobufs</a>, mostly oriented around minimizing round trip latency.
     </p>
+    <div id="requests"></div>
 </body>
 </html>

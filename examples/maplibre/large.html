@@ -3,11 +3,13 @@
 <head>
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
     <link rel="stylesheet" href="/examples/site.css" />
+    <link rel="stylesheet" href="/examples/fgb-request-chart.css" />
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.3.3/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
+    <script src="/examples/fgb-request-chart.js"></script>
 
     <style>
         #map { height: 480px; }
@@ -16,10 +18,10 @@
 <body>
     <ul class="primary-navigation">
         <li>
-            <a href="/examples/leaflet/">Leaflet Example</a>
+            <a href="/examples/leaflet/large.html">Leaflet Example</a>
         </li>
         <li>
-            <a href="/examples/openlayers/">OpenLayers Example</a>
+            <a href="/examples/openlayers/large.html">OpenLayers Example</a>
         </li>
         <li class="active">
             MapLibre Example
@@ -44,11 +46,20 @@
             minZoom: 12,
         });
 
+        const url = "https://flatgeobuf.septima.dk/population_areas.fgb";
+
+        // log the requests made for the file, and chart them at the bottom of
+        // the page
+        fgbRequestChart.watch(url, document.getElementById("requests"));
+
         // optionally show some meta-data about the FGB file
         function handleHeaderMeta(headerMeta) {
             const header = document.getElementById("header")
+            header.replaceChildren()
             const formatter = new JSONFormatter(headerMeta, 10)
             header.appendChild(formatter.render())
+
+            fgbRequestChart.headerMeta(headerMeta)
         }
 
         // convert the rect into the format flatgeobuf expects
@@ -78,9 +89,11 @@
         }
 
         async function updateResults() {
+            fgbRequestChart.startQuery();
+
             let i = 0;
             const fc = {type: "FeatureCollection", features: []};
-            const iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", fgBoundingBox(), handleHeaderMeta);
+            const iter = flatgeobuf.deserialize(url, { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
             for await (const feature of iter) {
                 fc.features.push({...feature, id: i});
                 i += 1;
@@ -232,8 +245,9 @@
         relatively little data, it does so using multiple requests. There are some
         <a href="https://github.com/flatgeobuf/flatgeobuf?tab=readme-ov-file#optimizing-remotely-hosted-flatgeobufs">tips for optimizing remote hosted flatgeobufs</a>, mostly oriented around minimizing round trip latency.
     </p>
-    <div id="header">
-        <h3>Parsed header content</h3>
-    </div>
+    <div id="requests"></div>
+
+    <h3>Parsed header content</h3>
+    <div id="header"></div>
 </body>
 </html>

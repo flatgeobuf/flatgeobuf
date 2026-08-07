@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="/examples/site.css" />
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.3.3/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 </head>
 <body>
@@ -52,7 +52,7 @@
             map.on("load", async () => {
                 const fc = {type: "FeatureCollection", features: []};
                 let i = 0;
-                for await (const f of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+                for await (const f of flatgeobuf.deserialize(response.body, { headerMetaFn: handleHeaderMeta })) {
                     fc.features.push({...f, id: i});
                     i += 1;
                 }
