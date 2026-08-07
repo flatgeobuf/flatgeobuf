@@ -114,6 +114,9 @@ impl<T: AsyncHttpRangeClient> HttpFgbReader<T> {
         let header = self.fbs.header();
         let count = header.features_count();
         // TODO: support reading with unknown feature count
+        if header.index_node_size() > 0 {
+            PackedRTree::validate_num_items(count as usize)?;
+        }
         let index_size = if header.index_node_size() > 0 {
             PackedRTree::index_size(count as usize, header.index_node_size())
         } else {

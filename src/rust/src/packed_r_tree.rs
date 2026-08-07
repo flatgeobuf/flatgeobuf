@@ -1,7 +1,7 @@
 //! Create and read a [packed Hilbert R-Tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees)
 //! to enable fast bounding box spatial filtering.
 
-use crate::Result;
+use crate::{Error, Result};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(feature = "http")]
@@ -137,10 +137,22 @@ impl NodeItem {
     }
 }
 
-/// Read full capacity of vec from data stream
-fn read_node_vec(node_items: &mut Vec<NodeItem>, mut data: impl Read) -> Result<()> {
+/// Read `count` node items from `data` and append them to `node_items`.
+///
+/// `node_items` is reserved speculatively (and possibly below `count`, see
+/// [`PackedRTree::MAX_INDEX_PREALLOC_BYTES`]); this loop pushes exactly `count` items regardless of
+/// the reserved capacity, so an honest index larger than the speculative reservation still parses
+/// while a short/malicious stream still fails with the underlying `io::Error` (UnexpectedEof). The
+/// per-call reservation is capped to the same budget so an untrusted `count` cannot itself trigger a
+/// `capacity overflow` in the allocator; the vector grows off the real bytes as they arrive.
+fn read_node_vec(node_items: &mut Vec<NodeItem>, count: usize, mut data: impl Read) -> Result<()> {
     node_items.clear();
-    for _ in 0..node_items.capacity() {
+    let cap = node_items.capacity();
+    let want = count.min(PackedRTree::MAX_INDEX_PREALLOC_BYTES / size_of::<NodeItem>());
+    if want > cap {
+        node_items.reserve(want - cap);
+    }
+    for _ in 0..count {
         node_items.push(NodeItem::from_reader(&mut data)?);
     }
     Ok(())
@@ -157,7 +169,7 @@ fn read_node_items<R: Read + Seek>(
     data.seek(SeekFrom::Start(
         base + (node_index * size_of::<NodeItem>()) as u64,
     ))?;
-    read_node_vec(&mut node_items, data)?;
+    read_node_vec(&mut node_items, length, data)?;
     Ok(node_items)
 }
 
@@ -293,6 +305,35 @@ impl PackedRTree {
     /// Default branching factor (node size) used by this crate when a caller does not specify one.
     pub const DEFAULT_NODE_SIZE: u16 = 16;
 
+    /// Upper bound on the *speculative* reservation made when reading an index from an untrusted
+    /// stream, before any index bytes have been parsed. A malicious or truncated file can declare an
+    /// arbitrarily large feature count in the header; without a cap, `from_buf` would ask the
+    /// allocator for `features_count * size_of::<NodeItem>()` bytes up front. The cap mirrors the
+    /// treatment of untrusted counts in the geozero SHP/WKB readers (geozero #297/#299) and the
+    /// header-size cap in this crate's `file_reader`. Honest indices larger than the budget still
+    /// load: only the initial reservation is bounded, and the reader grows the vector from the real
+    /// bytes as they arrive.
+    pub(crate) const MAX_INDEX_PREALLOC_BYTES: usize = 64 * 1024 * 1024;
+
+    /// Reject a feature count that the index path could not safely honour.
+    ///
+    /// `num_items` arrives untrusted from the FlatGeobuf header. Zero has no index to read, so it
+    /// maps to [`Error::NoIndex`] (matching the `select_*` callers). Counts above `usize::MAX / 2`
+    /// make the level-bound arithmetic in `generate_level_bounds` (and the node total it returns)
+    /// overflow `usize` for any `node_size >= 2`; the resulting `num_nodes` would also exceed
+    /// `isize::MAX`, so `Vec::with_capacity` would panic with "capacity overflow". Those counts are
+    /// rejected with [`Error::IllegalHeaderSize`] — the header field is implausible — keeping the
+    /// rejection within the existing public error set (no semver-breaking variant added).
+    pub(crate) fn validate_num_items(num_items: usize) -> Result<()> {
+        if num_items == 0 {
+            return Err(Error::NoIndex);
+        }
+        if num_items > usize::MAX / 2 {
+            return Err(Error::IllegalHeaderSize(num_items));
+        }
+        Ok(())
+    }
+
     fn init(&mut self, node_size: u16) -> Result<()> {
         assert!(node_size >= 2, "Node size must be at least 2");
         assert!(self.num_leaf_nodes > 0, "Cannot create empty tree");
@@ -308,10 +349,13 @@ impl PackedRTree {
         Ok(())
     }
 
+    /// Precondition: `num_items > 0` and `num_items <= usize::MAX / 2` (enforced for untrusted
+    /// callers by [`Self::validate_num_items`]). For trusted writer callers ([`Self::build`]) the
+    /// count is the length of a `&[NodeItem]` the caller just built, so the contract holds.
     fn generate_level_bounds(num_items: usize, node_size: u16) -> Vec<Range<usize>> {
-        assert!(node_size >= 2, "Node size must be at least 2");
-        assert!(num_items > 0, "Cannot create empty tree");
-        assert!(
+        debug_assert!(node_size >= 2, "Node size must be at least 2");
+        debug_assert!(num_items > 0, "Cannot create empty tree");
+        debug_assert!(
             num_items <= usize::MAX - ((num_items / node_size as usize) * 2),
             "Number of items too large"
         );
@@ -365,8 +409,8 @@ impl PackedRTree {
         }
     }
 
-    fn read_data(&mut self, data: impl Read) -> Result<()> {
-        read_node_vec(&mut self.node_items, data)?;
+    fn read_data(&mut self, num_nodes: usize, data: impl Read) -> Result<()> {
+        read_node_vec(&mut self.node_items, num_nodes, data)?;
         for node in &self.node_items {
             self.extent.expand(node)
         }
@@ -431,20 +475,25 @@ impl PackedRTree {
     /// - `node_size` is the branching factor from the FlatGeobuf header (`index_node_size`);
     ///   values are clamped to `[2, 65535]`.
     pub fn from_buf(data: impl Read, num_items: usize, node_size: u16) -> Result<PackedRTree> {
+        Self::validate_num_items(num_items)?;
         let node_size = node_size.clamp(2, 65535);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let num_nodes = level_bounds
             .first()
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .end;
+        // Bound the speculative reservation to MAX_INDEX_PREALLOC_BYTES. Honest indices larger
+        // than the budget still load — `read_node_vec` pushes the real `num_nodes` items and lets
+        // the vector grow off the actual bytes — so only the untrusted *hint* is capped.
+        let reserve = num_nodes.min(Self::MAX_INDEX_PREALLOC_BYTES / size_of::<NodeItem>());
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
-            node_items: Vec::with_capacity(num_nodes),
+            node_items: Vec::with_capacity(reserve),
             num_leaf_nodes: num_items,
             branching_factor: node_size,
             level_bounds,
         };
-        tree.read_data(data)?;
+        tree.read_data(num_nodes, data)?;
         Ok(tree)
     }
 
@@ -455,6 +504,7 @@ impl PackedRTree {
         num_items: usize,
         node_size: u16,
     ) -> Result<PackedRTree> {
+        Self::validate_num_items(num_items)?;
         let mut tree = PackedRTree {
             extent: NodeItem::create(0),
             node_items: Vec::new(),
@@ -534,6 +584,7 @@ impl PackedRTree {
         max_x: f64,
         max_y: f64,
     ) -> Result<Vec<SearchResultItem>> {
+        Self::validate_num_items(num_items)?;
         let bounds = NodeItem::bounds(min_x, min_y, max_x, max_y);
         let level_bounds = PackedRTree::generate_level_bounds(num_items, node_size);
         let Range {
@@ -604,6 +655,7 @@ impl PackedRTree {
         if num_items == 0 {
             return Ok(vec![]);
         }
+        Self::validate_num_items(num_items)?;
         let level_bounds = PackedRTree::generate_level_bounds(num_items, branching_factor);
         let feature_begin = index_begin + PackedRTree::index_size(num_items, branching_factor);
         debug!("http_stream_search - index_begin: {index_begin}, feature_begin: {feature_begin} num_items: {num_items}, branching_factor: {branching_factor}, level_bounds: {level_bounds:?}, GPS bounds:[({min_x}, {min_y}), ({max_x},{max_y})]");
@@ -722,26 +774,29 @@ impl PackedRTree {
     /// - skip past the index to reach the feature data section, or
     /// - compute `feature_begin = index_begin + index_size(...)` for range-based access.
     ///
-    /// `node_size` is clamped to `[2, 65535]`. Panics if `num_items < 2`.
+    /// `node_size` is clamped to `[2, 65535]`. Returns `0` for `num_items == 0` (no index bytes to
+    /// skip) and saturates at `usize::MAX` for a feature count too large for the packed-tree
+    /// arithmetic, so the function is total and never panics on untrusted input. Callers that need
+    /// to reject implausible counts up front should use [`Self::validate_num_items`].
     pub fn index_size(num_items: usize, node_size: u16) -> usize {
-        assert!(node_size >= 2, "Node size must be at least 2");
-        assert!(num_items > 0, "Cannot create empty tree");
+        // Total over untrusted input: returns 0 for an empty tree and saturates at
+        // usize::MAX for a count too large for the packed-tree arithmetic, rather than
+        // panicking. Callers that need to reject implausible counts up front should use
+        // [`Self::validate_num_items`].
+        if num_items == 0 {
+            return 0;
+        }
         let node_size_min = node_size.clamp(2, 65535) as usize;
-        // limit so that resulting size in bytes can be represented by uint64_t
-        // assert!(
-        //     num_items <= 1 << 56,
-        //     "Number of items must be less than 2^56"
-        // );
         let mut n = num_items;
         let mut num_nodes = n;
         loop {
             n = n.div_ceil(node_size_min);
-            num_nodes += n;
+            num_nodes = num_nodes.saturating_add(n);
             if n == 1 {
                 break;
             }
         }
-        num_nodes * size_of::<NodeItem>()
+        num_nodes.saturating_mul(size_of::<NodeItem>())
     }
 
     /// Write all index nodes to `out`.
@@ -1022,6 +1077,123 @@ mod tests {
         let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let mut fout = BufWriter::new(tempfile()?);
         tree.process_index(&mut GeoJsonWriter::new(&mut fout))?;
+        Ok(())
+    }
+
+    // Regression: an untrusted feature count must not panic the index read path.
+    // Before the fix, `from_buf` cleaned up neither the `generate_level_bounds`
+    // "Number of items too large" assert (usize::MAX) nor the `Vec::with_capacity`
+    // "capacity overflow" (1e18) / multi-GB reservation (5e8). Each case must now
+    // return Err (IllegalHeaderSize, NoIndex, or an underlying read error) without
+    // panicking or reserving gigabytes up front.
+    #[test]
+    fn from_buf_rejects_untrusted_features_count() {
+        let empty = std::io::Cursor::new(Vec::<u8>::new());
+
+        // usize::MAX: previously panicked in generate_level_bounds.
+        let r = PackedRTree::from_buf(empty.clone(), usize::MAX, 16);
+        assert!(
+            matches!(r, Err(crate::Error::IllegalHeaderSize(usize::MAX))),
+            "usize::MAX must Err(IllegalHeaderSize), got {:?}",
+            r.as_ref().err()
+        );
+
+        // 1e18: previously panicked at Vec::with_capacity with "capacity overflow". It is below the
+        // usize::MAX/2 cutoff so it is not rejected up front; instead the short input must surface
+        // a read error (UnexpectedEof) without reserving ~80 GB up front.
+        let r = PackedRTree::from_buf(empty.clone(), 1_000_000_000_000_000_000, 16);
+        assert!(
+            r.is_err(),
+            "1e18 must Err, not panic, got {:?}",
+            r.as_ref().err()
+        );
+
+        // 5e8: previously reserved ~20 GB from a 4-byte lie before reading. Same as above: the
+        // short input must fail as a read error without a huge reservation.
+        let r = PackedRTree::from_buf(empty, 500_000_000, 16);
+        assert!(
+            r.is_err(),
+            "short input for 5e8 items must Err, got {:?}",
+            r.as_ref().err()
+        );
+
+        // Zero: the pub API must not reach the generate_level_bounds `num_items > 0`
+        // assert; an empty tree has no index to read.
+        let empty = std::io::Cursor::new(Vec::<u8>::new());
+        let r = PackedRTree::from_buf(empty, 0, 16);
+        assert!(
+            matches!(r, Err(crate::Error::NoIndex)),
+            "zero items must Err(NoIndex), got {:?}",
+            r.as_ref().err()
+        );
+    }
+
+    // Regression: `stream_search` shares the same untrusted `num_items` entry point.
+    #[test]
+    fn stream_search_rejects_untrusted_features_count() {
+        let mut data = std::io::Cursor::new(Vec::<u8>::new());
+        let r = PackedRTree::stream_search(&mut data, usize::MAX, 16, 0.0, 0.0, 1.0, 1.0);
+        assert!(
+            matches!(r, Err(crate::Error::IllegalHeaderSize(_))),
+            "usize::MAX must Err(IllegalHeaderSize), got {:?}",
+            r.as_ref().err()
+        );
+
+        let mut data = std::io::Cursor::new(Vec::<u8>::new());
+        let r = PackedRTree::stream_search(&mut data, 0, 16, 0.0, 0.0, 1.0, 1.0);
+        assert!(
+            matches!(r, Err(crate::Error::NoIndex)),
+            "zero items must Err(NoIndex), got {:?}",
+            r.as_ref().err()
+        );
+    }
+
+    // Regression: `index_size` must be total — no panic on zero or huge counts.
+    // Huge counts saturate at usize::MAX instead of overflowing the node accumulator.
+    #[test]
+    fn index_size_is_total() {
+        assert_eq!(PackedRTree::index_size(0, 16), 0);
+        // node_size < 2 is clamped internally, so 0 features / tiny node must not panic.
+        assert_eq!(PackedRTree::index_size(0, 1), 0);
+        // Huge count: must not panic. Saturating result is at least the leaf bytes.
+        let huge = PackedRTree::index_size(usize::MAX, 16);
+        assert!(huge == usize::MAX || huge > 0);
+        // Sanity: for realistic test set sizes the value is unchanged. With 1 leaf the
+        // tree stores the leaf plus a single root node (ceil(1/16) = 1), so 2 NodeItems.
+        let one = PackedRTree::index_size(1, 16);
+        assert_eq!(one, 2 * size_of::<NodeItem>());
+    }
+
+    // Regression: a legitimate index larger than the speculative reserve budget
+    // still round-trips through `from_buf`. With node_size = 2, an honest tree of
+    // N leaves produces ~2N nodes, so 2_000_000 leaves (~160 MB of NodeItems) is
+    // well above MAX_INDEX_PREALLOC_BYTES (64 MiB ≈ 1.7M NodeItems) and must still
+    // load because `read_node_vec` pushes the real count off the actual bytes.
+    #[test]
+    fn from_buf_loads_honest_index_above_prealloc_budget() -> Result<()> {
+        let num_items: usize = 2_000_000;
+        let node_size = 2u16;
+        let mut nodes: Vec<NodeItem> = Vec::with_capacity(num_items);
+        for i in 0..num_items {
+            let x = (i as f64) * 1e-6;
+            nodes.push(NodeItem::bounds(x, 0.0, x + 1e-6, 1e-6));
+        }
+        let extent = calc_extent(&nodes);
+        hilbert_sort(&mut nodes, &extent);
+        let mut offset = 0u64;
+        for node in &mut nodes {
+            node.offset = offset;
+            offset += size_of::<NodeItem>() as u64;
+        }
+        let tree = PackedRTree::build(&nodes, &extent, node_size)?;
+        let mut buf: Vec<u8> = Vec::new();
+        tree.stream_write(&mut buf)?;
+
+        let restored = PackedRTree::from_buf(std::io::Cursor::new(&buf), num_items, node_size)?;
+        assert_eq!(restored.num_nodes(), tree.num_nodes());
+        // The extent must round-trip exactly (read_data recomputes from parsed nodes).
+        assert!((restored.extent().min_x - tree.extent().min_x).abs() < 1e-9);
+        assert!((restored.extent().max_x - tree.extent().max_x).abs() < 1e-9);
         Ok(())
     }
 }
