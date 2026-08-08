@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <vector>
 #include <functional>
+#include <limits>
+#include <stdexcept>
 
 #include "flatbuffers/flatbuffers.h"
 #include "header_generated.h"
@@ -34,6 +36,33 @@ struct FeatureItem : Item {
     uoffset_t size;
     uint64_t offset;
 };
+
+template<typename VerifyBuffer>
+std::vector<uint8_t> readSizePrefixedBuffer(
+    const std::function<void(const void *, const size_t)> &readData,
+    VerifyBuffer verifyBuffer,
+    const char *errorPrefix,
+    const size_t bytesRemaining = std::numeric_limits<size_t>::max())
+{
+    std::vector<uint8_t> buf(sizeof(uoffset_t));
+    readData(buf.data(), sizeof(uoffset_t));
+
+    const auto payloadSize = flatbuffers::GetPrefixedSize(buf.data());
+    if (bytesRemaining != std::numeric_limits<size_t>::max() &&
+        (bytesRemaining < sizeof(uoffset_t) || payloadSize > bytesRemaining - sizeof(uoffset_t)))
+        throw std::invalid_argument(std::string(errorPrefix) + ": size prefix exceeds remaining input");
+    if (payloadSize > buf.max_size() - sizeof(uoffset_t))
+        throw std::invalid_argument(std::string(errorPrefix) + ": size prefix is too large");
+
+    buf.resize(sizeof(uoffset_t) + payloadSize);
+    readData(buf.data() + sizeof(uoffset_t), payloadSize);
+
+    Verifier verifier(buf.data(), buf.size());
+    if (!verifyBuffer(verifier))
+        throw std::invalid_argument(std::string(errorPrefix) + ": buffer did not pass verification");
+
+    return buf;
+}
 
 NodeItem toNodeItem(geometry geometry)
 {
@@ -197,8 +226,14 @@ const void writeHeader(
 
 const std::vector<point> extractPoints(const double *coords, uint32_t length, uint32_t offset = 0)
 {
+    if (coords == nullptr)
+        throw std::invalid_argument("extractPoints: coordinates are missing");
+    if (offset > std::numeric_limits<uint32_t>::max() - length)
+        throw std::invalid_argument("extractPoints: coordinate length is invalid");
+
     std::vector<point> points;
-    for (uint32_t i = offset; i < offset + length; i += 2)
+    const uint32_t end = offset + length;
+    for (uint32_t i = offset; i + 1 < end; i += 2)
         points.push_back(point { coords[i], coords[i + 1] });
     return points;
 
@@ -223,7 +258,12 @@ const multi_line_string fromMultiLineString(
     std::vector<line_string> lineStrings;
     uint32_t offset = 0;
     for (uint32_t i = 0; i < ends->size(); i++) {
-        uint32_t end = ends->Get(i) << 1;
+        uint32_t end = ends->Get(i);
+        if (end > coordsLength / 2)
+            throw std::invalid_argument("fromMultiLineString: line end is out of bounds");
+        end <<= 1;
+        if (end < offset)
+            throw std::invalid_argument("fromMultiLineString: line ends are not monotonic");
         lineStrings.push_back(line_string(extractPoints(coords, end - offset, offset)));
         offset = end;
     }
@@ -240,7 +280,12 @@ const polygon fromPolygon(
     std::vector<linear_ring> linearRings;
     uint32_t offset = 0;
     for (uint32_t i = 0; i < ends->size(); i++) {
-        uint32_t end = ends->Get(i) << 1;
+        uint32_t end = ends->Get(i);
+        if (end > coordsLength / 2)
+            throw std::invalid_argument("fromPolygon: ring end is out of bounds");
+        end <<= 1;
+        if (end < offset)
+            throw std::invalid_argument("fromPolygon: ring ends are not monotonic");
         linearRings.push_back(linear_ring(extractPoints(coords, end - offset, offset)));
         offset = end;
     }
@@ -252,6 +297,8 @@ const geometry fromGeometry(const Geometry *geometry, const GeometryType geometr
 const multi_polygon fromMultiPolygon(const Geometry *geometry)
 {
     auto parts = geometry->parts();
+    if (parts == nullptr)
+        throw std::invalid_argument("fromMultiPolygon: geometry parts are missing");
     auto partsLength = parts->Length();
     std::vector<polygon> polygons;
     for (auto i = 0; i < partsLength; i++) {
@@ -268,7 +315,7 @@ const bool isCollection(const GeometryType geometryType)
         case GeometryType::Point:
         case GeometryType::MultiPoint:
         case GeometryType::LineString:
-        case GeometryType::MultiLineString: 
+        case GeometryType::MultiLineString:
         case GeometryType::Polygon:
             return false;
         case GeometryType::MultiPolygon:
@@ -281,17 +328,24 @@ const bool isCollection(const GeometryType geometryType)
 
 const geometry fromGeometry(const Geometry *geometry, const GeometryType geometryType)
 {
+    if (geometry == nullptr)
+        throw std::invalid_argument("fromGeometry: geometry is missing");
+
     if (!isCollection(geometryType)) {
+        if (geometry->xy() == nullptr)
+            throw std::invalid_argument("fromGeometry: geometry coordinates are missing");
         auto xy = geometry->xy()->data();
         auto xyLength = geometry->xy()->Length();
         switch (geometryType) {
             case GeometryType::Point:
+                if (xyLength < 2)
+                    throw std::invalid_argument("fromGeometry: point coordinates are missing");
                 return point { xy[0], xy[1] };
             case GeometryType::MultiPoint:
                 return multi_point { extractPoints(xy, xyLength) };
             case GeometryType::LineString:
                 return line_string(extractPoints(xy, xyLength));
-            case GeometryType::MultiLineString: 
+            case GeometryType::MultiLineString:
                 return fromMultiLineString(xy, xyLength, geometry->ends());
             case GeometryType::Polygon:
                 return fromPolygon(xy, xyLength, geometry->ends());
@@ -310,7 +364,7 @@ const geometry fromGeometry(const Geometry *geometry, const GeometryType geometr
 
 mapbox::feature::property_map readGeoJsonProperties(
     const Feature *feature,
-    const std::vector<ColumnMeta> &columnMetas) 
+    const std::vector<ColumnMeta> &columnMetas)
 {
     auto properties = feature->properties();
     auto property_map = mapbox::feature::property_map();
@@ -386,18 +440,15 @@ const uoffset_t readFeature(
     const std::function<void(const void *, const size_t)> &readData,
     const std::function<void(const feature&)> &writeFeature,
     const GeometryType geometryType,
-    const std::vector<ColumnMeta> &columnMetas) 
+    const std::vector<ColumnMeta> &columnMetas,
+    const size_t bytesRemaining = std::numeric_limits<size_t>::max())
 {
-    std::vector<uint8_t> buf;
-    buf.reserve(sizeof(uoffset_t));
-    readData(buf.data(), sizeof(uoffset_t));
-    const auto featureSize = *reinterpret_cast<const uoffset_t*>(buf.data());
-    buf.reserve(featureSize);
-    readData(buf.data(), featureSize);
-    auto feature = GetFeature(buf.data());
+    auto buf = readSizePrefixedBuffer(
+        readData, VerifySizePrefixedFeatureBuffer, "readFeature", bytesRemaining);
+    auto feature = GetSizePrefixedFeature(buf.data());
     auto f = fromFeature(feature, geometryType, columnMetas);
     writeFeature(f);
-    return featureSize;
+    return buf.size();
 }
 
 }
@@ -507,23 +558,27 @@ const void deserialize(
     const std::function<void(const void *, const size_t)> &readData,
     const std::function<void(const feature&)> &writeFeature,
     const std::function<void(const size_t)> &seekData = nullptr,
-    const NodeItem *nodeItem = nullptr)
+    const NodeItem *nodeItem = nullptr,
+    const size_t inputSize = std::numeric_limits<size_t>::max())
 {
-    std::vector<uint8_t> buf;
-    buf.reserve(8);
+    std::vector<uint8_t> buf(sizeof(magicbytes));
     readData(buf.data(), sizeof(magicbytes));
 
     if (memcmp(buf.data(), magicbytes, sizeof(magicbytes)))
         throw new std::invalid_argument("Not a FlatGeobuf file");
 
     uint64_t offset = sizeof(magicbytes);
-    readData(buf.data(), sizeof(uoffset_t));
-    offset += sizeof(uoffset_t);
-    const auto headerSize = *reinterpret_cast<const uoffset_t*>(buf.data());
-    buf.reserve(headerSize);
-    readData(buf.data(), headerSize);
-    offset += headerSize;
-    auto header = GetHeader(buf.data());
+    const auto bytesRemaining = [&inputSize, &offset] () {
+        if (inputSize == std::numeric_limits<size_t>::max())
+            return inputSize;
+        if (offset > inputSize)
+            return static_cast<size_t>(0);
+        return inputSize - static_cast<size_t>(offset);
+    };
+    buf = readSizePrefixedBuffer(
+        readData, VerifySizePrefixedHeaderBuffer, "deserialize", bytesRemaining());
+    offset += buf.size();
+    auto header = GetSizePrefixedHeader(buf.data());
     const auto featuresCount = header->features_count();
     const auto geometryType = header->geometry_type();
     const auto indexNodeSize = header->index_node_size();
@@ -545,52 +600,82 @@ const void deserialize(
         if (seekData != nullptr && nodeItem != nullptr) {
             // spatial filter requested, read and use index
             const auto treeOffset = offset;
+            const auto indexSize = PackedRTree::size(featuresCount, indexNodeSize);
+            if (inputSize != std::numeric_limits<size_t>::max() && indexSize > bytesRemaining())
+                throw std::invalid_argument("deserialize: index exceeds remaining input");
             const auto readNode = [treeOffset, &seekData, &readData] (uint8_t *buf, size_t i, size_t s) {
                 seekData(treeOffset + i);
                 readData(buf, s);
             };
             const auto result = PackedRTree::streamSearch(featuresCount, indexNodeSize, *nodeItem, readNode);
-            offset += PackedRTree::size(featuresCount, indexNodeSize);
+            offset += indexSize;
             for (auto item : result) {
-                seekData(offset + item.offset);
-                readFeature(readData, writeFeature, geometryType, columnMetas);
+                const auto featureOffset = offset + item.offset;
+                seekData(featureOffset);
+                readFeature(
+                    readData,
+                    writeFeature,
+                    geometryType,
+                    columnMetas,
+                    inputSize == std::numeric_limits<size_t>::max() || featureOffset > inputSize
+                        ? std::numeric_limits<size_t>::max()
+                        : inputSize - static_cast<size_t>(featureOffset));
             }
             return;
         } else {
             // ignore index as no filter was requested
-            offset += PackedRTree::size(featuresCount, indexNodeSize);
-        }   
+            const auto indexSize = PackedRTree::size(featuresCount, indexNodeSize);
+            if (inputSize != std::numeric_limits<size_t>::max() && indexSize > bytesRemaining())
+                throw std::invalid_argument("deserialize: index exceeds remaining input");
+            offset += indexSize;
+        }
     }
 
     // read full dataset
-    for (auto i = 0; i < featuresCount; i++)
-        readFeature(readData, writeFeature, geometryType, columnMetas);
+    for (auto i = 0; i < featuresCount; i++) {
+        const auto bytesRead = readFeature(
+            readData,
+            writeFeature,
+            geometryType,
+            columnMetas,
+            bytesRemaining());
+        offset += bytesRead;
+    }
 }
 
-const feature_collection deserialize(const void *buf)
+const feature_collection deserialize(const void *buf, const size_t size)
 {
     const uint8_t *data = static_cast<const uint8_t*>(buf);
     uint64_t offset = 0;
     feature_collection fc {};
-    const auto readData = [&data, &offset] (const void *buf, const size_t size) {
-        memcpy(const_cast<void *>(buf), data + offset, size);
-        offset += size;
+    const auto readData = [&data, &offset, size] (const void *buf, const size_t readSize) {
+        if (offset > size || readSize > size - offset)
+            throw std::invalid_argument("deserialize: input read out of bounds");
+        memcpy(const_cast<void *>(buf), data + offset, readSize);
+        offset += readSize;
     };
     const auto writeFeature = [&fc] (const feature &f) {
         fc.push_back(f);
     };
-    deserialize(readData, writeFeature);
+    deserialize(readData, writeFeature, nullptr, nullptr, size);
     return fc;
 }
 
-const feature_collection deserialize(const void *buf, const NodeItem rect)
+const feature_collection deserialize(const void *buf)
+{
+    return deserialize(buf, std::numeric_limits<size_t>::max());
+}
+
+const feature_collection deserialize(const void *buf, const size_t size, const NodeItem rect)
 {
     const uint8_t *data = static_cast<const uint8_t*>(buf);
     uint64_t offset = 0;
     feature_collection fc {};
-    const auto readData = [&data, &offset] (const void *buf, const size_t size) {
-        memcpy(const_cast<void *>(buf), data + offset, size);
-        offset += size;
+    const auto readData = [&data, &offset, size] (const void *buf, const size_t readSize) {
+        if (offset > size || readSize > size - offset)
+            throw std::invalid_argument("deserialize: input read out of bounds");
+        memcpy(const_cast<void *>(buf), data + offset, readSize);
+        offset += readSize;
     };
     const auto writeFeature = [&fc] (const feature &f) {
         fc.push_back(f);
@@ -598,8 +683,13 @@ const feature_collection deserialize(const void *buf, const NodeItem rect)
     const auto seekData = [&offset] (size_t newoffset) {
         offset = newoffset;
     };
-    deserialize(readData, writeFeature, seekData, &rect);
+    deserialize(readData, writeFeature, seekData, &rect, size);
     return fc;
+}
+
+const feature_collection deserialize(const void *buf, const NodeItem rect)
+{
+    return deserialize(buf, std::numeric_limits<size_t>::max(), rect);
 }
 
 }
