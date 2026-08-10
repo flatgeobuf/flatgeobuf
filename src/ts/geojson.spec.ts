@@ -341,6 +341,22 @@ describe('geojson module', () => {
             expect(actual).to.deep.equal(expected.features);
         });
 
+        it('Json Value Array', async () => {
+            const expected = makeFeatureCollection('POINT(1 1)', {
+                test: [1, 2, 3, 'four'],
+            });
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(serialize(expected)));
+            expect(actual).to.deep.equal(expected.features);
+        });
+
+        it('Json Value Nested', async () => {
+            const expected = makeFeatureCollection('POINT(1 1)', {
+                test: { hello: 'world', nested: { a: [1, 2, { b: true }] } },
+            });
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(serialize(expected)));
+            expect(actual).to.deep.equal(expected.features);
+        });
+
         it('Binary', async () => {
             const expected = makeFeatureCollection('POINT(1 1)', {
                 test: new Uint8Array([116, 101, 115, 116]),
