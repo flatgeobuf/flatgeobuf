@@ -210,7 +210,7 @@ export async function readMetadata(url: string, nocache = false, headers: Header
     throw new Error('Exhausted header fetch retries');
 }
 
-function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
+function valueToType(value: IProperties[string]): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
     if (typeof value === 'number') return ColumnType.Double;
     if (typeof value === 'string') return ColumnType.String;

@@ -9,8 +9,18 @@ import { buildGeometry, type ICreateGeometry, type IParsedGeometry, type ISimple
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
+export type JsonValue =
+    | string
+    | number
+    | boolean
+    | null
+    | JsonValue[]
+    | {
+          [key: string]: JsonValue;
+      };
+
 export interface IProperties {
-    [key: string]: boolean | number | string | Uint8Array | undefined;
+    [key: string]: boolean | number | string | Uint8Array | JsonValue | undefined;
 }
 
 export interface IFeature {
@@ -20,11 +30,7 @@ export interface IFeature {
     setProperties?(properties: IProperties): void;
 }
 
-export type ICreateFeature = (
-    id: number,
-    geometry?: ISimpleGeometry,
-    properties?: Record<string, string | number | boolean | Uint8Array | undefined>,
-) => IFeature;
+export type ICreateFeature = (id: number, geometry?: ISimpleGeometry, properties?: IProperties) => IFeature;
 
 export function fromFeature(
     id: number,
