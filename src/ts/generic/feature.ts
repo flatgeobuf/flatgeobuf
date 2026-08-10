@@ -20,7 +20,7 @@ export type JsonValue =
       };
 
 export interface IProperties {
-    [key: string]: boolean | number | string | Uint8Array | JsonValue | undefined;
+    [key: string]: Uint8Array | JsonValue | undefined;
 }
 
 export interface IFeature {
