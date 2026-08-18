@@ -192,8 +192,20 @@ func (fgb *FlatGeoBuf) setup(behavior Behavior) error {
 	// Increment offset past magic bytes.
 	offset := len(writer.MagicBytes)
 
+	// Make sure the header size prefix is present before reading it, otherwise
+	// truncated input causes an out-of-bounds panic instead of an error.
+	if len(fgb.data) < offset+flatbuffers.SizeUOffsetT {
+		return fmt.Errorf("not a flatgeobuf file: truncated header size")
+	}
+
 	// Read header size.
 	headerSize := int(flatbuffers.GetUOffsetT(fgb.data[offset:]))
+
+	// Make sure the full header is present before handing it to flatbuffers,
+	// which does not bounds-check the buffer it is given.
+	if headerSize < 0 || offset+flatbuffers.SizeUOffsetT+headerSize > len(fgb.data) {
+		return fmt.Errorf("invalid flatgeobuf header: header size %d exceeds data", headerSize)
+	}
 
 	// Read header ignoring the size
 	fgb.header = flattypes.GetSizePrefixedRootAsHeader(fgb.data, flatbuffers.UOffsetT(offset))
