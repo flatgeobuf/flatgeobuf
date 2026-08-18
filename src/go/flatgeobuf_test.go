@@ -3,6 +3,8 @@ package flatgeobuf
 import (
 	"bytes"
 	"encoding/binary"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -60,6 +62,28 @@ func TestFlatGeoBuf_LoadIndex(t *testing.T) {
 
 	if len(features) != 2 {
 		t.Errorf("expected 2 features, got: %v", len(features))
+	}
+}
+
+func TestFlatGeoBuf_LenientPatchVersion(t *testing.T) {
+	// Files written by GDAL/geopandas carry a patch version of 0x01 in the
+	// last magic byte. The reader must accept it, matching the Rust and Java
+	// implementations and the shared spec decision in PR #146.
+	data, err := os.ReadFile("./poly_landmarks.fgb")
+	if err != nil {
+		t.Fatalf("failed to read fixture: %v", err)
+	}
+
+	// Flip the patch version byte (index 7) from 0x00 to 0x01.
+	data[7] = 0x01
+
+	path := filepath.Join(t.TempDir(), "patch_version.fgb")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+
+	if _, err := New(path); err != nil {
+		t.Errorf("expected nil error for patch version 0x01, got: %v", err)
 	}
 }
 
