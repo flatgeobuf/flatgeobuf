@@ -392,6 +392,16 @@ std::vector<SearchResultItem> PackedRTree::streamSearch(
         uint64_t nodeIndex = next->first;
         uint64_t level = next->second;
         queue.erase(next);
+        // nodeIndex originates from a NodeItem::offset read from untrusted
+        // index data (see the queue.insert calls below). A corrupt or
+        // malicious offset may point outside the range of nodes that belong
+        // to this level. Reject it here rather than letting it flow into the
+        // end/length computation below, where it could make end < nodeIndex
+        // and underflow the unsigned "length" subtraction into a huge value,
+        // causing readNode() to write far beyond the fixed-size nodesBuf.
+        if (nodeIndex < levelBounds[static_cast<size_t>(level)].first ||
+            nodeIndex >= levelBounds[static_cast<size_t>(level)].second)
+            continue;
         bool isLeafNode = nodeIndex >= numNodes - numItems;
         // find the end index of the node
         uint64_t end = std::min(static_cast<uint64_t>(nodeIndex + nodeSize),
