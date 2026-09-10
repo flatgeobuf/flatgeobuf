@@ -15,4 +15,6 @@ export interface DeserializeOptions {
     headers?: HeadersInit;
     /** Disable caching of the file. */
     nocache?: boolean;
+    /** Signal to abort in-flight HTTP requests. */
+    signal?: AbortSignal;
 }

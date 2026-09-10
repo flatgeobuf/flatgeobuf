@@ -20,6 +20,7 @@ export class HttpReader {
     private indexLength: number;
     private nocache: boolean;
     private headers: HeadersInit;
+    private signal?: AbortSignal;
 
     constructor(
         headerClient: BufferedHttpRangeClient,
@@ -28,6 +29,7 @@ export class HttpReader {
         indexLength: number,
         nocache: boolean,
         headers: HeadersInit = {},
+        signal?: AbortSignal,
     ) {
         this.headerClient = headerClient;
         this.header = header;
@@ -35,18 +37,24 @@ export class HttpReader {
         this.indexLength = indexLength;
         this.nocache = nocache;
         this.headers = headers;
+        this.signal = signal;
     }
 
     // Fetch the header, preparing the reader to read Feature data.
     //
     // and potentially some opportunistic fetching of the index.
-    static async open(url: string, nocache: boolean, headers: HeadersInit = {}): Promise<HttpReader> {
+    static async open(
+        url: string,
+        nocache: boolean,
+        headers: HeadersInit = {},
+        signal?: AbortSignal,
+    ): Promise<HttpReader> {
         // In reality, the header is probably less than half this size, but
         // better to overshoot and fetch an extra kb rather than have to issue
         // a second request.
         const assumedHeaderLength = 2024;
 
-        const headerClient = new BufferedHttpRangeClient(url, nocache, headers);
+        const headerClient = new BufferedHttpRangeClient(url, nocache, headers, signal);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -110,7 +118,7 @@ export class HttpReader {
         const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
 
         console.debug('completed: opening http reader');
-        return new HttpReader(headerClient, header, headerLength, indexLength, nocache, headers);
+        return new HttpReader(headerClient, header, headerLength, indexLength, nocache, headers, signal);
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<FeatureWithId, void, unknown> {
@@ -130,6 +138,7 @@ export class HttpReader {
             this.header.indexNodeSize,
             rect,
             readNode,
+            this.signal,
         )) {
             const [featureOffset, featureIdx] = searchResult;
             let [, , featureLength] = searchResult;
@@ -256,9 +265,9 @@ class BufferedHttpRangeClient {
     // buffered
     private head = 0;
 
-    constructor(source: string | HttpRangeClient, nocache: boolean, headers: HeadersInit = {}) {
+    constructor(source: string | HttpRangeClient, nocache: boolean, headers: HeadersInit = {}, signal?: AbortSignal) {
         if (typeof source === 'string') {
-            this.httpClient = new HttpRangeClient(source, nocache, headers);
+            this.httpClient = new HttpRangeClient(source, nocache, headers, signal);
         } else if (source instanceof HttpRangeClient) {
             this.httpClient = source;
         } else {
@@ -307,13 +316,15 @@ export class HttpRangeClient {
     url: string;
     nocache: boolean;
     headers: HeadersInit;
+    signal?: AbortSignal;
     requestsEverMade = 0;
     bytesEverRequested = 0;
 
-    constructor(url: string, nocache: boolean, headers: HeadersInit = {}) {
+    constructor(url: string, nocache: boolean, headers: HeadersInit = {}, signal?: AbortSignal) {
         this.url = url;
         this.nocache = nocache;
         this.headers = headers;
+        this.signal = signal;
     }
 
     async getRange(begin: number, length: number, purpose: string): Promise<ArrayBuffer> {
@@ -369,7 +380,7 @@ export class HttpRangeClient {
         headers.set('Range', range);
         if (this.nocache) headers.set('Cache-Control', 'no-cache, no-store');
 
-        const response = await fetch(this.url, { headers });
+        const response = await fetch(this.url, { headers, signal: this.signal });
         const arrayBuffer = await response.arrayBuffer();
 
         // Store in cache for future requests

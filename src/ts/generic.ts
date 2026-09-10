@@ -33,10 +33,16 @@ export function deserialize(
  * @param url Input string
  * @param nocache Disable caching
  * @param headers Additional HTTP headers
+ * @param signal Signal to abort the request
  */
-export function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
+export function readMetadata(
+    url: string,
+    nocache = false,
+    headers: HeadersInit = {},
+    signal?: AbortSignal,
+): Promise<HeaderMeta> {
     //TODO: support reading from typed array or stream
-    return readMetadataUrl(url, nocache, headers);
+    return readMetadataUrl(url, nocache, headers, signal);
 }
 
 export type { DeserializeContext, DeserializeOptions } from './generic/deserialize.js';
