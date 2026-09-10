@@ -1,6 +1,6 @@
 {
     "name": "@vind-ai/flatgeobuf-with-cache",
-    "version": "4.4.0-cache",
+    "version": "4.4.0-cache-signal",
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
@@ -21,7 +21,7 @@
     "type": "module",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/flatgeobuf/flatgeobuf.git"
+        "url": "git+https://github.com/vind-ai/flatgeobuf-with-cache.git"
     },
     "keywords": [
         "spatial",
