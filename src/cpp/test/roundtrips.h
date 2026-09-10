@@ -24,8 +24,37 @@ const std::string getFixture(const std::string &path)
 feature_collection roundtrip(feature_collection input, bool createIndex = false) {
     std::vector<uint8_t> flatgeobuf;
     serialize(flatgeobuf, input, createIndex);
-    const auto output = deserialize(flatgeobuf.data());
+    const auto output = deserialize(flatgeobuf.data(), flatgeobuf.size());
     return output;
+}
+
+std::vector<uint8_t> makeFeatureBuffer(
+    GeometryType geometryType,
+    const std::vector<double> &xy,
+    const std::vector<uint32_t> &ends)
+{
+    std::vector<uint8_t> flatgeobuf;
+    flatgeobuf.insert(flatgeobuf.end(), magicbytes, magicbytes + sizeof(magicbytes));
+
+    FlatBufferBuilder headerBuilder;
+    const auto header = CreateHeaderDirect(
+        headerBuilder, nullptr, nullptr, geometryType, false, false, false, false, nullptr, 1, 0);
+    FinishSizePrefixedHeaderBuffer(headerBuilder, header);
+    flatgeobuf.insert(
+        flatgeobuf.end(),
+        headerBuilder.GetBufferPointer(),
+        headerBuilder.GetBufferPointer() + headerBuilder.GetSize());
+
+    FlatBufferBuilder featureBuilder;
+    const auto geometry = CreateGeometryDirect(featureBuilder, &ends, &xy, nullptr, nullptr, nullptr, nullptr, geometryType);
+    const auto feature = CreateFeatureDirect(featureBuilder, geometry);
+    FinishSizePrefixedFeatureBuffer(featureBuilder, feature);
+    flatgeobuf.insert(
+        flatgeobuf.end(),
+        featureBuilder.GetBufferPointer(),
+        featureBuilder.GetBufferPointer() + featureBuilder.GetSize());
+
+    return flatgeobuf;
 }
 
 TEST_CASE("Geometry roundtrips")
@@ -136,6 +165,58 @@ TEST_CASE("Geometry roundtrips")
         const auto fc2 = deserialize(flatgeobuf.data(), NodeItem { -73.996035, 40.730647, -73.987054,40.738246 });
         REQUIRE(4 == fc2.size());
     }
+}
+
+TEST_CASE("Reader rejects malformed geometry")
+{
+    SECTION("Polygon ends must be monotonic")
+    {
+        const auto flatgeobuf = makeFeatureBuffer(
+            GeometryType::Polygon,
+            { 0.0, 0.0, 1.0, 1.0 },
+            { 2, 1 });
+        REQUIRE_THROWS_AS(deserialize(flatgeobuf.data(), flatgeobuf.size()), std::invalid_argument);
+    }
+
+    SECTION("MultiLineString ends must stay in the coordinate vector")
+    {
+        const auto flatgeobuf = makeFeatureBuffer(
+            GeometryType::MultiLineString,
+            { 0.0, 0.0, 1.0, 1.0 },
+            { 3, 4 });
+        REQUIRE_THROWS_AS(deserialize(flatgeobuf.data(), flatgeobuf.size()), std::invalid_argument);
+    }
+}
+
+TEST_CASE("Reader verifies size-prefixed FlatBuffers before decoding")
+{
+    auto flatgeobuf = makeFeatureBuffer(
+        GeometryType::Point,
+        { 0.0, 0.0 },
+        {});
+
+    const auto headerRootOffset = sizeof(magicbytes) + sizeof(uoffset_t);
+    flatgeobuf[headerRootOffset] = 0xff;
+    flatgeobuf[headerRootOffset + 1] = 0xff;
+    flatgeobuf[headerRootOffset + 2] = 0xff;
+    flatgeobuf[headerRootOffset + 3] = 0xff;
+
+    REQUIRE_THROWS_AS(deserialize(flatgeobuf.data(), flatgeobuf.size()), std::invalid_argument);
+}
+
+TEST_CASE("Reader checks size prefixes against bounded input")
+{
+    auto flatgeobuf = makeFeatureBuffer(
+        GeometryType::Point,
+        { 0.0, 0.0 },
+        {});
+
+    flatgeobuf[sizeof(magicbytes)] = 0xff;
+    flatgeobuf[sizeof(magicbytes) + 1] = 0xff;
+    flatgeobuf[sizeof(magicbytes) + 2] = 0xff;
+    flatgeobuf[sizeof(magicbytes) + 3] = 0xff;
+
+    REQUIRE_THROWS_AS(deserialize(flatgeobuf.data(), flatgeobuf.size()), std::invalid_argument);
 }
 
 TEST_CASE("Attribute roundtrips")

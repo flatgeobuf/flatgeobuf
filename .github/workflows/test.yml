@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 18, 20, 22 ]
+        node: [ 22, 24 ]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
       - name: Setup Node
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java-version: [21, 17, 11, 8]
+        java-version: [25, 21, 17, 11, 8]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Java ${{ matrix.java-version }}
@@ -68,14 +68,22 @@ jobs:
       - run: cd src/java && mvn dependency:go-offline
       - run: cd src/java && mvn test
 
-  test-net8:
+  test-net:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x', '10.0.x']
+        include:
+          - dotnet-version: '8.0.x'
+            framework: net8
+          - dotnet-version: '10.0.x'
+            framework: net10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Setup .Net 8.0
+      - name: Setup .Net ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ matrix.dotnet-version }}
       - name: Cache nuget dependencies
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
@@ -84,7 +92,7 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
-      - run: cd src/net && ./fetch.sh && dotnet test -f net8
+      - run: cd src/net && ./fetch.sh && dotnet test -f ${{ matrix.framework }}
 
   test-rust:
     runs-on: ubuntu-latest

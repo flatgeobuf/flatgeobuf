@@ -35,6 +35,7 @@ FlatGeobuf is open source under the [BSD 2-Clause License](<https://tldrlegal.co
 -   [OpenLayers example](https://flatgeobuf.org/examples/openlayers)
 -   [Leaflet example](https://flatgeobuf.org/examples/leaflet)
 -   [MapLibre/Mapbox example](https://flatgeobuf.org/examples/maplibre)
+-   [Generalized FlatGeobuf Viewer](https://colton.place/flatgeobuf-viewer/)
 
 ## Specification
 
@@ -55,6 +56,8 @@ I recommend these blog posts by Horace Williams provides more details and explan
 
 -   https://worace.works/2022/02/23/kicking-the-tires-flatgeobuf/
 -   https://worace.works/2022/03/12/flatgeobuf-implementers-guide/
+
+The OWL (RDF) ontology corresponding to the specification is available [here](https://github.com/flatgeobuf/flatgeobuf/blob/master/src/rdf/schema.ttl)
 
 ## Performance
 

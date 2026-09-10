@@ -1,3 +1,6 @@
+#include <cstddef>
+#include <cstring>
+#include <limits>
 #include <random>
 
 #include "catch.hpp"
@@ -129,6 +132,45 @@ TEST_CASE("PackedRTree")
         for (uint32_t i = 0; i < list3.size(); i++) {
             REQUIRE(nodes[list3[i].index].intersects({102, 102, 103, 103}) == true);
         }
+    }
+    
+    SECTION("PackedRTree streamSearch rejects out-of-range node offset")
+    {
+        // Regression test for a security issue (GHSA-5v7w-325g-gpr9) where a
+        // corrupted/malicious NodeItem::offset read directly from untrusted
+        // index data was used as the next node index without any range
+        // validation. This could push traversal past the end of the level
+        // bounds, causing the unsigned "end - nodeIndex" subtraction to
+        // underflow into a huge value and driving readNode() to write far
+        // beyond the fixed-size internal buffer.
+        std::vector<NodeItem> nodes;
+        for (int i = 0; i < 32; i++)
+            nodes.push_back({(double) i, (double) i, (double) i, (double) i});
+        NodeItem extent = calcExtent(nodes);
+        hilbertSort(nodes);
+        uint64_t offset = 0;
+        for (auto &node : nodes) {
+            node.offset = offset;
+            offset += sizeof(NodeItem);
+        }
+        PackedRTree tree(nodes, extent);
+
+        std::vector<uint8_t> treeData;
+        tree.streamWrite([&treeData] (uint8_t *buf, size_t size) { std::copy(buf, buf+size, std::back_inserter(treeData)); });
+
+        // Corrupt the offset of the root node (the first NodeItem in the
+        // serialized tree) so that it points far past the end of the index.
+        uint64_t badOffset = std::numeric_limits<uint64_t>::max() / 2;
+        std::memcpy(treeData.data() + offsetof(NodeItem, offset), &badOffset, sizeof(badOffset));
+
+        auto data = treeData.data();
+        size_t maxRequestedSize = 0;
+        auto readNode = [data, &maxRequestedSize] (uint8_t *buf, uint32_t i, uint32_t s) {
+            maxRequestedSize = std::max<size_t>(maxRequestedSize, s);
+            std::copy(data + i, data + i + s, buf);
+        };
+        auto list = PackedRTree::streamSearch(nodes.size(), 16, extent, readNode);
+        REQUIRE(maxRequestedSize <= 16 * sizeof(NodeItem));
     }
     
     SECTION("PackedRTree 100 000 items in denmark")

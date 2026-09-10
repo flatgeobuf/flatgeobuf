@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="137.28mm" height="9.2822mm" fill-rule="evenodd" stroke-linejoin="round" stroke-width="28.222" preserveAspectRatio="xMidYMid" version="1.2" viewBox="0 0 13728 928.22" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><metadata><rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/><dc:title/></cc:Work></rdf:RDF></metadata>
+<svg width="137.28mm" height="9.2822mm" fill-rule="evenodd" stroke-linejoin="round" stroke-width="28.222" preserveAspectRatio="xMidYMid" version="1.2" viewBox="0 0 13728 928.22" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><title>FlatGeobuf format layout</title><metadata><rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/><dc:title/></cc:Work></rdf:RDF></metadata>
  <defs class="ClipPathGroup"><clipPath id="presentation_clip_path">
    <rect width="21000" height="29700"/>
   </clipPath></defs>

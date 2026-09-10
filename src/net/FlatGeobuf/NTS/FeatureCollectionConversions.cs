@@ -164,7 +164,18 @@ namespace FlatGeobuf.NTS
             Header.AddFeaturesCount(builder, count);
             var offset = Header.EndHeader(builder);
 
-            builder.FinishSizePrefixed(offset.Value);
+            // Bump _minAlign to 8 so the size-prefixed chunk's total length
+            // is a multiple of 8. Without this, the Header has only 4-byte
+            // fields, _minAlign stays at 4, and the chunk size lands on a
+            // 4-byte (not 8-byte) boundary. Subsequent feature chunks then
+            // start at non-8-aligned file offsets, and JS readers can't
+            // construct a Float64Array over the XY vector
+            // ("RangeError: start offset of Float64Array should be a
+            // multiple of 8"). The FGB wire format expects each chunk to
+            // be self-aligned to the global max element size.
+            builder.Prep(8, 0);
+            
+            builder.FinishSizePrefixed(offset.Value);            
 
             return builder.DataBuffer;
         }

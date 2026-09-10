@@ -1,5 +1,6 @@
 #include "catch.hpp"
 
+#include <vector>
 #include "flatbuffers/flatbuffers.h"
 #include "../header_generated.h"
 
@@ -45,12 +46,12 @@ TEST_CASE("Header")
         int size2 = fbb2.GetSize();
         REQUIRE(size2 == 88);
 
-        uint8_t buf3[size + size2];
-        memcpy(buf3, buf, size);
-        memcpy(buf3 + size, buf2, size2);
+        std::vector<uint8_t> buf3(size + size2);
+        memcpy(buf3.data(), buf, size);
+        memcpy(buf3.data() + size, buf2, size2);
 
-        Verifier v5(buf3 + size, size2);
-        Verifier v6(buf3 + size, size2);
+        Verifier v5(buf3.data() + size, size2);
+        Verifier v6(buf3.data() + size, size2);
         REQUIRE(VerifyHeaderBuffer(v5) == true);
         REQUIRE(VerifySizePrefixedHeaderBuffer(v6) == true);
     }

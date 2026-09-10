@@ -33,7 +33,7 @@ export interface IMultiPolygon extends ISimpleGeometry {
 
 export type ICreateGeometry = (geometry: Geometry | null, type: GeometryType) => ISimpleGeometry | undefined;
 
-export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry) {
+export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IParsedGeometry): number {
     const { xy, z, m, ends, parts, type } = parsedGeometry;
 
     if (parts) {
