@@ -33,11 +33,18 @@ namespace FlatGeobuf
         public static Header ReadHeader(BinaryReader reader, out int headerSize)
         {
             var magicBytes = reader.ReadBytes(8);
-            if (!magicBytes.Take(4).SequenceEqual(Constants.MagicBytes.Take(4)))
+            if (magicBytes.Length != 8 || !magicBytes.Take(4).SequenceEqual(Constants.MagicBytes.Take(4)))
                 throw new Exception("Not a FlatGeobuf file");
 
             headerSize = reader.ReadInt32();
-            var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
+            if (headerSize < 0)
+                throw new InvalidDataException("Invalid FlatGeobuf header size");
+
+            var headerBytes = reader.ReadBytes(headerSize);
+            if (headerBytes.Length != headerSize)
+                throw new InvalidDataException("Insufficient stream size, truncated FlatGeobuf header");
+
+            var header = Header.GetRootAsHeader(new ByteBuffer(headerBytes));
 
             return header;
         }
@@ -61,6 +68,8 @@ namespace FlatGeobuf
             numRead = await stream.ReadAsync(smallBuffer, 0, 4, token);
             if (numRead != 4) throw new InvalidDataException("Insufficient stream size");
             int headerSize = MemoryMarshal.Read<int>(smallBuffer);
+            if (headerSize < 0)
+                throw new InvalidDataException("Invalid FlatGeobuf header size");
 
             // Rent a buffer and read header data
             byte[] headerData = ArrayPool<byte>.Shared.Rent(headerSize);

@@ -5,7 +5,7 @@ export default {
     root: 'vite',
     publicDir: '../test/',
     build: {
-        rollupOptions: {
+        rolldownOptions: {
             input: {
                 main: resolve(__dirname, 'index.html'),
                 ol: resolve(__dirname, 'ol.html'),

@@ -8,11 +8,11 @@ import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Crs } from '../flat-geobuf/crs.js';
 import { Feature } from '../flat-geobuf/feature.js';
 import { Header } from '../flat-geobuf/header.js';
-import type { HeaderMetaFn } from '../generic.js';
 import type { HeaderMeta } from '../header-meta.js';
 import { fromByteBuffer } from '../header-meta.js';
 import { HttpRangeClient, HttpReader } from '../http-reader.js';
-import { calcTreeSize, type Rect } from '../packedrtree.js';
+import { calcTreeSize } from '../packedrtree.js';
+import type { DeserializeContext } from './deserialize.js';
 import { buildFeature, type IFeature, type IProperties } from './feature.js';
 import { parseGeometry } from './geometry.js';
 import { inferGeometryType } from './header.js';
@@ -44,19 +44,15 @@ export function serialize(features: IFeature[]): Uint8Array {
     return uint8;
 }
 
-export async function* deserialize(
-    bytes: Uint8Array,
-    fromFeature: FromFeatureFn,
-    rect?: Rect,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
+export async function* deserialize(input: Uint8Array, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { fromFeature, rect, headerMetaFn } = ctx;
+    const bytes = input;
     if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
     if (rect) {
         const reader = ArrayReader.open(bytes);
-        for await (const feature of reader.selectBbox(rect)) {
+        for await (const feature of reader.selectBbox(rect))
             yield fromFeature(feature.id, feature.feature, reader.header);
-        }
         return;
     }
 
@@ -82,11 +78,9 @@ export async function* deserialize(
     }
 }
 
-export async function* deserializeStream(
-    stream: ReadableStream,
-    fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn,
-): AsyncGenerator<IFeature> {
+export async function* deserializeStream(input: ReadableStream, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { fromFeature, headerMetaFn } = ctx;
+    const stream = input;
     const reader = slice(stream);
     const read: ReadFn = async (size) => await reader.slice(size);
 
@@ -114,14 +108,10 @@ export async function* deserializeStream(
     while ((feature = await readFeature(read, headerMeta, fromFeature, id++))) yield feature;
 }
 
-export async function* deserializeFiltered(
-    url: string,
-    rect: Rect,
-    fromFeature: FromFeatureFn,
-    headerMetaFn?: HeaderMetaFn,
-    nocache = false,
-    headers: HeadersInit = {},
-): AsyncGenerator<IFeature> {
+export async function* deserializeFiltered(input: string, ctx: DeserializeContext): AsyncGenerator<IFeature> {
+    const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
+    const url = input;
+    if (!rect) throw new Error('The "rect" option is required');
     const reader = await HttpReader.open(url, nocache, headers);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
@@ -186,21 +176,41 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
 }
 
 export async function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
-    const assumedHeaderLength = 2024;
+    const headerLengthLimit = 64769; //max 6 tries
+
+    let assumedHeaderLength = 2024;
+
     const httpClient = new HttpRangeClient(url, nocache, headers);
 
-    const bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
+    while (assumedHeaderLength < headerLengthLimit) {
+        try {
+            const bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
 
-    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
+            if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
-    const bb = new flatbuffers.ByteBuffer(bytes);
-    bb.setPosition(magicbytes.length);
-    const headerMeta = fromByteBuffer(bb);
+            const bb = new flatbuffers.ByteBuffer(bytes);
 
-    return headerMeta;
+            bb.setPosition(magicbytes.length);
+
+            const headerMeta = fromByteBuffer(bb);
+
+            return headerMeta;
+        } catch (error) {
+            if (
+                error?.toString() === 'Error: Not a FlatGeobuf file' ||
+                error?.toString() === 'Error: Invalid header size'
+            ) {
+                throw error;
+            }
+
+            assumedHeaderLength *= 2;
+        }
+    }
+
+    throw new Error('Exhausted header fetch retries');
 }
 
-function valueToType(value: boolean | number | string | Uint8Array | undefined): ColumnType {
+function valueToType(value: IProperties[string]): ColumnType {
     if (typeof value === 'boolean') return ColumnType.Bool;
     if (typeof value === 'number') return ColumnType.Double;
     if (typeof value === 'string') return ColumnType.String;

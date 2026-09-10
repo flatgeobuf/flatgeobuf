@@ -8,7 +8,7 @@ import type SimpleGeometry from 'ol/geom/SimpleGeometry.js';
 import { transform } from 'ol/proj';
 import type RenderFeature from 'ol/render/Feature.js';
 import { describe, expect, it } from 'vitest';
-import { deserialize, serialize } from './ol.js';
+import { deserialize, type OlDeserializeOptions, serialize } from './ol.js';
 import { arrayToStream, takeAsync } from './streams/utils.js';
 
 const format = new WKT();
@@ -450,12 +450,14 @@ describe('ol module', () => {
     });
 
     describe('Geometry roundtrips with RenderFeatures', () => {
+        const deserializerOptions: OlDeserializeOptions = {
+            renderFeature: true,
+        };
+
         it('Point', async () => {
             const expected = makeFeatureCollection('POINT(1.2 -2.1)');
             const s = serialize(expected);
-            const actual = (await takeAsync<FeatureLike>(
-                deserialize(s, undefined, undefined, undefined, undefined, true),
-            )) as RenderFeature[];
+            const actual = (await takeAsync<FeatureLike>(deserialize(s, deserializerOptions))) as RenderFeature[];
             expect(actual[0].getType()).toEqual('Point');
             expect(actual[0].getFlatCoordinates()).toEqual([1.2, -2.1]);
         });
@@ -463,7 +465,7 @@ describe('ol module', () => {
         it('MultiPoint', async () => {
             const expected = makeFeatureCollection('MULTIPOINT(10 40, 40 30, 20 20, 30 10)');
             const actual = (await takeAsync<FeatureLike>(
-                deserialize(serialize(expected), undefined, undefined, undefined, undefined, true),
+                deserialize(serialize(expected), deserializerOptions),
             )) as RenderFeature[];
             expect(actual[0].getType()).toEqual('MultiPoint');
             expect(actual[0].getFlatCoordinates()).toEqual([10, 40, 40, 30, 20, 20, 30, 10]);
@@ -472,7 +474,7 @@ describe('ol module', () => {
         it('LineString', async () => {
             const expected = makeFeatureCollection('LINESTRING(1.2 -2.1, 2.4 -4.8)');
             const actual = (await takeAsync<FeatureLike>(
-                deserialize(serialize(expected), undefined, undefined, undefined, undefined, true),
+                deserialize(serialize(expected), deserializerOptions),
             )) as RenderFeature[];
             expect(actual[0].getType()).toEqual('LineString');
             expect(actual[0].getFlatCoordinates()).toEqual([1.2, -2.1, 2.4, -4.8]);
@@ -481,7 +483,7 @@ describe('ol module', () => {
         it('Polygon', async () => {
             const expected = makeFeatureCollection('POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))');
             const actual = (await takeAsync<FeatureLike>(
-                deserialize(serialize(expected), undefined, undefined, undefined, undefined, true),
+                deserialize(serialize(expected), deserializerOptions),
             )) as RenderFeature[];
             expect(actual[0].getType()).toEqual('Polygon');
             expect(actual[0].getFlatCoordinates()).toEqual([30, 10, 40, 40, 20, 40, 10, 20, 30, 10]);
@@ -496,7 +498,7 @@ describe('ol module', () => {
             it('Point to Feature', async () => {
                 const s = serialize(points);
                 const actual = (await takeAsync<FeatureLike>(
-                    deserialize(s, undefined, undefined, undefined, undefined, undefined, 'EPSG:4326', 'EPSG:3857'),
+                    deserialize(s, { featureProjection: 'EPSG:3857' }),
                 )) as Feature[];
                 const actualGeometry = actual[0].getGeometry() as Point;
                 expect(actualGeometry.getFlatCoordinates()).toEqual(expected);
@@ -505,7 +507,7 @@ describe('ol module', () => {
             it('Point to RenderFeature', async () => {
                 const s = serialize(points);
                 const actual = (await takeAsync<FeatureLike>(
-                    deserialize(s, undefined, undefined, undefined, undefined, true, 'EPSG:4326', 'EPSG:3857'),
+                    deserialize(s, { renderFeature: true, featureProjection: 'EPSG:3857' }),
                 )) as RenderFeature[];
                 expect(actual[0].getFlatCoordinates()).toEqual(expected);
             });

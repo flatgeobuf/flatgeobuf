@@ -1,0 +1,76 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix gml: <http://www.opengis.net/ont/gml#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://flatgeobuf.org> a owl:Ontology ;
+    rdfs:label "FlatGeobuf Ontology" ;
+    owl:versionInfo "3.0.1" .
+
+<http://flatgeobuf.org/#File> a owl:Class ;
+    rdfs:label "FlatGeobuf File" .
+
+<http://flatgeobuf.org/#Header> a owl:Class ;
+    rdfs:comment "Uses rdfs:label for name, dc:title for title, rdfs:comment for description, geo:hasBoundingBox for the envelope" .
+
+<http://flatgeobuf.org/#hasHeader> a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain <http://flatgeobuf.org/#File> ;
+    rdfs:range <http://flatgeobuf.org/#Header> .
+
+<http://flatgeobuf.org/#hasIndex> a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain <http://flatgeobuf.org/#File> ;
+    rdfs:range dcat:Dataset .
+
+<http://flatgeobuf.org/#hasData> a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain <http://flatgeobuf.org/#File> ;
+    rdfs:range geo:FeatureCollection .
+
+<http://flatgeobuf.org/#crs> a owl:ObjectProperty ;
+    rdfs:label "Spatial Reference System" ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range gml:AbstractCRS .
+
+<http://flatgeobuf.org/#geometryType> a owl:ObjectProperty ;
+    rdfs:comment "Use sf: classes (sf:Point, sf:Polygon, etc.) or use sf:Geometry for per-feature geometry type, in which case each geometry instance is typed individually via rdf:type." ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range owl:Class .
+
+<http://flatgeobuf.org/#hasColumn> a owl:ObjectProperty ;
+    rdfs:range rdf:Property .
+
+<http://flatgeobuf.org/#Column> a owl:DatatypeProperty ;
+    rdfs:comment "Use rdfs:label for name, dc:title for title, rdfs:comment for description, rdfs:range for XSD value type." ;
+    rdfs:domain geo:Feature .
+
+<http://flatgeobuf.org/#hasZ> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:boolean .
+
+<http://flatgeobuf.org/#hasM> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:boolean .
+
+<http://flatgeobuf.org/#hasT> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:boolean .
+
+<http://flatgeobuf.org/#hasTM> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:boolean .
+
+<http://flatgeobuf.org/#featureCount> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:unsignedLong .
+
+<http://flatgeobuf.org/#indexNodeSize> a owl:DatatypeProperty ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:unsignedShort .
+
+<http://flatgeobuf.org/#metadata> a owl:DatatypeProperty ;
+    rdfs:comment "Dataset metadata (intended to be application specific and suggested to be structured ex. JSON)" ;
+    rdfs:domain <http://flatgeobuf.org/#Header> ;
+    rdfs:range xsd:string .
+

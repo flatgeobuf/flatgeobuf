@@ -11,6 +11,7 @@ import {
 import type { FromFeatureFn } from '../generic/featurecollection';
 import type { ISimpleGeometry } from '../generic/geometry.js';
 import type { HeaderMeta } from '../header-meta.js';
+import type { OlDeserializeOptions } from '../ol.js';
 import { createGeometry } from './geometry.js';
 
 function getCreateFeatureFn(dataProjection: string, featureProjection?: string): ICreateFeature {
@@ -52,11 +53,11 @@ function getCreateRenderFeatureFn(dataProjection: string, featureProjection?: st
     };
 }
 
-export function getFromFeatureFn(
-    renderFeature: boolean,
-    dataProjection = 'EPSG:4326',
-    featureProjection?: string,
-): FromFeatureFn {
+export function getFromFeatureFn(options: OlDeserializeOptions): FromFeatureFn {
+    const renderFeature = options.renderFeature ?? false;
+    const dataProjection = options.dataProjection ?? 'EPSG:4326';
+    const featureProjection = options.featureProjection;
+
     let createFeatureFn: ICreateFeature;
     if (renderFeature) {
         createFeatureFn = getCreateRenderFeatureFn(dataProjection, featureProjection);

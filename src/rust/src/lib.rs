@@ -146,6 +146,12 @@ pub(crate) const MAGIC_BYTES: [u8; 8] = [b'f', b'g', b'b', VERSION, b'f', b'g', 
 
 const HEADER_MAX_BUFFER_SIZE: usize = 1048576 * 10;
 
+/// Upper bound on the per-feature buffer resized from an untrusted 4-byte size prefix. A
+/// malformed or truncated file can claim an arbitrarily large `feature_size`; without a cap,
+/// `read_feature` would `Vec::resize` up to ~4 GiB of zeros from a 4-byte lie before the
+/// subsequent `read_exact` could reject it. Mirrors `HEADER_MAX_BUFFER_SIZE` for symmetry.
+pub(crate) const FEATURE_MAX_BUFFER_SIZE: usize = 1048576 * 10;
+
 fn check_magic_bytes(magic_bytes: &[u8]) -> bool {
     magic_bytes[0..3] == MAGIC_BYTES[0..3]
         && magic_bytes[4..7] == MAGIC_BYTES[4..7]

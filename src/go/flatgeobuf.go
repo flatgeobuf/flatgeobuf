@@ -176,17 +176,36 @@ func (fgb *FlatGeoBuf) mmapOrLoadFile(path string, behavior Behavior) error {
 }
 
 func (fgb *FlatGeoBuf) setup(behavior Behavior) error {
-	// Check magic bytes.
-	if len(fgb.data) < len(writer.MagicBytes) ||
-		!bytes.Equal(fgb.data[:len(writer.MagicBytes)], writer.MagicBytes) {
+	// Check magic bytes. The last byte is the spec patch version, which the
+	// other implementations (Rust, Java) and the shared spec decision in PR
+	// #146 deliberately ignore. GDAL/geopandas write it as 0x01, so comparing
+	// the full 8 bytes would reject valid files. Match only "fgb" (bytes 0-2),
+	// the major version (byte 3), and "fgb" (bytes 4-6).
+	mb := writer.MagicBytes
+	if len(fgb.data) < len(mb) ||
+		!bytes.Equal(fgb.data[0:3], mb[0:3]) || // "fgb"
+		fgb.data[3] != mb[3] || // major version
+		!bytes.Equal(fgb.data[4:7], mb[4:7]) { // "fgb" (byte 7 patch version ignored)
 		return fmt.Errorf("not a flatgeobuf file: invalid magic bytes")
 	}
 
 	// Increment offset past magic bytes.
 	offset := len(writer.MagicBytes)
 
+	// Make sure the header size prefix is present before reading it, otherwise
+	// truncated input causes an out-of-bounds panic instead of an error.
+	if len(fgb.data) < offset+flatbuffers.SizeUOffsetT {
+		return fmt.Errorf("not a flatgeobuf file: truncated header size")
+	}
+
 	// Read header size.
 	headerSize := int(flatbuffers.GetUOffsetT(fgb.data[offset:]))
+
+	// Make sure the full header is present before handing it to flatbuffers,
+	// which does not bounds-check the buffer it is given.
+	if headerSize < 0 || offset+flatbuffers.SizeUOffsetT+headerSize > len(fgb.data) {
+		return fmt.Errorf("invalid flatgeobuf header: header size %d exceeds data", headerSize)
+	}
 
 	// Read header ignoring the size
 	fgb.header = flattypes.GetSizePrefixedRootAsHeader(fgb.data, flatbuffers.UOffsetT(offset))

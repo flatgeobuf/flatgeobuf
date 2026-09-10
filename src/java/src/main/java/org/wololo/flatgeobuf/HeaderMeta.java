@@ -60,6 +60,10 @@ public class HeaderMeta {
         }
         Header.startHeader(builder);
         Header.addGeometryType(builder, headerMeta.geometryType);
+        Header.addHasZ(builder, headerMeta.hasZ);
+        Header.addHasM(builder, headerMeta.hasM);
+        Header.addHasT(builder, headerMeta.hasT);
+        Header.addHasTm(builder, headerMeta.hasTM);
         Header.addIndexNodeSize(builder, headerMeta.indexNodeSize );
         Header.addColumns(builder, columnsOffset);
         Header.addEnvelope(builder, envelopeOffset);
@@ -88,6 +92,10 @@ public class HeaderMeta {
         int geometryType = header.geometryType();
 
         HeaderMeta headerMeta = new HeaderMeta();
+        headerMeta.hasZ = header.hasZ();
+        headerMeta.hasM = header.hasM();
+        headerMeta.hasT = header.hasT();
+        headerMeta.hasTM = header.hasTm();
 
         headerMeta.featuresCount = header.featuresCount();
         headerMeta.indexNodeSize = header.indexNodeSize();

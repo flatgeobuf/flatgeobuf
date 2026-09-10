@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.0.0] - 2025-12-28
+
+- [rust] bump geozero (#475)
+- [rust] Upgrade deps
+
 ## [5.0.0] - 2025-07-29
 
 - [rust] Update to geo-traits 0.3.0 (#439)
