@@ -91,6 +91,7 @@ export async function* streamSearch(
     nodeSize: number,
     rect: Rect,
     readNode: ReadNodeFn,
+    signal?: AbortSignal,
 ): AsyncGenerator<SearchResult, void, unknown> {
     type NodeIdx = number;
     class NodeRange {
@@ -141,6 +142,8 @@ export async function* streamSearch(
     );
 
     while (queue.length !== 0) {
+        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+
         const nodeRange = queue.shift()!;
 
         console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);

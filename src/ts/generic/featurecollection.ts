@@ -109,10 +109,10 @@ export async function* deserializeStream(input: ReadableStream, ctx: Deserialize
 }
 
 export async function* deserializeFiltered(input: string, ctx: DeserializeContext): AsyncGenerator<IFeature> {
-    const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
+    const { rect, fromFeature, headerMetaFn, nocache = false, headers = {}, signal } = ctx;
     const url = input;
     if (!rect) throw new Error('The "rect" option is required');
-    const reader = await HttpReader.open(url, nocache, headers);
+    const reader = await HttpReader.open(url, nocache, headers, signal);
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
     for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);
@@ -175,12 +175,17 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
     return builder.asUint8Array() as Uint8Array;
 }
 
-export async function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
+export async function readMetadata(
+    url: string,
+    nocache = false,
+    headers: HeadersInit = {},
+    signal?: AbortSignal,
+): Promise<HeaderMeta> {
     const headerLengthLimit = 64769; //max 6 tries
 
     let assumedHeaderLength = 2024;
 
-    const httpClient = new HttpRangeClient(url, nocache, headers);
+    const httpClient = new HttpRangeClient(url, nocache, headers, signal);
 
     while (assumedHeaderLength < headerLengthLimit) {
         try {
