@@ -201,6 +201,9 @@ export async function readMetadata(
 
             return headerMeta;
         } catch (error) {
+            if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+              throw error;
+            }
             if (
                 error?.toString() === 'Error: Not a FlatGeobuf file' ||
                 error?.toString() === 'Error: Invalid header size'
