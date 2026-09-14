@@ -334,15 +334,17 @@ export class HttpRangeClient {
         const range = `bytes=${begin}-${begin + length - 1}`;
         const cacheKey = getCacheKey(this.url, range);
 
-        // Try to get from cache first
-        try {
-            const cache = await caches.open(FGB_CACHE_NAME);
-            const cached = await cache.match(cacheKey);
-            if (cached) {
-                return cached.arrayBuffer();
+        if (!this.nocache) {
+            // Try to get from cache first
+            try {
+                const cache = await caches.open(FGB_CACHE_NAME);
+                const cached = await cache.match(cacheKey);
+                if (cached) {
+                    return cached.arrayBuffer();
+                }
+            } catch {
+                // Cache API not available, continue without caching
             }
-        } catch {
-            // Cache API not available, continue without caching
         }
 
         console.debug(
@@ -384,7 +386,7 @@ export class HttpRangeClient {
         const arrayBuffer = await response.arrayBuffer();
 
         // Store in cache for future requests
-        if (response.status === 206) {
+        if (response.status === 206 && !this.nocache) {
             try {
                 const cache = await caches.open(FGB_CACHE_NAME);
                 // Store as a simple Response (Cache API works fine with this)

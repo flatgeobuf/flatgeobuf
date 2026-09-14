@@ -1,6 +1,6 @@
 {
     "name": "@vind-ai/flatgeobuf-with-cache",
-    "version": "4.4.0-cache-signal",
+    "version": "4.4.0+vind.1",
     "description": "A performant binary encoding for geographic data",
     "scripts": {
         "dev": "vite",
