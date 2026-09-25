@@ -247,6 +247,31 @@ fn geozero_to_fgb() -> Result<()> {
 }
 
 #[test]
+fn indexed_writer_preserves_feature_offsets_after_sort() -> Result<()> {
+    let mut fgb = FgbWriter::create("points", GeometryType::Point)?;
+    let points: Vec<(f64, f64)> = (0..19).map(|i| (i as f64, ((i * 7) % 19) as f64)).collect();
+    for &(x, y) in &points {
+        let point: geo_types::Geometry<f64> = geo_types::Point::new(x, y).into();
+        fgb.add_feature_geom(point, |_| {})?;
+    }
+
+    let mut output = Vec::new();
+    fgb.write(&mut output)?;
+
+    for &(x, y) in &points {
+        let mut input = std::io::Cursor::new(&output);
+        let mut reader =
+            FgbReader::open(&mut input)?.select_bbox_seq(x - 0.1, y - 0.1, x + 0.1, y + 0.1)?;
+        let feature = reader.next()?.expect("point should be in its own bbox");
+        let xy = feature.geometry().unwrap().xy().unwrap();
+        assert_eq!((xy.get(0), xy.get(1)), (x, y));
+        assert!(reader.next()?.is_none());
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_save_fgb_and_load() -> Result<()> {
     let file_to_write = NamedTempFile::new()?;
 

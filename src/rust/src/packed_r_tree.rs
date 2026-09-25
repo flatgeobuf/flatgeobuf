@@ -466,6 +466,39 @@ impl PackedRTree {
         Ok(tree)
     }
 
+    /// Build a packed R-Tree from sorted leaf nodes, reusing their allocation.
+    ///
+    /// The nodes are moved into the packed tree and must already be in the desired leaf order.
+    pub(crate) fn build_owned(
+        mut nodes: Vec<NodeItem>,
+        extent: &NodeItem,
+        node_size: u16,
+    ) -> Result<PackedRTree> {
+        let num_leaf_nodes = nodes.len();
+        assert!(num_leaf_nodes > 0, "Cannot create empty tree");
+        assert!(node_size >= 2, "Node size must be at least 2");
+        let branching_factor = node_size.clamp(2, 65535);
+        let level_bounds = PackedRTree::generate_level_bounds(num_leaf_nodes, branching_factor);
+        let num_nodes = level_bounds
+            .first()
+            .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
+            .end;
+
+        nodes.reserve(num_nodes - num_leaf_nodes);
+        nodes.resize(num_nodes, NodeItem::create(0));
+        nodes.rotate_left(num_leaf_nodes);
+
+        let mut tree = PackedRTree {
+            extent: extent.clone(),
+            node_items: nodes,
+            num_leaf_nodes,
+            branching_factor,
+            level_bounds,
+        };
+        tree.generate_nodes();
+        Ok(tree)
+    }
+
     /// Read a packed R-Tree index from a byte stream into memory.
     ///
     /// The reader must be positioned at the start of the index bytes (i.e. right after the
@@ -933,6 +966,32 @@ mod tests {
         let list = tree.search(0.0, 0.0, 1.0, 1.0)?;
         assert_eq!(list.len(), 1);
         assert!(nodes[list[0].index].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
+        Ok(())
+    }
+
+    #[test]
+    fn owned_tree_build_reuses_leaf_allocation() -> Result<()> {
+        let mut nodes = Vec::with_capacity(22);
+        for i in 0..19 {
+            let x = i as f64;
+            nodes.push(NodeItem::bounds(x, x * 2.0, x + 1.0, x * 2.0 + 1.0));
+        }
+        let extent = calc_extent(&nodes);
+        hilbert_sort(&mut nodes, &extent);
+        for (i, node) in nodes.iter_mut().enumerate() {
+            node.offset = (i * 64) as u64;
+        }
+
+        let borrowed_tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        let leaf_allocation = nodes.as_ptr();
+        let owned_tree = PackedRTree::build_owned(nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        assert_eq!(owned_tree.node_items.as_ptr(), leaf_allocation);
+
+        let mut borrowed_data = Vec::new();
+        borrowed_tree.stream_write(&mut borrowed_data)?;
+        let mut owned_data = Vec::new();
+        owned_tree.stream_write(&mut owned_data)?;
+        assert_eq!(owned_data, borrowed_data);
         Ok(())
     }
 
