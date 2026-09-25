@@ -484,7 +484,7 @@ impl PackedRTree {
             .expect("RTree has at least one level when node_size >= 2 and num_items > 0")
             .end;
 
-        nodes.reserve(num_nodes - num_leaf_nodes);
+        nodes.reserve_exact(num_nodes - num_leaf_nodes);
         nodes.resize(num_nodes, NodeItem::create(0));
         nodes.rotate_left(num_leaf_nodes);
 
