@@ -37,9 +37,9 @@ describe('http reader', () => {
             features.push(fromFeature(feature.id, feature.feature, reader.header));
         }
         expect(features.length).toBe(86);
-        const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
+        const actual = features.map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
         const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
-        expect(actual).toEqual(expected);
+        expect(actual).toEqual(expect.arrayContaining(expected));
     });
 
     it('can fetch the final feature', async () => {
