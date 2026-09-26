@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <link rel="stylesheet" href="/examples/site.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.7.0/ol.css" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/ol@v10.7.0/dist/ol.js"></script>
-    <script src="https://unpkg.com/underscore@1.13.1/underscore-min.js"></script>
-    <script src="/dist/flatgeobuf-ol.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.10.0/ol.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.10.0/dist/ol.js"></script>
+    <script src="https://unpkg.com/underscore@1.13.8/underscore-min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@4.5.0/dist/flatgeobuf-ol.min.js"></script>
 </head>
 <body>
     <ul class="primary-navigation">
@@ -163,10 +163,9 @@
         frames needed for matching features.
     </p>
     <p>
-        This page uses the local OpenLayers bundle at
-        <code>/dist/flatgeobuf-ol.min.js</code>; run <code>pnpm build</code>
-        before serving the repository root. The CDN must support HTTP byte
-        ranges and expose <code>Content-Range</code> to browser JavaScript.
+        This page loads FlatGeobuf 4.5.0 from unpkg. The data CDN must support
+        HTTP byte ranges and expose <code>Content-Range</code> to browser
+        JavaScript.
     </p>
     <p>
         Though getting a small subset of features from a large dataset transfers
