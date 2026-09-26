@@ -442,34 +442,14 @@ impl PackedRTree {
         self.node_items.len()
     }
 
-    /// Build a packed R-Tree from leaf nodes.
+    /// Build a packed R-Tree from sorted leaf nodes, reusing their allocation.
     ///
-    /// - `nodes` must contain **leaf nodes** (one per feature), whose `offset` values point into the
-    ///   feature data section.
+    /// `nodes` must contain **leaf nodes** (one per feature) in their desired leaf order, with
+    /// offsets into the feature data section.
     /// - `extent` should describe the overall dataset bounds. (Writers commonly compute it via
     ///   [`calc_extent`].)
     /// - `node_size` is the branching factor; values are clamped to `[2, 65535]`.
-    pub fn build(nodes: &[NodeItem], extent: &NodeItem, node_size: u16) -> Result<PackedRTree> {
-        let mut tree = PackedRTree {
-            extent: extent.clone(),
-            node_items: Vec::new(),
-            num_leaf_nodes: nodes.len(),
-            branching_factor: 0,
-            level_bounds: Vec::new(),
-        };
-        tree.init(node_size)?;
-        let num_nodes = tree.num_nodes();
-        for (i, node) in nodes.iter().take(tree.num_leaf_nodes).cloned().enumerate() {
-            tree.node_items[num_nodes - tree.num_leaf_nodes + i] = node;
-        }
-        tree.generate_nodes();
-        Ok(tree)
-    }
-
-    /// Build a packed R-Tree from sorted leaf nodes, reusing their allocation.
-    ///
-    /// The nodes are moved into the packed tree and must already be in the desired leaf order.
-    pub(crate) fn build_owned(
+    pub fn build(
         mut nodes: Vec<NodeItem>,
         extent: &NodeItem,
         node_size: u16,
@@ -962,7 +942,7 @@ mod tests {
         }
         assert!(nodes[1].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
         assert!(nodes[0].intersects(&NodeItem::bounds(2.0, 2.0, 3.0, 3.0)));
-        let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        let tree = PackedRTree::build(nodes.clone(), &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let list = tree.search(0.0, 0.0, 1.0, 1.0)?;
         assert_eq!(list.len(), 1);
         assert!(nodes[list[0].index].intersects(&NodeItem::bounds(0.0, 0.0, 1.0, 1.0)));
@@ -982,16 +962,12 @@ mod tests {
             node.offset = (i * 64) as u64;
         }
 
-        let borrowed_tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let leaf_allocation = nodes.as_ptr();
-        let owned_tree = PackedRTree::build_owned(nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
-        assert_eq!(owned_tree.node_items.as_ptr(), leaf_allocation);
-
-        let mut borrowed_data = Vec::new();
-        borrowed_tree.stream_write(&mut borrowed_data)?;
-        let mut owned_data = Vec::new();
-        owned_tree.stream_write(&mut owned_data)?;
-        assert_eq!(owned_data, borrowed_data);
+        let expected_leaves = nodes.clone();
+        let tree = PackedRTree::build(nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        assert_eq!(tree.node_items.as_ptr(), leaf_allocation);
+        assert_eq!(&tree.node_items[3..], expected_leaves);
+        assert_eq!(tree.search(10.0, 20.0, 11.0, 21.0)?.len(), 1);
         Ok(())
     }
 
@@ -1026,7 +1002,7 @@ mod tests {
             node.offset = offset;
             offset += size_of::<NodeItem>() as u64;
         }
-        let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        let tree = PackedRTree::build(nodes.clone(), &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let list = tree.search(102.0, 102.0, 103.0, 103.0)?;
         assert_eq!(list.len(), 4);
 
@@ -1088,13 +1064,9 @@ mod tests {
 
         let extent = calc_extent(&nodes);
         hilbert_sort(&mut nodes, &extent);
-        let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        let num_items = nodes.len();
+        let tree = PackedRTree::build(nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let list = tree.search(690407.0, 6063692.0, 811682.0, 6176467.0)?;
-
-        for i in 0..list.len() {
-            assert!(nodes[list[i].index]
-                .intersects(&NodeItem::bounds(690407.0, 6063692.0, 811682.0, 6176467.0)));
-        }
 
         let mut tree_data: Vec<u8> = Vec::new();
         let res = tree.stream_write(&mut tree_data);
@@ -1103,7 +1075,7 @@ mod tests {
         let mut reader = Cursor::new(&tree_data);
         let list2 = PackedRTree::stream_search(
             &mut reader,
-            nodes.len(),
+            num_items,
             PackedRTree::DEFAULT_NODE_SIZE,
             690407.0,
             6063692.0,
@@ -1111,10 +1083,9 @@ mod tests {
             6176467.0,
         )?;
         assert_eq!(list2.len(), list.len());
-        for i in 0..list2.len() {
-            assert!(nodes[list2[i].index]
-                .intersects(&NodeItem::bounds(690407.0, 6063692.0, 811682.0, 6176467.0)));
-        }
+        let indexes: Vec<usize> = list.iter().map(|item| item.index).collect();
+        let indexes2: Vec<usize> = list2.iter().map(|item| item.index).collect();
+        assert_eq!(indexes2, indexes);
         Ok(())
     }
 
@@ -1133,7 +1104,7 @@ mod tests {
             node.offset = offset;
             offset += size_of::<NodeItem>() as u64;
         }
-        let tree = PackedRTree::build(&nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
+        let tree = PackedRTree::build(nodes, &extent, PackedRTree::DEFAULT_NODE_SIZE)?;
         let mut fout = BufWriter::new(tempfile()?);
         tree.process_index(&mut GeoJsonWriter::new(&mut fout))?;
         Ok(())
@@ -1244,7 +1215,7 @@ mod tests {
             node.offset = offset;
             offset += size_of::<NodeItem>() as u64;
         }
-        let tree = PackedRTree::build(&nodes, &extent, node_size)?;
+        let tree = PackedRTree::build(nodes, &extent, node_size)?;
         let mut buf: Vec<u8> = Vec::new();
         tree.stream_write(&mut buf)?;
 

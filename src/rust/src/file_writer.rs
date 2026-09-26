@@ -284,7 +284,7 @@ impl<'a> FgbWriter<'a> {
                 offset += feature.size as u64;
             }
             let nodes = std::mem::take(&mut self.feat_nodes);
-            let tree = PackedRTree::build_owned(nodes, &extent, self.header_args.index_node_size)?;
+            let tree = PackedRTree::build(nodes, &extent, self.header_args.index_node_size)?;
             tree.stream_write(&mut out)?;
             feature_order = Some(sorted_feature_order);
         }
