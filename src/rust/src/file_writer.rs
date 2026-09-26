@@ -270,24 +270,23 @@ impl<'a> FgbWriter<'a> {
         let buf = self.fbb.finished_data();
         out.write_all(buf)?;
 
+        let mut feature_order = None;
         if self.header_args.index_node_size > 0 && !self.feat_nodes.is_empty() {
-            // Create sorted index
+            // Sort leaves, preserving their source order for copying features from the temp file.
             hilbert_sort(&mut self.feat_nodes, &extent);
-            // Update offsets for index
+            let mut sorted_feature_order = Vec::with_capacity(self.feat_nodes.len());
             let mut offset = 0;
-            let index_nodes = self
-                .feat_nodes
-                .iter()
-                .map(|tmpnode| {
-                    let feat = &self.feat_offsets[tmpnode.offset as usize];
-                    let mut node = tmpnode.clone();
-                    node.offset = offset;
-                    offset += feat.size as u64;
-                    node
-                })
-                .collect::<Vec<_>>();
-            let tree = PackedRTree::build(&index_nodes, &extent, self.header_args.index_node_size)?;
+            for node in &mut self.feat_nodes {
+                let feature_index = node.offset as usize;
+                let feature = &self.feat_offsets[feature_index];
+                sorted_feature_order.push(feature_index);
+                node.offset = offset;
+                offset += feature.size as u64;
+            }
+            let nodes = std::mem::take(&mut self.feat_nodes);
+            let tree = PackedRTree::build(nodes, &extent, self.header_args.index_node_size)?;
             tree.stream_write(&mut out)?;
+            feature_order = Some(sorted_feature_order);
         }
 
         // Copy features from temp file in sort order
@@ -300,12 +299,22 @@ impl<'a> FgbWriter<'a> {
         #[allow(clippy::read_zero_byte_vec)]
         {
             let mut buf = Vec::with_capacity(2048);
-            for node in &self.feat_nodes {
-                let feat = &self.feat_offsets[node.offset as usize];
+            let mut copy_feature = |feature_index: usize| -> Result<()> {
+                let feat = &self.feat_offsets[feature_index];
                 unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
                 buf.resize(feat.size, 0);
                 unsorted_feature_reader.read_exact(&mut buf)?;
                 out.write_all(&buf)?;
+                Ok(())
+            };
+            if let Some(feature_order) = feature_order {
+                for feature_index in feature_order {
+                    copy_feature(feature_index)?;
+                }
+            } else {
+                for node in &self.feat_nodes {
+                    copy_feature(node.offset as usize)?;
+                }
             }
         }
 
