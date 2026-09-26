@@ -12,12 +12,8 @@ import type { TileCoord } from 'ol/tilecoord.js';
 import type VectorTile from 'ol/VectorTile.js';
 import type { DeserializeContext, DeserializeOptions } from './generic/deserialize';
 import type { IFeature } from './generic/feature.js';
-import {
-    deserialize as genericDeserialize,
-    deserializeFiltered as genericDeserializeFiltered,
-    deserializeStream as genericDeserializeStream,
-    serialize as genericSerialize,
-} from './generic/featurecollection.js';
+import { serialize as genericSerialize } from './generic/featurecollection.js';
+import { deserialize as genericDeserialize } from './generic.js';
 import { getFromFeatureFn } from './ol/feature.js';
 import type { Rect } from './packedrtree.js';
 
@@ -56,11 +52,10 @@ export function deserialize(
 ): AsyncGenerator<FeatureLike> {
     const opts = options ?? {};
     const ctx: DeserializeContext = { ...opts, fromFeature: getFromFeatureFn(opts) };
-    if (input instanceof Uint8Array) return genericDeserialize(input, ctx) as AsyncGenerator<FeatureLike>;
-    if (input instanceof ReadableStream) return genericDeserializeStream(input, ctx) as AsyncGenerator<FeatureLike>;
-    if (typeof input === 'string' && options?.rect)
-        return genericDeserializeFiltered(input, ctx) as AsyncGenerator<FeatureLike>;
-    throw new Error('Invalid input type or missing rect for URL input');
+    if (typeof input === 'string' && !options?.rect && !options?.seekableZstd) {
+        throw new Error('Invalid input type or missing rect for URL input');
+    }
+    return genericDeserialize(input, ctx) as AsyncGenerator<FeatureLike>;
 }
 
 function extentToRect(extent: Extent, source?: string, destination?: string): Rect {
@@ -94,7 +89,7 @@ export function createLoader(
             options.featureProjection = projection.getCode();
             const features: FeatureLike[] = [];
             let it: AsyncGenerator<FeatureLike> | undefined;
-            if (strategy === all) {
+            if (strategy === all && !options.seekableZstd) {
                 const response = await fetch(url, { headers: options.headers });
                 it = deserialize(response.body as ReadableStream, options);
             } else {

@@ -1,13 +1,9 @@
 import type { FeatureCollection as GeoJsonFeatureCollection } from 'geojson';
 import type { DeserializeOptions } from './generic/deserialize.js';
-import type { IGeoJsonFeature } from './geojson/feature.js';
+import { deserialize as genericDeserialize } from './generic.js';
+import { fromFeature, type IGeoJsonFeature } from './geojson/feature.js';
 
-import {
-    deserialize as fcDeserialize,
-    deserializeFiltered as fcDeserializeFiltered,
-    deserializeStream as fcDeserializeStream,
-    serialize as fcSerialize,
-} from './geojson/featurecollection.js';
+import { serialize as fcSerialize } from './geojson/featurecollection.js';
 
 /**
  * Serialize GeoJSON to FlatGeobuf
@@ -27,8 +23,5 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     options?: DeserializeOptions,
 ): AsyncGenerator<IGeoJsonFeature> {
-    if (input instanceof Uint8Array) return fcDeserialize(input, options) as AsyncGenerator<IGeoJsonFeature>;
-    if (input instanceof ReadableStream) return fcDeserializeStream(input, options) as AsyncGenerator<IGeoJsonFeature>;
-    if (typeof input === 'string') return fcDeserializeFiltered(input, options) as AsyncGenerator<IGeoJsonFeature>;
-    throw new Error('Invalid input type');
+    return genericDeserialize(input, { ...options, fromFeature }) as AsyncGenerator<IGeoJsonFeature>;
 }

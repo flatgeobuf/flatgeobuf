@@ -9,6 +9,8 @@ export interface DeserializeContext extends DeserializeOptions {
 export interface DeserializeOptions {
     /** Filter rectangle for spatial queries. */
     rect?: Rect;
+    /** The input is wrapped in the standard seekable-Zstandard format. */
+    seekableZstd?: boolean;
     /** Callback that will receive header metadata when available. */
     headerMetaFn?: HeaderMetaFn;
     /** Header to request the file from. */

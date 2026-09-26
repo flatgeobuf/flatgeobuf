@@ -149,7 +149,11 @@ Performance reasons and to allow streaming/random access.
 
 ### Why not use compression as part of the format?
 
-Separation of concerns and to allow random access.
+Compression is kept separate from the FlatGeobuf format to preserve random
+access and separation of concerns. External seekable-compression wrappers,
+such as seekable Zstandard, can preserve random access without changing the
+FlatGeobuf bytes; the TypeScript implementation supports reading such wrappers
+[here](src/ts/README.md#seekable-zstandard).
 
 ### Why am I not getting expected performance in GDAL?
 
@@ -166,4 +170,3 @@ See [this](https://github.com/flatgeobuf/flatgeobuf/issues/244) issue for root c
 ### Does FlatGeobuf support mixing features with and without geometry with spatial index?
 
 Currently it likely does not but could in the future, see [this](https://github.com/flatgeobuf/flatgeobuf/discussions/260) issue.
-

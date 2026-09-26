@@ -3,6 +3,7 @@ import type { IFeature } from './generic/feature.js';
 import {
     deserialize as deserializeArray,
     deserializeFiltered,
+    deserializeSeekableZstdSource,
     deserializeStream,
     readMetadata as readMetadataUrl,
 } from './generic/featurecollection.js';
@@ -24,10 +25,17 @@ export function deserialize(
     input: Uint8Array | ReadableStream | string,
     ctx: DeserializeContext,
 ): AsyncGenerator<IFeature> {
+    if (ctx.seekableZstd) {
+        if (input instanceof ReadableStream) {
+            throw new Error('Seekable Zstandard input must be a byte array or URL');
+        }
+        return deserializeSeekableZstdSource(input, ctx);
+    }
     if (input instanceof Uint8Array) return deserializeArray(input, ctx);
     if (input instanceof ReadableStream) return deserializeStream(input, ctx);
     return deserializeFiltered(input, ctx);
 }
+
 /**
  * read only Metadata from a remote FlatGeobuf file
  * @param url Input string
