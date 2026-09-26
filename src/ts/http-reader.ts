@@ -13,6 +13,10 @@ interface FeatureWithId {
     feature: Feature;
 }
 
+export interface RangeClient {
+    getRange(begin: number, length: number, purpose: string): Promise<ArrayBuffer>;
+}
+
 export class HttpReader {
     private headerClient: BufferedHttpRangeClient;
     public header: HeaderMeta;
@@ -41,12 +45,16 @@ export class HttpReader {
     //
     // and potentially some opportunistic fetching of the index.
     static async open(url: string, nocache: boolean, headers: HeadersInit = {}): Promise<HttpReader> {
+        return HttpReader.openSource(new HttpRangeClient(url, nocache, headers), nocache, headers);
+    }
+
+    static async openSource(rangeClient: RangeClient, nocache = false, headers: HeadersInit = {}): Promise<HttpReader> {
         // In reality, the header is probably less than half this size, but
         // better to overshoot and fetch an extra kb rather than have to issue
         // a second request.
         const assumedHeaderLength = 2024;
 
-        const headerClient = new BufferedHttpRangeClient(url, nocache, headers);
+        const headerClient = new BufferedHttpRangeClient(rangeClient, nocache, headers);
 
         // Immediately following the header is the optional spatial index, we deliberately fetch
         // a small part of that to skip subsequent requests.
@@ -246,7 +254,7 @@ export class HttpReader {
 }
 
 class BufferedHttpRangeClient {
-    httpClient: HttpRangeClient;
+    httpClient: RangeClient;
     bytesEverUsed = 0;
     bytesEverFetched = 0;
 
@@ -256,10 +264,10 @@ class BufferedHttpRangeClient {
     // buffered
     private head = 0;
 
-    constructor(source: string | HttpRangeClient, nocache: boolean, headers: HeadersInit = {}) {
+    constructor(source: string | RangeClient, nocache: boolean, headers: HeadersInit = {}) {
         if (typeof source === 'string') {
             this.httpClient = new HttpRangeClient(source, nocache, headers);
-        } else if (source instanceof HttpRangeClient) {
+        } else if ('getRange' in source) {
             this.httpClient = source;
         } else {
             throw new Error('Unknown source');
@@ -349,6 +357,7 @@ export class HttpRangeClient {
         if (this.nocache) headers.set('Cache-Control', 'no-cache, no-store');
 
         const response = await fetch(this.url, { headers });
+        if (!response.ok) throw new Error(`HTTP request failed: ${response.status} ${response.statusText}`);
         const arrayBuffer = await response.arrayBuffer();
         return arrayBuffer;
     }

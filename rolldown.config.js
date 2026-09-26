@@ -1,8 +1,32 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig } from 'rolldown';
+
+const zstdWasmPlugin = {
+    name: 'flatgeobuf-zstd-wasm',
+    transform(code, id) {
+        if (id.includes('/@bokuweb/zstd-wasm/dist/web/index.web.js')) {
+            return code
+                .replace(
+                    'export const init =',
+                    'const zstdModuleUrl = (document.currentScript && document.currentScript.src) || location.href;\nexport const init =',
+                )
+                .replace('import.meta.url', 'zstdModuleUrl');
+        }
+    },
+    generateBundle() {
+        this.emitFile({
+            type: 'asset',
+            fileName: 'zstd.wasm',
+            source: readFileSync(resolve('node_modules/@bokuweb/zstd-wasm/dist/web/zstd.wasm')),
+        });
+    },
+};
 
 export default defineConfig([
     {
         input: './lib/mjs/generic.js',
+        plugins: [zstdWasmPlugin],
         output: {
             file: 'dist/flatgeobuf.min.js',
             format: 'umd',
@@ -13,6 +37,7 @@ export default defineConfig([
     },
     {
         input: './lib/mjs/geojson.js',
+        plugins: [zstdWasmPlugin],
         output: {
             file: 'dist/flatgeobuf-geojson.min.js',
             format: 'umd',
@@ -23,6 +48,7 @@ export default defineConfig([
     },
     {
         input: './lib/mjs/ol.js',
+        plugins: [zstdWasmPlugin],
         external: [
             'ol/Feature.js',
             'ol/format/Feature.js',

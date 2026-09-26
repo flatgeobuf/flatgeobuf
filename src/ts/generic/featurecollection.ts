@@ -20,6 +20,12 @@ import { inferGeometryType } from './header.js';
 export type FromFeatureFn = (id: number, feature: Feature, header: HeaderMeta) => IFeature;
 type ReadFn = (size: number, purpose: string) => Promise<ArrayBuffer | Uint8Array>;
 
+const browserWasmUrl = (() => {
+    if (typeof document === 'undefined') return undefined;
+    const scriptSrc = document.currentScript?.getAttribute('src');
+    return scriptSrc ? new URL('zstd.wasm', new URL(scriptSrc, document.baseURI)).href : undefined;
+})();
+
 /**
  * Serialize generic features to FlatGeobuf
  * @param features
@@ -116,6 +122,24 @@ export async function* deserializeFiltered(input: string, ctx: DeserializeContex
     console.debug('opened reader');
     if (headerMetaFn) headerMetaFn(reader.header);
     for await (const feature of reader.selectBbox(rect)) yield fromFeature(feature.id, feature.feature, reader.header);
+}
+
+export async function* deserializeSeekableZstdSource(
+    input: Uint8Array | string,
+    ctx: DeserializeContext,
+): AsyncGenerator<IFeature> {
+    const { rect, fromFeature, headerMetaFn, nocache = false, headers = {} } = ctx;
+    const { SeekableZstdReader } = await import('../seekable-zstd.js');
+    const source = await SeekableZstdReader.open(input, nocache, headers, browserWasmUrl);
+    if (rect) {
+        const reader = await HttpReader.openSource(source, nocache, headers);
+        if (headerMetaFn) headerMetaFn(reader.header);
+        for await (const feature of reader.selectBbox(rect)) {
+            yield fromFeature(feature.id, feature.feature, reader.header);
+        }
+        return;
+    }
+    yield* deserializeStream(source.stream(), ctx);
 }
 
 async function readFeature(
