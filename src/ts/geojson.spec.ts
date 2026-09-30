@@ -13,11 +13,26 @@ import GeometryFactory from 'jsts/org/locationtech/jts/geom/GeometryFactory.js';
 import GeoJSONWriter from 'jsts/org/locationtech/jts/io/GeoJSONWriter.js';
 import WKTReader from 'jsts/org/locationtech/jts/io/WKTReader.js';
 import { describe, expect, it } from 'vitest';
+import type { IFeature } from './generic/feature.js';
+import { serialize as serializeGeneric } from './generic/featurecollection.js';
 import type { IGeoJsonFeature } from './geojson/feature.js';
 import { deserialize, serialize } from './geojson.js';
 import type { HeaderMeta } from './header-meta.js';
 import type { Rect } from './packedrtree.js';
 import { arrayToStream, takeAsync } from './streams/utils.js';
+
+function makeXYMFeature(type: string, flatCoordinates: number[], ends?: number[]): IFeature {
+    const geometry = {
+        getFlatCoordinates: () => flatCoordinates,
+        getLayout: () => 'XYM' as const,
+        getType: () => type,
+        ...(ends ? { getEnds: () => ends } : {}),
+    };
+    return {
+        getGeometry: () => geometry,
+        getProperties: () => ({}),
+    };
+}
 
 function makeFeatureCollection(
     wkt: string,
@@ -62,6 +77,81 @@ describe('geojson module', () => {
             const expected = makeFeatureCollection('POINT Z(1.2 -2.1 10)');
             const s = serialize(expected);
             const actual = await takeAsync<IGeoJsonFeature>(deserialize(s));
+            expect(actual).to.deep.equal(expected.features);
+        });
+
+        it('XYM geometries from FlatGeobuf', async () => {
+            const features: IFeature[] = [
+                makeXYMFeature('Point', [117, 36.6, 10.5]),
+                makeXYMFeature('LineString', [117, 36.6, 10.5, 118, 37.6, 11.5]),
+                makeXYMFeature(
+                    'Polygon',
+                    [
+                        117, 36.6, 10.5, 118, 36.6, 11.5, 118, 37.6, 12.5, 117, 36.6, 10.5, 117.2, 36.8, 20.5, 117.5,
+                        36.8, 21.5, 117.2, 36.8, 20.5,
+                    ],
+                    [12, 21],
+                ),
+            ];
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(serializeGeneric(features)));
+
+            expect(actual.map((feature) => feature.geometry)).to.deep.equal([
+                { type: 'Point', coordinates: [117, 36.6, null, 10.5] },
+                {
+                    type: 'LineString',
+                    coordinates: [
+                        [117, 36.6, null, 10.5],
+                        [118, 37.6, null, 11.5],
+                    ],
+                },
+                {
+                    type: 'Polygon',
+                    coordinates: [
+                        [
+                            [117, 36.6, null, 10.5],
+                            [118, 36.6, null, 11.5],
+                            [118, 37.6, null, 12.5],
+                            [117, 36.6, null, 10.5],
+                        ],
+                        [
+                            [117.2, 36.8, null, 20.5],
+                            [117.5, 36.8, null, 21.5],
+                            [117.2, 36.8, null, 20.5],
+                        ],
+                    ],
+                },
+            ]);
+        });
+
+        it('XYZM coordinates', async () => {
+            const expected: GeoJsonFeatureCollection = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        id: 0,
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [1.2, -2.1, 5, 12.8],
+                        },
+                        properties: {},
+                    },
+                    {
+                        type: 'Feature',
+                        id: 1,
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [1.2, -2.1, 5, 12.8],
+                                [2.4, -4.8, 6, 13.8],
+                            ],
+                        },
+                        properties: {},
+                    },
+                ],
+            };
+            const actual = await takeAsync<IGeoJsonFeature>(deserialize(serialize(expected)));
+
             expect(actual).to.deep.equal(expected.features);
         });
 

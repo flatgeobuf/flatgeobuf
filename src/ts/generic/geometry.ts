@@ -64,15 +64,22 @@ export function buildGeometry(builder: flatbuffers.Builder, parsedGeometry: IPar
     return Geometry.endGeometry(builder);
 }
 
-export function flat(a: number[] | number[][], xy: number[], z: number[]): number[] | undefined {
+export function flat(
+    a: (number | null)[] | (number | null)[][],
+    xy: number[],
+    z: number[],
+    m?: number[],
+): number[] | undefined {
     if (a.length === 0) return;
     if (Array.isArray(a[0])) {
-        for (const sa of a as number[][]) flat(sa, xy, z);
+        for (const sa of a as (number | null)[][]) flat(sa, xy, z, m);
     } else {
-        if (a.length === 2) xy.push(...(a as number[]));
+        const coordinates = a as (number | null)[];
+        if (coordinates.length === 2) xy.push(coordinates[0] as number, coordinates[1] as number);
         else {
-            xy.push(a[0], (a as number[])[1]);
-            z.push((a as number[])[2]);
+            xy.push(coordinates[0] as number, coordinates[1] as number);
+            if (coordinates[2] !== null) z.push(coordinates[2] as number);
+            if (coordinates.length > 3 && m) m.push(coordinates[3] as number);
         }
     }
 }
@@ -161,11 +168,17 @@ export function parseGeometry(geometry: ISimpleGeometry, headerGeomType: Geometr
     } as IParsedGeometry;
 }
 
-export function pairFlatCoordinates(xy: Float64Array, z?: Float64Array): number[][] {
-    const newArray: number[][] = [];
+export function pairFlatCoordinates(
+    xy: Float64Array,
+    z?: Float64Array | null,
+    m?: Float64Array | null,
+): (number | null)[][] {
+    const newArray: (number | null)[][] = [];
     for (let i = 0; i < xy.length; i += 2) {
-        const a = [xy[i], xy[i + 1]];
+        const a: (number | null)[] = [xy[i], xy[i + 1]];
         if (z) a.push(z[i >> 1]);
+        else if (m) a.push(null);
+        if (m) a.push(m[i >> 1]);
         newArray.push(a);
     }
     return newArray;
