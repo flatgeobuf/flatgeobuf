@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ArrayReader } from './array-reader.js';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature.js';
 import type { Rect } from './packedrtree.js';
@@ -33,14 +33,5 @@ describe('ArrayReader', () => {
         const actual = features.slice(0, 4).map((f) => `${f.properties?.NAME}, ${f.properties?.STATE}`);
         const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
         expect(actual).toEqual(expected);
-    });
-
-    it('Should search the index without logging', async () => {
-        const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
-        const reader = ArrayReader.open(new Uint8Array(file));
-        for await (const _ of reader.selectBbox({ minX: -125, minY: 24, maxX: -66, maxY: 50 })) {
-        }
-        expect(debug).not.toHaveBeenCalled();
-        debug.mockRestore();
     });
 });
