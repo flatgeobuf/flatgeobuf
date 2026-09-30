@@ -25,22 +25,23 @@ export function parseGeometry(
     const cs = geometry.coordinates;
     const xy: number[] = [];
     const z: number[] = [];
+    const m: number[] = [];
     let ends: number[] | undefined;
     let parts: IParsedGeometry[] | undefined;
     const type: GeometryType = toGeometryType(geometry.type);
     let end = 0;
     switch (geometry.type) {
         case 'Point':
-            flat(cs as number[], xy, z);
+            flat(cs as number[], xy, z, m);
             break;
         case 'MultiPoint':
         case 'LineString':
-            flat(cs as number[][], xy, z);
+            flat(cs as number[][], xy, z, m);
             break;
         case 'MultiLineString':
         case 'Polygon': {
             const css = cs as number[][];
-            flat(css, xy, z);
+            flat(css, xy, z, m);
             if (css.length > 1) ends = css.map((c) => (end += c.length));
             break;
         }
@@ -57,6 +58,7 @@ export function parseGeometry(
     return {
         xy,
         z: z.length > 0 ? z : undefined,
+        m: m.length > 0 ? m : undefined,
         ends,
         type,
         parts,
@@ -77,34 +79,47 @@ export function parseGC(geometry: GeometryCollection): IParsedGeometry {
     } as IParsedGeometry;
 }
 
-function extractParts(xy: Float64Array, z: Float64Array, ends: Uint32Array) {
-    if (!ends || ends.length === 0) return [pairFlatCoordinates(xy, z)];
+function extractParts(
+    xy: Float64Array,
+    z: Float64Array | null,
+    m: Float64Array | null,
+    ends: Uint32Array | null,
+) {
+    if (!ends || ends.length === 0) return [pairFlatCoordinates(xy, z, m)];
     let s = 0;
     const xySlices = Array.from(ends).map((e) => xy.slice(s, (s = e << 1)));
-    let zSlices: Float64Array[];
+    let zSlices: Float64Array[] | undefined;
+    let mSlices: Float64Array[] | undefined;
     if (z) {
         s = 0;
         zSlices = Array.from(ends).map((e) => z.slice(s, (s = e)));
     }
-    return xySlices.map((xy, i) => pairFlatCoordinates(xy, zSlices ? zSlices[i] : undefined));
+    if (m) {
+        s = 0;
+        mSlices = Array.from(ends).map((e) => m.slice(s, (s = e)));
+    }
+    return xySlices.map((xy, i) => pairFlatCoordinates(xy, zSlices?.[i], mSlices?.[i]));
 }
 
 function toGeoJsonCoordinates(geometry: Geometry, type: GeometryType) {
     const xy = geometry.xyArray() as Float64Array;
-    const z = geometry.zArray() as Float64Array;
+    const z = geometry.zArray();
+    const m = geometry.mArray();
     switch (type) {
         case GeometryType.Point: {
-            const a = Array.from(xy);
+            const a: (number | null)[] = Array.from(xy);
             if (z) a.push(z[0]);
+            else if (m) a.push(null);
+            if (m) a.push(m[0]);
             return a;
         }
         case GeometryType.MultiPoint:
         case GeometryType.LineString:
-            return pairFlatCoordinates(xy, z);
+            return pairFlatCoordinates(xy, z, m);
         case GeometryType.MultiLineString:
-            return extractParts(xy, z, geometry.endsArray() as Uint32Array);
+            return extractParts(xy, z, m, geometry.endsArray());
         case GeometryType.Polygon:
-            return extractParts(xy, z, geometry.endsArray() as Uint32Array);
+            return extractParts(xy, z, m, geometry.endsArray());
     }
 }
 
