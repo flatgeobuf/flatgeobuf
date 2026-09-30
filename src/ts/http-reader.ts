@@ -2,7 +2,7 @@ import { Repeater } from '@repeaterjs/repeater';
 import * as flatbuffers from 'flatbuffers';
 
 import Config from './config.js';
-import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
+import { HEADER_MAX_BUFFER_SIZE, magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
 import type { HeaderMeta } from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
@@ -96,7 +96,6 @@ export class HttpReader {
         {
             const bytes = await headerClient.getRange(8, 4, minReqLength, 'header');
             headerLength = new DataView(bytes).getUint32(0, true);
-            const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
             if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
                 // minimum size check avoids panic in FlatBuffers header decoding
                 throw new Error('Invalid header size');
@@ -104,10 +103,11 @@ export class HttpReader {
             console.debug(`headerLength: ${headerLength}`);
         }
 
+        // A header larger than assumed needs another request; keep prefetching the top of the index with it.
         const bytes = await headerClient.getRange(
             magicbytes.length,
             SIZE_PREFIX_LEN + headerLength,
-            minReqLength,
+            SIZE_PREFIX_LEN + headerLength + assumedIndexLength,
             'header',
         );
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));

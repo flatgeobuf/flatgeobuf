@@ -1,2 +1,3 @@
 export const magicbytes: Uint8Array = new Uint8Array([0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00]);
 export const SIZE_PREFIX_LEN = 4;
+export const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
