@@ -1,5 +1,5 @@
 import * as flatbuffers from 'flatbuffers';
-import { magicbytes, SIZE_PREFIX_LEN } from './constants.js';
+import { HEADER_MAX_BUFFER_SIZE, magicbytes, SIZE_PREFIX_LEN } from './constants.js';
 import { Feature } from './flat-geobuf/feature.js';
 import type { HeaderMeta } from './header-meta.js';
 import { fromByteBuffer } from './header-meta.js';
@@ -32,7 +32,6 @@ export class ArrayReader {
             magicbytes.length,
             true,
         );
-        const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
         if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
             throw new Error('Invalid header size');
         }

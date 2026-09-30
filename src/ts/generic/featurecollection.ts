@@ -2,7 +2,7 @@ import * as flatbuffers from 'flatbuffers';
 import slice from 'slice-source';
 import { ArrayReader } from '../array-reader.js';
 import type { ColumnMeta } from '../column-meta.js';
-import { magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
+import { HEADER_MAX_BUFFER_SIZE, magicbytes, SIZE_PREFIX_LEN } from '../constants.js';
 import { Column } from '../flat-geobuf/column.js';
 import { ColumnType } from '../flat-geobuf/column-type.js';
 import { Crs } from '../flat-geobuf/crs.js';
@@ -200,38 +200,28 @@ export function buildHeader(header: HeaderMeta, crsCode = 0): Uint8Array {
 }
 
 export async function readMetadata(url: string, nocache = false, headers: HeadersInit = {}): Promise<HeaderMeta> {
-    const headerLengthLimit = 64769; //max 6 tries
-
-    let assumedHeaderLength = 2024;
+    // Most headers fit in the first request. The header's length follows the magic
+    // bytes, so a larger one needs exactly one more request.
+    const assumedHeaderLength = 2024;
 
     const httpClient = new HttpRangeClient(url, nocache, headers);
+    let bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
+    if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
 
-    while (assumedHeaderLength < headerLengthLimit) {
-        try {
-            const bytes = new Uint8Array(await httpClient.getRange(0, assumedHeaderLength, 'read metadata'));
+    const headerLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
+        magicbytes.length,
+        true,
+    );
+    if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) throw new Error('Invalid header size');
 
-            if (!bytes.subarray(0, 3).every((v, i) => magicbytes[i] === v)) throw new Error('Not a FlatGeobuf file');
-
-            const bb = new flatbuffers.ByteBuffer(bytes);
-
-            bb.setPosition(magicbytes.length);
-
-            const headerMeta = fromByteBuffer(bb);
-
-            return headerMeta;
-        } catch (error) {
-            if (
-                error?.toString() === 'Error: Not a FlatGeobuf file' ||
-                error?.toString() === 'Error: Invalid header size'
-            ) {
-                throw error;
-            }
-
-            assumedHeaderLength *= 2;
-        }
+    const headerEnd = magicbytes.length + SIZE_PREFIX_LEN + headerLength;
+    if (bytes.byteLength < headerEnd) {
+        bytes = new Uint8Array(await httpClient.getRange(0, headerEnd, 'read metadata'));
     }
 
-    throw new Error('Exhausted header fetch retries');
+    const bb = new flatbuffers.ByteBuffer(bytes);
+    bb.setPosition(magicbytes.length);
+    return fromByteBuffer(bb);
 }
 
 function valueToType(value: IProperties[string]): ColumnType {

@@ -2,6 +2,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import sirv from 'sirv';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readMetadata } from './generic/featurecollection';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature';
 import { HttpReader } from './http-reader';
 
@@ -21,6 +22,15 @@ describe('http reader', () => {
     });
 
     afterAll(() => new Promise<void>((resolve) => server?.close(() => resolve())));
+
+    it.each([
+        { file: 'poly00.fgb', descriptionLength: 0 },
+        { file: 'large_header.fgb', descriptionLength: 30000 },
+    ])('reads the whole header of $file', async ({ file, descriptionLength }) => {
+        const header = await readMetadata(`http://localhost:${port}/test/data/${file}`);
+        expect(header.featuresCount).toBe(10);
+        expect(header.description?.length ?? 0).toBe(descriptionLength);
+    });
 
     it('fetches a subset of data based on bounding box', async () => {
         const testUrl = `http://localhost:${port}/test/data/UScounties.fgb`;
