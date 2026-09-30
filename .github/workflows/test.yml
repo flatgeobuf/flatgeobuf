@@ -26,6 +26,8 @@ jobs:
         run: pnpm build
       - name: Run tests
         run: pnpm test
+      - name: Run package test
+        run: pnpm test-package
       - name: Run linter
         run: pnpm biome check
       - name: Run type check

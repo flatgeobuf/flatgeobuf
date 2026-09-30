@@ -23,7 +23,26 @@ const zstdWasmPlugin = {
     },
 };
 
+// Node and bundlers import these through the package's `exports`. Dependencies stay
+// external so each environment resolves its own @bokuweb/zstd-wasm variant.
+const esmInputs = {
+    flatgeobuf: './lib/mjs/flatgeobuf.js',
+    generic: './lib/mjs/generic.js',
+    geojson: './lib/mjs/geojson.js',
+    ol: './lib/mjs/ol.js',
+};
+
 export default defineConfig([
+    {
+        input: esmInputs,
+        external: [/^ol\//, 'flatbuffers', '@repeaterjs/repeater', 'slice-source', '@bokuweb/zstd-wasm'],
+        output: {
+            dir: 'dist/esm',
+            format: 'es',
+            sourcemap: true,
+            minify: { compress: { dropConsole: true }, mangle: false, codegen: { removeWhitespace: false } },
+        },
+    },
     {
         input: './lib/mjs/generic.js',
         plugins: [zstdWasmPlugin],

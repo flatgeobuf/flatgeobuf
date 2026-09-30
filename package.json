@@ -8,6 +8,7 @@
         "type-check": "tsc --noEmit",
         "test": "vitest ./lib",
         "test-src": "vitest ./src/ts",
+        "test-package": "node script/test-package.js",
         "coverage": "vitest run --coverage",
         "typedoc": "typedoc"
     },
@@ -16,8 +17,29 @@
         "dist/**/*"
     ],
     "types": "lib/mjs/flatgeobuf.d.ts",
-    "module": "lib/mjs/flatgeobuf.js",
-    "main": "lib/mjs/flatgeobuf.js",
+    "module": "dist/esm/flatgeobuf.js",
+    "main": "dist/esm/flatgeobuf.js",
+    "exports": {
+        ".": {
+            "types": "./lib/mjs/flatgeobuf.d.ts",
+            "default": "./dist/esm/flatgeobuf.js"
+        },
+        "./generic": {
+            "types": "./lib/mjs/generic.d.ts",
+            "default": "./dist/esm/generic.js"
+        },
+        "./geojson": {
+            "types": "./lib/mjs/geojson.d.ts",
+            "default": "./dist/esm/geojson.js"
+        },
+        "./ol": {
+            "types": "./lib/mjs/ol.d.ts",
+            "default": "./dist/esm/ol.js"
+        },
+        "./lib/*": "./lib/*",
+        "./dist/*": "./dist/*",
+        "./package.json": "./package.json"
+    },
     "type": "module",
     "repository": {
         "type": "git",
