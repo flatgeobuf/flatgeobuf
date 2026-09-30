@@ -64,9 +64,12 @@ describe('seekable Zstandard', () => {
         expect(features).toHaveLength(179);
     });
 
-    it('reads indexed bbox results from an externally produced wrapper', async () => {
+    it.each([
+        { input: 'Uint8Array', bytes: seekable32KiB },
+        { input: 'Node Buffer', bytes: readFileSync('test/data/countries-32k.fgb.zst') },
+    ])('reads indexed bbox results from an externally produced wrapper in a $input', async ({ bytes }) => {
         const rect = { minX: -61.2, minY: -51.85, maxX: -60.0, maxY: -51.25 };
-        const features = await takeAsync<IGeoJsonFeature>(deserialize(seekable32KiB, { rect, seekableZstd: true }));
+        const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, { rect, seekableZstd: true }));
         expect(features).toHaveLength(2);
     });
 

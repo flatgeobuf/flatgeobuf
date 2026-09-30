@@ -265,7 +265,8 @@ async function readCompressedRange(
 ): Promise<ArrayBuffer> {
     if (start < 0 || length < 0 || start + length > fileSize) throw new RangeError('Invalid compressed byte range');
     if (source instanceof Uint8Array) {
-        return source.slice(start, start + length).buffer;
+        // Buffer.slice returns a view, so copy explicitly to get an ArrayBuffer holding only this range.
+        return new Uint8Array(source.subarray(start, start + length)).buffer;
     }
 
     const requestHeaders = new Headers(headers);

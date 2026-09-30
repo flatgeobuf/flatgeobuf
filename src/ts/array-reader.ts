@@ -28,7 +28,10 @@ export class ArrayReader {
             throw new Error('Not a FlatGeobuf file');
         }
 
-        const headerLength = new DataView(bytes.buffer).getUint32(magicbytes.length, true);
+        const headerLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
+            magicbytes.length,
+            true,
+        );
         const HEADER_MAX_BUFFER_SIZE = 1048576 * 10;
         if (headerLength > HEADER_MAX_BUFFER_SIZE || headerLength < 8) {
             throw new Error('Invalid header size');
@@ -48,7 +51,8 @@ export class ArrayReader {
 
         const readNode = async (offsetIntoTree: number, size: number): Promise<ArrayBuffer> => {
             const start = lengthBeforeTree + offsetIntoTree;
-            return this.bytes.slice(start, start + size).buffer;
+            // Buffer.slice returns a view, so copy explicitly to get an ArrayBuffer holding only this range.
+            return new Uint8Array(this.bytes.subarray(start, start + size)).buffer;
         };
 
         for await (const searchResult of streamSearch(
@@ -75,7 +79,10 @@ export class ArrayReader {
     private readFeature(featureOffset: number): Feature {
         const offset = featureOffset + this.lengthBeforeFeatures();
 
-        const featureLength = new DataView(this.bytes.buffer).getUint32(offset, true);
+        const featureLength = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength).getUint32(
+            offset,
+            true,
+        );
         const featureBytes = this.bytes.subarray(offset + 4, offset + 4 + featureLength);
 
         const bytesAligned = new Uint8Array(featureLength + SIZE_PREFIX_LEN);
