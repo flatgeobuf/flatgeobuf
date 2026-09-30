@@ -5,10 +5,16 @@ import { ArrayReader } from './array-reader.js';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature.js';
 import type { Rect } from './packedrtree.js';
 
-describe('ArrayReader', () => {
-    it('Should filter features using ArrayReader', async () => {
-        const bytes = new Uint8Array(readFileSync(path.join(__dirname, '../../test/data/UScounties.fgb')));
+const file = readFileSync(path.join(__dirname, '../../test/data/UScounties.fgb'));
+const padded = new Uint8Array(file.byteLength + 8);
+padded.set(file, 8);
 
+describe('ArrayReader', () => {
+    it.each([
+        { input: 'Uint8Array', bytes: new Uint8Array(file) },
+        { input: 'Node Buffer', bytes: file },
+        { input: 'Uint8Array with a byteOffset', bytes: padded.subarray(8) },
+    ])('Should filter features from a $input', async ({ bytes }) => {
         const rect: Rect = {
             minX: -106.88,
             minY: 36.75,
