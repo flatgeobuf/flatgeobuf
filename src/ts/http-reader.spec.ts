@@ -4,7 +4,7 @@ import sirv from 'sirv';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readMetadata } from './generic/featurecollection';
 import { fromFeature, type IGeoJsonFeature } from './geojson/feature';
-import { HttpReader } from './http-reader';
+import { HttpRangeClient, HttpReader } from './http-reader';
 
 describe('http reader', () => {
     let server: Server;
@@ -30,6 +30,16 @@ describe('http reader', () => {
         const header = await readMetadata(`http://localhost:${port}/test/data/${file}`);
         expect(header.featuresCount).toBe(10);
         expect(header.description?.length ?? 0).toBe(descriptionLength);
+    });
+
+    it('prefetches the top of the index when the header needs a second request', async () => {
+        const client = new HttpRangeClient(`http://localhost:${port}/test/data/large_header.fgb`, false);
+        const reader = await HttpReader.openSource(client);
+        let features = 0;
+        for await (const _ of reader.selectBbox({ minX: -1e9, minY: -1e9, maxX: 1e9, maxY: 1e9 })) features++;
+        expect(features).toBe(10);
+        // Two requests for the header and index, two for the features.
+        expect(client.requestsEverMade).toBe(4);
     });
 
     it('fetches a subset of data based on bounding box', async () => {

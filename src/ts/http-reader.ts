@@ -103,10 +103,11 @@ export class HttpReader {
             console.debug(`headerLength: ${headerLength}`);
         }
 
+        // A header larger than assumed needs another request; keep prefetching the top of the index with it.
         const bytes = await headerClient.getRange(
             magicbytes.length,
             SIZE_PREFIX_LEN + headerLength,
-            minReqLength,
+            SIZE_PREFIX_LEN + headerLength + assumedIndexLength,
             'header',
         );
         const bb = new flatbuffers.ByteBuffer(new Uint8Array(bytes));
