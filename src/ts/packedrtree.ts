@@ -117,14 +117,9 @@ export async function* streamSearch(
             console.assert(newIdx > this.nodes[1]);
             this.nodes[1] = newIdx;
         }
-
-        toString(): string {
-            return `[NodeRange level: ${this._level}, nodes: ${this.nodes[0]}-${this.nodes[1]}]`;
-        }
     }
 
     const { minX, minY, maxX, maxY } = rect;
-    console.debug(`tree items: ${numItems}, nodeSize: ${nodeSize}`);
     const levelBounds = generateLevelBounds(numItems, nodeSize);
     const firstLeafNodeIdx = levelBounds[0][0];
 
@@ -136,14 +131,8 @@ export async function* streamSearch(
 
     const queue: Array<NodeRange> = [rootNodeRange];
 
-    console.debug(
-        `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`,
-    );
-
     while (queue.length !== 0) {
         const nodeRange = queue.shift()!;
-
-        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
 
         const nodeRangeStartIdx = nodeRange.startNodeIdx();
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
@@ -219,9 +208,6 @@ export async function* streamSearch(
                 nearestNodeRange.level() === nodeRange.level() - 1 &&
                 firstChildNodeIdx < nearestNodeRange.endNodeIdx() + extraRequestThresholdNodes
             ) {
-                console.debug(
-                    `Merging "nodeRange" request into existing range: ${nearestNodeRange}, newEndNodeIdx: ${nearestNodeRange.endNodeIdx()} -> ${firstChildNodeIdx}`,
-                );
                 nearestNodeRange.extendEndNodeIdx(Number(firstChildNodeIdx));
                 continue;
             }
@@ -231,17 +217,6 @@ export async function* streamSearch(
                 const range: [number, number] = [Number(firstChildNodeIdx), Number(firstChildNodeIdx) + 1];
                 return new NodeRange(range, level);
             })();
-
-            // We're going to add a new node range - log the reason
-            if (nearestNodeRange !== undefined && nearestNodeRange.level() === newNodeRange.level()) {
-                console.debug(
-                    `Same level, but too far away. Pushing new request for nodeIdx: ${firstChildNodeIdx} rather than merging with distant ${nearestNodeRange}`,
-                );
-            } else {
-                console.debug(
-                    `Pushing new level for ${newNodeRange} onto queue with nearestNodeRange: ${nearestNodeRange} since there's not already a range for this level.`,
-                );
-            }
 
             queue.push(newNodeRange);
         }
