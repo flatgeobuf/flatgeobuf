@@ -79,12 +79,7 @@ export function parseGC(geometry: GeometryCollection): IParsedGeometry {
     } as IParsedGeometry;
 }
 
-function extractParts(
-    xy: Float64Array,
-    z: Float64Array | null,
-    m: Float64Array | null,
-    ends: Uint32Array | null,
-) {
+function extractParts(xy: Float64Array, z: Float64Array | null, m: Float64Array | null, ends: Uint32Array | null) {
     if (!ends || ends.length === 0) return [pairFlatCoordinates(xy, z, m)];
     let s = 0;
     const xySlices = Array.from(ends).map((e) => xy.slice(s, (s = e << 1)));
