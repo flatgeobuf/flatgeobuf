@@ -40,12 +40,17 @@ export class ArrayReader {
         const bb = new flatbuffers.ByteBuffer(headerBytes);
         const header = fromByteBuffer(bb);
 
-        const indexLength = calcTreeSize(header.featuresCount, header.indexNodeSize);
+        const { featuresCount, indexNodeSize } = header;
+        // An unindexed dataset stores its features directly after the header, so there is
+        // nothing to skip. Guessing a tree size here would misplace the feature section.
+        const indexLength = indexNodeSize > 0 ? calcTreeSize(featuresCount, indexNodeSize) : 0;
 
         return new ArrayReader(bytes, header, headerLength, indexLength);
     }
 
     async *selectBbox(rect: Rect): AsyncGenerator<FeatureWithId, void, unknown> {
+        if (this.header.indexNodeSize === 0) throw new Error('No index found, cannot read features filtered by bbox');
+
         const lengthBeforeTree = this.lengthBeforeTree();
 
         const readNode = async (offsetIntoTree: number, size: number): Promise<ArrayBuffer> => {

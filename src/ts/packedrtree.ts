@@ -21,6 +21,10 @@ export interface Rect {
 }
 
 export function calcTreeSize(numItems: number, nodeSize: number): number {
+    if (!Number.isInteger(numItems) || numItems < 1) {
+        // Without this guard the loop below never terminates for a zero item count.
+        throw new Error('Number of items must be greater than 0');
+    }
     nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
     let n = numItems;
     let numNodes = n;

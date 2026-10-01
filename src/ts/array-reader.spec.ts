@@ -34,4 +34,21 @@ describe('ArrayReader', () => {
         const expected = ['Texas, OK', 'Cimarron, OK', 'Taos, NM', 'Colfax, NM'];
         expect(actual).toEqual(expected);
     });
+
+    it.each([
+        { input: 'unindexed', file: 'topp_states.fgb' },
+        { input: 'empty', file: 'empty.fgb' },
+        { input: 'unknown feature count', file: 'unknown_feature_count.fgb' },
+    ])('Should reject bbox filtering of a $input dataset', async ({ file }) => {
+        const bytes = new Uint8Array(readFileSync(path.join(__dirname, `../../test/data/${file}`)));
+        const reader = ArrayReader.open(bytes);
+
+        const consume = async () => {
+            for await (const _feature of reader.selectBbox({ minX: 0, minY: 0, maxX: 1, maxY: 1 })) {
+                // no features expected
+            }
+        };
+
+        await expect(consume()).rejects.toThrow('No index found, cannot read features filtered by bbox');
+    });
 });
