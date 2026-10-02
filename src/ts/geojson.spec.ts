@@ -581,5 +581,16 @@ describe('geojson module', () => {
             const features = await takeAsync<IGeoJsonFeature>(deserialize(bytes, { rect }));
             expect(features.length).toBe(2);
         });
+
+        it.each(['topp_states.fgb', 'empty.fgb'])(
+            'Should reject by rect filtering of unindexed dataset %s',
+            async (file) => {
+                const bytes = new Uint8Array(readFileSync(`./test/data/${file}`));
+                const rect: Rect = { minX: 0, minY: 0, maxX: 1, maxY: 1 };
+                await expect(takeAsync<IGeoJsonFeature>(deserialize(bytes, { rect }))).rejects.toThrow(
+                    'No index found, cannot read features filtered by bbox',
+                );
+            },
+        );
     });
 });
