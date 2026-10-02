@@ -84,7 +84,7 @@
         async function updateResults() {
             let i = 0;
             const fc = {type: "FeatureCollection", features: []};
-            const iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", fgBoundingBox(), handleHeaderMeta);
+            const iter = flatgeobuf.deserialize("https://flatgeobuf.septima.dk/population_areas.fgb", { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
             for await (const feature of iter) {
                 fc.features.push({...feature, id: i});
                 i += 1;
