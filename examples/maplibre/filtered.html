@@ -33,6 +33,7 @@
         <li><a href="/examples/maplibre/">Basic Example</a></li>
         <li class="active">Filter By Rect</li>
         <li><a href="/examples/maplibre/large.html">Filtering a Large Dataset</a></li>
+        <li><a href="/examples/maplibre/largezst.html">Seekable Zstandard</a></li>
     </ul>
 
     <div id="map"></div>
@@ -82,7 +83,7 @@
             async function updateResults() {
                 let i = 0;
                 const fc = {type: "FeatureCollection", features: []};
-                const iter = flatgeobuf.deserialize("/test/data/UScounties.fgb", fgBoundingBox(), handleHeaderMeta);
+                const iter = flatgeobuf.deserialize("/test/data/UScounties.fgb", { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
                 for await (const feature of iter) {
                     fc.features.push({...feature, id: i});
                     i += 1;

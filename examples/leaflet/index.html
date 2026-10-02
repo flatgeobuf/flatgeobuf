@@ -24,6 +24,7 @@
         <li class="active">Basic Example</li>
         <li><a href="/examples/leaflet/filtered.html">Filter By Rect</a></li>
         <li><a href="/examples/leaflet/large.html">Filtering a Large Dataset</a></li>
+        <li><a href="/examples/leaflet/largezst.html">Seekable Zstandard</a></li>
     </ul>
 
     <style>
@@ -47,7 +48,7 @@
             }
 
             const response = await fetch('/test/data/UScounties.fgb');
-            for await (const feature of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+            for await (const feature of flatgeobuf.deserialize(response.body, { headerMetaFn: handleHeaderMeta })) {
                 // Leaflet styling
                 const defaultStyle = { 
                     color: 'blue', 

@@ -28,6 +28,7 @@
         <li><a href="/examples/leaflet/">Basic Example</a></li>
         <li class="active">Filter By Rect</li>
         <li><a href="/examples/leaflet/large.html">Filtering a Large Dataset</a></li>
+        <li><a href="/examples/leaflet/largezst.html">Seekable Zstandard</a></li>
     </ul>
 
     <div id="map"></div>
@@ -76,7 +77,7 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                const iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', fgBoundingBox(), handleHeaderMeta);
+                const iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
                 for await (const feature of iter) {
                     const defaultStyle = { 
                         color: 'blue', 
