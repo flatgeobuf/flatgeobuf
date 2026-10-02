@@ -164,7 +164,7 @@ impl<'a> FeatureWriter<'a> {
             0 => None,
             1 => {
                 // Skip single ends to save FlatBuffers size
-                self.ends.truncate(0);
+                self.ends.clear();
                 None
             }
             _ => Some(to_fb_vector!(self, ends)),
@@ -221,7 +221,7 @@ impl<'a> FeatureWriter<'a> {
             )
         };
         let properties = Some(self.fbb.create_vector(&self.properties));
-        self.properties.truncate(0);
+        self.properties.clear();
         let f = Feature::create(
             &mut self.fbb,
             &FeatureArgs {

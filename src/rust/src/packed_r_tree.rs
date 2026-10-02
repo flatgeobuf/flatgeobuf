@@ -769,7 +769,7 @@ impl PackedRTree {
                     }
 
                     // Merge the ranges to avoid an extra request
-                    debug!("Extending existing request {tail:?} with nearby children: {:?} (wastes {wasted_bytes} bytes)", &children_range.nodes);
+                    debug!("Extending existing request {tail:?} with nearby children: {:?} (wastes {wasted_bytes} bytes)", children_range.nodes);
                     tail.nodes.end = children_range.nodes.end;
                 }
             }
