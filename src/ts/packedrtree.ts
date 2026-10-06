@@ -134,16 +134,19 @@ export async function* streamSearch(
         return new NodeRange(range, level);
     })();
 
-    const queue: Array<NodeRange> = [rootNodeRange];
+    // A head cursor avoids the repeated array reindexing caused by shift().
+    const queue: Array<NodeRange | undefined> = [rootNodeRange];
+    let queueHead = 0;
 
     console.debug(
         `starting stream search with queue: ${queue}, numItems: ${numItems}, nodeSize: ${nodeSize}, levelBounds: ${levelBounds}`,
     );
 
-    while (queue.length !== 0) {
-        const nodeRange = queue.shift()!;
+    while (queueHead < queue.length) {
+        const nodeRange = queue[queueHead++]!;
+        queue[queueHead - 1] = undefined;
 
-        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length}`);
+        console.debug(`popped node: ${nodeRange}, queueLength: ${queue.length - queueHead}`);
 
         const nodeRangeStartIdx = nodeRange.startNodeIdx();
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
@@ -213,7 +216,7 @@ export async function* streamSearch(
             // Since we're traversing the tree by monotonically increasing byte
             // offset, the most recently enqueued node range will be the
             // nearest, and thus presents the best candidate for merging.
-            const nearestNodeRange = queue[queue.length - 1];
+            const nearestNodeRange = queue.length > queueHead ? queue[queue.length - 1] : undefined;
             if (
                 nearestNodeRange !== undefined &&
                 nearestNodeRange.level() === nodeRange.level() - 1 &&
