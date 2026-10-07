@@ -112,11 +112,6 @@
         "flatbuffers": "25.9.23",
         "slice-source": "0.4.1"
     },
-    "pnpm": {
-        "overrides": {
-            "es-module-lexer": "2.0.0"
-        }
-    },
     "optionalDependencies": {
         "ol": ">=10"
     },
