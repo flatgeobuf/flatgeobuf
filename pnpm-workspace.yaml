@@ -5,5 +5,8 @@ packages:
 minimumReleaseAgeExclude:
   - vite@8.1.3
 
+overrides:
+  es-module-lexer: 2.0.0
+
 onlyBuiltDependencies:
   - rolldown
