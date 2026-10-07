@@ -156,9 +156,10 @@ export async function* streamSearch(
         const isLeafNode = nodeRangeStartIdx >= firstLeafNodeIdx;
 
         // find the end index of the node
+        const [, levelBound] = levelBounds[nodeRange.level()];
+        const searchEndIdx = Math.min(nodeRange.endNodeIdx() + nodeSize, levelBound);
         const nodeRangeEndIdx = (() => {
-            const [, levelBound] = levelBounds[nodeRange.level()];
-            const nodeIdx = Math.min(nodeRange.endNodeIdx() + nodeSize, levelBound);
+            const nodeIdx = searchEndIdx;
 
             if (isLeafNode && nodeIdx < levelBound) {
                 // We can infer the length of *this* feature by getting the start of the *next*
@@ -176,7 +177,7 @@ export async function* streamSearch(
         const buffer = await readNode(nodeRangeStartIdx * NODE_ITEM_BYTE_LEN, numNodesInRange * NODE_ITEM_BYTE_LEN);
 
         const dataView = new DataView(buffer);
-        for (let nodeIdx = nodeRangeStartIdx; nodeIdx < nodeRangeEndIdx; nodeIdx++) {
+        for (let nodeIdx = nodeRangeStartIdx; nodeIdx < searchEndIdx; nodeIdx++) {
             const nodeIdxInDataView = nodeIdx - nodeRangeStartIdx;
             const dataViewByteStart = nodeIdxInDataView * NODE_ITEM_BYTE_LEN;
             if (maxX < dataView.getFloat64(dataViewByteStart + 0, true)) continue; // maxX < nodeMinX
@@ -192,7 +193,7 @@ export async function* streamSearch(
             if (isLeafNode) {
                 const featureByteOffset = offset;
                 const featureLength = (() => {
-                    if (nodeIdx < numItems - 1) {
+                    if (nodeIdx < levelBounds[0][1] - 1) {
                         // Since features are tightly packed, we infer the
                         // length of _this_ feature by measuring to the _next_
                         // feature's start.
@@ -235,7 +236,7 @@ export async function* streamSearch(
 
             const newNodeRange: NodeRange = (() => {
                 const level = nodeRange.level() - 1;
-                const range: [number, number] = [Number(firstChildNodeIdx), Number(firstChildNodeIdx) + 1];
+                const range: [number, number] = [Number(firstChildNodeIdx), Number(firstChildNodeIdx)];
                 return new NodeRange(range, level);
             })();
 
