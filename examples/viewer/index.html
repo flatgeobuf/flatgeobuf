@@ -158,7 +158,7 @@
                 maxY: extent[3]
             }
             let c = 0
-            const iter = flatgeobuf.deserialize(url, rect)
+            const iter = flatgeobuf.deserialize(url, { rect })
             for await (const feature of iter) {
                 feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
                 source.addFeature(feature)

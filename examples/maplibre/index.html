@@ -28,6 +28,7 @@
         <li class="active">Basic Example</li>
         <li><a href="/examples/maplibre/filtered.html">Filter By Rect</a></li>
         <li><a href="/examples/maplibre/large.html">Filtering a Large Dataset</a></li>
+        <li><a href="/examples/maplibre/largezst.html">Seekable Zstandard</a></li>
     </ul>
 
     <style>
@@ -56,7 +57,7 @@
             map.on("load", async () => {
                 const fc = {type: "FeatureCollection", features: []};
                 let i = 0;
-                for await (const f of flatgeobuf.deserialize(response.body, undefined, handleHeaderMeta)) {
+                for await (const f of flatgeobuf.deserialize(response.body, { headerMetaFn: handleHeaderMeta })) {
                     fc.features.push({...f, id: i});
                     i += 1;
                 }

@@ -28,6 +28,7 @@
         <li><a href="/examples/leaflet/">Basic Example</a></li>
         <li><a href="/examples/leaflet/filtered.html">Filter By Rect</a></li>
         <li class="active">Filtering a Large Dataset</li>
+        <li><a href="/examples/leaflet/largezst.html">Seekable Zstandard</a></li>
     </ul>
 
     <div id="map"></div>
@@ -84,7 +85,7 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                const iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', fgBoundingBox(), handleHeaderMeta);
+                const iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb', { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
 
                 const colorScale = ((d) => {
                     return d > 750 ? '#800026' :

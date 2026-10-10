@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="/examples/site.css" />
     <script src="https://unpkg.com/underscore@1.13.8/underscore-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/flatgeobuf@4.6.0/dist/flatgeobuf-geojson.min.js"></script>
+    <script src="https://unpkg.com/flatgeobuf@4.5.0/dist/flatgeobuf-geojson.min.js"></script>
     <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 
     <style>
@@ -18,26 +18,27 @@
             Leaflet Example
         </li>
         <li>
-            <a href="/examples/openlayers/filtered.html">OpenLayers Example</a>
+            <a href="/examples/openlayers/largezst.html">OpenLayers Example</a>
         </li>
         <li>
-            <a href="/examples/maplibre/filtered.html">MapLibre Example</a>
+            <a href="/examples/maplibre/largezst.html">MapLibre Example</a>
         </li>
     </ul>
     <ul class="secondary-navigation">
         <li><a href="/examples/leaflet/">Basic Example</a></li>
-        <li class="active">Filter By Rect</li>
+        <li><a href="/examples/leaflet/filtered.html">Filter By Rect</a></li>
         <li><a href="/examples/leaflet/large.html">Filtering a Large Dataset</a></li>
-        <li><a href="/examples/leaflet/largezst.html">Seekable Zstandard</a></li>
+        <li class="active">Seekable Zstandard</li>
     </ul>
 
     <div id="map"></div>
     <script>
         document.addEventListener("DOMContentLoaded", async () => { 
             // basic OSM Leaflet map
-            const map = L.map('map').setView([39, -104], 6);
+            const map = L.map('map').setView([40.766, -73.98], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
+                maxZoom: 18,
+                minZoom: 12,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
@@ -45,14 +46,18 @@
             function handleHeaderMeta(headerMeta) {
                 const header = document.getElementById('header')
                 const formatter = new JSONFormatter(headerMeta, 10)
+                while (header.firstChild)
+                    header.removeChild(header.firstChild)
                 header.appendChild(formatter.render())
             }
 
-            // For the example, we fix a visible Rect representing the query
-            // bounding box in the middle of the map
+            // For the example, we fix a visible Rect in the middle of the map
             function getBoundForRect() {
-                const widthMeters = 500000;
-                return map.getCenter().toBounds(widthMeters);
+                const bounds = map.getBounds();
+
+                const width = map.distance(bounds.getNorthWest(), bounds.getNorthEast());
+                const height = map.distance(bounds.getNorthWest(), bounds.getSouthWest());
+                return map.getCenter().toBounds(Math.min(width, height) * 0.8);
             }
 
             // convert the rect into the format flatgeobuf expects
@@ -60,11 +65,14 @@
                 const bounds = getBoundForRect();
                 return {
                     minX: bounds.getWest(),
-                    minY: bounds.getSouth(),
                     maxX: bounds.getEast(),
+                    minY: bounds.getSouth(),
                     maxY: bounds.getNorth(),
                 };
             }
+
+            // show a leaflet rect corresponding to our bounding box
+            const rectangle = L.rectangle(getBoundForRect(), { interactive: false, color: "blue", fillOpacity: 0.0, opacity: 1.0 }).addTo(map);
 
             // track the previous results so we can remove them when adding new results
             let previousResults = L.layerGroup().addTo(map);
@@ -77,43 +85,50 @@
                 // Use flatgeobuf JavaScript API to iterate features as geojson.
                 // Because we specify a bounding box, flatgeobuf will only fetch the relevant subset of data,
                 // rather than the entire file.
-                const iter = flatgeobuf.deserialize('/test/data/UScounties.fgb', { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta });
-                for await (const feature of iter) {
-                    const defaultStyle = { 
-                        color: 'blue', 
-                        weight: 2, 
-                        fillOpacity: 0.1,
-                    };
+                const iter = flatgeobuf.deserialize('https://flatgeobuf.septima.dk/population_areas.fgb.zst', { rect: fgBoundingBox(), headerMetaFn: handleHeaderMeta, seekableZstd: true });
 
+                const colorScale = ((d) => {
+                    return d > 750 ? '#800026' :
+                        d > 500 ? '#BD0026' :
+                        d > 250  ? '#E31A1C' :
+                        d > 100 ? '#FC4E2A' :
+                        d > 50   ? '#FD8D3C' :
+                        d > 25  ? '#FEB24C' :
+                        d > 10   ? '#FED976' :
+                        '#FF0000'
+                });
+
+                for await (const feature of iter) {
+                    // Leaflet styling
+                    const defaultStyle = { 
+                        color: colorScale(feature.properties.population), 
+                        weight: 1, 
+                        fillOpacity: 0.4,
+                    };
                     L.geoJSON(feature, {
                         style: defaultStyle,
                     }).on({
                         'mouseover': (e) => {
                             const layer = e.target;
                             layer.setStyle({
-                                color: 'blue',
                                 weight: 4,
-                                fillOpacity: 0.7,
+                                fillOpacity: 0.8,
                             });
-                            layer.bringToFront();
                         },
                         'mouseout': (e) => {
                             const layer = e.target;
                             layer.setStyle(defaultStyle);
                         }
-                   }).bindPopup(`<h1>${feature.properties.NAME} ${feature.properties.LSAD}, ${feature.properties.STATE}</h1>`)
+                   }).bindPopup(`${feature.properties.population} people live in this census block.</h1>`)
                    .addTo(nextResults);
                 }
+                rectangle.bringToFront();
             }
             // if the user is panning around alot, only update once per second max
             const updateResultsThrottled = _.throttle(updateResults, 1000);
 
-            // show a leaflet rect corresponding to our bounding box
-            const rectangle = L.rectangle(getBoundForRect(), { color: "yellow", fillOpacity: 0.7, opacity: 1.0 }).addTo(map);
-
             // show results based on the initial map
             updateResultsThrottled();
-
             // ...and update the results whenever the map moves
             map.on("moveend", ()=> {
                 rectangle.setBounds(getBoundForRect());
@@ -122,22 +137,17 @@
         });
     </script>
     <p>
-        FlatGeobuf's spatial index allows you to fetch the features that
-        intersect a given bounding box, without downloading the entire file.
-        This can be helpful when you have a very large file but are only
-        interested in a small portion of it, and want to keep your page loads
-        small and fast.
+        This example uses a seekable-Zstandard wrapper around the same indexed
+        FlatGeobuf data. The compressed object is about 5.14 GB (4.79 GiB);
+        its uncompressed FlatGeobuf stream is about 12.34 GB (11.49 GiB).
+        The blue rectangle shows the current query. The client reads the seek
+        table and FlatGeobuf spatial index, then fetches only the compressed
+        frames needed for matching features.
     </p>
     <p>
-        For the purposes of the example we've highlighted our bounding box in
-        yellow. Pan the map to move the query's bounding box.
-    </p>
-    <p>
-        Open your developer console's network pane, and inspect the network
-        traffic. Compared to the <a href="/examples/leaflet/">example which loads the entire file</a>,
-        you'll see that this example makes more requests for the .fgb file, but
-        they are much smaller because we fetch only the relevant sections of
-        the file.
+        Though getting a small subset of features from a large dataset transfers
+        relatively little data, it does so using multiple requests. There are some
+        <a href="https://github.com/flatgeobuf/flatgeobuf?tab=readme-ov-file#optimizing-remotely-hosted-flatgeobufs">tips for optimizing remote hosted flatgeobufs</a>, mostly oriented around minimizing round trip latency.
     </p>
     <div id="header">
         <h3>Parsed header content</h3>

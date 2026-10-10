@@ -61,6 +61,6 @@ index 2e13dfc..da4b07e 100644
      <script src="https://unpkg.com/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 ```
 
-You can start the built in http server with: `pnpm serve`.
+Serve the repo root with a static server that supports HTTP range requests, e.g. `npx http-server -p 8000 .`
 
 Then, open the example in your browser. For example: `open http://localhost:8000/examples/leaflet/filtered.html`.
