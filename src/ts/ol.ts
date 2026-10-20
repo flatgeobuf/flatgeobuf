@@ -85,8 +85,8 @@ export function createLoader(
     return async (extent, _resolution, projection, success, failure) => {
         try {
             if (clear) source.clear();
-            options.dataProjection = 'EPSG:4326';
-            options.featureProjection = projection.getCode();
+            options.dataProjection ??= 'EPSG:4326';
+            options.featureProjection ??= projection.getCode();
             const features: FeatureLike[] = [];
             let it: AsyncGenerator<FeatureLike> | undefined;
             if (strategy === all && !options.seekableZstd) {
@@ -127,8 +127,8 @@ export const tileUrlFunction = (tileCoord: TileCoord): string => JSON.stringify(
  */
 export function createTileLoadFunction(source: VectorTileSource, url: string, options: OlDeserializeOptions = {}) {
     const projection = source.getProjection();
-    options.dataProjection = 'EPSG:4326';
-    options.featureProjection = projection?.getCode() ?? 'EPSG:3857';
+    options.dataProjection ??= 'EPSG:4326';
+    options.featureProjection ??= projection?.getCode() ?? 'EPSG:3857';
     const tileLoadFunction: LoadFunction = (tile) => {
         const vectorTile = tile as VectorTile<FeatureLike>;
         const loader: FeatureLoader = async (extent): Promise<FeatureLike[]> => {
