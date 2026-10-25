@@ -33,6 +33,71 @@ impl Geometry<'_> {
     }
 }
 
+/// Number of coordinate pairs in the geometry's `xy` array.
+///
+/// Coordinate consumers index `xy` in pairs, so an odd ordinate count (file-controlled and
+/// not covered by the FlatBuffers verifier) is rejected instead of read past.
+fn xy_point_count(geometry: &Geometry) -> Result<usize> {
+    let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    if xy.len() % 2 != 0 {
+        return Err(GeozeroError::Geometry(
+            "FlatGeobuf geometry has an odd number of xy ordinates".to_string(),
+        ));
+    }
+    Ok(xy.len() / 2)
+}
+
+/// Validate the file-controlled `ends` array against the coordinate count.
+///
+/// The FlatBuffers verifier bounds `ends` on its own but never against `xy`, so a part end
+/// past the last coordinate pair, or an end below its predecessor, would otherwise index
+/// past the coordinate vector or underflow the part length.
+fn check_ends(geometry: &Geometry) -> Result<()> {
+    let point_count = xy_point_count(geometry)?;
+    let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
+    let mut previous = 0;
+    for i in 0..ends.len() {
+        let end = ends.get(i) as usize;
+        if end > point_count {
+            return Err(GeozeroError::Geometry(
+                "FlatGeobuf geometry part end exceeds the coordinate count".to_string(),
+            ));
+        }
+        if end < previous {
+            return Err(GeozeroError::Geometry(
+                "FlatGeobuf geometry part ends are not monotonic".to_string(),
+            ));
+        }
+        previous = end;
+    }
+    Ok(())
+}
+
+/// Read one optional ordinate, rejecting a dimension array shorter than the geometry.
+fn dimension_value(
+    values: Option<flatbuffers::Vector<'_, f64>>,
+    offset: usize,
+) -> Result<Option<f64>> {
+    match values {
+        Some(values) if offset < values.len() => Ok(Some(values.get(offset))),
+        Some(_) => Err(GeozeroError::Geometry(
+            "FlatGeobuf geometry dimension array is shorter than the coordinate count".to_string(),
+        )),
+        None => Ok(None),
+    }
+}
+
+/// As [`dimension_value`], for the `tm` nanosecond array.
+fn time_value(values: Option<flatbuffers::Vector<'_, u64>>, offset: usize) -> Result<Option<u64>> {
+    match values {
+        Some(values) if offset < values.len() => Ok(Some(values.get(offset))),
+        Some(_) => Err(GeozeroError::Geometry(
+            "FlatGeobuf geometry dimension array is shorter than the coordinate count".to_string(),
+        )),
+        None => Ok(None),
+    }
+}
+
 fn read_geometry_n<P: GeomProcessor>(
     processor: &mut P,
     geometry: &Geometry,
@@ -46,6 +111,9 @@ fn read_geometry_n<P: GeomProcessor>(
                 read_coordinate(processor, geometry, 0, 0)?;
             } else {
                 let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+                if xy.len() < 2 {
+                    return Err(GeozeroError::Coord);
+                }
                 processor.xy(xy.get(0), xy.get(1), 0)?;
             }
             processor.point_end(idx)?;
@@ -141,24 +209,27 @@ fn read_coordinate<P: GeomProcessor>(
     idx: usize,
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    if offset >= xy.len() / 2 {
+        return Err(GeozeroError::Coord);
+    }
     let dims = processor.dimensions();
     let z = if dims.z {
-        geometry.z().map(|v| v.get(offset))
+        dimension_value(geometry.z(), offset)?
     } else {
         None
     };
     let m = if dims.m {
-        geometry.m().map(|v| v.get(offset))
+        dimension_value(geometry.m(), offset)?
     } else {
         None
     };
     let t = if dims.t {
-        geometry.t().map(|v| v.get(offset))
+        dimension_value(geometry.t(), offset)?
     } else {
         None
     };
     let tm = if dims.tm {
-        geometry.tm().map(|v| v.get(offset))
+        time_value(geometry.tm(), offset)?
     } else {
         None
     };
@@ -172,6 +243,13 @@ fn read_coords<P: GeomProcessor>(
     length: usize,
 ) -> Result<()> {
     let xy = geometry.xy().ok_or(GeozeroError::Coord)?;
+    // `length` is file-controlled through `ends` (a single-part geometry passes `xy.len()`),
+    // so bound the window before indexing: an odd length has no y for its last x.
+    if offset % 2 != 0 || length % 2 != 0 || offset > xy.len() || length > xy.len() - offset {
+        return Err(GeozeroError::Geometry(
+            "FlatGeobuf geometry coordinate range exceeds the xy array".to_string(),
+        ));
+    }
     let multi = processor.multi_dim();
     for i in (offset..offset + length).step_by(2) {
         if multi {
@@ -208,18 +286,13 @@ fn read_multilinestring<P: GeomProcessor>(
             processor.multilinestring_end(idx)?;
         }
     } else {
+        check_ends(geometry)?;
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
         processor.multilinestring_begin(ends.len(), idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
-            let end = ends.get(i) << 1;
-            read_multilinestring_part(
-                processor,
-                geometry,
-                offset as usize,
-                (end - offset) as usize,
-                i,
-            )?;
+            let end = ends.get(i) as usize;
+            read_multilinestring_part(processor, geometry, offset * 2, (end - offset) * 2, i)?;
             offset = end;
         }
         processor.multilinestring_end(idx)?;
@@ -241,18 +314,13 @@ fn read_triangle<P: GeomProcessor>(
             processor.triangle_end(tagged, idx)?;
         }
     } else {
+        check_ends(geometry)?;
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
         let mut offset = 0;
         for i in 0..ends.len() {
+            let end = ends.get(i) as usize;
             processor.triangle_begin(tagged, 1, i)?;
-            let end = ends.get(i) << 1;
-            read_multilinestring_part(
-                processor,
-                geometry,
-                offset as usize,
-                (end - offset) as usize,
-                0,
-            )?;
+            read_multilinestring_part(processor, geometry, offset * 2, (end - offset) * 2, 0)?;
             offset = end;
             processor.triangle_end(tagged, i)?;
         }
@@ -292,14 +360,15 @@ fn read_polygon<P: GeomProcessor>(
         processor.polygon_end(tagged, idx)?;
     } else {
         // multiple rings
+        check_ends(geometry)?;
         let ends = geometry.ends().ok_or(GeozeroError::GeometryFormat)?;
         processor.polygon_begin(tagged, ends.len(), idx)?;
         let mut offset = 0;
         for i in 0..ends.len() {
-            let end = ends.get(i) << 1;
-            let length = (end - offset) as usize;
+            let end = ends.get(i) as usize;
+            let length = (end - offset) * 2;
             processor.linestring_begin(false, length / 2, i)?;
-            read_coords(processor, geometry, offset as usize, length)?;
+            read_coords(processor, geometry, offset * 2, length)?;
             processor.linestring_end(false, i)?;
             offset = end;
         }
