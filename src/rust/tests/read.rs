@@ -768,3 +768,98 @@ fn select_bbox_seekable_rejects_implausible_features_count() {
     let r = fgb.select_bbox(0.0, 0.0, 1.0, 1.0);
     assert!(r.is_err(), "select_bbox must Err, got {:?}", r.err());
 }
+
+// Regression for file-controlled geometry `ends`. The FlatBuffers verifier bounds each
+// vector on its own, but nothing ties `ends` to the length of `xy`, and the GeomProcessor
+// path indexed both without checking. A part end past the coordinate count, or an end
+// below the previous one, must be reported as an error instead of indexing past `xy`.
+fn read_crafted_geometry(
+    geometry_type: GeometryType,
+    xy: &[f64],
+    ends: &[u32],
+) -> geozero::error::Result<()> {
+    let mut fbb = flatbuffers::FlatBufferBuilder::new();
+    let xy = fbb.create_vector(xy);
+    let ends = fbb.create_vector(ends);
+    let g = Geometry::create(
+        &mut fbb,
+        &GeometryArgs {
+            xy: Some(xy),
+            ends: Some(ends),
+            ..Default::default()
+        },
+    );
+    fbb.finish(g, None);
+    let geometry = flatbuffers::root::<Geometry>(fbb.finished_data()).expect("geometry parses");
+    let mut out = Vec::new();
+    let mut writer = geozero::wkt::WktWriter::new(&mut out);
+    read_geometry(&mut writer, &geometry, geometry_type)
+}
+
+#[test]
+fn read_geometry_rejects_ring_end_past_coordinate_count() {
+    let r = read_crafted_geometry(GeometryType::Polygon, &[0.0, 0.0, 1.0, 1.0], &[1, 3]);
+    assert!(
+        r.is_err(),
+        "a ring end of 3 exceeds the 2 available coordinate pairs"
+    );
+}
+
+#[test]
+fn read_geometry_rejects_non_monotonic_ring_ends() {
+    let r = read_crafted_geometry(GeometryType::Polygon, &[0.0, 0.0, 1.0, 1.0], &[2, 1]);
+    assert!(
+        r.is_err(),
+        "ring ends [2, 1] run backwards and must not underflow"
+    );
+}
+
+#[test]
+fn read_geometry_rejects_line_end_past_coordinate_count() {
+    let r = read_crafted_geometry(
+        GeometryType::MultiLineString,
+        &[0.0, 0.0, 1.0, 1.0],
+        &[1, 3],
+    );
+    assert!(
+        r.is_err(),
+        "a line end of 3 exceeds the 2 available coordinate pairs"
+    );
+}
+
+#[test]
+fn read_geometry_rejects_odd_xy_length() {
+    let r = read_crafted_geometry(GeometryType::LineString, &[0.0, 0.0, 1.0], &[]);
+    assert!(r.is_err(), "the trailing x ordinate has no y companion");
+}
+
+#[test]
+fn read_geometry_rejects_short_dimension_array() {
+    struct ZProcessor;
+    impl GeomProcessor for ZProcessor {
+        fn dimensions(&self) -> CoordDimensions {
+            CoordDimensions::xyz()
+        }
+    }
+    // One z value for two coordinate pairs.
+    let mut fbb = flatbuffers::FlatBufferBuilder::new();
+    let xy = fbb.create_vector(&[0.0, 0.0, 1.0, 1.0]);
+    let ends = fbb.create_vector(&[2u32]);
+    let z = fbb.create_vector(&[0.0]);
+    let g = Geometry::create(
+        &mut fbb,
+        &GeometryArgs {
+            xy: Some(xy),
+            ends: Some(ends),
+            z: Some(z),
+            ..Default::default()
+        },
+    );
+    fbb.finish(g, None);
+    let geometry = flatbuffers::root::<Geometry>(fbb.finished_data()).expect("geometry parses");
+    let r = read_geometry(&mut ZProcessor, &geometry, GeometryType::Polygon);
+    assert!(
+        r.is_err(),
+        "the z array is shorter than the coordinate count"
+    );
+}
