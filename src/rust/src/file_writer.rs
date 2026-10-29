@@ -6,7 +6,7 @@ use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use flatbuffers::FlatBufferBuilder;
 use geozero::CoordDimensions;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write};
 
 /// FlatGeobuf dataset writer
 ///
@@ -30,7 +30,7 @@ use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 /// # }
 /// ```
 pub struct FgbWriter<'a> {
-    tmpout: BufWriter<File>,
+    tmpout: FeatureStore,
     fbb: FlatBufferBuilder<'a>,
     header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
@@ -100,6 +100,28 @@ pub struct FgbCrs<'a> {
     pub code_string: Option<&'a str>,
 }
 
+// Where features are kept until `write`, in the order they were added
+enum FeatureStore {
+    File(BufWriter<File>),
+    Memory(Vec<u8>),
+}
+
+impl Write for FeatureStore {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            FeatureStore::File(f) => f.write(buf),
+            FeatureStore::Memory(v) => v.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            FeatureStore::File(f) => f.flush(),
+            FeatureStore::Memory(v) => v.flush(),
+        }
+    }
+}
+
 // Offsets in temporary file
 struct FeatureOffset {
     offset: usize,
@@ -150,6 +172,46 @@ impl<'a> FgbWriter<'a> {
         geometry_type: GeometryType,
         options: FgbWriterOptions,
     ) -> Result<Self> {
+        let tmpout = FeatureStore::File(BufWriter::new(tempfile::tempfile()?));
+        FgbWriter::new(name, geometry_type, options, tmpout)
+    }
+
+    /// Configure FlatGeobuf headers for creating a new file, keeping features in memory
+    /// instead of a temporary file until `write`.
+    ///
+    /// For targets without a filesystem, such as `wasm32-unknown-unknown`.
+    /// Warning: memory use grows with the size of every feature added.
+    ///
+    /// # Usage example:
+    ///
+    /// ```
+    /// # use flatgeobuf::*;
+    /// let mut fgb = FgbWriter::create_with_options_in_memory(
+    ///     "countries",
+    ///     GeometryType::MultiPolygon,
+    ///     FgbWriterOptions::default(),
+    /// )
+    /// .unwrap();
+    /// ```
+    pub fn create_with_options_in_memory(
+        name: &str,
+        geometry_type: GeometryType,
+        options: FgbWriterOptions,
+    ) -> Result<Self> {
+        FgbWriter::new(
+            name,
+            geometry_type,
+            options,
+            FeatureStore::Memory(Vec::new()),
+        )
+    }
+
+    fn new(
+        name: &str,
+        geometry_type: GeometryType,
+        options: FgbWriterOptions,
+        tmpout: FeatureStore,
+    ) -> Result<Self> {
         let mut fbb = FlatBufferBuilder::new();
 
         let index_node_size = if options.write_index {
@@ -192,8 +254,6 @@ impl<'a> FgbWriter<'a> {
             options.promote_to_multi,
             dims,
         );
-
-        let tmpout = BufWriter::new(tempfile::tempfile()?);
 
         Ok(FgbWriter {
             tmpout,
@@ -289,10 +349,14 @@ impl<'a> FgbWriter<'a> {
             feature_order = Some(sorted_feature_order);
         }
 
-        // Copy features from temp file in sort order
-        self.tmpout.rewind()?;
-        let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
-        let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
+        // Copy features from the temp file (or memory) in sort order
+        let mut unsorted_feature_reader: Box<dyn ReadSeek> = match self.tmpout {
+            FeatureStore::File(mut f) => {
+                f.rewind()?;
+                Box::new(BufReader::new(f.into_inner().map_err(|e| e.into_error())?))
+            }
+            FeatureStore::Memory(v) => Box::new(Cursor::new(v)),
+        };
 
         // Clippy generates a false-positive here, needs a block to disable, see
         // https://github.com/rust-lang/rust-clippy/issues/9274
@@ -321,6 +385,9 @@ impl<'a> FgbWriter<'a> {
         Ok(())
     }
 }
+
+trait ReadSeek: Read + Seek {}
+impl<T: Read + Seek> ReadSeek for T {}
 
 mod geozero_api {
     use crate::feature_writer::{prop_type, FeatureWriter};

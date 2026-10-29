@@ -272,6 +272,33 @@ fn indexed_writer_preserves_feature_offsets_after_sort() -> Result<()> {
 }
 
 #[test]
+fn in_memory_writer_matches_file_writer() -> Result<()> {
+    for write_index in [true, false] {
+        let options = || FgbWriterOptions {
+            write_index,
+            ..Default::default()
+        };
+        let mut outputs = Vec::new();
+        for mut fgb in [
+            FgbWriter::create_with_options("points", GeometryType::Point, options())?,
+            FgbWriter::create_with_options_in_memory("points", GeometryType::Point, options())?,
+        ] {
+            for i in 0..19 {
+                let point: geo_types::Geometry<f64> =
+                    geo_types::Point::new(i as f64, ((i * 7) % 19) as f64).into();
+                fgb.add_feature_geom(point, |_| {})?;
+            }
+            let mut output = Vec::new();
+            fgb.write(&mut output)?;
+            outputs.push(output);
+        }
+        assert_eq!(outputs[0], outputs[1], "write_index: {write_index}");
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_save_fgb_and_load() -> Result<()> {
     let file_to_write = NamedTempFile::new()?;
 
