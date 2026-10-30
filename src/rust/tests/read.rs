@@ -863,3 +863,63 @@ fn read_geometry_rejects_short_dimension_array() {
         "the z array is shorter than the coordinate count"
     );
 }
+
+// Regression for file-controlled property values. Column indexes, fixed-width values and the
+// length prefixes of String, Json, DateTime and Binary values are not covered by the
+// FlatBuffers verifier, and process_properties sliced the property bytes without checking. A
+// value that runs past the end of a feature's properties must be reported as an error.
+fn read_patched_properties(patch: impl Fn(&mut Vec<u8>)) -> Result<()> {
+    let mut fgb = FgbWriter::create("patched", GeometryType::Point)?;
+    fgb.add_column("name", ColumnType::String, |_, _| {});
+    fgb.add_column("count", ColumnType::Int, |_, _| {});
+    fgb.add_column("ratio", ColumnType::Double, |_, _| {});
+    let point = geozero::geojson::GeoJson(r#"{"type": "Point", "coordinates": [1, 2]}"#);
+    fgb.add_feature_geom(point, |feat| {
+        feat.property(0, "name", &ColumnValue::String("abc"))
+            .unwrap();
+        feat.property(1, "count", &ColumnValue::Int(7)).unwrap();
+    })?;
+    let mut bytes = Vec::new();
+    fgb.write(&mut bytes)?;
+    patch(&mut bytes);
+    let mut cursor = std::io::Cursor::new(bytes);
+    let mut iter = FgbReader::open(&mut cursor)?.select_all()?;
+    let feature = iter.next()?.expect("one feature");
+    feature.properties()?;
+    Ok(())
+}
+
+/// The position of `pattern` in `bytes`.
+fn find(bytes: &[u8], pattern: &[u8]) -> usize {
+    bytes
+        .windows(pattern.len())
+        .position(|w| w == pattern)
+        .expect("pattern in the written file")
+}
+
+#[test]
+fn process_properties_reads_unpatched_values() {
+    assert!(read_patched_properties(|_| {}).is_ok());
+}
+
+#[test]
+fn process_properties_rejects_string_length_past_properties() {
+    let r = read_patched_properties(|bytes| {
+        let at = find(bytes, b"\x03\x00\x00\x00abc");
+        bytes[at..at + 4].copy_from_slice(&0x4000_0000u32.to_le_bytes());
+    });
+    assert!(
+        r.is_err(),
+        "the string claims 1 GiB in a few bytes of properties"
+    );
+}
+
+#[test]
+fn process_properties_rejects_value_cut_short() {
+    let r = read_patched_properties(|bytes| {
+        // Point the Int value's column index at the Double column: 8 bytes to read, 4 left.
+        let at = find(bytes, b"abc\x01\x00\x07\x00\x00\x00");
+        bytes[at + 3] = 2;
+    });
+    assert!(r.is_err(), "a Double needs 8 bytes and only 4 remain");
+}
