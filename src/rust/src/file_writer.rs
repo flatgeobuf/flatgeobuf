@@ -6,7 +6,7 @@ use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use flatbuffers::FlatBufferBuilder;
 use geozero::CoordDimensions;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 
 /// FlatGeobuf dataset writer
 ///
@@ -30,7 +30,7 @@ use std::io::{BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write};
 /// # }
 /// ```
 pub struct FgbWriter<'a> {
-    tmpout: FeatureStore,
+    tmpout: FeatureStore<'a>,
     fbb: FlatBufferBuilder<'a>,
     header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
@@ -100,26 +100,13 @@ pub struct FgbCrs<'a> {
     pub code_string: Option<&'a str>,
 }
 
-// Where features are kept until `write`, in the order they were added
-enum FeatureStore {
+// Where features go as they are added: a temporary file until `write`, or straight to the output
+enum FeatureStore<'a> {
     File(BufWriter<File>),
-    Memory(Vec<u8>),
-}
-
-impl Write for FeatureStore {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        match self {
-            FeatureStore::File(f) => f.write(buf),
-            FeatureStore::Memory(v) => v.write(buf),
-        }
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        match self {
-            FeatureStore::File(f) => f.flush(),
-            FeatureStore::Memory(v) => v.flush(),
-        }
-    }
+    Stream {
+        out: Box<dyn Write + 'a>,
+        header_written: bool,
+    },
 }
 
 // Offsets in temporary file
@@ -176,41 +163,58 @@ impl<'a> FgbWriter<'a> {
         FgbWriter::new(name, geometry_type, options, tmpout)
     }
 
-    /// Configure FlatGeobuf headers for creating a new file, keeping features in memory
-    /// instead of a temporary file until `write`.
+    /// Configure FlatGeobuf headers for writing a file without an index straight to `out`,
+    /// without a temporary file.
     ///
-    /// For targets without a filesystem, such as `wasm32-unknown-unknown`.
-    /// Warning: memory use grows with the size of every feature added.
+    /// Each feature is written to `out` as it is added, after the header, so memory use doesn't
+    /// grow with the dataset and no filesystem is needed (for targets such as
+    /// `wasm32-unknown-unknown`). Call [`FgbWriter::finish`] when done, instead of `write`.
+    ///
+    /// The header is written with the first feature, so it can't record what is only known at
+    /// the end: `features_count` is 0 (unknown) and there is no envelope. `detect_type` takes
+    /// the geometry type from the first feature, as `write` does. `options.write_index` must be
+    /// false.
     ///
     /// # Usage example:
     ///
     /// ```
     /// # use flatgeobuf::*;
-    /// let mut fgb = FgbWriter::create_with_options_in_memory(
+    /// let mut out = Vec::new();
+    /// let fgb = FgbWriter::create_with_options_streaming(
     ///     "countries",
     ///     GeometryType::MultiPolygon,
-    ///     FgbWriterOptions::default(),
+    ///     FgbWriterOptions {
+    ///         write_index: false,
+    ///         ..Default::default()
+    ///     },
+    ///     &mut out,
     /// )
     /// .unwrap();
+    /// fgb.finish().unwrap();
     /// ```
-    pub fn create_with_options_in_memory(
+    pub fn create_with_options_streaming(
         name: &str,
         geometry_type: GeometryType,
         options: FgbWriterOptions,
+        out: impl Write + 'a,
     ) -> Result<Self> {
-        FgbWriter::new(
-            name,
-            geometry_type,
-            options,
-            FeatureStore::Memory(Vec::new()),
-        )
+        if options.write_index {
+            return Err(invalid_input(
+                "a streamed FlatGeobuf file can't have an index",
+            ));
+        }
+        let tmpout = FeatureStore::Stream {
+            out: Box::new(out),
+            header_written: false,
+        };
+        FgbWriter::new(name, geometry_type, options, tmpout)
     }
 
     fn new(
         name: &str,
         geometry_type: GeometryType,
         options: FgbWriterOptions,
-        tmpout: FeatureStore,
+        tmpout: FeatureStore<'a>,
     ) -> Result<Self> {
         let mut fbb = FlatBufferBuilder::new();
 
@@ -291,6 +295,15 @@ impl<'a> FgbWriter<'a> {
     }
 
     fn write_feature(&mut self) -> Result<()> {
+        if let FeatureStore::Stream { .. } = self.tmpout {
+            self.write_stream_header()?;
+            let feat_buf = self.feat_writer.finish_to_feature();
+            if let FeatureStore::Stream { out, .. } = &mut self.tmpout {
+                out.write_all(&feat_buf)?;
+            }
+            self.header_args.features_count += 1;
+            return Ok(());
+        }
         let mut node = self.feat_writer.bbox.clone();
         // Offset is index of feat_offsets before sorting
         // Will be replaced with output offset after sorting
@@ -306,13 +319,62 @@ impl<'a> FgbWriter<'a> {
             offset: tmpoffset,
             size: feat_buf.len(),
         });
-        self.tmpout.write_all(&feat_buf)?;
+        if let FeatureStore::File(f) = &mut self.tmpout {
+            f.write_all(&feat_buf)?;
+        }
         self.header_args.features_count += 1;
+        Ok(())
+    }
+
+    /// The header of a streamed file, written to its output with the first feature (or by
+    /// `finish` when there are none): only what is known by then goes in it.
+    fn write_stream_header(&mut self) -> Result<()> {
+        let FeatureStore::Stream { header_written, .. } = &self.tmpout else {
+            return Ok(());
+        };
+        if *header_written {
+            return Ok(());
+        }
+        self.header_args.columns = Some(self.fbb.create_vector(&self.columns));
+        self.header_args.features_count = 0;
+        // Detected from the first feature, when `detect_type` is set.
+        self.header_args.geometry_type = self.feat_writer.dataset_type;
+        let header = Header::create(&mut self.fbb, &self.header_args);
+        self.fbb.finish_size_prefixed(header, None);
+        if let FeatureStore::Stream {
+            out,
+            header_written,
+        } = &mut self.tmpout
+        {
+            out.write_all(&MAGIC_BYTES)?;
+            out.write_all(self.fbb.finished_data())?;
+            *header_written = true;
+        }
+        Ok(())
+    }
+
+    /// Finish a file created with [`FgbWriter::create_with_options_streaming`]: write the header
+    /// if no feature was added, and flush the output.
+    pub fn finish(mut self) -> Result<()> {
+        if !matches!(self.tmpout, FeatureStore::Stream { .. }) {
+            return Err(invalid_input(
+                "finish is for a streaming writer; write a file-backed one with write",
+            ));
+        }
+        self.write_stream_header()?;
+        if let FeatureStore::Stream { out, .. } = &mut self.tmpout {
+            out.flush()?;
+        }
         Ok(())
     }
 
     /// Write the FlatGeobuf dataset (Hilbert sorted)
     pub fn write(mut self, mut out: impl Write) -> Result<()> {
+        let FeatureStore::File(tmpout) = self.tmpout else {
+            return Err(invalid_input(
+                "a streaming writer has written its features already; call finish",
+            ));
+        };
         out.write_all(&MAGIC_BYTES)?;
 
         let extent = calc_extent(&self.feat_nodes);
@@ -349,14 +411,11 @@ impl<'a> FgbWriter<'a> {
             feature_order = Some(sorted_feature_order);
         }
 
-        // Copy features from the temp file (or memory) in sort order
-        let mut unsorted_feature_reader: Box<dyn ReadSeek> = match self.tmpout {
-            FeatureStore::File(mut f) => {
-                f.rewind()?;
-                Box::new(BufReader::new(f.into_inner().map_err(|e| e.into_error())?))
-            }
-            FeatureStore::Memory(v) => Box::new(Cursor::new(v)),
-        };
+        // Copy features from temp file in sort order
+        let mut tmpout = tmpout;
+        tmpout.rewind()?;
+        let unsorted_feature_output = tmpout.into_inner().map_err(|e| e.into_error())?;
+        let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
 
         // Clippy generates a false-positive here, needs a block to disable, see
         // https://github.com/rust-lang/rust-clippy/issues/9274
@@ -386,8 +445,12 @@ impl<'a> FgbWriter<'a> {
     }
 }
 
-trait ReadSeek: Read + Seek {}
-impl<T: Read + Seek> ReadSeek for T {}
+fn invalid_input(message: &str) -> crate::error::Error {
+    crate::error::Error::IO(std::io::Error::new(
+        std::io::ErrorKind::InvalidInput,
+        message,
+    ))
+}
 
 mod geozero_api {
     use crate::feature_writer::{prop_type, FeatureWriter};
