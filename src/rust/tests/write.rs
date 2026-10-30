@@ -425,3 +425,64 @@ fn test_save_fgb_and_load() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn writer_stays_send_and_sync() {
+    fn send_sync<T: Send + Sync>() {}
+    send_sync::<FgbWriter<'static>>();
+}
+
+#[test]
+fn streaming_writer_refuses_a_column_after_the_first_feature() -> Result<()> {
+    let options = || FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    let point = || GeoJson(r#"{"type": "Point", "coordinates": [1, 2]}"#);
+    // Added by hand: the second feature would name a column the header doesn't have.
+    let mut out = Vec::new();
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options(), &mut out)?;
+    fgb.add_column("a", ColumnType::Int, |_, _| {});
+    fgb.add_feature_geom(point(), |feat| {
+        feat.property(0, "a", &ColumnValue::Int(1)).unwrap();
+    })?;
+    fgb.add_column("b", ColumnType::Int, |_, _| {});
+    assert!(fgb.add_feature_geom(point(), |_| {}).is_err());
+
+    // Found in the data: a property the first feature didn't have.
+    let mut out = Vec::new();
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options(), &mut out)?;
+    let features = r#"{"type": "FeatureCollection", "features": [
+        {"type": "Feature", "properties": {"a": 1}, "geometry": {"type": "Point", "coordinates": [1, 2]}},
+        {"type": "Feature", "properties": {"a": 2, "b": 3}, "geometry": {"type": "Point", "coordinates": [3, 4]}}
+    ]}"#;
+    assert!(GeoJsonReader(features.as_bytes())
+        .process(&mut fgb)
+        .is_err());
+    Ok(())
+}
+
+#[test]
+fn streaming_writer_reports_a_failed_output_instead_of_panicking() -> Result<()> {
+    struct Failing;
+    impl Write for Failing {
+        fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("disk full"))
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let options = FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options, Failing)?;
+    let point = GeoJson(r#"{"type": "Point", "coordinates": [1, 2]}"#);
+    assert!(fgb.add_feature_geom(point, |_| {}).is_err());
+    assert!(fgb.finish().is_err());
+    Ok(())
+}

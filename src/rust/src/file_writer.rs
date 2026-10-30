@@ -104,9 +104,20 @@ pub struct FgbCrs<'a> {
 enum FeatureStore<'a> {
     File(BufWriter<File>),
     Stream {
-        out: Box<dyn Write + 'a>,
-        header_written: bool,
+        // Send + Sync, so FgbWriter stays Send + Sync as it was with only a temporary file
+        out: Box<dyn Write + Send + Sync + 'a>,
+        state: StreamState,
     },
+}
+
+// Progress of a streamed file
+#[derive(Clone, Copy, PartialEq)]
+enum StreamState {
+    NoHeader,
+    // The header is out, declaring this many columns
+    Writing { columns: usize },
+    // A write to the output failed: what it holds is incomplete, so nothing more is written
+    Failed,
 }
 
 // Offsets in temporary file
@@ -172,8 +183,12 @@ impl<'a> FgbWriter<'a> {
     ///
     /// The header is written with the first feature, so it can't record what is only known at
     /// the end: `features_count` is 0 (unknown) and there is no envelope. `detect_type` takes
-    /// the geometry type from the first feature, as `write` does. `options.write_index` must be
-    /// false.
+    /// the geometry type from the first feature, as `write` does. Every column must be added
+    /// (or appear in the first feature's properties) before the first feature is complete: a
+    /// later one is refused, since the header has gone. `options.write_index` must be false.
+    ///
+    /// Readers that rely on `features_count`, such as `HttpFgbReader`, see no features in a
+    /// streamed file.
     ///
     /// # Usage example:
     ///
@@ -196,7 +211,7 @@ impl<'a> FgbWriter<'a> {
         name: &str,
         geometry_type: GeometryType,
         options: FgbWriterOptions,
-        out: impl Write + 'a,
+        out: impl Write + Send + Sync + 'a,
     ) -> Result<Self> {
         if options.write_index {
             return Err(invalid_input(
@@ -205,7 +220,7 @@ impl<'a> FgbWriter<'a> {
         }
         let tmpout = FeatureStore::Stream {
             out: Box::new(out),
-            header_written: false,
+            state: StreamState::NoHeader,
         };
         FgbWriter::new(name, geometry_type, options, tmpout)
     }
@@ -298,8 +313,21 @@ impl<'a> FgbWriter<'a> {
         if let FeatureStore::Stream { .. } = self.tmpout {
             self.write_stream_header()?;
             let feat_buf = self.feat_writer.finish_to_feature();
-            if let FeatureStore::Stream { out, .. } = &mut self.tmpout {
-                out.write_all(&feat_buf)?;
+            let FeatureStore::Stream { out, state } = &mut self.tmpout else {
+                return Ok(());
+            };
+            match *state {
+                StreamState::Writing { columns } if columns == self.columns.len() => {}
+                StreamState::Writing { .. } => {
+                    return Err(invalid_input(
+                        "a streamed file's columns must all be added before its first feature",
+                    ))
+                }
+                _ => return Err(failed_stream()),
+            }
+            if let Err(e) = out.write_all(&feat_buf) {
+                *state = StreamState::Failed;
+                return Err(e.into());
             }
             self.header_args.features_count += 1;
             return Ok(());
@@ -329,11 +357,16 @@ impl<'a> FgbWriter<'a> {
     /// The header of a streamed file, written to its output with the first feature (or by
     /// `finish` when there are none): only what is known by then goes in it.
     fn write_stream_header(&mut self) -> Result<()> {
-        let FeatureStore::Stream { header_written, .. } = &self.tmpout else {
-            return Ok(());
-        };
-        if *header_written {
-            return Ok(());
+        match self.tmpout {
+            FeatureStore::Stream {
+                state: StreamState::NoHeader,
+                ..
+            } => {}
+            FeatureStore::Stream {
+                state: StreamState::Failed,
+                ..
+            } => return Err(failed_stream()),
+            _ => return Ok(()),
         }
         self.header_args.columns = Some(self.fbb.create_vector(&self.columns));
         self.header_args.features_count = 0;
@@ -341,16 +374,20 @@ impl<'a> FgbWriter<'a> {
         self.header_args.geometry_type = self.feat_writer.dataset_type;
         let header = Header::create(&mut self.fbb, &self.header_args);
         self.fbb.finish_size_prefixed(header, None);
-        if let FeatureStore::Stream {
-            out,
-            header_written,
-        } = &mut self.tmpout
-        {
-            out.write_all(&MAGIC_BYTES)?;
-            out.write_all(self.fbb.finished_data())?;
-            *header_written = true;
-        }
-        Ok(())
+        let columns = self.columns.len();
+        let FeatureStore::Stream { out, state } = &mut self.tmpout else {
+            return Ok(());
+        };
+        // The builder is finished now, so the header can't be built again: a failed write
+        // leaves the stream failed rather than ready for another attempt.
+        let written = out
+            .write_all(&MAGIC_BYTES)
+            .and_then(|()| out.write_all(self.fbb.finished_data()));
+        *state = match written {
+            Ok(()) => StreamState::Writing { columns },
+            Err(_) => StreamState::Failed,
+        };
+        written.map_err(Into::into)
     }
 
     /// Finish a file created with [`FgbWriter::create_with_options_streaming`]: write the header
@@ -362,9 +399,13 @@ impl<'a> FgbWriter<'a> {
             ));
         }
         self.write_stream_header()?;
-        if let FeatureStore::Stream { out, .. } = &mut self.tmpout {
-            out.flush()?;
+        let FeatureStore::Stream { out, state } = &mut self.tmpout else {
+            return Ok(());
+        };
+        if *state == StreamState::Failed {
+            return Err(failed_stream());
         }
+        out.flush()?;
         Ok(())
     }
 
@@ -443,6 +484,10 @@ impl<'a> FgbWriter<'a> {
 
         Ok(())
     }
+}
+
+fn failed_stream() -> crate::error::Error {
+    invalid_input("an earlier write to this streamed file's output failed")
 }
 
 fn invalid_input(message: &str) -> crate::error::Error {
