@@ -4,7 +4,6 @@ use byteorder::{ByteOrder, LittleEndian};
 use geozero::error::{GeozeroError, Result};
 use geozero::GeozeroGeometry;
 use geozero::{ColumnValue, GeomProcessor, PropertyProcessor};
-use std::mem::size_of;
 use std::str;
 
 /// Access to the *current* feature during iteration.
@@ -123,165 +122,81 @@ impl geozero::FeatureProperties for FgbFeature {
             while offset + 1 < properties.len() && !finish {
                 // NOTE: it should be offset < properties.len(), but there is data with a
                 // trailing byte in the last column of type Binary
-                let column_idx = LittleEndian::read_u16(&bytes[offset..offset + 2]) as usize;
-                offset += size_of::<u16>();
+                let column_idx = LittleEndian::read_u16(take(bytes, &mut offset, 2)?) as usize;
                 if column_idx >= columns_meta.len() {
                     // NOTE: reading also fails if column._type is different from effective entry
                     return Err(GeozeroError::GeometryFormat);
                 }
                 let column = &columns_meta.get(column_idx);
-                match column.type_() {
+                let value = match column.type_() {
                     ColumnType::Int => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Int(LittleEndian::read_i32(&bytes[offset..offset + 4])),
-                        )?;
-                        offset += size_of::<i32>();
+                        ColumnValue::Int(LittleEndian::read_i32(take(bytes, &mut offset, 4)?))
                     }
                     ColumnType::Long => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Long(LittleEndian::read_i64(&bytes[offset..offset + 8])),
-                        )?;
-                        offset += size_of::<i64>();
+                        ColumnValue::Long(LittleEndian::read_i64(take(bytes, &mut offset, 8)?))
                     }
                     ColumnType::ULong => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::ULong(LittleEndian::read_u64(&bytes[offset..offset + 8])),
-                        )?;
-                        offset += size_of::<u64>();
+                        ColumnValue::ULong(LittleEndian::read_u64(take(bytes, &mut offset, 8)?))
                     }
                     ColumnType::Double => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Double(LittleEndian::read_f64(
-                                &bytes[offset..offset + 8],
-                            )),
-                        )?;
-                        offset += size_of::<f64>();
+                        ColumnValue::Double(LittleEndian::read_f64(take(bytes, &mut offset, 8)?))
                     }
-                    ColumnType::String => {
-                        let len = LittleEndian::read_u32(&bytes[offset..offset + 4]) as usize;
-                        offset += size_of::<u32>();
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::String(
-                                // unsafe variant without UTF-8 checking would be faster...
-                                str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
-                                    GeozeroError::Property("Invalid UTF-8 encoding".to_string())
-                                })?,
-                            ),
-                        )?;
-                        offset += len;
-                    }
-                    ColumnType::Byte => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Byte(bytes[offset] as i8),
-                        )?;
-                        offset += size_of::<i8>();
-                    }
-                    ColumnType::UByte => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::UByte(bytes[offset]),
-                        )?;
-                        offset += size_of::<u8>();
-                    }
-                    ColumnType::Bool => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Bool(bytes[offset] != 0),
-                        )?;
-                        offset += size_of::<u8>();
-                    }
+                    // unsafe variant without UTF-8 checking would be faster...
+                    ColumnType::String => ColumnValue::String(take_str(bytes, &mut offset)?),
+                    ColumnType::Byte => ColumnValue::Byte(take(bytes, &mut offset, 1)?[0] as i8),
+                    ColumnType::UByte => ColumnValue::UByte(take(bytes, &mut offset, 1)?[0]),
+                    ColumnType::Bool => ColumnValue::Bool(take(bytes, &mut offset, 1)?[0] != 0),
                     ColumnType::Short => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Short(LittleEndian::read_i16(&bytes[offset..offset + 2])),
-                        )?;
-                        offset += size_of::<i16>();
+                        ColumnValue::Short(LittleEndian::read_i16(take(bytes, &mut offset, 2)?))
                     }
                     ColumnType::UShort => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::UShort(LittleEndian::read_u16(
-                                &bytes[offset..offset + 2],
-                            )),
-                        )?;
-                        offset += size_of::<u16>();
+                        ColumnValue::UShort(LittleEndian::read_u16(take(bytes, &mut offset, 2)?))
                     }
                     ColumnType::UInt => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::UInt(LittleEndian::read_u32(&bytes[offset..offset + 4])),
-                        )?;
-                        offset += size_of::<u32>();
+                        ColumnValue::UInt(LittleEndian::read_u32(take(bytes, &mut offset, 4)?))
                     }
                     ColumnType::Float => {
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Float(LittleEndian::read_f32(&bytes[offset..offset + 4])),
-                        )?;
-                        offset += size_of::<f32>();
+                        ColumnValue::Float(LittleEndian::read_f32(take(bytes, &mut offset, 4)?))
                     }
-                    ColumnType::Json => {
-                        let len = LittleEndian::read_u32(&bytes[offset..offset + 4]) as usize;
-                        offset += size_of::<u32>();
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Json(
-                                // JSON may be represented using UTF-8, UTF-16, or UTF-32. The default encoding is UTF-8.
-                                str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
-                                    GeozeroError::Property("Invalid UTF-8 encoding".to_string())
-                                })?,
-                            ),
-                        )?;
-                        offset += len;
-                    }
-                    ColumnType::DateTime => {
-                        let len = LittleEndian::read_u32(&bytes[offset..offset + 4]) as usize;
-                        offset += size_of::<u32>();
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::DateTime(
-                                // unsafe variant without UTF-8 checking would be faster...
-                                str::from_utf8(&bytes[offset..offset + len]).map_err(|_| {
-                                    GeozeroError::Property("Invalid UTF-8 encoding".to_string())
-                                })?,
-                            ),
-                        )?;
-                        offset += len;
-                    }
+                    // JSON may be represented using UTF-8, UTF-16, or UTF-32. The default encoding is UTF-8.
+                    ColumnType::Json => ColumnValue::Json(take_str(bytes, &mut offset)?),
+                    ColumnType::DateTime => ColumnValue::DateTime(take_str(bytes, &mut offset)?),
                     ColumnType::Binary => {
-                        let len = LittleEndian::read_u32(&bytes[offset..offset + 4]) as usize;
-                        offset += size_of::<u32>();
-                        finish = reader.property(
-                            column_idx,
-                            column.name(),
-                            &ColumnValue::Binary(&bytes[offset..offset + len]),
-                        )?;
-                        offset += len;
+                        let len = LittleEndian::read_u32(take(bytes, &mut offset, 4)?) as usize;
+                        ColumnValue::Binary(take(bytes, &mut offset, len)?)
                     }
-                    ColumnType(_) => {}
-                }
+                    ColumnType(_) => continue,
+                };
+                finish = reader.property(column_idx, column.name(), &value)?;
             }
         }
         Ok(finish)
     }
+}
+
+/// The next `len` bytes of a feature's properties, advancing `offset` past them.
+///
+/// Column indexes, values and value lengths all come from the file and are not covered by the
+/// FlatBuffers verifier, so a read past the end of the properties is reported as an error
+/// instead of slicing out of bounds.
+fn take<'b>(bytes: &'b [u8], offset: &mut usize, len: usize) -> Result<&'b [u8]> {
+    let end = offset
+        .checked_add(len)
+        .filter(|&end| end <= bytes.len())
+        .ok_or_else(|| {
+            GeozeroError::Property(
+                "FlatGeobuf property value runs past the end of the feature's properties"
+                    .to_string(),
+            )
+        })?;
+    let value = &bytes[*offset..end];
+    *offset = end;
+    Ok(value)
+}
+
+/// A length-prefixed UTF-8 property value (String, Json, DateTime), as [`take`].
+fn take_str<'b>(bytes: &'b [u8], offset: &mut usize) -> Result<&'b str> {
+    let len = LittleEndian::read_u32(take(bytes, offset, 4)?) as usize;
+    str::from_utf8(take(bytes, offset, len)?)
+        .map_err(|_| GeozeroError::Property("Invalid UTF-8 encoding".to_string()))
 }
