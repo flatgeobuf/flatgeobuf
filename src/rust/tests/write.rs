@@ -2,7 +2,7 @@ use crate::FgbWriter;
 use flatgeobuf::*;
 use geo_types::{line_string, LineString};
 use geozero::geojson::{GeoJson, GeoJsonReader};
-use geozero::{ColumnValue, GeozeroDatasource, PropertyProcessor};
+use geozero::{ColumnValue, FeatureProperties, GeozeroDatasource, PropertyProcessor};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use tempfile::{tempfile, NamedTempFile};
@@ -271,6 +271,109 @@ fn indexed_writer_preserves_feature_offsets_after_sort() -> Result<()> {
     Ok(())
 }
 
+/// Adds a `name` column and 19 named points to `fgb`.
+fn add_named_points(fgb: &mut FgbWriter) -> Result<()> {
+    fgb.add_column("name", ColumnType::String, |_, _| {});
+    for i in 0..19 {
+        let point: geo_types::Geometry<f64> =
+            geo_types::Point::new(i as f64, ((i * 7) % 19) as f64).into();
+        let name = format!("p{i}");
+        fgb.add_feature_geom(point, |feat| {
+            feat.property(0, "name", &ColumnValue::String(&name))
+                .unwrap();
+        })?;
+    }
+    Ok(())
+}
+
+/// The bytes after the magic bytes and the size-prefixed header: the features.
+fn features_section(file: &[u8]) -> &[u8] {
+    let header_len = u32::from_le_bytes(file[8..12].try_into().unwrap()) as usize;
+    &file[12 + header_len..]
+}
+
+#[test]
+fn streaming_writer_writes_the_features_an_unindexed_write_does() -> Result<()> {
+    let options = || FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    // Unknown, so the geometry type is detected from the first feature and the features don't
+    // carry their own: the header has to say Point for them to read.
+    let mut fgb = FgbWriter::create_with_options("points", GeometryType::Unknown, options())?;
+    add_named_points(&mut fgb)?;
+    let mut written = Vec::new();
+    fgb.write(&mut written)?;
+
+    let mut streamed = Vec::new();
+    let mut fgb = FgbWriter::create_with_options_streaming(
+        "points",
+        GeometryType::Unknown,
+        options(),
+        &mut streamed,
+    )?;
+    add_named_points(&mut fgb)?;
+    fgb.finish()?;
+
+    assert_eq!(features_section(&streamed), features_section(&written));
+
+    let mut cursor = std::io::Cursor::new(&streamed);
+    let reader = FgbReader::open(&mut cursor)?;
+    // Only what is known before the first feature is in the header.
+    assert_eq!(reader.header().features_count(), 0);
+    assert!(reader.header().envelope().is_none());
+    assert_eq!(reader.header().index_node_size(), 0);
+    assert_eq!(reader.header().geometry_type(), GeometryType::Point);
+    let mut features = reader.select_all_seq()?;
+    let mut names = Vec::new();
+    let mut wkt = Vec::new();
+    while let Some(feature) = features.next()? {
+        names.push(feature.property::<String>("name")?);
+        wkt.push(geozero::ToWkt::to_wkt(feature)?);
+    }
+    assert_eq!(wkt[3], "POINT(3 2)");
+    assert_eq!(names, (0..19).map(|i| format!("p{i}")).collect::<Vec<_>>());
+    Ok(())
+}
+
+#[test]
+fn streaming_writer_without_features_writes_a_valid_file() -> Result<()> {
+    let mut out = Vec::new();
+    let options = FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    FgbWriter::create_with_options_streaming("empty", GeometryType::Point, options, &mut out)?
+        .finish()?;
+    let mut cursor = std::io::Cursor::new(&out);
+    let mut features = FgbReader::open(&mut cursor)?.select_all_seq()?;
+    assert!(features.next()?.is_none());
+    Ok(())
+}
+
+#[test]
+fn streaming_and_file_writers_refuse_each_others_calls() -> Result<()> {
+    let mut out = Vec::new();
+    // An index needs every feature before the first is written.
+    let indexed = FgbWriterOptions::default();
+    assert!(
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, indexed, &mut out)
+            .is_err()
+    );
+
+    let options = FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    let streaming =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options, &mut out)?;
+    assert!(streaming.write(Vec::new()).is_err());
+    assert!(FgbWriter::create("p", GeometryType::Point)?
+        .finish()
+        .is_err());
+    Ok(())
+}
+
 #[test]
 fn test_save_fgb_and_load() -> Result<()> {
     let file_to_write = NamedTempFile::new()?;
@@ -320,5 +423,66 @@ fn test_save_fgb_and_load() -> Result<()> {
     }
     assert_eq!(cnt, 2);
 
+    Ok(())
+}
+
+#[test]
+fn writer_stays_send_and_sync() {
+    fn send_sync<T: Send + Sync>() {}
+    send_sync::<FgbWriter<'static>>();
+}
+
+#[test]
+fn streaming_writer_refuses_a_column_after_the_first_feature() -> Result<()> {
+    let options = || FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    let point = || GeoJson(r#"{"type": "Point", "coordinates": [1, 2]}"#);
+    // Added by hand: the second feature would name a column the header doesn't have.
+    let mut out = Vec::new();
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options(), &mut out)?;
+    fgb.add_column("a", ColumnType::Int, |_, _| {});
+    fgb.add_feature_geom(point(), |feat| {
+        feat.property(0, "a", &ColumnValue::Int(1)).unwrap();
+    })?;
+    fgb.add_column("b", ColumnType::Int, |_, _| {});
+    assert!(fgb.add_feature_geom(point(), |_| {}).is_err());
+
+    // Found in the data: a property the first feature didn't have.
+    let mut out = Vec::new();
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options(), &mut out)?;
+    let features = r#"{"type": "FeatureCollection", "features": [
+        {"type": "Feature", "properties": {"a": 1}, "geometry": {"type": "Point", "coordinates": [1, 2]}},
+        {"type": "Feature", "properties": {"a": 2, "b": 3}, "geometry": {"type": "Point", "coordinates": [3, 4]}}
+    ]}"#;
+    assert!(GeoJsonReader(features.as_bytes())
+        .process(&mut fgb)
+        .is_err());
+    Ok(())
+}
+
+#[test]
+fn streaming_writer_reports_a_failed_output_instead_of_panicking() -> Result<()> {
+    struct Failing;
+    impl Write for Failing {
+        fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("disk full"))
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let options = FgbWriterOptions {
+        write_index: false,
+        ..Default::default()
+    };
+    let mut fgb =
+        FgbWriter::create_with_options_streaming("p", GeometryType::Point, options, Failing)?;
+    let point = GeoJson(r#"{"type": "Point", "coordinates": [1, 2]}"#);
+    assert!(fgb.add_feature_geom(point, |_| {}).is_err());
+    assert!(fgb.finish().is_err());
     Ok(())
 }
