@@ -5,8 +5,8 @@ use crate::packed_r_tree::{calc_extent, hilbert_sort, NodeItem, PackedRTree};
 use crate::{Column, ColumnArgs, Header, HeaderArgs, MAGIC_BYTES};
 use flatbuffers::FlatBufferBuilder;
 use geozero::CoordDimensions;
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
+use staging::Staging;
+use std::io::{Read, Seek, SeekFrom, Write};
 
 /// FlatGeobuf dataset writer
 ///
@@ -30,7 +30,7 @@ use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 /// # }
 /// ```
 pub struct FgbWriter<'a> {
-    tmpout: BufWriter<File>,
+    tmpout: Staging,
     fbb: FlatBufferBuilder<'a>,
     header_args: HeaderArgs<'a>,
     columns: Vec<flatbuffers::WIPOffset<Column<'a>>>,
@@ -193,7 +193,7 @@ impl<'a> FgbWriter<'a> {
             dims,
         );
 
-        let tmpout = BufWriter::new(tempfile::tempfile()?);
+        let tmpout = staging::new()?;
 
         Ok(FgbWriter {
             tmpout,
@@ -291,8 +291,7 @@ impl<'a> FgbWriter<'a> {
 
         // Copy features from temp file in sort order
         self.tmpout.rewind()?;
-        let unsorted_feature_output = self.tmpout.into_inner().map_err(|e| e.into_error())?;
-        let mut unsorted_feature_reader = BufReader::new(unsorted_feature_output);
+        let mut unsorted_feature_reader = staging::reader(self.tmpout)?;
 
         // Clippy generates a false-positive here, needs a block to disable, see
         // https://github.com/rust-lang/rust-clippy/issues/9274
@@ -319,6 +318,43 @@ impl<'a> FgbWriter<'a> {
         }
 
         Ok(())
+    }
+}
+
+/// Where features wait until `write`: a temporary file, or memory on
+/// `wasm32-unknown-unknown`, which has no filesystem.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+mod staging {
+    use crate::error::Result;
+    use std::fs::File;
+    use std::io::{BufReader, BufWriter};
+
+    pub(crate) type Staging = BufWriter<File>;
+
+    pub(crate) fn new() -> Result<Staging> {
+        Ok(BufWriter::new(tempfile::tempfile()?))
+    }
+
+    pub(crate) fn reader(staging: Staging) -> Result<BufReader<File>> {
+        Ok(BufReader::new(
+            staging.into_inner().map_err(|e| e.into_error())?,
+        ))
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod staging {
+    use crate::error::Result;
+    use std::io::Cursor;
+
+    pub(crate) type Staging = Cursor<Vec<u8>>;
+
+    pub(crate) fn new() -> Result<Staging> {
+        Ok(Cursor::new(Vec::new()))
+    }
+
+    pub(crate) fn reader(staging: Staging) -> Result<Staging> {
+        Ok(staging)
     }
 }
 
