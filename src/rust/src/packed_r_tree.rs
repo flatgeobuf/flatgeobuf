@@ -277,11 +277,8 @@ fn hilbert_bbox(r: &NodeItem, hilbert_max: u32, extent: &NodeItem) -> u32 {
 /// Writers typically sort feature leaf nodes before building the packed tree to improve spatial
 /// locality (and therefore query performance).
 pub fn hilbert_sort(items: &mut [NodeItem], extent: &NodeItem) {
-    items.sort_by(|a, b| {
-        let ha = hilbert_bbox(a, HILBERT_MAX, extent);
-        let hb = hilbert_bbox(b, HILBERT_MAX, extent);
-        hb.partial_cmp(&ha).unwrap() // ha > hb
-    });
+    // Compute each value once rather than twice per comparison. Stable, like `sort_by`.
+    items.sort_by_cached_key(|item| std::cmp::Reverse(hilbert_bbox(item, HILBERT_MAX, extent)));
 }
 
 /// Compute the overall bounding box (extent) from a slice of node items.

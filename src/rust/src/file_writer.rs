@@ -298,11 +298,20 @@ impl<'a> FgbWriter<'a> {
         #[allow(clippy::read_zero_byte_vec)]
         {
             let mut buf = Vec::with_capacity(2048);
+            // `BufReader::seek` always discards the buffer, so only seek when the next feature
+            // isn't where the reader already is, and then read it from the file directly rather
+            // than reading ahead into a buffer the next seek would discard.
+            let mut position: u64 = 0;
             let mut copy_feature = |feature_index: usize| -> Result<()> {
                 let feat = &self.feat_offsets[feature_index];
-                unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
                 buf.resize(feat.size, 0);
-                unsorted_feature_reader.read_exact(&mut buf)?;
+                if feat.offset as u64 == position {
+                    unsorted_feature_reader.read_exact(&mut buf)?;
+                } else {
+                    unsorted_feature_reader.seek(SeekFrom::Start(feat.offset as u64))?;
+                    staging::read_unbuffered(&mut unsorted_feature_reader, &mut buf)?;
+                }
+                position = feat.offset as u64 + feat.size as u64;
                 out.write_all(&buf)?;
                 Ok(())
             };
@@ -327,7 +336,7 @@ impl<'a> FgbWriter<'a> {
 mod staging {
     use crate::error::Result;
     use std::fs::File;
-    use std::io::{BufReader, BufWriter};
+    use std::io::{BufReader, BufWriter, Read};
 
     pub(crate) type Staging = BufWriter<File>;
 
@@ -340,12 +349,18 @@ mod staging {
             staging.into_inner().map_err(|e| e.into_error())?,
         ))
     }
+
+    /// Reads from the file, past the buffer, which must be empty (as it is after a seek).
+    pub(crate) fn read_unbuffered(reader: &mut BufReader<File>, buf: &mut [u8]) -> Result<()> {
+        reader.get_mut().read_exact(buf)?;
+        Ok(())
+    }
 }
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 mod staging {
     use crate::error::Result;
-    use std::io::Cursor;
+    use std::io::{Cursor, Read};
 
     pub(crate) type Staging = Cursor<Vec<u8>>;
 
@@ -355,6 +370,12 @@ mod staging {
 
     pub(crate) fn reader(staging: Staging) -> Result<Staging> {
         Ok(staging)
+    }
+
+    /// Reads from the staged bytes. There's no buffer to skip here.
+    pub(crate) fn read_unbuffered(reader: &mut Staging, buf: &mut [u8]) -> Result<()> {
+        reader.read_exact(buf)?;
+        Ok(())
     }
 }
 
